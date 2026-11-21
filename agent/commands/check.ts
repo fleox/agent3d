@@ -1,4 +1,8 @@
+import { statSync } from "node:fs";
+import { join } from "node:path";
+import { readLibraryIndex } from "../host";
 import { printResult } from "../output";
+import { RUNTIME_ENTRY, runtimeBuilt, runtimeDir } from "../paths";
 import type { Command } from "./types";
 import { boolOpt, PROJECT_OPTION, projectFs } from "./util";
 
@@ -10,12 +14,12 @@ export const checkCommand: Command = {
   async run({ io, options }) {
     const fs = projectFs(options);
     const { checkProject } = await import("../../src/ops/check");
-    let extra: Parameters<typeof checkProject>[1] = {};
+    let extra: Parameters<typeof checkProject>[1] = { library: readLibraryIndex(), ...(runtimeKb() !== undefined ? { runtimeKb: runtimeKb() } : {}) };
     let renderNote: string | undefined;
     if (boolOpt(options, "render")) {
       const { renderProject } = await import("../render/render");
       const r = await renderProject({ projectDir: fs.root, count: 1, outDir: `${fs.root}/renders` });
-      extra = { ...(r.stats ? { runtimeStats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}) };
+      extra = { ...extra, ...(r.stats ? { runtimeStats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}) };
       renderNote = r.frames[0]?.path;
     }
     const report = await checkProject(fs, extra);
@@ -30,3 +34,9 @@ export const checkCommand: Command = {
     return report.ok ? 0 : 1;
   },
 };
+
+// Size of the runtime entry the export ships (KB); lazy chunks load on demand.
+function runtimeKb(): number | undefined {
+  if (!runtimeBuilt()) return undefined;
+  return Math.round((statSync(join(runtimeDir(), RUNTIME_ENTRY)).size / 1024) * 10) / 10;
+}
