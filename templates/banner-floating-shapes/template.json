@@ -1,0 +1,16 @@
+{
+  "id": "banner-floating-shapes",
+  "title": "Floating shapes banner",
+  "description": "Pastel glossy primitives drifting at different depths around a headline, with pointer parallax and a soft gradient background.",
+  "kind": "banner",
+  "tags": [
+    "banner",
+    "shapes",
+    "pastel",
+    "playful",
+    "parallax",
+    "glossy",
+    "minimal"
+  ],
+  "aspect": "4:1"
+}
