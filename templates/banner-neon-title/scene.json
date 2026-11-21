@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "id": "banner-neon-title",
+  "title": "Neon title banner",
+  "ariaLabel": "Animated banner: the words AFTER DARK in chrome letters with glowing neon lines",
+  "seed": 7,
+  "target": {
+    "kind": "banner",
+    "aspect": "4:1",
+    "budgetKb": 400,
+    "reducedMotion": "static",
+    "posterTime": 3,
+    "maxDpr": 2,
+    "exposure": 1.05
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 26,
+    "position": [0, 1.1, 13],
+    "target": [0, 0.35, 0],
+    "controls": "parallax",
+    "parallax": {"strength": 0.5, "smoothing": 0.93}
+  },
+  "environment": {
+    "background": {"gradient": ["#05010d", "#1a0633", "#3b0a4f"], "angle": 0},
+    "lighting": "studio",
+    "lightingIntensity": 0.55,
+    "fog": {"color": "#14041f", "near": 16, "far": 46}
+  },
+  "lights": [
+    {
+      "id": "ambient",
+      "type": "hemisphere",
+      "skyColor": "#6b3cff",
+      "groundColor": "#12031f",
+      "intensity": 0.6
+    },
+    {
+      "id": "pink",
+      "type": "point",
+      "color": "#ff2fd6",
+      "position": [-5, 1.5, 3],
+      "intensity": 40,
+      "distance": 18,
+      "behaviours": [{"type": "flicker", "amount": 0.25, "speed": 6}]
+    },
+    {
+      "id": "cyan",
+      "type": "point",
+      "color": "#2ff3ff",
+      "position": [5, 1.5, 3],
+      "intensity": 40,
+      "distance": 18
+    },
+    {"id": "key", "type": "directional", "position": [2, 6, 8], "intensity": 1.2}
+  ],
+  "objects": [
+    {
+      "id": "floor",
+      "kind": "mesh",
+      "geometry": {"type": "plane", "width": 80, "height": 60},
+      "rotation": [-90, 0, 0],
+      "position": [0, -1, -10],
+      "material": {"type": "standard", "color": "#0a0314", "roughness": 1, "metalness": 0}
+    },
+    {
+      "id": "gridLong",
+      "kind": "instances",
+      "geometry": {"type": "box", "width": 0.035, "height": 0.01, "depth": 60},
+      "position": [0, -0.98, -10],
+      "layout": {"type": "grid", "count": [31, 1, 1], "spacing": [1.6, 1, 1]},
+      "material": {"preset": "neon", "color": "#c03bff", "emissive": "#c03bff", "emissiveIntensity": 1.6}
+    },
+    {
+      "id": "gridCross",
+      "kind": "instances",
+      "geometry": {"type": "box", "width": 60, "height": 0.01, "depth": 0.035},
+      "position": [0, -0.98, -10],
+      "layout": {"type": "grid", "count": [1, 1, 30], "spacing": [1, 1, 1.6]},
+      "material": {"preset": "neon", "color": "#c03bff", "emissive": "#c03bff", "emissiveIntensity": 1.6}
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "AFTER DARK",
+      "font": "sans-bold",
+      "size": 1.05,
+      "depth": 0.25,
+      "bevel": 0.035,
+      "letterSpacing": 0.08,
+      "position": [0, 0.35, 0],
+      "material": {
+        "type": "standard",
+        "color": "#ff7ae0",
+        "emissive": "#ff2fd0",
+        "emissiveIntensity": 0.55,
+        "roughness": 0.3,
+        "metalness": 0.3
+      },
+      "behaviours": [
+        {"type": "appear", "effect": "rise", "duration": 1.2, "ease": "outCubic"},
+        {"type": "float", "amplitude": 0.05, "speed": 0.35}
+      ]
+    },
+    {
+      "id": "glow",
+      "kind": "text",
+      "text": "AFTER DARK",
+      "font": "sans-bold",
+      "size": 1.05,
+      "depth": 0.02,
+      "bevel": 0,
+      "letterSpacing": 0.08,
+      "position": [0.09, 0.24, -0.35],
+      "material": {"preset": "neon", "color": "#22e6ff", "emissive": "#22e6ff", "emissiveIntensity": 0.9},
+      "behaviours": [
+        {"type": "appear", "effect": "fade", "duration": 1.6},
+        {"type": "float", "amplitude": 0.05, "speed": 0.35},
+        {"type": "flicker", "amount": 0.2, "speed": 5}
+      ]
+    },
+    {
+      "id": "tubeLeft",
+      "kind": "mesh",
+      "geometry": {
+        "type": "tube",
+        "points": [[-9, -0.2, -1], [-7.6, 0.9, -1], [-6.3, -0.1, -1], [-5.2, 0.7, -1]],
+        "radius": 0.05,
+        "tubularSegments": 80
+      },
+      "material": {"preset": "neon", "color": "#2ff3ff", "emissive": "#2ff3ff", "emissiveIntensity": 3},
+      "behaviours": [{"type": "blink", "interval": 4, "duration": 0.12, "random": true}]
+    },
+    {
+      "id": "tubeRight",
+      "kind": "mesh",
+      "geometry": {
+        "type": "tube",
+        "points": [[5.2, -0.1, -1], [6.3, 0.8, -1], [7.6, -0.2, -1], [9, 0.6, -1]],
+        "radius": 0.05,
+        "tubularSegments": 80
+      },
+      "material": {"preset": "neon", "color": "#ff2fd6", "emissive": "#ff2fd6", "emissiveIntensity": 3}
+    },
+    {
+      "id": "underline",
+      "kind": "mesh",
+      "geometry": {"type": "box", "width": 7.4, "height": 0.04, "depth": 0.04},
+      "position": [0, -0.55, 0.2],
+      "material": {"preset": "neon", "color": "#2ff3ff", "emissive": "#2ff3ff", "emissiveIntensity": 2.5},
+      "behaviours": [{"type": "appear", "effect": "scale", "duration": 1.4, "ease": "outCubic"}]
+    },
+    {
+      "id": "sun",
+      "kind": "mesh",
+      "geometry": {"type": "circle", "radius": 5, "segments": 64},
+      "position": [0, 0.4, -22],
+      "material": {"type": "gradient", "gradient": ["#ff2fd6", "#ff7a45", "#ffd86b"]}
+    },
+    {
+      "id": "sparks",
+      "kind": "particles",
+      "preset": "sparks",
+      "count": 140,
+      "area": [16, 0.5, 3],
+      "position": [0, -1, 0],
+      "color": ["#ff2fd6", "#2ff3ff", "#ffffff"],
+      "size": 0.06,
+      "speed": 0.9
+    },
+    {
+      "id": "dust",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 90,
+      "area": [24, 6, 8],
+      "color": "#b9a6ff",
+      "size": 0.035,
+      "opacity": 0.5
+    }
+  ],
+  "timeline": {
+    "duration": 8,
+    "loop": true,
+    "tracks": [
+      {"target": "title.rotation.y", "keys": [[0, -5], [4, 5], [8, -5]], "ease": "inOutSine"},
+      {"target": "glow.rotation.y", "keys": [[0, -5], [4, 5], [8, -5]], "ease": "inOutSine"},
+      {"target": "gridCross.position.z", "keys": [[0, -10], [8, -2]], "ease": "linear"}
+    ]
+  },
+  "postfx": [
+    {"type": "bloom", "strength": 0.8, "radius": 0.45, "threshold": 0.72},
+    {"type": "chromatic", "amount": 0.0012},
+    {"type": "vignette", "offset": 1, "darkness": 1.05}
+  ]
+}
