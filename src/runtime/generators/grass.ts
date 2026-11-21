@@ -9,7 +9,7 @@ import { addWind } from "./wind";
 
 export function bladeGeometry(height: number, colors: THREE.Color[]): THREE.BufferGeometry {
   // 5 vertices, 3 triangles: tapered blade with a slight bend.
-  const w = 0.05;
+  const w = 0.035;
   const pts: [number, number, number][] = [
     [-w, 0, 0],
     [w, 0, 0],
@@ -45,6 +45,13 @@ export const grass: GeneratorImpl = (raw, ctx) => {
   const geometry = bladeGeometry(height, colors);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 1, metalness: 0 });
   const wind = addWind(material, { mode: "instanced", strength: p.num("wind") * 0.6, height });
+  // Back faces keep the upward normal (three flips it for DoubleSide): blades
+  // shade like the ground from both sides.
+  const prev = material.onBeforeCompile;
+  material.onBeforeCompile = (shader, r) => {
+    prev.call(material, shader, r);
+    shader.fragmentShader = shader.fragmentShader.replace("#include <normal_fragment_begin>", "#include <normal_fragment_begin>\n#ifdef DOUBLE_SIDED\nnormal *= faceDirection;\n#endif");
+  };
   const mesh = new THREE.InstancedMesh(geometry, material, count);
   mesh.name = "grass";
   mesh.receiveShadow = true;

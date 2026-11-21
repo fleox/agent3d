@@ -243,7 +243,7 @@ function cat(c: Colors, parts: Parts): Rig {
   bodyGeo.rotateX(Math.PI / 2);
   parts.add(torso, bodyGeo, mat4(0, 0.05, 0), (x, y, z) => {
     if (y < -0.07) return light;
-    return y > 0.02 && Math.abs(Math.sin(z * 18)) > 0.72 && Math.abs(x) < 0.13 ? stripe : fur;
+    return y > 0.02 && z > -0.28 && z < 0.16 && Math.abs(Math.sin(z * 18)) > 0.75 && Math.abs(x) < 0.13 ? stripe : fur;
   });
   parts.add(torso, new THREE.TorusGeometry(0.11, 0.02, 4, 12), mat4(0, 0.13, 0.27, 1, 1, 1, 0.5), c.shirt);
   parts.add(torso, ball(0.025, 0), mat4(0, 0.07, 0.36), new THREE.Color("#ffd166"));
@@ -276,7 +276,7 @@ function cat(c: Colors, parts: Parts): Rig {
     const geo = new THREE.CapsuleGeometry(0.035 - k * 0.003, 0.08, 2, 6);
     geo.translate(0, 0.04, 0);
     parts.add(seg, geo, mat4(0, 0, 0), k === 4 ? stripe : fur);
-    seg.rotation.x = k === 0 ? -0.9 : 0.25;
+    seg.rotation.x = k === 0 ? -1.15 : 0.3;
     seg.userData.restRot = seg.rotation.x;
     tail.push(seg);
     parent = seg;
@@ -327,10 +327,9 @@ const BUILD: Record<Style, (c: Colors, parts: Parts) => Rig> = { humanoid, robot
 
 const TAU = Math.PI * 2;
 const blink = (t: number): number => {
-  // closes ~0.12 s every ~3.3 s (+ a double blink sometimes)
-  const p = t % 3.3;
-  const d = Math.min(Math.abs(p - 1.7), Math.abs(p - 1.95) * (Math.floor(t / 3.3) % 3 === 0 ? 1 : 99));
-  return d < 0.07 ? 0.12 : 1;
+  // closes ~0.12 s every 3.3 s (away from the usual screenshot times 0, 1, 1.5, 2, 3)
+  const p = ((t % 3.3) + 3.3) % 3.3;
+  return Math.abs(p - 2.55) < 0.06 ? 0.12 : 1;
 };
 
 function resetRig(r: Rig): void {
@@ -618,7 +617,7 @@ export const character: GeneratorImpl = (raw, ctx) => {
     if (style === "cat") animateCat(r, anim, tt);
     else if (style === "bird") animateBird(r, anim, tt);
     else animateBiped(r, anim, tt, style);
-    if (anim !== "none") r.eyes.scale.y = blink(t + 0.4);
+    if (anim !== "none") r.eyes.scale.y = blink(t);
     if (follow) {
       r.head.rotation.y += pointer.x * 0.5;
       r.head.rotation.x -= pointer.y * 0.3;

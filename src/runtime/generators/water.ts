@@ -19,7 +19,7 @@ export const water: GeneratorImpl = (raw, ctx) => {
   const amp = p.num("waveHeight");
   const speed = p.num("waveSpeed");
   const opacity = p.num("opacity");
-  const segs = Math.max(8, Math.min(100, Math.round(size * 2.5)));
+  const segs = Math.max(8, Math.min(90, Math.round(size * 1.4)));
   const geometry = new THREE.PlaneGeometry(size, size, segs, segs);
   geometry.rotateX(-Math.PI / 2);
 
@@ -62,8 +62,8 @@ varying float vWaveH;
 {
   vec3 fn = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
   float fres = pow(1.0 - abs(dot(fn, normalize(vViewPosition))), 2.5);
-  float crest = smoothstep(-0.2, 1.0, vWaveH);
-  diffuseColor.rgb = mix(diffuseColor.rgb, uShallow, clamp(crest * 0.75 + fres * 0.35, 0.0, 1.0));
+  float crest = smoothstep(0.15, 0.95, vWaveH);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uShallow, clamp(crest * 0.7 + fres * 0.3, 0.0, 1.0));
   diffuseColor.a = mix(diffuseColor.a, 1.0, fres * 0.5);
 }
 `,

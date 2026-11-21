@@ -30,7 +30,7 @@ export const starfield: GeneratorImpl = (raw, ctx) => {
     col.set([c.r * l, c.g * l, c.b * l], i * 3);
     // few big bright stars, many small ones
     const big = Math.pow(rng.next(), 4);
-    extra.set([0.45 + big * 2.2, rng.next() * 100], i * 2);
+    extra.set([0.55 + big * 1.8, rng.next() * 100], i * 2);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
@@ -39,7 +39,7 @@ export const starfield: GeneratorImpl = (raw, ctx) => {
   geometry.computeBoundingSphere();
 
   const material = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uSize: { value: size }, uTwinkle: { value: twinkle ? 1 : 0 }, uScale: { value: 400 } },
+    uniforms: { uTime: { value: 0 }, uSize: { value: size }, uTwinkle: { value: twinkle ? 1 : 0 }, uScale: { value: 1300 } },
     vertexShader: /* glsl */ `
 uniform float uTime;
 uniform float uSize;
@@ -65,7 +65,7 @@ void main() {
   float core = smoothstep(1.0, 0.0, r);
   float a = core * core * vAlpha;
   if (a < 0.01) discard;
-  gl_FragColor = vec4(vColor * (0.6 + core * 0.8), a);
+  gl_FragColor = vec4(vColor * (0.8 + core * 1.2), a);
   #include <colorspace_fragment>
 }`,
     vertexColors: true,

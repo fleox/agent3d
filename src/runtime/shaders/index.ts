@@ -118,14 +118,14 @@ varying vec3 vNormalV;
 varying vec3 vViewDir;
 ${PALETTE_FN}
 void main() {
-  vec2 p = (vUv - 0.5) * 6.0 * uScale;
+  vec2 p = (vUv - 0.5) * 10.0 * uScale;
   float t = uTime * uSpeed;
   float v = sin(p.x + t);
   v += sin((p.y + t) * 0.5);
   v += sin((p.x + p.y + t) * 0.5);
   vec2 c = p + 0.5 * vec2(sin(t / 5.0), cos(t / 3.0)) * 3.0;
   v += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + t);
-  vec3 col = paletteCycle(v * 0.125 + 0.5 + t * 0.03);
+  vec3 col = paletteCycle(v * 0.22 + t * 0.05);
   float rim = pow(1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir))), 3.0);
   gl_FragColor = vec4(col + rim * 0.15, 1.0);
   ${OUT}
@@ -175,7 +175,7 @@ void main() {
   vec3 q = vPos * uScale;
   vec3 w = vec3(fbm(q + vec3(0.0, 0.0, t)), fbm(q + vec3(5.2, 1.3, -t)), 0.0);
   float n = fbm(q + w * 1.5 + vec3(t * 0.3));
-  gl_FragColor = vec4(palette(n * 0.5 + 0.5), 1.0);
+  gl_FragColor = vec4(palette(smoothstep(-0.55, 0.55, n)), 1.0);
   ${OUT}
 }`,
   (p) => ({ ...colorsUniform(p.colors("colors")), uSpeed: { value: p.num("speed") }, uScale: { value: p.num("scale") } }),

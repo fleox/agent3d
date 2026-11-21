@@ -146,7 +146,7 @@ void main() {
   // Front faces: glow peaks near the planet limb and fades to 0 at the shell
   // silhouette (no hard edge); back faces: soft halo outside the limb.
   float a = gl_FrontFacing
-    ? smoothstep(0.0, 0.5, d) * pow(1.0 - d, 2.2) * 1.3
+    ? smoothstep(0.0, 0.45, d) * pow(1.0 - d, 3.2) * 1.1
     : pow(clamp(-d, 0.0, 1.0), 1.6) * 1.4;
   gl_FragColor = vec4(uColor * 1.2, a);
   #include <colorspace_fragment>

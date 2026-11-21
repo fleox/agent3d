@@ -7,13 +7,13 @@ import { generatorParams } from "./params";
 import { MeshBuilder, built, findGround, scatterPoint } from "./geom";
 import { addWind } from "./wind";
 
-const STEM_H = 0.32;
+const STEM_H = 0.22;
 
 function stemGeometry(): THREE.BufferGeometry {
   const b = new MeshBuilder();
   const green = new THREE.Color("#4c8c2b");
   const leaf = new THREE.Color("#6aab3a");
-  const w = 0.012;
+  const w = 0.008;
   // crossed quads stem
   b.quad([-w, 0, 0], [w, 0, 0], [w, STEM_H, 0], [-w, STEM_H, 0], green);
   b.quad([w, 0, 0], [-w, 0, 0], [-w, STEM_H, 0], [w, STEM_H, 0], green);

@@ -58,8 +58,8 @@ export const blob: GeneratorImpl = (raw, ctx) => {
     const tt = t * speed;
     for (let i = 0; i < pos.count; i++) {
       const x = dirs[i * 3]!, y = dirs[i * 3 + 1]!, z = dirs[i * 3 + 2]!;
-      const n1 = noise3D(x * 1.1 + seed, y * 1.1 + tt * 0.9, z * 1.1 - tt * 0.4);
-      const n2 = noise3D(x * 2.3 - tt * 0.6, y * 2.3 + seed, z * 2.3 + tt * 0.7) * 0.35;
+      const n1 = noise3D(x * 0.9 + seed, y * 0.9 + tt * 0.9, z * 0.9 - tt * 0.4);
+      const n2 = noise3D(x * 1.9 - tt * 0.6, y * 1.9 + seed, z * 1.9 + tt * 0.7) * 0.22;
       const r = radius + (n1 + n2) * amount;
       pos.setXYZ(i, x * r, y * r, z * r);
       // colour flows over the surface

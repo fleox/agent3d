@@ -12,14 +12,15 @@ type Shape = "hills" | "mountains" | "island" | "dunes" | "canyon" | "flat";
 
 export function terrainHeightFn(shape: Shape, size: number, scale: number, octaves: number, ox: number, oz: number): (x: number, z: number) => number {
   // Normalised height in ~[0, 1] for world (x, z).
-  const f = 2.2 / (size * Math.max(0.05, scale)) ;
+  const f = 1.5 / (size * Math.max(0.05, scale));
   return (x, z) => {
     const nx = x * f + ox;
     const nz = z * f + oz;
     switch (shape) {
       case "hills": {
-        const n = fbm2D(nx, nz, octaves) * 0.5 + 0.5;
-        return Math.pow(Math.max(0, n), 1.5) * 1.15;
+        const n = fbm2D(nx, nz, octaves, 2, 0.45) * 0.5 + 0.5;
+        const k = Math.max(0, (n - 0.3) / 0.6);
+        return Math.pow(k, 1.35) * 0.95 + 0.02;
       }
       case "mountains": {
         const r = ridged2D(nx * 0.8, nz * 0.8, octaves);
@@ -37,12 +38,12 @@ export function terrainHeightFn(shape: Shape, size: number, scale: number, octav
       case "dunes": {
         // Ridged, directional (wind along x), asymmetric crests.
         const w = fbm2D(nx * 0.5, nz * 0.5, 2) * 1.6;
-        const p = nx * 2.2 + nz * 0.6 + w;
+        const p = nx * 1.4 + nz * 0.4 + w;
         const s = p - Math.floor(p);
-        const crest = s < 0.7 ? s / 0.7 : 1 - (s - 0.7) / 0.3; // gentle windward, steep lee
+        const crest = s < 0.72 ? s / 0.72 : 1 - (s - 0.72) / 0.28; // gentle windward, steeper lee
         const shaped = crest * crest * (3 - 2 * crest);
         const big = fbm2D(nx * 0.35 - 5, nz * 0.35 + 9, 3) * 0.5 + 0.5;
-        return shaped * (0.35 + 0.45 * big) + fbm2D(nx * 3, nz * 3, 2) * 0.03 + 0.08;
+        return shaped * (0.3 + 0.4 * big) + fbm2D(nx * 3, nz * 3, 2) * 0.03 + 0.16;
       }
       case "canyon": {
         const n = fbm2D(nx, nz, octaves) * 0.5 + 0.5;
@@ -57,7 +58,7 @@ export function terrainHeightFn(shape: Shape, size: number, scale: number, octav
       }
       case "flat":
       default:
-        return 0.04 + fbm2D(nx * 2, nz * 2, 2) * 0.025;
+        return 0.2 + fbm2D(nx * 2, nz * 2, 2) * 0.03;
     }
   };
 }
@@ -83,25 +84,47 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
 
   // Colour by height (relative to water), slope (rock on steep faces) and a little noise.
   const water = waterLevel === null ? null : waterLevel;
+  let minY = Infinity, maxY = -Infinity;
+  for (const h of heights) {
+    if (h < minY) minY = h;
+    if (h > maxY) maxY = h;
+  }
+  const deepWater = p.color("waterColor").multiplyScalar(0.55);
   const colorAt = (x: number, y: number, z: number, slope: number, out: THREE.Color): THREE.Color => {
-    const jitterN = noise2D(x * 0.35 + 50, z * 0.35 - 20) * 0.06;
-    let t: number;
     const pal = palette.length;
-    const base = water === null ? 0 : water;
-    const span = Math.max(0.001, height - base);
-    t = (y - base) / span + jitterN;
-    // first band (sand) stays thin, just above the water
-    const sandTop = water === null ? 0.04 : 0.06;
-    let idx: number;
     if (pal <= 1) return out.copy(palette[0]!);
-    if (t < sandTop) idx = 0;
-    else idx = 1 + ((t - sandTop) / (1 - sandTop)) * (pal - 2);
-    if (shape === "dunes") idx = Math.min(pal - 1, Math.max(0, t * 0.6)); // mostly sand
+    const jitterN = noise2D(x * 0.35 + 50, z * 0.35 - 20) * 0.05;
+    if (water !== null && y < water) {
+      // under water: sand fading to deep water colour with depth
+      const d = (water - y) / Math.max(0.3, height * 0.22);
+      return out.copy(palette[0]!).lerp(deepWater, smoothstep(0, 1, d) * 0.8);
+    }
+    if (shape === "dunes") {
+      out.copy(palette[0]!).multiplyScalar(1.04 - slope * 0.35 + jitterN);
+      return out;
+    }
+    const base = water === null ? minY : water;
+    const t = (y - base) / Math.max(0.001, maxY - base, height * 0.6) + jitterN;
+    if (shape === "canyon") {
+      // stratified rock walls, sandy plateaus, green river banks
+      const rock = palette[Math.max(1, pal - 2)]!;
+      const sand = palette[0]!;
+      if (t < 0.12) return out.copy(palette[1]!).lerp(sand, smoothstep(0.02, 0.12, t));
+      if (slope > 0.35) {
+        const band = 0.5 + 0.5 * Math.sin(y * 5.5 + jitterN * 8);
+        return out.copy(rock).lerp(sand, band * 0.55).multiplyScalar(0.9 + band * 0.15);
+      }
+      return out.copy(sand).lerp(rock, 0.18 + jitterN * 2);
+    }
+    // thin beach band just above the water (absolute units, so flat maps stay green)
+    const sandH = Math.max(0.12, height * 0.035);
+    const isSand = water !== null && y - water < sandH * (1 + jitterN * 6);
+    const tt = Math.min(1, Math.max(0, t));
+    const idx = isSand ? 0 : 1 + Math.pow(tt, 1.5) * (pal - 2);
     ramp(palette, idx / (pal - 1), out);
-    // steep → rock (second to last colour), never on snow peaks band
-    const rockIdx = Math.max(0, pal - 2);
-    const steep = smoothstep(0.55, 0.9, slope);
-    if (steep > 0 && shape !== "dunes" && t < 0.92) out.lerp(palette[rockIdx]!, steep * 0.85);
+    // steep → rock (second to last colour), except on the snow band
+    const steep = smoothstep(0.5, 0.85, slope);
+    if (steep > 0 && t < 0.9) out.lerp(palette[Math.max(1, pal - 2)]!, steep * 0.8);
     return out;
   };
 
@@ -180,9 +203,9 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
 
   let waterMat: THREE.MeshStandardMaterial | null = null;
   if (water !== null && water > Math.min(...heights) - 1e-3) {
-    const wg = new THREE.PlaneGeometry(size, size, 24, 24);
+    const wg = new THREE.PlaneGeometry(size, size, 40, 40);
     wg.rotateX(-Math.PI / 2);
-    waterMat = new THREE.MeshStandardMaterial({ color: p.color("waterColor"), transparent: true, opacity: 0.82, roughness: 0.15, metalness: 0.05, flatShading: true, depthWrite: false });
+    waterMat = new THREE.MeshStandardMaterial({ color: p.color("waterColor"), transparent: true, opacity: 0.8, roughness: 0.3, metalness: 0.05, flatShading: true, depthWrite: false });
     const wm = new THREE.Mesh(wg, waterMat);
     wm.name = "terrain-water";
     wm.position.y = water;
@@ -219,7 +242,7 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
     ? (t: number) => {
         const attr = waterMesh.geometry.getAttribute("position") as THREE.BufferAttribute;
         const base = group.userData.waterBase as Float32Array;
-        const amp = Math.min(0.08, height * 0.01 + 0.02);
+        const amp = Math.min(0.05, height * 0.006 + 0.015);
         for (let k = 0; k < attr.count; k++) {
           const x = base[k * 3]!, z = base[k * 3 + 2]!;
           attr.setY(k, Math.sin(x * 0.7 + t * 1.3) * amp + Math.cos(z * 0.9 + t * 1.1) * amp * 0.7);
