@@ -3,8 +3,9 @@
 //
 // embed        <out>/agent3d-runtime/…  <name>/scene.json assets/ scripts/ poster  index.html  snippet.html
 // single-html  <name>.html — single-file runtime inline, scene inline in the
-//              <agent3d-scene> element, assets as data: URIs (`assetUrls`),
-//              scripts inline (`scriptSources`).
+//              <agent3d-scene> element, assets as data: URIs (<script data-assets>,
+//              → MountOptions.assetUrls), scripts inline (<script type="text/agent3d-script">,
+//              → MountOptions.scriptSources).
 //
 // "library:<id>" references are copied into <name>/assets/library/ and the
 // exported scene points at the copies. Exports never hotlink.
@@ -70,7 +71,7 @@ export function escapeHtml(s: string): string {
 
 // JSON safe to inline in <script type="application/json">.
 export function inlineJson(v: unknown): string {
-  return JSON.stringify(v).replace(/</g, "\\u003c").replace(/ /g, "\\u2028").replace(/ /g, "\\u2029");
+  return JSON.stringify(v).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }
 
 // JS safe to inline in <script>.
@@ -216,10 +217,13 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     for (const [p, b] of assetFiles) assetUrls[p] = dataUri(b, mimeFromPath(p));
     const scriptSources = Object.fromEntries(scriptFiles);
     const posterAttr = opts.poster ? ` poster="${dataUri(opts.poster, posterInfo(opts.poster).mime)}"` : "";
+    // Children contract of <agent3d-scene> (src/runtime/element.ts): inline scene JSON,
+    // `data-assets` path → data: URI map, `text/agent3d-script` modules by data-path.
     snippet = [
-      `<agent3d-scene aria-label="${escapeHtml(label)}"${posterAttr} style="display:block;width:100%;${sizeStyle}">`,
-      `<script type="application/json" data-agent3d="scene">${inlineJson(scene)}</script>`,
-      `<script type="application/json" data-agent3d="resources">${inlineJson({ assetUrls, scriptSources })}</script>`,
+      `<agent3d-scene aria-label="${escapeHtml(label)}"${posterAttr} style="display:block;width:100%">`,
+      `<script type="application/json">${inlineJson(scene)}</script>`,
+      ...(Object.keys(assetUrls).length ? [`<script type="application/json" data-assets>${inlineJson(assetUrls)}</script>`] : []),
+      ...Object.entries(scriptSources).map(([p, src]) => `<script type="text/agent3d-script" data-path="${escapeHtml(p)}">${inlineJs(src)}</script>`),
       `</agent3d-scene>`,
       `<script type="module">${inlineJs(runtimeJs)}</script>`,
     ].join("\n");
