@@ -66,6 +66,13 @@ describe("CLI contract", () => {
     expect(r.body.error).toMatchObject({ code: "no-project", hint: expect.stringContaining("agent3d new") });
   });
 
+  it("doctor reports its checks", async () => {
+    const r = await cli(["doctor", "--no-render"]);
+    expect(r.stdout).toHaveLength(1);
+    expect(r.body.data.checks.map((c: { id: string }) => c.id)).toEqual(["node", "browser", "runtime", "studio", "library", "templates"]);
+    for (const c of r.body.data.checks) if (!c.ok && !c.optional) expect(c.hint).toBeTruthy();
+  });
+
   it("documents the catalog", async () => {
     const sections = (await ok(["catalog"])).sections.map((s: { section: string }) => s.section);
     expect(sections).toEqual(expect.arrayContaining(["geometries", "behaviours", "generators"]));
