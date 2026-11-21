@@ -68,6 +68,9 @@ export function knownError(error: unknown): CliError | null {
     const code = e.code ?? "invalid";
     return new CliError(code, error.message, e.hint || OPS_HINTS[code] || OPS_HINTS.invalid, code === "validation" || code === "invalid" ? 2 : 1, e.details);
   }
+  if (error.name === "PathError") {
+    return new CliError("invalid-path", error.message, (error as Error & { hint?: string }).hint || 'Paths look like "camera.position", "lights[0].intensity" or "objects#logo.material.color" (`agent3d scene summary` lists the ids).', 2);
+  }
   if (error.name === "FsError") {
     const code = (error as Error & { code?: string }).code;
     if (code === "notFound") return new CliError("notFound", error.message, "Is --project pointing at an Agent3D project folder (agent3d.json + scene.json)? Create one with `agent3d new <dir>`.");

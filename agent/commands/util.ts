@@ -122,19 +122,26 @@ export function parseScalar(raw: string): unknown {
   }
 }
 
+// --set key=value (repeated) as [dotted key, parsed value] pairs.
+export function setEntries(options: Options): [string, unknown][] {
+  return multiOpt(options, "set").map((pair) => {
+    const i = pair.indexOf("=");
+    if (i <= 0) usage(`--set expects key=value, got "${pair}".`, 'e.g. --set position=[0,1,0] --set material.color="#ff3366" --set geometry.radius=0.8');
+    return [pair.slice(0, i).trim(), parseScalar(pair.slice(i + 1))];
+  });
+}
+
 // --set a.b.c=value (repeated): dotted keys build nested objects.
 export function setPairs(options: Options): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const pair of multiOpt(options, "set")) {
-    const i = pair.indexOf("=");
-    if (i <= 0) usage(`--set expects key=value, got "${pair}".`, 'e.g. --set position=[0,1,0] --set material.color="#ff3366" --set geometry.radius=0.8');
-    const keys = pair.slice(0, i).trim().split(".");
+  for (const [key, value] of setEntries(options)) {
+    const keys = key.split(".");
     let node = out;
     for (const k of keys.slice(0, -1)) {
       if (!node[k] || typeof node[k] !== "object" || Array.isArray(node[k])) node[k] = {};
       node = node[k] as Record<string, unknown>;
     }
-    node[keys.at(-1)!] = parseScalar(pair.slice(i + 1));
+    node[keys.at(-1)!] = value;
   }
   return out;
 }

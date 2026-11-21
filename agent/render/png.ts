@@ -1,6 +1,6 @@
 import { inflateSync } from "node:zlib";
 
-// Tiny PNG decoder for tests (8-bit RGB / RGBA, non-interlaced): enough to
+// Tiny PNG decoder (doctor + tests) (8-bit RGB / RGBA, non-interlaced): enough to
 // assert a render is not blank.
 
 export interface DecodedPng {

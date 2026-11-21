@@ -170,10 +170,11 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
 
     // Wait until the player is ready (or failed).
     const deadline = Date.now() + timeoutMs;
-    let state: { ready: boolean; error: string | null; webgl: boolean; issues: RuntimeIssue[] } | null = null;
+    type MountState = { ready: boolean; error: string | null; webgl: boolean; issues: RuntimeIssue[] } | null;
+    let state = null as MountState;
     for (;;) {
       state = await page
-        .evaluate<typeof state>("window.__agent3d ? { ready: window.__agent3d.ready, error: window.__agent3d.error, webgl: window.__agent3d.webgl, issues: window.__agent3d.issues } : null", 10_000)
+        .evaluate<MountState>("window.__agent3d ? { ready: window.__agent3d.ready, error: window.__agent3d.error, webgl: window.__agent3d.webgl, issues: window.__agent3d.issues } : null", 10_000)
         .catch(() => null);
       if (state?.ready || state?.error) break;
       if (Date.now() > deadline) break;
