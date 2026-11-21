@@ -1,0 +1,18 @@
+{
+  "id": "banner-wave-grid",
+  "title": "Wave grid banner",
+  "description": "Tech / data banner: a field of glowing dots rippling like a signal, reacting to the pointer, with a monospace headline and bloom.",
+  "kind": "banner",
+  "tags": [
+    "banner",
+    "tech",
+    "data",
+    "waves",
+    "grid",
+    "dots",
+    "pointer",
+    "bloom",
+    "dark"
+  ],
+  "aspect": "4:1"
+}
