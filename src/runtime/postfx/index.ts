@@ -215,6 +215,14 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
   composer.setPixelRatio(pr);
   composer.setSize(ctx.width, ctx.height);
   composer.addPass(new RenderPass(scene, camera));
+  // Degenerate normals (text bevels, extrusions) can produce NaN / Inf pixels in
+  // the HDR target; bloom would spread one into a screen-wide white flash.
+  const sanitize = new ShaderPass({
+    uniforms: { tDiffuse: { value: null } },
+    vertexShader: "varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: "uniform sampler2D tDiffuse;\nvarying vec2 vUv;\nvoid main() {\n  vec4 c = texture2D(tDiffuse, vUv);\n  bvec4 bad = bvec4(isnan(c.r) || isinf(c.r), isnan(c.g) || isinf(c.g), isnan(c.b) || isinf(c.b), isnan(c.a) || isinf(c.a));\n  c = vec4(bad.r ? 0.0 : c.r, bad.g ? 0.0 : c.g, bad.b ? 0.0 : c.b, bad.a ? 1.0 : c.a);\n  gl_FragColor = vec4(min(c.rgb, vec3(32.0)), c.a);\n}",
+  });
+  composer.addPass(sanitize);
   const handles: EffectHandle[] = [];
   // Outlines read the un-bloomed image: run them first.
   const ordered = [...defs].sort((a, b) => (a.type === "outline" ? -1 : 0) - (b.type === "outline" ? -1 : 0));
