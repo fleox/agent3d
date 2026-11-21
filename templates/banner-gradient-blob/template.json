@@ -1,0 +1,16 @@
+{
+  "id": "banner-gradient-blob",
+  "title": "Gradient blob banner",
+  "description": "Minimal 3:1 banner: an iridescent morphing blob in brand colours on the right, orbiting glass beads, and clean empty space on the left for your HTML headline.",
+  "kind": "banner",
+  "tags": [
+    "banner",
+    "blob",
+    "gradient",
+    "minimal",
+    "iridescent",
+    "headline",
+    "saas"
+  ],
+  "aspect": "3:1"
+}
