@@ -131,7 +131,7 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
         return;
       }
       const ext = asset.path.includes(".") ? asset.path.slice(asset.path.lastIndexOf(".")) : "";
-      const rel = `assets/library/${id}${ext}`;
+      const rel = `assets/library/${id.endsWith(ext) ? id : id + ext}`;
       if (!libCopies.has(id)) {
         libCopies.set(id, rel);
         pending.push(

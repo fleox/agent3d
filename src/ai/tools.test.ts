@@ -120,6 +120,7 @@ describe("AI tool catalog", () => {
     const inspect = { camera: { position: [0, 0, 12] as [number, number, number], target: [0, 0, 0] as [number, number, number] }, objects: [{ id: "title", min: [-50, 0, 0] as [number, number, number], max: [-49, 1, 1] as [number, number, number], inView: "none" as const, screenCoverage: 0 }] };
     const host: ToolHost = {
       runtimeFiles: async () => ({ "agent3d-runtime.js": enc.encode("export {}") }),
+      library: { index: { assets: [{ id: "fonts/sans-bold.typeface.json", path: "fonts/sans-bold.typeface.json", kind: "font", license: "Apache-2.0", tags: [], bytes: 100, description: "Font" }] }, read: async () => enc.encode("{}") },
       render: async () => ({ frames: [{ t: 0, path: "renders/frame-0.png" }], sheet: "renders/sheet.png", stats: { triangles: 1000, drawCalls: 300, geometries: 3, textures: 0 }, inspect, issues: [], consoleErrors: [] }),
     };
     const c = await ctx(host);

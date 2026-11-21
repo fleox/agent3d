@@ -15,7 +15,7 @@ const runtime = {
   },
 };
 const library: LibraryProvider = {
-  index: { assets: [{ id: "nature/pine-tree", path: "models/nature/pine-tree.glb", kind: "model", license: "CC-BY-4.0", author: "Someone", tags: ["tree"], bytes: 4, description: "Pine" }] },
+  index: { assets: [{ id: "fonts/sans-bold.typeface.json", path: "fonts/sans-bold.typeface.json", kind: "font" as const, license: "Apache-2.0", tags: [], bytes: 100, description: "Font" }, { id: "nature/pine-tree", path: "models/nature/pine-tree.glb", kind: "model", license: "CC-BY-4.0", author: "Someone", tags: ["tree"], bytes: 4, description: "Pine" }] },
   read: async () => new Uint8Array([1, 2, 3, 4]),
 };
 
@@ -50,6 +50,7 @@ describe("buildExport", () => {
         "index.html",
         "snippet.html",
         "spring-sale/CREDITS.txt",
+        "spring-sale/assets/library/fonts/sans-bold.typeface.json",
         "spring-sale/assets/library/nature/pine-tree.glb",
         "spring-sale/assets/models/duck.bin",
         "spring-sale/assets/models/duck.gltf",

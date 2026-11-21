@@ -48,6 +48,14 @@ export function visitAssetRefs(scene: SceneDoc, visit: Visitor): void {
       const r = visit(o.src, `${at}.src`, "svg");
       if (typeof r === "string") o.src = r;
     }
+    if (o.kind === "text") {
+      // Text fonts are library assets too (default "sans-bold"): a catalog id
+      // maps to "library:fonts/<id>.typeface.json"; a path / ref is kept as is.
+      const font = typeof o.font === "string" && o.font ? o.font : "sans-bold";
+      const ref = font.includes("/") || font.includes(":") ? font : `library:fonts/${font}.typeface.json`;
+      const r = visit(ref, `${at}.font`, "font");
+      if (typeof r === "string") o.font = r;
+    }
     if ("material" in o) material(o.material, `${at}.material`);
   });
   const audio = scene.audio;

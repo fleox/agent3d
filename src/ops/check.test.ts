@@ -111,12 +111,12 @@ describe("checkProject", () => {
     scene.objects.push({ id: "fox", kind: "model", src: "assets/models/fox.glb" }, { id: "ghost", kind: "model", src: "assets/models/ghost.glb" }, { id: "tree", kind: "model", src: "library:nature/pine-tre" });
     scene.scripts = ["scripts/evil.js", "scripts/missing.js"];
     await fs.writeText("scene.json", JSON.stringify(scene));
-    const r = await checkProject(fs, { library: { assets: [{ id: "nature/pine-tree", path: "models/nature/pine-tree.glb", kind: "model", license: "CC0-1.0", tags: [], bytes: 5000, description: "Pine" }] } });
+    const r = await checkProject(fs, { library: { assets: [{ id: "fonts/sans-bold.typeface.json", path: "fonts/sans-bold.typeface.json", kind: "font" as const, license: "Apache-2.0", tags: [], bytes: 100, description: "Font" }, { id: "nature/pine-tree", path: "models/nature/pine-tree.glb", kind: "model", license: "CC0-1.0", tags: [], bytes: 5000, description: "Pine" }] } });
     expect(r.ok).toBe(false);
     const c = codes(r.issues);
     expect(c).toEqual(expect.arrayContaining(["missing-asset", "missing-script", "forbidden-script", "unknown-library-id", "attribution", "unused-script"]));
     expect(r.issues.find((i) => i.code === "unknown-library-id")!.hint).toContain('"library:nature/pine-tree"');
-    expect(r.licences).toEqual([{ path: "assets/models/fox.glb", license: "CC-BY-4.0", author: "PixelMannen", attribution: expect.stringContaining("PixelMannen") }]);
+    expect(r.licences.filter((l) => !l.path.startsWith("library:fonts/"))).toEqual([{ path: "assets/models/fox.glb", license: "CC-BY-4.0", author: "PixelMannen", attribution: expect.stringContaining("PixelMannen") }]);
     expect(r.budget.assetsKb).toBeCloseTo(2, 0);
   });
 
