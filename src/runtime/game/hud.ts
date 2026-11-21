@@ -29,7 +29,7 @@ const CSS = (font: string, color: string, accent: string) => `
 .a3d-btn{pointer-events:auto;cursor:pointer;border:0;font:inherit;font-size:15px;font-weight:700;color:#fff;background:${accent};padding:10px 22px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .12s ease,filter .12s ease;text-shadow:none}
 .a3d-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}.a3d-btn:active{transform:translateY(1px)}
 .a3d-bar{width:160px;height:10px;border-radius:999px;background:rgba(0,0,0,.35);overflow:hidden}
-.a3d-bar>i{display:block;height:100%;width:0;background:${accent};border-radius:inherit;transition:width .12s linear}
+.a3d-bar>i{display:block;height:100%;width:0;background:${accent};border-radius:inherit}
 .a3d-toast{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);padding:8px 18px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font-weight:700;font-size:15px;transition:opacity .25s ease;text-shadow:none}
 .a3d-mute{position:absolute;right:10px;bottom:10px;pointer-events:auto;width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.4);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .a3d-mute svg{width:18px;height:18px}

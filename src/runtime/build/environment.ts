@@ -73,7 +73,7 @@ void main() {
     float cosA = dot(d, normalize(uSunDir));
     float r = uSunSize * 0.02;
     float disc = smoothstep(cos(r * 1.2), cos(r * 0.9), cosA);
-    float glow = pow(max(cosA, 0.0), 64.0) * 0.6 + pow(max(cosA, 0.0), 8.0) * 0.18;
+    float glow = pow(max(cosA, 0.0), 400.0 / max(uSunSize, 0.2)) * 0.8 + pow(max(cosA, 0.0), 24.0) * 0.12;
     col += uSunColor * (disc * 6.0 + glow);
   }
   if (uStars > 0.0 && h > -0.05) {
@@ -176,6 +176,20 @@ async function loadEquirect(url: string): Promise<THREE.Texture> {
   return tex;
 }
 
+// Ground whose edges fade out (no hard horizon line against the background).
+function fadingGroundMaterial(color: THREE.Color, roughness: number): THREE.Material {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness, metalness: 0, transparent: true });
+  mat.onBeforeCompile = (shader) => {
+    shader.vertexShader = "varying vec2 vGroundUv;\n" + shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\n\tvGroundUv = uv;");
+    shader.fragmentShader = "varying vec2 vGroundUv;\n" + shader.fragmentShader.replace(
+      "#include <alphamap_fragment>",
+      "#include <alphamap_fragment>\n\tdiffuseColor.a *= 1.0 - smoothstep(0.3, 0.5, length(vGroundUv - 0.5));",
+    );
+  };
+  mat.customProgramCacheKey = () => "agent3d-ground";
+  return mat;
+}
+
 export async function buildEnvironment(env: EnvironmentDef, scene: THREE.Scene, camera: THREE.Camera, transparent: boolean, ctx: RuntimeContext): Promise<BuiltEnvironment> {
   const objects: THREE.Object3D[] = [];
   const disposables: { dispose(): void }[] = [];
@@ -264,7 +278,7 @@ export async function buildEnvironment(env: EnvironmentDef, scene: THREE.Scene, 
     const y = num(g.y, 0);
     const mat = g.shadowOnly
       ? new THREE.ShadowMaterial({ opacity: 0.28, color: toColor(g.color ?? "#000000") })
-      : new THREE.MeshStandardMaterial({ color: toColor(g.color ?? "#d9d9d9"), roughness: num(g.roughness, 0.9), metalness: 0 });
+      : fadingGroundMaterial(toColor(g.color ?? "#d9d9d9"), num(g.roughness, 0.9));
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
     plane.rotation.x = -Math.PI / 2;
     plane.position.y = y;

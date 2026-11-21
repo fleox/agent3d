@@ -70,6 +70,8 @@ export interface Player {
   };
   // Script-visible state (games): read by tests / render.
   state(): Record<string, unknown>;
+  // Id of the top-level object under a normalised (-1..1) canvas point, or null (Studio picking).
+  pick?(x: number, y: number): string | null;
   dispose(): void;
 }
 
