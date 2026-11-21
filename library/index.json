@@ -1,0 +1,4359 @@
+{
+  "version": 1,
+  "generatedBy": "scripts/build-library.mjs",
+  "totalBytes": 11640598,
+  "assets": [
+    {
+      "id": "models/animals/fish.glb",
+      "path": "models/animals/fish.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/BarramundiFish/glTF-Binary",
+      "tags": [
+        "fish",
+        "animal",
+        "pbr",
+        "realistic"
+      ],
+      "bytes": 226996,
+      "description": "Realistic PBR barramundi fish (static), ~0.65 m long. Bounding box ≈ 0.14 × 0.29 × 0.64 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Khronos glTF-Sample-Assets",
+      "size": [
+        0.143,
+        0.288,
+        0.643
+      ],
+      "center": [
+        0.002,
+        0.143,
+        -0.004
+      ],
+      "minY": -0.001,
+      "triangles": 3864,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/animals/fox.glb",
+      "path": "models/animals/fox.glb",
+      "kind": "model",
+      "license": "CC0-1.0 AND CC-BY-4.0",
+      "author": "PixelMannen (model, CC0); tomkranis (rigging & animation, CC-BY 4.0); @AsoboStudio and @scurest (glTF conversion, CC-BY 4.0)",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Fox/glTF-Binary",
+      "tags": [
+        "fox",
+        "animal",
+        "animated",
+        "lowpoly"
+      ],
+      "bytes": 143084,
+      "description": "Low-poly fox with Survey, Walk, Run clips. Authored in centimetres: ~155 units long, scale by ~0.01 for a 1.5 m fox. Bounding box ≈ 25 × 79 × 155 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "attribution": "Fox — model by PixelMannen (CC0), rigging & animation by tomkranis (CC BY 4.0, https://sketchfab.com/tomkranis), glTF conversion by @AsoboStudio and @scurest (CC BY 4.0); from KhronosGroup/glTF-Sample-Assets",
+      "pack": "Khronos glTF-Sample-Assets",
+      "animations": [
+        "Survey",
+        "Walk",
+        "Run"
+      ],
+      "size": [
+        25.185,
+        79.029,
+        154.72
+      ],
+      "center": [
+        0,
+        39.393,
+        -10.735
+      ],
+      "minY": -0.122,
+      "triangles": 576,
+      "skinned": true,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/buildings/castle.glb",
+      "path": "models/buildings/castle.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/blue/building_castle_blue.gltf",
+      "tags": [
+        "castle",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "bytes": 322600,
+      "description": "Castle. Bounding box ≈ 2.0 × 4.0 × 2.3 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        1.975,
+        3.979,
+        2.256
+      ],
+      "center": [
+        0,
+        1.99,
+        0
+      ],
+      "minY": 0,
+      "triangles": 5659,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/buildings/house.glb",
+      "path": "models/buildings/house.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/blue/building_home_A_blue.gltf",
+      "tags": [
+        "house",
+        "home",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "bytes": 60236,
+      "description": "Small medieval house (blue roof). Bounding box ≈ 0.79 × 0.93 × 0.85 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.792,
+        0.93,
+        0.854
+      ],
+      "center": [
+        0,
+        0.465,
+        -0.042
+      ],
+      "minY": 0,
+      "triangles": 1011,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/buildings/market.glb",
+      "path": "models/buildings/market.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/green/building_market_green.gltf",
+      "tags": [
+        "market",
+        "shop",
+        "stall",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "bytes": 157056,
+      "description": "Market stall. Bounding box ≈ 1.8 × 0.98 × 1.3 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        1.799,
+        0.982,
+        1.316
+      ],
+      "center": [
+        -0.002,
+        0.485,
+        -0.057
+      ],
+      "minY": -0.006,
+      "triangles": 3125,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/buildings/tavern.glb",
+      "path": "models/buildings/tavern.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/red/building_tavern_red.gltf",
+      "tags": [
+        "tavern",
+        "inn",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "bytes": 175744,
+      "description": "Tavern. Bounding box ≈ 1.2 × 1.4 × 1.3 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        1.172,
+        1.397,
+        1.332
+      ],
+      "center": [
+        -0.009,
+        0.698,
+        -0.036
+      ],
+      "minY": 0,
+      "triangles": 2992,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/buildings/tower.glb",
+      "path": "models/buildings/tower.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/red/building_tower_A_red.gltf",
+      "tags": [
+        "tower",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "bytes": 118456,
+      "description": "Watch tower (red roof). Bounding box ≈ 0.99 × 2.2 × 1.2 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.993,
+        2.192,
+        1.153
+      ],
+      "center": [
+        0,
+        1.096,
+        0.003
+      ],
+      "minY": 0,
+      "triangles": 2138,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/buildings/windmill.glb",
+      "path": "models/buildings/windmill.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/yellow/building_windmill_yellow.gltf",
+      "tags": [
+        "windmill",
+        "farm",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "bytes": 148172,
+      "description": "Windmill. Bounding box ≈ 1.1 × 1.5 × 0.82 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        1.126,
+        1.458,
+        0.817
+      ],
+      "center": [
+        0.005,
+        0.729,
+        0.029
+      ],
+      "minY": 0,
+      "triangles": 2653,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/characters/knight.glb",
+      "path": "models/characters/knight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "tags": [
+        "knight",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "bytes": 734892,
+      "description": "Chibi knight adventurer, rigged, curated clips. Bounding box ≈ 2.7 × 2.5 × 2.6 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "animations": [
+        "1H_Melee_Attack_Chop",
+        "Block",
+        "Cheer",
+        "Death_A",
+        "Hit_A",
+        "Idle",
+        "Interact",
+        "Jump_Full_Short",
+        "PickUp",
+        "Running_A",
+        "Sit_Chair_Idle",
+        "Walking_A"
+      ],
+      "size": [
+        2.689,
+        2.467,
+        2.577
+      ],
+      "center": [
+        0.042,
+        1.233,
+        0.709
+      ],
+      "minY": 0,
+      "triangles": 6952,
+      "skinned": true,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/characters/mage.glb",
+      "path": "models/characters/mage.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "tags": [
+        "mage",
+        "wizard",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "bytes": 664748,
+      "description": "Chibi mage adventurer, rigged, curated clips. Bounding box ≈ 2.4 × 3.0 × 2.5 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "animations": [
+        "Cheer",
+        "Death_A",
+        "Hit_A",
+        "Idle",
+        "Interact",
+        "Jump_Full_Short",
+        "PickUp",
+        "Running_A",
+        "Sit_Chair_Idle",
+        "Spellcast_Shoot",
+        "Spellcasting",
+        "Walking_A"
+      ],
+      "size": [
+        2.426,
+        3.003,
+        2.545
+      ],
+      "center": [
+        0.084,
+        1.501,
+        -0.018
+      ],
+      "minY": 0,
+      "triangles": 5683,
+      "skinned": true,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/characters/mini-soldier.glb",
+      "path": "models/characters/mini-soldier.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Basic-Scene/blob/main/sample/Mini%20Arena/Models/GLB%20format/character-soldier.glb",
+      "tags": [
+        "character",
+        "soldier",
+        "mini",
+        "lowpoly"
+      ],
+      "bytes": 96764,
+      "description": "Kenney mini soldier character. Bounding box ≈ 0.78 × 0.84 × 0.52 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "pack": "Kenney Mini Arena (Starter Kit Basic Scene sample)",
+      "animations": [
+        "static",
+        "idle",
+        "walk",
+        "sprint",
+        "jump",
+        "fall",
+        "sit",
+        "die",
+        "pick-up",
+        "emote-yes",
+        "emote-no",
+        "attack-melee-right"
+      ],
+      "size": [
+        0.781,
+        0.836,
+        0.52
+      ],
+      "center": [
+        0,
+        0.418,
+        -0.072
+      ],
+      "minY": 0,
+      "triangles": 513,
+      "skinned": true,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/characters/platformer-hero.glb",
+      "path": "models/characters/platformer-hero.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/character.glb",
+      "tags": [
+        "character",
+        "hero",
+        "platformer",
+        "animated",
+        "lowpoly"
+      ],
+      "bytes": 64172,
+      "description": "Small round platformer hero (Kenney). Bounding box ≈ 1.2 × 1.1 × 0.64 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "animations": [
+        "static",
+        "idle",
+        "walk",
+        "jump"
+      ],
+      "size": [
+        1.2,
+        1.1,
+        0.635
+      ],
+      "center": [
+        0,
+        0.55,
+        -0.006
+      ],
+      "minY": 0,
+      "triangles": 550,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/characters/robot.glb",
+      "path": "models/characters/robot.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Tomás Laulhé (Quaternius), modified by Don McCurdy",
+      "source": "threejs-examples",
+      "sourceUrl": "https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive",
+      "tags": [
+        "robot",
+        "character",
+        "animated",
+        "lowpoly",
+        "mascot"
+      ],
+      "bytes": 415924,
+      "description": "Expressive cartoon robot with many clips (Idle, Walking, Running, Dance, Jump, Wave...) and face morphs. Bounding box ≈ 6.6 × 4.6 × 3.1 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "pack": "three.js examples — RobotExpressive",
+      "animations": [
+        "Dance",
+        "Death",
+        "Idle",
+        "Jump",
+        "No",
+        "Punch",
+        "Running",
+        "Sitting",
+        "Standing",
+        "ThumbsUp",
+        "Walking",
+        "WalkJump",
+        "Wave",
+        "Yes"
+      ],
+      "size": [
+        6.619,
+        4.599,
+        3.122
+      ],
+      "center": [
+        -0.003,
+        2.279,
+        -0.039
+      ],
+      "minY": -0.02,
+      "triangles": 3237,
+      "skinned": true,
+      "morphTargets": true
+    },
+    {
+      "id": "models/characters/skeleton.glb",
+      "path": "models/characters/skeleton.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0/blob/main/addons/kaykit_character_pack_skeletons/Characters/gltf/Skeleton_Minion.glb",
+      "tags": [
+        "skeleton",
+        "enemy",
+        "character",
+        "animated",
+        "halloween",
+        "chibi"
+      ],
+      "bytes": 821648,
+      "description": "Chibi skeleton minion (enemy), rigged, curated clips. Bounding box ≈ 1.9 × 2.2 × 0.91 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "pack": "KayKit Character Pack: Skeletons 1.0",
+      "animations": [
+        "1H_Melee_Attack_Chop",
+        "Cheer",
+        "Death_A",
+        "Hit_A",
+        "Idle",
+        "Interact",
+        "Jump_Full_Short",
+        "PickUp",
+        "Running_A",
+        "Sit_Chair_Idle",
+        "Spawn_Ground_Skeletons",
+        "Taunt",
+        "Walking_A",
+        "Walking_D_Skeletons"
+      ],
+      "size": [
+        1.938,
+        2.166,
+        0.912
+      ],
+      "center": [
+        0,
+        1.083,
+        -0.002
+      ],
+      "minY": 0,
+      "triangles": 5288,
+      "skinned": true,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/building-a.glb",
+      "path": "models/city/building-a.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/building_A.gltf",
+      "tags": [
+        "building",
+        "city",
+        "shop",
+        "urban",
+        "lowpoly"
+      ],
+      "bytes": 55160,
+      "description": "City building A on its pavement tile. Bounding box ≈ 2.0 × 1.6 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        2,
+        1.65,
+        2
+      ],
+      "center": [
+        0,
+        0.825,
+        0
+      ],
+      "minY": 0,
+      "triangles": 828,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/building-b.glb",
+      "path": "models/city/building-b.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/building_B.gltf",
+      "tags": [
+        "building",
+        "city",
+        "urban",
+        "lowpoly"
+      ],
+      "bytes": 71112,
+      "description": "City building B on its pavement tile. Bounding box ≈ 2.0 × 1.6 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        2,
+        1.65,
+        2
+      ],
+      "center": [
+        0,
+        0.825,
+        0
+      ],
+      "minY": 0,
+      "triangles": 1082,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/building-tall.glb",
+      "path": "models/city/building-tall.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/building_E.gltf",
+      "tags": [
+        "building",
+        "city",
+        "tower",
+        "urban",
+        "lowpoly"
+      ],
+      "bytes": 90524,
+      "description": "Taller city building on its pavement tile. Bounding box ≈ 2.0 × 2.4 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        2.007,
+        2.35,
+        2
+      ],
+      "center": [
+        0,
+        1.175,
+        0
+      ],
+      "minY": 0,
+      "triangles": 1356,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/fire-hydrant.glb",
+      "path": "models/city/fire-hydrant.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/firehydrant.gltf",
+      "tags": [
+        "hydrant",
+        "city",
+        "prop"
+      ],
+      "bytes": 13796,
+      "description": "Fire hydrant. Bounding box ≈ 0.14 × 0.23 × 0.13 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.135,
+        0.225,
+        0.131
+      ],
+      "center": [
+        0,
+        0.112,
+        0.001
+      ],
+      "minY": 0,
+      "triangles": 180,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/road-corner.glb",
+      "path": "models/city/road-corner.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_corner.gltf",
+      "tags": [
+        "road",
+        "street",
+        "corner",
+        "tile",
+        "city"
+      ],
+      "bytes": 13052,
+      "description": "Road corner tile. Bounding box ≈ 2.0 × 0.10 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        2,
+        0.1,
+        2
+      ],
+      "center": [
+        0,
+        0.05,
+        0
+      ],
+      "minY": 0,
+      "triangles": 152,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/road-crossing.glb",
+      "path": "models/city/road-crossing.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_straight_crossing.gltf",
+      "tags": [
+        "road",
+        "street",
+        "crosswalk",
+        "tile",
+        "city"
+      ],
+      "bytes": 9748,
+      "description": "Straight road with pedestrian crossing. Bounding box ≈ 2.0 × 0.10 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        2,
+        0.1,
+        2
+      ],
+      "center": [
+        0,
+        0.05,
+        0
+      ],
+      "minY": 0,
+      "triangles": 64,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/road-junction.glb",
+      "path": "models/city/road-junction.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_junction.gltf",
+      "tags": [
+        "road",
+        "street",
+        "junction",
+        "crossroads",
+        "tile",
+        "city"
+      ],
+      "bytes": 15384,
+      "description": "Four-way junction tile. Bounding box ≈ 2.0 × 0.10 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        2,
+        0.1,
+        2
+      ],
+      "center": [
+        0,
+        0.05,
+        0
+      ],
+      "minY": 0,
+      "triangles": 170,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/road-straight.glb",
+      "path": "models/city/road-straight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_straight.gltf",
+      "tags": [
+        "road",
+        "street",
+        "tile",
+        "city"
+      ],
+      "bytes": 9316,
+      "description": "Straight road tile. Bounding box ≈ 2.0 × 0.10 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        2,
+        0.1,
+        2
+      ],
+      "center": [
+        0,
+        0.05,
+        0
+      ],
+      "minY": 0,
+      "triangles": 58,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/streetlight.glb",
+      "path": "models/city/streetlight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/streetlight.gltf",
+      "tags": [
+        "streetlight",
+        "lamp",
+        "city",
+        "prop"
+      ],
+      "bytes": 12876,
+      "description": "Street light. Bounding box ≈ 0.27 × 0.96 × 0.07 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.269,
+        0.96,
+        0.069
+      ],
+      "center": [
+        -0.105,
+        0.48,
+        0
+      ],
+      "minY": 0,
+      "triangles": 176,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/suburban-house.glb",
+      "path": "models/city/suburban-house.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-City-Builder/blob/main/models/building-small-a.glb",
+      "tags": [
+        "house",
+        "suburban",
+        "building",
+        "city",
+        "lowpoly"
+      ],
+      "bytes": 37680,
+      "description": "Kenney small suburban building. Bounding box ≈ 1.0 × 0.95 × 1.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit City Builder",
+      "size": [
+        1,
+        0.95,
+        1
+      ],
+      "center": [
+        0,
+        0.475,
+        0
+      ],
+      "minY": 0,
+      "triangles": 452,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/city/traffic-light.glb",
+      "path": "models/city/traffic-light.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/trafficlight_A.gltf",
+      "tags": [
+        "trafficlight",
+        "city",
+        "prop"
+      ],
+      "bytes": 36412,
+      "description": "Traffic light. Bounding box ≈ 0.17 × 0.73 × 0.15 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.174,
+        0.729,
+        0.151
+      ],
+      "center": [
+        -0.047,
+        0.365,
+        0.035
+      ],
+      "minY": 0,
+      "triangles": 508,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/city/water-tower.glb",
+      "path": "models/city/water-tower.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/watertower.gltf",
+      "tags": [
+        "watertower",
+        "city",
+        "building"
+      ],
+      "bytes": 14000,
+      "description": "Water tower. Bounding box ≈ 0.50 × 0.67 × 0.50 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.499,
+        0.67,
+        0.499
+      ],
+      "center": [
+        0,
+        0.335,
+        0
+      ],
+      "minY": 0,
+      "triangles": 146,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/avocado.glb",
+      "path": "models/food/avocado.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Avocado/glTF-Binary",
+      "tags": [
+        "avocado",
+        "fruit",
+        "food",
+        "pbr",
+        "realistic"
+      ],
+      "bytes": 44240,
+      "description": "Realistic PBR avocado half. Tiny: ~6 cm, scale up ~20x. Bounding box ≈ 0.04 × 0.06 × 0.03 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Khronos glTF-Sample-Assets",
+      "size": [
+        0.043,
+        0.063,
+        0.028
+      ],
+      "center": [
+        0,
+        0.031,
+        0
+      ],
+      "minY": 0,
+      "triangles": 682,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/burger.glb",
+      "path": "models/food/burger.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_burger.gltf",
+      "tags": [
+        "burger",
+        "food",
+        "fastfood"
+      ],
+      "bytes": 67776,
+      "description": "Burger. Bounding box ≈ 0.95 × 0.86 × 0.95 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        0.95,
+        0.857,
+        0.95
+      ],
+      "center": [
+        0,
+        0.429,
+        0
+      ],
+      "minY": 0,
+      "triangles": 1622,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/carrot.glb",
+      "path": "models/food/carrot.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_ingredient_carrot.gltf",
+      "tags": [
+        "carrot",
+        "vegetable",
+        "food"
+      ],
+      "bytes": 15540,
+      "description": "Carrot. Bounding box ≈ 0.56 × 1.3 × 0.55 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        0.56,
+        1.27,
+        0.553
+      ],
+      "center": [
+        0,
+        0.05,
+        -0.004
+      ],
+      "minY": -0.585,
+      "triangles": 324,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/cheese.glb",
+      "path": "models/food/cheese.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_ingredient_cheese.gltf",
+      "tags": [
+        "cheese",
+        "food"
+      ],
+      "bytes": 15516,
+      "description": "Cheese wedge. Bounding box ≈ 0.98 × 0.50 × 0.72 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        0.977,
+        0.5,
+        0.722
+      ],
+      "center": [
+        0.153,
+        0.25,
+        0.002
+      ],
+      "minY": 0,
+      "triangles": 258,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/dinner-plate.glb",
+      "path": "models/food/dinner-plate.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_dinner.gltf",
+      "tags": [
+        "dinner",
+        "plate",
+        "meal",
+        "food"
+      ],
+      "bytes": 50208,
+      "description": "Plated dinner. Bounding box ≈ 1.0 × 0.91 × 0.95 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        1.037,
+        0.908,
+        0.95
+      ],
+      "center": [
+        -0.005,
+        0.454,
+        0
+      ],
+      "minY": 0,
+      "triangles": 1196,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/ketchup.glb",
+      "path": "models/food/ketchup.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/ketchup.gltf",
+      "tags": [
+        "ketchup",
+        "bottle",
+        "condiment",
+        "food"
+      ],
+      "bytes": 11884,
+      "description": "Ketchup bottle. Bounding box ≈ 0.30 × 0.78 × 0.30 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        0.3,
+        0.779,
+        0.3
+      ],
+      "center": [
+        0,
+        0.389,
+        0
+      ],
+      "minY": 0,
+      "triangles": 168,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/mug.glb",
+      "path": "models/food/mug.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Assets/gltf/mug_full.gltf",
+      "tags": [
+        "mug",
+        "drink",
+        "beer",
+        "cup"
+      ],
+      "bytes": 21392,
+      "description": "Full mug. Bounding box ≈ 0.53 × 0.55 × 0.40 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "size": [
+        0.534,
+        0.548,
+        0.396
+      ],
+      "center": [
+        0.069,
+        0.035,
+        0
+      ],
+      "minY": -0.239,
+      "triangles": 426,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/stew.glb",
+      "path": "models/food/stew.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/stew_bowl.gltf",
+      "tags": [
+        "stew",
+        "soup",
+        "bowl",
+        "food"
+      ],
+      "bytes": 20144,
+      "description": "Bowl of stew. Bounding box ≈ 0.79 × 0.25 × 0.79 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        0.785,
+        0.25,
+        0.785
+      ],
+      "center": [
+        0,
+        0.245,
+        0
+      ],
+      "minY": 0.12,
+      "triangles": 304,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/tomato.glb",
+      "path": "models/food/tomato.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_ingredient_tomato.gltf",
+      "tags": [
+        "tomato",
+        "vegetable",
+        "food"
+      ],
+      "bytes": 18780,
+      "description": "Tomato. Bounding box ≈ 0.75 × 0.70 × 0.75 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        0.75,
+        0.7,
+        0.75
+      ],
+      "center": [
+        0,
+        0.35,
+        0
+      ],
+      "minY": 0,
+      "triangles": 388,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/food/veggie-burger.glb",
+      "path": "models/food/veggie-burger.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_vegetableburger.gltf",
+      "tags": [
+        "burger",
+        "vegetarian",
+        "food"
+      ],
+      "bytes": 74864,
+      "description": "Vegetable burger. Bounding box ≈ 0.95 × 0.86 × 0.95 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "size": [
+        0.95,
+        0.857,
+        0.95
+      ],
+      "center": [
+        0,
+        0.429,
+        0
+      ],
+      "minY": 0,
+      "triangles": 1698,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/bush.glb",
+      "path": "models/nature/bush.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/bush.gltf",
+      "tags": [
+        "bush",
+        "shrub",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 8760,
+      "description": "Rounded green bush in a small planter box (city). Bounding box ≈ 0.19 × 0.38 × 0.20 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.189,
+        0.381,
+        0.199
+      ],
+      "center": [
+        0.005,
+        0.19,
+        0
+      ],
+      "minY": 0,
+      "triangles": 72,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/cactus.glb",
+      "path": "models/nature/cactus.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/cactus_medium_A.gltf",
+      "tags": [
+        "cactus",
+        "plant",
+        "desert",
+        "potted",
+        "lowpoly"
+      ],
+      "bytes": 22676,
+      "description": "Potted cactus. Bounding box ≈ 0.88 × 0.83 × 0.84 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Furniture Bits 1.0",
+      "size": [
+        0.88,
+        0.827,
+        0.837
+      ],
+      "center": [
+        0,
+        0.414,
+        0
+      ],
+      "minY": 0,
+      "triangles": 448,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/cloud.glb",
+      "path": "models/nature/cloud.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/cloud.glb",
+      "tags": [
+        "cloud",
+        "sky",
+        "lowpoly"
+      ],
+      "bytes": 26480,
+      "description": "Puffy low-poly cloud. Bounding box ≈ 1.0 × 1.0 × 1.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "center": [
+        0,
+        0.5,
+        0
+      ],
+      "minY": 0,
+      "triangles": 204,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/nature/fir-tree.glb",
+      "path": "models/nature/fir-tree.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_B.gltf",
+      "tags": [
+        "tree",
+        "pine",
+        "conifer",
+        "nature",
+        "lowpoly",
+        "forest"
+      ],
+      "bytes": 12236,
+      "description": "Stylised fir / conifer tree. Bounding box ≈ 0.69 × 1.2 × 0.72 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.685,
+        1.213,
+        0.72
+      ],
+      "center": [
+        0,
+        0.506,
+        0
+      ],
+      "minY": -0.1,
+      "triangles": 220,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/forest-patch.glb",
+      "path": "models/nature/forest-patch.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/decoration-forest.glb",
+      "tags": [
+        "forest",
+        "trees",
+        "tile",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 140912,
+      "description": "Kenney forest decoration tile (several trees). Bounding box ≈ 10 × 5.3 × 10 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit Racing",
+      "size": [
+        10,
+        5.329,
+        10
+      ],
+      "center": [
+        0,
+        2.665,
+        0
+      ],
+      "minY": 0,
+      "triangles": 2006,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/nature/grass-small.glb",
+      "path": "models/nature/grass-small.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/grass-small.glb",
+      "tags": [
+        "grass",
+        "tuft",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 16348,
+      "description": "Small grass tuft. Bounding box ≈ 0.25 × 0.26 × 0.31 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        0.248,
+        0.258,
+        0.313
+      ],
+      "center": [
+        0,
+        0.129,
+        0
+      ],
+      "minY": 0,
+      "triangles": 72,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/nature/grass.glb",
+      "path": "models/nature/grass.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/grass.glb",
+      "tags": [
+        "grass",
+        "tuft",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 16328,
+      "description": "Grass tuft (Kenney chunky low-poly blades). Bounding box ≈ 0.51 × 0.31 × 0.54 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        0.511,
+        0.309,
+        0.536
+      ],
+      "center": [
+        0,
+        0.155,
+        0
+      ],
+      "minY": 0,
+      "triangles": 72,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/nature/hex-grass.glb",
+      "path": "models/nature/hex-grass.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hex_grass.gltf",
+      "tags": [
+        "hex",
+        "tile",
+        "grass",
+        "ground",
+        "terrain",
+        "lowpoly"
+      ],
+      "bytes": 7244,
+      "description": "Hexagonal grass ground tile; origin on the top surface (the tile extends 1 unit below y=0), 2 units across flats. Bounding box ≈ 2.0 × 1.0 × 2.3 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        2,
+        1,
+        2.309
+      ],
+      "center": [
+        0,
+        -0.5,
+        0
+      ],
+      "minY": -1,
+      "triangles": 36,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/hex-water.glb",
+      "path": "models/nature/hex-water.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hex_water.gltf",
+      "tags": [
+        "hex",
+        "tile",
+        "water",
+        "terrain",
+        "lowpoly"
+      ],
+      "bytes": 6292,
+      "description": "Hexagonal water tile; origin on the top surface, 2 units across flats. Bounding box ≈ 2.0 × 0.80 × 2.3 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        2,
+        0.8,
+        2.309
+      ],
+      "center": [
+        0,
+        -0.6,
+        0
+      ],
+      "minY": -1,
+      "triangles": 24,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/hills.glb",
+      "path": "models/nature/hills.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/hills_A_trees.gltf",
+      "tags": [
+        "hills",
+        "landscape",
+        "trees",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 35892,
+      "description": "Rolling hills with trees (hex-tile scale). Bounding box ≈ 1.8 × 1.3 × 1.7 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        1.755,
+        1.332,
+        1.737
+      ],
+      "center": [
+        0.056,
+        0.666,
+        0.035
+      ],
+      "minY": 0,
+      "triangles": 518,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/mountain.glb",
+      "path": "models/nature/mountain.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/mountain_A_grass_trees.gltf",
+      "tags": [
+        "mountain",
+        "landscape",
+        "trees",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 32208,
+      "description": "Mountain with grass and trees (hex-tile scale). Bounding box ≈ 1.9 × 2.2 × 1.9 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        1.855,
+        2.176,
+        1.876
+      ],
+      "center": [
+        0.034,
+        1.088,
+        0.001
+      ],
+      "minY": 0,
+      "triangles": 468,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/pine-autumn.glb",
+      "path": "models/nature/pine-autumn.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/tree_pine_orange_large.gltf",
+      "tags": [
+        "tree",
+        "pine",
+        "autumn",
+        "orange",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 22576,
+      "description": "Autumn (orange) pine tree. Bounding box ≈ 4.8 × 7.5 × 4.2 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Halloween Bits 1.0",
+      "size": [
+        4.759,
+        7.475,
+        4.155
+      ],
+      "center": [
+        0.017,
+        3.183,
+        0.001
+      ],
+      "minY": -0.555,
+      "triangles": 318,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/pine-tree.glb",
+      "path": "models/nature/pine-tree.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_A.gltf",
+      "tags": [
+        "tree",
+        "pine",
+        "nature",
+        "lowpoly",
+        "forest"
+      ],
+      "bytes": 8204,
+      "description": "Small stylised pine tree. Bounding box ≈ 0.57 × 1.2 × 0.55 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.574,
+        1.196,
+        0.547
+      ],
+      "center": [
+        -0.001,
+        0.496,
+        -0.028
+      ],
+      "minY": -0.103,
+      "triangles": 50,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/pumpkin.glb",
+      "path": "models/nature/pumpkin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/pumpkin_orange_jackolantern.gltf",
+      "tags": [
+        "pumpkin",
+        "jackolantern",
+        "halloween",
+        "lowpoly"
+      ],
+      "bytes": 18428,
+      "description": "Carved jack-o'-lantern pumpkin. Bounding box ≈ 1.5 × 1.3 × 1.4 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Halloween Bits 1.0",
+      "size": [
+        1.5,
+        1.3,
+        1.4
+      ],
+      "center": [
+        0,
+        0.646,
+        0
+      ],
+      "minY": -0.004,
+      "triangles": 374,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/rock-flat.glb",
+      "path": "models/nature/rock-flat.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/rock_single_D.gltf",
+      "tags": [
+        "rock",
+        "stone",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 6212,
+      "description": "Flat rock. Bounding box ≈ 0.29 × 0.16 × 0.25 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.287,
+        0.163,
+        0.25
+      ],
+      "center": [
+        0.001,
+        0.081,
+        -0.005
+      ],
+      "minY": 0,
+      "triangles": 22,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/rock.glb",
+      "path": "models/nature/rock.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/rock_single_A.gltf",
+      "tags": [
+        "rock",
+        "stone",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 6072,
+      "description": "Single rock. Bounding box ≈ 0.30 × 0.07 × 0.28 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.298,
+        0.069,
+        0.284
+      ],
+      "center": [
+        0,
+        0.035,
+        -0.015
+      ],
+      "minY": 0,
+      "triangles": 18,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/tree-dead.glb",
+      "path": "models/nature/tree-dead.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/tree_dead_large.gltf",
+      "tags": [
+        "tree",
+        "dead",
+        "spooky",
+        "halloween",
+        "nature"
+      ],
+      "bytes": 12280,
+      "description": "Bare dead tree (spooky). Bounding box ≈ 2.3 × 5.1 × 1.4 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Halloween Bits 1.0",
+      "size": [
+        2.302,
+        5.066,
+        1.377
+      ],
+      "center": [
+        -0.171,
+        2.261,
+        -0.038
+      ],
+      "minY": -0.272,
+      "triangles": 256,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/tree-slim.glb",
+      "path": "models/nature/tree-slim.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Basic-Scene/blob/main/sample/Mini%20Arena/Models/GLB%20format/tree.glb",
+      "tags": [
+        "tree",
+        "nature",
+        "lowpoly",
+        "kenney"
+      ],
+      "bytes": 33904,
+      "description": "Kenney slim low-poly conifer. Bounding box ≈ 0.65 × 1.9 × 0.65 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Mini Arena (Starter Kit Basic Scene sample)",
+      "size": [
+        0.65,
+        1.917,
+        0.651
+      ],
+      "center": [
+        0,
+        0.959,
+        0
+      ],
+      "minY": 0,
+      "triangles": 330,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/nature/trees-cluster.glb",
+      "path": "models/nature/trees-cluster.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/trees_A_large.gltf",
+      "tags": [
+        "trees",
+        "forest",
+        "cluster",
+        "nature",
+        "lowpoly"
+      ],
+      "bytes": 61900,
+      "description": "Cluster of stylised trees. Bounding box ≈ 1.9 × 0.93 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        1.945,
+        0.926,
+        1.967
+      ],
+      "center": [
+        0.004,
+        0.45,
+        -0.008
+      ],
+      "minY": -0.013,
+      "triangles": 864,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/nature/waterlily.glb",
+      "path": "models/nature/waterlily.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/waterlily_A.gltf",
+      "tags": [
+        "waterlily",
+        "plant",
+        "flower",
+        "water",
+        "lowpoly"
+      ],
+      "bytes": 7460,
+      "description": "Water lily pads with flower. Bounding box ≈ 0.14 × 0.02 × 0.14 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.145,
+        0.017,
+        0.145
+      ],
+      "center": [
+        0,
+        0.009,
+        0
+      ],
+      "minY": 0,
+      "triangles": 68,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/platformer/blaster.glb",
+      "path": "models/platformer/blaster.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-FPS/blob/main/models/blaster.glb",
+      "tags": [
+        "blaster",
+        "gun",
+        "weapon",
+        "game",
+        "scifi"
+      ],
+      "bytes": 50428,
+      "description": "Toy blaster. Bounding box ≈ 0.88 × 0.90 × 1.6 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit FPS",
+      "size": [
+        0.88,
+        0.9,
+        1.6
+      ],
+      "center": [
+        0.078,
+        0.45,
+        0.1
+      ],
+      "minY": 0,
+      "triangles": 624,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/block-coin.glb",
+      "path": "models/platformer/block-coin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/block-coin.glb",
+      "tags": [
+        "block",
+        "coin",
+        "question",
+        "platformer",
+        "game"
+      ],
+      "bytes": 55916,
+      "description": "Coin block. Bounding box ≈ 1.1 × 1.0 × 1.1 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        1.083,
+        1,
+        1.083
+      ],
+      "center": [
+        0,
+        0.5,
+        0
+      ],
+      "minY": 0,
+      "triangles": 788,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/brick.glb",
+      "path": "models/platformer/brick.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/brick.glb",
+      "tags": [
+        "brick",
+        "block",
+        "platformer",
+        "game"
+      ],
+      "bytes": 25644,
+      "description": "Brick block. Bounding box ≈ 1.0 × 1.0 × 1.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "center": [
+        0,
+        0.5,
+        0
+      ],
+      "minY": 0,
+      "triangles": 188,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/coin.glb",
+      "path": "models/platformer/coin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/coin.glb",
+      "tags": [
+        "coin",
+        "collectible",
+        "platformer",
+        "game"
+      ],
+      "bytes": 25584,
+      "description": "Platformer coin. Bounding box ≈ 0.41 × 0.42 × 0.17 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        0.415,
+        0.417,
+        0.167
+      ],
+      "center": [
+        0,
+        0.208,
+        0
+      ],
+      "minY": 0,
+      "triangles": 252,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/enemy-flying.glb",
+      "path": "models/platformer/enemy-flying.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-FPS/blob/main/models/enemy-flying.glb",
+      "tags": [
+        "enemy",
+        "drone",
+        "flying",
+        "game"
+      ],
+      "bytes": 48572,
+      "description": "Flying enemy drone. Bounding box ≈ 1.2 × 0.88 × 0.76 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit FPS",
+      "size": [
+        1.2,
+        0.875,
+        0.759
+      ],
+      "center": [
+        0,
+        0.438,
+        0.056
+      ],
+      "minY": 0,
+      "triangles": 544,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/flag.glb",
+      "path": "models/platformer/flag.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/flag.glb",
+      "tags": [
+        "flag",
+        "goal",
+        "finish",
+        "platformer",
+        "game"
+      ],
+      "bytes": 19320,
+      "description": "Goal flag. Bounding box ≈ 0.20 × 1.2 × 0.69 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        0.2,
+        1.235,
+        0.685
+      ],
+      "center": [
+        0,
+        0.618,
+        0.242
+      ],
+      "minY": 0,
+      "triangles": 132,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/platform-falling.glb",
+      "path": "models/platformer/platform-falling.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-falling.glb",
+      "tags": [
+        "platform",
+        "falling",
+        "platformer",
+        "game"
+      ],
+      "bytes": 22072,
+      "description": "Falling platform. Bounding box ≈ 2.2 × 0.50 × 2.2 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        2.2,
+        0.5,
+        2.2
+      ],
+      "center": [
+        0,
+        0.25,
+        0
+      ],
+      "minY": 0,
+      "triangles": 180,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/platform-grass-round.glb",
+      "path": "models/platformer/platform-grass-round.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-grass-large-round.glb",
+      "tags": [
+        "platform",
+        "grass",
+        "island",
+        "platformer",
+        "game"
+      ],
+      "bytes": 18004,
+      "description": "Large round grassy island platform. Bounding box ≈ 5.0 × 0.50 × 5.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        5,
+        0.5,
+        5
+      ],
+      "center": [
+        0,
+        0.25,
+        0
+      ],
+      "minY": 0,
+      "triangles": 124,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/platform-large.glb",
+      "path": "models/platformer/platform-large.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-large.glb",
+      "tags": [
+        "platform",
+        "platformer",
+        "game"
+      ],
+      "bytes": 26816,
+      "description": "Large platform. Bounding box ≈ 5.0 × 0.55 × 5.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        5,
+        0.55,
+        5
+      ],
+      "center": [
+        0,
+        0.275,
+        0
+      ],
+      "minY": 0,
+      "triangles": 254,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/platform-medium.glb",
+      "path": "models/platformer/platform-medium.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-medium.glb",
+      "tags": [
+        "platform",
+        "platformer",
+        "game"
+      ],
+      "bytes": 22588,
+      "description": "Medium platform. Bounding box ≈ 3.0 × 0.55 × 3.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        3,
+        0.55,
+        3
+      ],
+      "center": [
+        0,
+        0.275,
+        0
+      ],
+      "minY": 0,
+      "triangles": 188,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/platform.glb",
+      "path": "models/platformer/platform.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform.glb",
+      "tags": [
+        "platform",
+        "platformer",
+        "game",
+        "block"
+      ],
+      "bytes": 19300,
+      "description": "Small floating platform. Bounding box ≈ 2.0 × 0.55 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "size": [
+        2,
+        0.55,
+        2
+      ],
+      "center": [
+        0,
+        0.275,
+        0
+      ],
+      "minY": 0,
+      "triangles": 144,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/target.glb",
+      "path": "models/platformer/target.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Prototype-Bits-1.0/blob/main/addons/kaykit_prototype_bits/Assets/gltf/target.gltf",
+      "tags": [
+        "target",
+        "game",
+        "prop"
+      ],
+      "bytes": 15704,
+      "description": "Shooting target. Bounding box ≈ 1.0 × 1.0 × 0.20 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Prototype Bits 1.0",
+      "size": [
+        1,
+        1,
+        0.2
+      ],
+      "center": [
+        0,
+        0,
+        0.1
+      ],
+      "minY": -0.5,
+      "triangles": 120,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/platformer/track-corner.glb",
+      "path": "models/platformer/track-corner.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/track-corner.glb",
+      "tags": [
+        "track",
+        "racing",
+        "road",
+        "corner",
+        "game"
+      ],
+      "bytes": 81676,
+      "description": "Racing track corner piece. Bounding box ≈ 10 × 4.9 × 10 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit Racing",
+      "size": [
+        10.056,
+        4.938,
+        10
+      ],
+      "center": [
+        0.028,
+        2.469,
+        0
+      ],
+      "minY": 0,
+      "triangles": 1136,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/track-straight.glb",
+      "path": "models/platformer/track-straight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/track-straight.glb",
+      "tags": [
+        "track",
+        "racing",
+        "road",
+        "game"
+      ],
+      "bytes": 17912,
+      "description": "Racing track straight piece. Bounding box ≈ 10 × 0.75 × 10 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit Racing",
+      "size": [
+        10,
+        0.75,
+        10
+      ],
+      "center": [
+        0,
+        0.375,
+        0
+      ],
+      "minY": 0,
+      "triangles": 106,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/platformer/wall-low.glb",
+      "path": "models/platformer/wall-low.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-FPS/blob/main/models/wall-low.glb",
+      "tags": [
+        "wall",
+        "obstacle",
+        "game"
+      ],
+      "bytes": 21480,
+      "description": "Low wall block. Bounding box ≈ 2.2 × 0.80 × 0.70 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit FPS",
+      "size": [
+        2.2,
+        0.8,
+        0.7
+      ],
+      "center": [
+        0,
+        0.4,
+        0
+      ],
+      "minY": 0,
+      "triangles": 178,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/products/boombox.glb",
+      "path": "models/products/boombox.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/BoomBox/glTF-Binary",
+      "tags": [
+        "boombox",
+        "radio",
+        "product",
+        "pbr",
+        "realistic"
+      ],
+      "bytes": 254500,
+      "description": "Realistic PBR boombox. Tiny: ~2 cm, scale up ~50x. Bounding box ≈ 0.02 × 0.02 × 0.02 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Khronos glTF-Sample-Assets",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "minY": -0.01,
+      "triangles": 6036,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/products/lantern.glb",
+      "path": "models/products/lantern.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "sbtron, Frank Galligan",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Lantern/glTF-Binary",
+      "tags": [
+        "lantern",
+        "product",
+        "pbr",
+        "realistic"
+      ],
+      "bytes": 313640,
+      "description": "Realistic PBR lantern (~26 units tall, scale ~0.1). Bounding box ≈ 15 × 26 × 4.6 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Khronos glTF-Sample-Assets",
+      "size": [
+        15.491,
+        25.664,
+        4.631
+      ],
+      "center": [
+        3.823,
+        13.016,
+        0
+      ],
+      "minY": 0.184,
+      "triangles": 5394,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/products/water-bottle.glb",
+      "path": "models/products/water-bottle.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/WaterBottle/glTF-Binary",
+      "tags": [
+        "bottle",
+        "product",
+        "pbr",
+        "realistic"
+      ],
+      "bytes": 171060,
+      "description": "Realistic PBR water bottle, ~26 cm. Bounding box ≈ 0.11 × 0.26 × 0.11 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Khronos glTF-Sample-Assets",
+      "size": [
+        0.109,
+        0.26,
+        0.109
+      ],
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "minY": -0.13,
+      "triangles": 4510,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/armchair.glb",
+      "path": "models/props/armchair.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/armchair.gltf",
+      "tags": [
+        "armchair",
+        "chair",
+        "furniture",
+        "interior"
+      ],
+      "bytes": 22404,
+      "description": "Armchair. Bounding box ≈ 1.8 × 1.2 × 1.6 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Furniture Bits 1.0",
+      "size": [
+        1.8,
+        1.224,
+        1.6
+      ],
+      "center": [
+        0,
+        0.612,
+        0.05
+      ],
+      "minY": 0,
+      "triangles": 528,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/barrel.glb",
+      "path": "models/props/barrel.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/barrel_large.gltf.glb",
+      "tags": [
+        "barrel",
+        "wood",
+        "prop"
+      ],
+      "bytes": 32520,
+      "description": "Wooden barrel. Bounding box ≈ 1.8 × 2.0 × 1.8 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "size": [
+        1.8,
+        2,
+        1.8
+      ],
+      "center": [
+        0,
+        1,
+        0
+      ],
+      "minY": 0,
+      "triangles": 561,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/bench.glb",
+      "path": "models/props/bench.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/bench.gltf",
+      "tags": [
+        "bench",
+        "street",
+        "furniture",
+        "prop"
+      ],
+      "bytes": 8528,
+      "description": "Park bench. Bounding box ≈ 0.40 × 0.10 × 0.15 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.4,
+        0.1,
+        0.15
+      ],
+      "center": [
+        0,
+        0.05,
+        0
+      ],
+      "minY": 0,
+      "triangles": 44,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/chest.glb",
+      "path": "models/props/chest.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/chest_gold.glb",
+      "tags": [
+        "chest",
+        "treasure",
+        "gold",
+        "prop",
+        "loot"
+      ],
+      "bytes": 90904,
+      "description": "Treasure chest filled with gold. Bounding box ≈ 1.7 × 1.3 × 1.4 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "size": [
+        1.7,
+        1.3,
+        1.446
+      ],
+      "center": [
+        0,
+        0.65,
+        0.023
+      ],
+      "minY": 0,
+      "triangles": 1568,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/coin-stack.glb",
+      "path": "models/props/coin-stack.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/coin_stack_large.gltf.glb",
+      "tags": [
+        "coins",
+        "gold",
+        "treasure",
+        "prop"
+      ],
+      "bytes": 89300,
+      "description": "Stack of gold coins. Bounding box ≈ 1.4 × 1.2 × 1.7 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "size": [
+        1.436,
+        1.157,
+        1.659
+      ],
+      "center": [
+        -0.001,
+        0.578,
+        0.014
+      ],
+      "minY": 0,
+      "triangles": 1776,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/coin.glb",
+      "path": "models/props/coin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/coin.gltf.glb",
+      "tags": [
+        "coin",
+        "gold",
+        "collectible",
+        "prop"
+      ],
+      "bytes": 10004,
+      "description": "Chunky gold coin (dungeon loot). Bounding box ≈ 0.36 × 0.13 × 0.36 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "size": [
+        0.36,
+        0.125,
+        0.36
+      ],
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "minY": -0.063,
+      "triangles": 80,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/couch.glb",
+      "path": "models/props/couch.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/couch_pillows.gltf",
+      "tags": [
+        "couch",
+        "sofa",
+        "furniture",
+        "interior"
+      ],
+      "bytes": 32728,
+      "description": "Couch with pillows. Bounding box ≈ 3.0 × 1.2 × 1.6 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Furniture Bits 1.0",
+      "size": [
+        3,
+        1.224,
+        1.6
+      ],
+      "center": [
+        0,
+        0.612,
+        0.05
+      ],
+      "minY": 0,
+      "triangles": 808,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/crate.glb",
+      "path": "models/props/crate.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/props/crate_A_big.gltf",
+      "tags": [
+        "crate",
+        "box",
+        "wood",
+        "prop"
+      ],
+      "bytes": 11872,
+      "description": "Wooden crate. Bounding box ≈ 0.21 × 0.21 × 0.21 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.21,
+        0.21,
+        0.21
+      ],
+      "center": [
+        0,
+        0.105,
+        0
+      ],
+      "minY": 0,
+      "triangles": 132,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/flag.glb",
+      "path": "models/props/flag.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/props/flag_red.gltf",
+      "tags": [
+        "flag",
+        "banner",
+        "prop"
+      ],
+      "bytes": 7304,
+      "description": "Red flag on a pole. Bounding box ≈ 0.06 × 0.28 × 0.26 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.055,
+        0.277,
+        0.264
+      ],
+      "center": [
+        0,
+        0.139,
+        -0.11
+      ],
+      "minY": 0,
+      "triangles": 48,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/gravestone.glb",
+      "path": "models/props/gravestone.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/gravestone.gltf",
+      "tags": [
+        "gravestone",
+        "grave",
+        "halloween",
+        "prop"
+      ],
+      "bytes": 17392,
+      "description": "Gravestone. Bounding box ≈ 1.4 × 1.6 × 0.40 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Halloween Bits 1.0",
+      "size": [
+        1.4,
+        1.6,
+        0.4
+      ],
+      "center": [
+        0,
+        0.8,
+        0
+      ],
+      "minY": 0,
+      "triangles": 271,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/key.glb",
+      "path": "models/props/key.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/key.gltf.glb",
+      "tags": [
+        "key",
+        "collectible",
+        "prop"
+      ],
+      "bytes": 12656,
+      "description": "Old key. Bounding box ≈ 0.90 × 0.40 × 0.14 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "size": [
+        0.896,
+        0.403,
+        0.142
+      ],
+      "center": [
+        0.253,
+        0,
+        0
+      ],
+      "minY": -0.201,
+      "triangles": 160,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/lamp.glb",
+      "path": "models/props/lamp.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/lamp_standing.gltf",
+      "tags": [
+        "lamp",
+        "light",
+        "furniture",
+        "interior"
+      ],
+      "bytes": 16748,
+      "description": "Standing floor lamp. Bounding box ≈ 1.0 × 2.5 × 1.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Furniture Bits 1.0",
+      "size": [
+        1,
+        2.52,
+        1
+      ],
+      "center": [
+        0,
+        1.26,
+        0
+      ],
+      "minY": 0,
+      "triangles": 320,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/lantern.glb",
+      "path": "models/props/lantern.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/lantern_standing.gltf",
+      "tags": [
+        "lantern",
+        "lamp",
+        "light",
+        "prop"
+      ],
+      "bytes": 17492,
+      "description": "Standing lantern. Bounding box ≈ 0.64 × 0.93 × 0.64 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Halloween Bits 1.0",
+      "size": [
+        0.64,
+        0.925,
+        0.64
+      ],
+      "center": [
+        0,
+        0.463,
+        0
+      ],
+      "minY": 0,
+      "triangles": 264,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/shield.glb",
+      "path": "models/props/shield.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Assets/gltf/shield_round_color.gltf",
+      "tags": [
+        "shield",
+        "weapon",
+        "prop"
+      ],
+      "bytes": 17324,
+      "description": "Round shield. Bounding box ≈ 0.88 × 0.88 × 0.33 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "size": [
+        0.883,
+        0.883,
+        0.332
+      ],
+      "center": [
+        0,
+        0,
+        0.021
+      ],
+      "minY": -0.441,
+      "triangles": 284,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/sword-shield.glb",
+      "path": "models/props/sword-shield.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/sword_shield_gold.gltf.glb",
+      "tags": [
+        "sword",
+        "shield",
+        "weapon",
+        "prop"
+      ],
+      "bytes": 35996,
+      "description": "Golden sword and shield. Bounding box ≈ 2.2 × 1.7 × 0.34 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "size": [
+        2.232,
+        1.667,
+        0.336
+      ],
+      "center": [
+        0,
+        0.019,
+        0.083
+      ],
+      "minY": -0.815,
+      "triangles": 542,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/sword.glb",
+      "path": "models/props/sword.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Assets/gltf/sword_1handed.gltf",
+      "tags": [
+        "sword",
+        "weapon",
+        "prop"
+      ],
+      "bytes": 18820,
+      "description": "One-handed sword. Bounding box ≈ 0.50 × 1.8 × 0.13 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "size": [
+        0.503,
+        1.775,
+        0.131
+      ],
+      "center": [
+        0,
+        0.522,
+        0
+      ],
+      "minY": -0.366,
+      "triangles": 300,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/table.glb",
+      "path": "models/props/table.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/table_medium.gltf",
+      "tags": [
+        "table",
+        "furniture",
+        "interior"
+      ],
+      "bytes": 14368,
+      "description": "Medium table. Bounding box ≈ 2.0 × 1.0 × 2.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Furniture Bits 1.0",
+      "size": [
+        2,
+        1,
+        2
+      ],
+      "center": [
+        0,
+        0.5,
+        0
+      ],
+      "minY": 0,
+      "triangles": 168,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/tent.glb",
+      "path": "models/props/tent.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/props/tent.gltf",
+      "tags": [
+        "tent",
+        "camp",
+        "prop"
+      ],
+      "bytes": 10972,
+      "description": "Camping tent. Bounding box ≈ 0.52 × 0.52 × 0.52 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "size": [
+        0.516,
+        0.516,
+        0.516
+      ],
+      "center": [
+        0,
+        0.258,
+        0
+      ],
+      "minY": 0,
+      "triangles": 86,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/torch.glb",
+      "path": "models/props/torch.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/torch_lit.gltf.glb",
+      "tags": [
+        "torch",
+        "fire",
+        "light",
+        "prop"
+      ],
+      "bytes": 19476,
+      "description": "Lit torch. Bounding box ≈ 0.55 × 1.1 × 0.55 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "size": [
+        0.55,
+        1.126,
+        0.55
+      ],
+      "center": [
+        0,
+        0.168,
+        0
+      ],
+      "minY": -0.395,
+      "triangles": 270,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/trophy.glb",
+      "path": "models/props/trophy.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Basic-Scene/blob/main/sample/Mini%20Arena/Models/GLB%20format/trophy.glb",
+      "tags": [
+        "trophy",
+        "cup",
+        "award",
+        "prize",
+        "prop"
+      ],
+      "bytes": 26872,
+      "description": "Trophy cup. Bounding box ≈ 0.57 × 0.48 × 0.45 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Mini Arena (Starter Kit Basic Scene sample)",
+      "size": [
+        0.569,
+        0.477,
+        0.452
+      ],
+      "center": [
+        0,
+        0.239,
+        0
+      ],
+      "minY": 0,
+      "triangles": 244,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/space/base-module.glb",
+      "path": "models/space/base-module.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/basemodule_A.gltf",
+      "tags": [
+        "base",
+        "module",
+        "habitat",
+        "space",
+        "lowpoly"
+      ],
+      "bytes": 43532,
+      "description": "Space base module. Bounding box ≈ 2.2 × 1.0 × 2.2 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Space Base Bits 1.0",
+      "size": [
+        2.248,
+        1,
+        2.176
+      ],
+      "center": [
+        -0.052,
+        0.5,
+        0.088
+      ],
+      "minY": 0,
+      "triangles": 586,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/space/lander.glb",
+      "path": "models/space/lander.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/lander_A.gltf",
+      "tags": [
+        "lander",
+        "rocket",
+        "spaceship",
+        "space",
+        "lowpoly"
+      ],
+      "bytes": 87748,
+      "description": "Space lander / rocket. Bounding box ≈ 1.4 × 1.2 × 1.4 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Space Base Bits 1.0",
+      "size": [
+        1.372,
+        1.192,
+        1.422
+      ],
+      "center": [
+        0.014,
+        0.596,
+        0.039
+      ],
+      "minY": 0,
+      "triangles": 1464,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/space/landing-pad.glb",
+      "path": "models/space/landing-pad.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/landingpad_small.gltf",
+      "tags": [
+        "landingpad",
+        "space",
+        "platform",
+        "lowpoly"
+      ],
+      "bytes": 32968,
+      "description": "Small landing pad. Bounding box ≈ 1.9 × 0.50 × 1.9 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Space Base Bits 1.0",
+      "size": [
+        1.9,
+        0.5,
+        1.9
+      ],
+      "center": [
+        0,
+        0.25,
+        0
+      ],
+      "minY": 0,
+      "triangles": 454,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/space/rocks.glb",
+      "path": "models/space/rocks.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/rocks_A.gltf",
+      "tags": [
+        "rocks",
+        "planet",
+        "space",
+        "alien",
+        "lowpoly"
+      ],
+      "bytes": 11664,
+      "description": "Alien planet rocks. Bounding box ≈ 1.3 × 0.35 × 1.6 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Space Base Bits 1.0",
+      "size": [
+        1.314,
+        0.354,
+        1.643
+      ],
+      "center": [
+        -0.133,
+        0.177,
+        0
+      ],
+      "minY": 0,
+      "triangles": 88,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/space/solar-panel.glb",
+      "path": "models/space/solar-panel.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/solarpanel.gltf",
+      "tags": [
+        "solarpanel",
+        "energy",
+        "space",
+        "lowpoly"
+      ],
+      "bytes": 13148,
+      "description": "Solar panel. Bounding box ≈ 0.90 × 0.37 × 0.45 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Space Base Bits 1.0",
+      "size": [
+        0.9,
+        0.371,
+        0.45
+      ],
+      "center": [
+        0,
+        0.185,
+        0
+      ],
+      "minY": 0,
+      "triangles": 118,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/space/space-truck.glb",
+      "path": "models/space/space-truck.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/spacetruck.gltf",
+      "tags": [
+        "rover",
+        "truck",
+        "vehicle",
+        "space",
+        "lowpoly"
+      ],
+      "bytes": 47404,
+      "description": "Space rover truck. Bounding box ≈ 0.49 × 0.57 × 0.89 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Space Base Bits 1.0",
+      "size": [
+        0.489,
+        0.566,
+        0.893
+      ],
+      "center": [
+        0,
+        0.205,
+        0.001
+      ],
+      "minY": -0.078,
+      "triangles": 1118,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/space/wind-turbine.glb",
+      "path": "models/space/wind-turbine.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/windturbine_tall.gltf",
+      "tags": [
+        "windturbine",
+        "energy",
+        "space",
+        "lowpoly"
+      ],
+      "bytes": 37168,
+      "description": "Tall wind turbine. Bounding box ≈ 1.7 × 3.0 × 1.0 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit Space Base Bits 1.0",
+      "size": [
+        1.665,
+        3,
+        1
+      ],
+      "center": [
+        0,
+        1.5,
+        -0.055
+      ],
+      "minY": 0,
+      "triangles": 632,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/vehicles/car.glb",
+      "path": "models/vehicles/car.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_sedan.gltf",
+      "tags": [
+        "car",
+        "sedan",
+        "vehicle",
+        "lowpoly"
+      ],
+      "bytes": 52468,
+      "description": "Sedan car. Bounding box ≈ 0.42 × 0.37 × 0.94 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.419,
+        0.369,
+        0.938
+      ],
+      "center": [
+        0,
+        0.123,
+        -0.003
+      ],
+      "minY": -0.061,
+      "triangles": 1222,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/vehicles/hatchback.glb",
+      "path": "models/vehicles/hatchback.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_hatchback.gltf",
+      "tags": [
+        "car",
+        "hatchback",
+        "vehicle",
+        "lowpoly"
+      ],
+      "bytes": 50720,
+      "description": "Hatchback car. Bounding box ≈ 0.42 × 0.37 × 0.81 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.419,
+        0.369,
+        0.806
+      ],
+      "center": [
+        0,
+        0.123,
+        0.008
+      ],
+      "minY": -0.061,
+      "triangles": 1194,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/vehicles/motorcycle.glb",
+      "path": "models/vehicles/motorcycle.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/vehicle-motorcycle.glb",
+      "tags": [
+        "motorcycle",
+        "bike",
+        "vehicle",
+        "racing",
+        "lowpoly"
+      ],
+      "bytes": 70044,
+      "description": "Kenney motorcycle. Bounding box ≈ 1.1 × 1.3 × 2.4 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit Racing",
+      "size": [
+        1.09,
+        1.266,
+        2.435
+      ],
+      "center": [
+        0,
+        0.633,
+        0.1
+      ],
+      "minY": 0,
+      "triangles": 960,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "models/vehicles/police-car.glb",
+      "path": "models/vehicles/police-car.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_police.gltf",
+      "tags": [
+        "car",
+        "police",
+        "vehicle",
+        "lowpoly"
+      ],
+      "bytes": 59316,
+      "description": "Police car. Bounding box ≈ 0.42 × 0.41 × 0.94 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.419,
+        0.413,
+        0.938
+      ],
+      "center": [
+        0,
+        0.145,
+        -0.003
+      ],
+      "minY": -0.061,
+      "triangles": 1316,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/vehicles/taxi.glb",
+      "path": "models/vehicles/taxi.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_taxi.gltf",
+      "tags": [
+        "car",
+        "taxi",
+        "vehicle",
+        "lowpoly"
+      ],
+      "bytes": 55840,
+      "description": "Taxi. Bounding box ≈ 0.42 × 0.43 × 0.94 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "KayKit City Builder Bits 1.0",
+      "size": [
+        0.419,
+        0.434,
+        0.938
+      ],
+      "center": [
+        0,
+        0.156,
+        -0.003
+      ],
+      "minY": -0.061,
+      "triangles": 1256,
+      "extensions": [
+        "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/vehicles/truck.glb",
+      "path": "models/vehicles/truck.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/vehicle-truck-red.glb",
+      "tags": [
+        "truck",
+        "vehicle",
+        "racing",
+        "lowpoly"
+      ],
+      "bytes": 73188,
+      "description": "Kenney red racing truck. Bounding box ≈ 1.5 × 1.3 × 2.8 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Kenney Starter Kit Racing",
+      "size": [
+        1.5,
+        1.3,
+        2.8
+      ],
+      "center": [
+        0,
+        0.65,
+        0
+      ],
+      "minY": 0,
+      "triangles": 946,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    {
+      "id": "textures/brick-color.jpg",
+      "path": "textures/brick-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/red_brick_03",
+      "tags": [
+        "brick",
+        "wall",
+        "red",
+        "building",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "bytes": 164934,
+      "description": "Red brick wall — base colour (sRGB), 1024x1024. Tileable PBR set \"brick\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 1024,
+      "set": "brick",
+      "map": "color"
+    },
+    {
+      "id": "textures/brick-normal.jpg",
+      "path": "textures/brick-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/red_brick_03",
+      "tags": [
+        "brick",
+        "wall",
+        "red",
+        "building",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "bytes": 44432,
+      "description": "Red brick wall — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"brick\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "brick",
+      "map": "normal"
+    },
+    {
+      "id": "textures/brick-roughness.jpg",
+      "path": "textures/brick-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/red_brick_03",
+      "tags": [
+        "brick",
+        "wall",
+        "red",
+        "building",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "bytes": 18403,
+      "description": "Red brick wall — roughness (linear, greyscale), 512x512. Tileable PBR set \"brick\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "brick",
+      "map": "roughness"
+    },
+    {
+      "id": "textures/concrete-color.jpg",
+      "path": "textures/concrete-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/concrete_floor_02",
+      "tags": [
+        "concrete",
+        "floor",
+        "ground",
+        "urban",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "bytes": 229884,
+      "description": "Worn concrete floor — base colour (sRGB), 1024x1024. Tileable PBR set \"concrete\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 1024,
+      "set": "concrete",
+      "map": "color"
+    },
+    {
+      "id": "textures/concrete-normal.jpg",
+      "path": "textures/concrete-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/concrete_floor_02",
+      "tags": [
+        "concrete",
+        "floor",
+        "ground",
+        "urban",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "bytes": 13549,
+      "description": "Worn concrete floor — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"concrete\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "concrete",
+      "map": "normal"
+    },
+    {
+      "id": "textures/concrete-roughness.jpg",
+      "path": "textures/concrete-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/concrete_floor_02",
+      "tags": [
+        "concrete",
+        "floor",
+        "ground",
+        "urban",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "bytes": 16034,
+      "description": "Worn concrete floor — roughness (linear, greyscale), 512x512. Tileable PBR set \"concrete\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "concrete",
+      "map": "roughness"
+    },
+    {
+      "id": "textures/fabric-color.jpg",
+      "path": "textures/fabric-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/denim_fabric",
+      "tags": [
+        "fabric",
+        "denim",
+        "cloth",
+        "textile",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "bytes": 235021,
+      "description": "Blue denim fabric weave — base colour (sRGB), 1024x1024. Tileable PBR set \"fabric\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 1024,
+      "set": "fabric",
+      "map": "color"
+    },
+    {
+      "id": "textures/fabric-normal.jpg",
+      "path": "textures/fabric-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/denim_fabric",
+      "tags": [
+        "fabric",
+        "denim",
+        "cloth",
+        "textile",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "bytes": 20244,
+      "description": "Blue denim fabric weave — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"fabric\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "fabric",
+      "map": "normal"
+    },
+    {
+      "id": "textures/fabric-roughness.jpg",
+      "path": "textures/fabric-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/denim_fabric",
+      "tags": [
+        "fabric",
+        "denim",
+        "cloth",
+        "textile",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "bytes": 20733,
+      "description": "Blue denim fabric weave — roughness (linear, greyscale), 512x512. Tileable PBR set \"fabric\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "fabric",
+      "map": "roughness"
+    },
+    {
+      "id": "textures/grass-ground-color.jpg",
+      "path": "textures/grass-ground-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/aerial_grass_rock",
+      "tags": [
+        "grass",
+        "ground",
+        "terrain",
+        "nature",
+        "rock",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "bytes": 139694,
+      "description": "Grass with scattered rocks, seen from above — base colour (sRGB), 1024x1024. Tileable PBR set \"grass-ground\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 1024,
+      "set": "grass-ground",
+      "map": "color"
+    },
+    {
+      "id": "textures/grass-ground-normal.jpg",
+      "path": "textures/grass-ground-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/aerial_grass_rock",
+      "tags": [
+        "grass",
+        "ground",
+        "terrain",
+        "nature",
+        "rock",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "bytes": 50372,
+      "description": "Grass with scattered rocks, seen from above — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"grass-ground\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "grass-ground",
+      "map": "normal"
+    },
+    {
+      "id": "textures/grass-ground-roughness.jpg",
+      "path": "textures/grass-ground-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/aerial_grass_rock",
+      "tags": [
+        "grass",
+        "ground",
+        "terrain",
+        "nature",
+        "rock",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "bytes": 20896,
+      "description": "Grass with scattered rocks, seen from above — roughness (linear, greyscale), 512x512. Tileable PBR set \"grass-ground\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "grass-ground",
+      "map": "roughness"
+    },
+    {
+      "id": "textures/rusty-metal-color.jpg",
+      "path": "textures/rusty-metal-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
+      "tags": [
+        "metal",
+        "rust",
+        "industrial",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "bytes": 127100,
+      "description": "Rusty painted metal — base colour (sRGB), 1024x1024. Tileable PBR set \"rusty-metal\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 1024,
+      "set": "rusty-metal",
+      "map": "color"
+    },
+    {
+      "id": "textures/rusty-metal-normal.jpg",
+      "path": "textures/rusty-metal-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
+      "tags": [
+        "metal",
+        "rust",
+        "industrial",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "bytes": 11143,
+      "description": "Rusty painted metal — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"rusty-metal\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "rusty-metal",
+      "map": "normal"
+    },
+    {
+      "id": "textures/rusty-metal-roughness.jpg",
+      "path": "textures/rusty-metal-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
+      "tags": [
+        "metal",
+        "rust",
+        "industrial",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "bytes": 15990,
+      "description": "Rusty painted metal — roughness (linear, greyscale), 512x512. Tileable PBR set \"rusty-metal\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "rusty-metal",
+      "map": "roughness"
+    },
+    {
+      "id": "textures/wood-planks-color.jpg",
+      "path": "textures/wood-planks-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Dimitrios Savva",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/wood_floor_deck",
+      "tags": [
+        "wood",
+        "planks",
+        "floor",
+        "deck",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "bytes": 135973,
+      "description": "Weathered wooden deck planks — base colour (sRGB), 1024x1024. Tileable PBR set \"wood-planks\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 1024,
+      "set": "wood-planks",
+      "map": "color"
+    },
+    {
+      "id": "textures/wood-planks-normal.jpg",
+      "path": "textures/wood-planks-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Dimitrios Savva",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/wood_floor_deck",
+      "tags": [
+        "wood",
+        "planks",
+        "floor",
+        "deck",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "bytes": 21475,
+      "description": "Weathered wooden deck planks — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"wood-planks\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "wood-planks",
+      "map": "normal"
+    },
+    {
+      "id": "textures/wood-planks-roughness.jpg",
+      "path": "textures/wood-planks-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Dimitrios Savva",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/wood_floor_deck",
+      "tags": [
+        "wood",
+        "planks",
+        "floor",
+        "deck",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "bytes": 24048,
+      "description": "Weathered wooden deck planks — roughness (linear, greyscale), 512x512. Tileable PBR set \"wood-planks\" (color + normal + roughness).",
+      "format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "set": "wood-planks",
+      "map": "roughness"
+    },
+    {
+      "id": "hdri/night.hdr",
+      "path": "hdri/night.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/moonless_golf",
+      "tags": [
+        "night",
+        "outdoor",
+        "dark",
+        "stars"
+      ],
+      "bytes": 417805,
+      "description": "Moonless night on a golf course — dark, cool ambient. Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/night.jpg as a sharper visible background.",
+      "format": "hdr",
+      "width": 512,
+      "height": 256
+    },
+    {
+      "id": "hdri/night.jpg",
+      "path": "hdri/night.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/moonless_golf",
+      "tags": [
+        "night",
+        "outdoor",
+        "dark",
+        "stars",
+        "ldr",
+        "background"
+      ],
+      "bytes": 70113,
+      "description": "Moonless night on a golf course — dark, cool ambient. Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/night.hdr for lighting.",
+      "format": "jpeg",
+      "width": 2048,
+      "height": 1024
+    },
+    {
+      "id": "hdri/sky.hdr",
+      "path": "hdri/sky.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal, Jarod Guest",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+      "tags": [
+        "sky",
+        "day",
+        "clouds",
+        "outdoor",
+        "daylight"
+      ],
+      "bytes": 375475,
+      "description": "Pure sky, partly cloudy daylight (no ground). Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/sky.jpg as a sharper visible background.",
+      "format": "hdr",
+      "width": 512,
+      "height": 256
+    },
+    {
+      "id": "hdri/sky.jpg",
+      "path": "hdri/sky.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal, Jarod Guest",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+      "tags": [
+        "sky",
+        "day",
+        "clouds",
+        "outdoor",
+        "daylight",
+        "ldr",
+        "background"
+      ],
+      "bytes": 69531,
+      "description": "Pure sky, partly cloudy daylight (no ground). Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/sky.hdr for lighting.",
+      "format": "jpeg",
+      "width": 2048,
+      "height": 1024
+    },
+    {
+      "id": "hdri/studio.hdr",
+      "path": "hdri/studio.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_09",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "neutral"
+      ],
+      "bytes": 409867,
+      "description": "Small photo studio with soft boxes — neutral product lighting. Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/studio.jpg as a sharper visible background.",
+      "format": "hdr",
+      "width": 512,
+      "height": 256
+    },
+    {
+      "id": "hdri/studio.jpg",
+      "path": "hdri/studio.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_09",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "neutral",
+        "ldr",
+        "background"
+      ],
+      "bytes": 101816,
+      "description": "Small photo studio with soft boxes — neutral product lighting. Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/studio.hdr for lighting.",
+      "format": "jpeg",
+      "width": 2048,
+      "height": 1024
+    },
+    {
+      "id": "hdri/sunset.hdr",
+      "path": "hdri/sunset.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/venice_sunset",
+      "tags": [
+        "sunset",
+        "outdoor",
+        "warm",
+        "golden-hour",
+        "city"
+      ],
+      "bytes": 365789,
+      "description": "Venice at sunset — warm golden-hour light. Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/sunset.jpg as a sharper visible background.",
+      "format": "hdr",
+      "width": 512,
+      "height": 256
+    },
+    {
+      "id": "hdri/sunset.jpg",
+      "path": "hdri/sunset.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/venice_sunset",
+      "tags": [
+        "sunset",
+        "outdoor",
+        "warm",
+        "golden-hour",
+        "city",
+        "ldr",
+        "background"
+      ],
+      "bytes": 151270,
+      "description": "Venice at sunset — warm golden-hour light. Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/sunset.hdr for lighting.",
+      "format": "jpeg",
+      "width": 2048,
+      "height": 1024
+    },
+    {
+      "id": "fonts/display.typeface.json",
+      "path": "fonts/display.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2016 The Fredoka Project Authors, design Ben Nathan",
+      "source": "Fredoka (default instance of the variable font)",
+      "sourceUrl": "google/fonts `ofl/fredoka/Fredoka[wdth,wght].ttf`, converted with `scripts/convert-font.mjs` (TTFLoader algorithm)",
+      "tags": [
+        "font",
+        "typeface",
+        "display"
+      ],
+      "bytes": 178685,
+      "description": "Fredoka (default instance of the variable font) — three.js typeface JSON (catalog font \"display\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/mono.typeface.json",
+      "path": "fonts/mono.typeface.json",
+      "kind": "font",
+      "license": "Apache-2.0",
+      "author": "© 2008 The Android Open Source Project",
+      "source": "Droid Sans Mono",
+      "sourceUrl": "three.js `examples/fonts/droid/droid_sans_mono_regular.typeface.json`",
+      "tags": [
+        "font",
+        "typeface",
+        "mono"
+      ],
+      "bytes": 65991,
+      "description": "Droid Sans Mono — three.js typeface JSON (catalog font \"mono\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/sans-bold.typeface.json",
+      "path": "fonts/sans-bold.typeface.json",
+      "kind": "font",
+      "license": "Apache-2.0",
+      "author": "© 2008 The Android Open Source Project (Ascender Corp.)",
+      "source": "Droid Sans Bold",
+      "sourceUrl": "three.js repository `examples/fonts/droid/droid_sans_bold.typeface.json`",
+      "tags": [
+        "font",
+        "typeface",
+        "sans-bold"
+      ],
+      "bytes": 117341,
+      "description": "Droid Sans Bold — three.js typeface JSON (catalog font \"sans-bold\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/sans.typeface.json",
+      "path": "fonts/sans.typeface.json",
+      "kind": "font",
+      "license": "Apache-2.0",
+      "author": "© 2008 The Android Open Source Project",
+      "source": "Droid Sans Regular",
+      "sourceUrl": "three.js `examples/fonts/droid/droid_sans_regular.typeface.json`",
+      "tags": [
+        "font",
+        "typeface",
+        "sans"
+      ],
+      "bytes": 113815,
+      "description": "Droid Sans Regular — three.js typeface JSON (catalog font \"sans\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/serif-bold.typeface.json",
+      "path": "fonts/serif-bold.typeface.json",
+      "kind": "font",
+      "license": "Apache-2.0",
+      "author": "© 2008 The Android Open Source Project",
+      "source": "Droid Serif Bold",
+      "sourceUrl": "three.js `examples/fonts/droid/droid_serif_bold.typeface.json`",
+      "tags": [
+        "font",
+        "typeface",
+        "serif-bold"
+      ],
+      "bytes": 161763,
+      "description": "Droid Serif Bold — three.js typeface JSON (catalog font \"serif-bold\"); see fonts/LICENSES.md"
+    }
+  ]
+}

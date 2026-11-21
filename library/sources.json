@@ -1,0 +1,2240 @@
+{
+  "version": 1,
+  "note": "Provenance of every built-in asset. Edit this, then run `node scripts/build-library.mjs` to regenerate index.json.",
+  "assets": [
+    {
+      "path": "models/characters/robot.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Tomás Laulhé (Quaternius), modified by Don McCurdy",
+      "source": "threejs-examples",
+      "pack": "three.js examples — RobotExpressive",
+      "sourceUrl": "https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive",
+      "tags": [
+        "robot",
+        "character",
+        "animated",
+        "lowpoly",
+        "mascot"
+      ],
+      "description": "Expressive cartoon robot with many clips (Idle, Walking, Running, Dance, Jump, Wave...) and face morphs"
+    },
+    {
+      "path": "models/characters/knight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "tags": [
+        "knight",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "description": "Chibi knight adventurer, rigged, curated clips"
+    },
+    {
+      "path": "models/characters/mage.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "tags": [
+        "mage",
+        "wizard",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "description": "Chibi mage adventurer, rigged, curated clips"
+    },
+    {
+      "path": "models/characters/skeleton.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Skeletons 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0/blob/main/addons/kaykit_character_pack_skeletons/Characters/gltf/Skeleton_Minion.glb",
+      "tags": [
+        "skeleton",
+        "enemy",
+        "character",
+        "animated",
+        "halloween",
+        "chibi"
+      ],
+      "description": "Chibi skeleton minion (enemy), rigged, curated clips"
+    },
+    {
+      "path": "models/characters/platformer-hero.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/character.glb",
+      "tags": [
+        "character",
+        "hero",
+        "platformer",
+        "animated",
+        "lowpoly"
+      ],
+      "description": "Small round platformer hero (Kenney)"
+    },
+    {
+      "path": "models/characters/mini-soldier.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Mini Arena (Starter Kit Basic Scene sample)",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Basic-Scene/blob/main/sample/Mini%20Arena/Models/GLB%20format/character-soldier.glb",
+      "tags": [
+        "character",
+        "soldier",
+        "mini",
+        "lowpoly"
+      ],
+      "description": "Kenney mini soldier character"
+    },
+    {
+      "path": "models/animals/fox.glb",
+      "kind": "model",
+      "license": "CC0-1.0 AND CC-BY-4.0",
+      "author": "PixelMannen (model, CC0); tomkranis (rigging & animation, CC-BY 4.0); @AsoboStudio and @scurest (glTF conversion, CC-BY 4.0)",
+      "source": "khronos-gltf-samples",
+      "pack": "Khronos glTF-Sample-Assets",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Fox/glTF-Binary",
+      "tags": [
+        "fox",
+        "animal",
+        "animated",
+        "lowpoly"
+      ],
+      "description": "Low-poly fox with Survey, Walk, Run clips. Authored in centimetres: ~155 units long, scale by ~0.01 for a 1.5 m fox",
+      "attribution": "Fox — model by PixelMannen (CC0), rigging & animation by tomkranis (CC BY 4.0, https://sketchfab.com/tomkranis), glTF conversion by @AsoboStudio and @scurest (CC BY 4.0); from KhronosGroup/glTF-Sample-Assets"
+    },
+    {
+      "path": "models/animals/fish.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "pack": "Khronos glTF-Sample-Assets",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/BarramundiFish/glTF-Binary",
+      "tags": [
+        "fish",
+        "animal",
+        "pbr",
+        "realistic"
+      ],
+      "description": "Realistic PBR barramundi fish (static), ~0.65 m long"
+    },
+    {
+      "path": "models/nature/pine-tree.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_A.gltf",
+      "tags": [
+        "tree",
+        "pine",
+        "nature",
+        "lowpoly",
+        "forest"
+      ],
+      "description": "Small stylised pine tree"
+    },
+    {
+      "path": "models/nature/fir-tree.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_B.gltf",
+      "tags": [
+        "tree",
+        "pine",
+        "conifer",
+        "nature",
+        "lowpoly",
+        "forest"
+      ],
+      "description": "Stylised fir / conifer tree"
+    },
+    {
+      "path": "models/nature/trees-cluster.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/trees_A_large.gltf",
+      "tags": [
+        "trees",
+        "forest",
+        "cluster",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Cluster of stylised trees"
+    },
+    {
+      "path": "models/nature/tree-slim.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Mini Arena (Starter Kit Basic Scene sample)",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Basic-Scene/blob/main/sample/Mini%20Arena/Models/GLB%20format/tree.glb",
+      "tags": [
+        "tree",
+        "nature",
+        "lowpoly",
+        "kenney"
+      ],
+      "description": "Kenney slim low-poly conifer"
+    },
+    {
+      "path": "models/nature/pine-autumn.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Halloween Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/tree_pine_orange_large.gltf",
+      "tags": [
+        "tree",
+        "pine",
+        "autumn",
+        "orange",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Autumn (orange) pine tree"
+    },
+    {
+      "path": "models/nature/tree-dead.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Halloween Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/tree_dead_large.gltf",
+      "tags": [
+        "tree",
+        "dead",
+        "spooky",
+        "halloween",
+        "nature"
+      ],
+      "description": "Bare dead tree (spooky)"
+    },
+    {
+      "path": "models/nature/forest-patch.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit Racing",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/decoration-forest.glb",
+      "tags": [
+        "forest",
+        "trees",
+        "tile",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Kenney forest decoration tile (several trees)"
+    },
+    {
+      "path": "models/nature/bush.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/bush.gltf",
+      "tags": [
+        "bush",
+        "shrub",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Rounded green bush in a small planter box (city)"
+    },
+    {
+      "path": "models/nature/grass.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/grass.glb",
+      "tags": [
+        "grass",
+        "tuft",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Grass tuft (Kenney chunky low-poly blades)"
+    },
+    {
+      "path": "models/nature/grass-small.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/grass-small.glb",
+      "tags": [
+        "grass",
+        "tuft",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Small grass tuft"
+    },
+    {
+      "path": "models/nature/rock.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/rock_single_A.gltf",
+      "tags": [
+        "rock",
+        "stone",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Single rock"
+    },
+    {
+      "path": "models/nature/rock-flat.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/rock_single_D.gltf",
+      "tags": [
+        "rock",
+        "stone",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Flat rock"
+    },
+    {
+      "path": "models/nature/mountain.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/mountain_A_grass_trees.gltf",
+      "tags": [
+        "mountain",
+        "landscape",
+        "trees",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Mountain with grass and trees (hex-tile scale)"
+    },
+    {
+      "path": "models/nature/hills.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/hills_A_trees.gltf",
+      "tags": [
+        "hills",
+        "landscape",
+        "trees",
+        "nature",
+        "lowpoly"
+      ],
+      "description": "Rolling hills with trees (hex-tile scale)"
+    },
+    {
+      "path": "models/nature/cactus.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Furniture Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/cactus_medium_A.gltf",
+      "tags": [
+        "cactus",
+        "plant",
+        "desert",
+        "potted",
+        "lowpoly"
+      ],
+      "description": "Potted cactus"
+    },
+    {
+      "path": "models/nature/waterlily.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/waterlily_A.gltf",
+      "tags": [
+        "waterlily",
+        "plant",
+        "flower",
+        "water",
+        "lowpoly"
+      ],
+      "description": "Water lily pads with flower"
+    },
+    {
+      "path": "models/nature/pumpkin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Halloween Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/pumpkin_orange_jackolantern.gltf",
+      "tags": [
+        "pumpkin",
+        "jackolantern",
+        "halloween",
+        "lowpoly"
+      ],
+      "description": "Carved jack-o'-lantern pumpkin"
+    },
+    {
+      "path": "models/nature/cloud.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/cloud.glb",
+      "tags": [
+        "cloud",
+        "sky",
+        "lowpoly"
+      ],
+      "description": "Puffy low-poly cloud"
+    },
+    {
+      "path": "models/nature/hex-grass.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hex_grass.gltf",
+      "tags": [
+        "hex",
+        "tile",
+        "grass",
+        "ground",
+        "terrain",
+        "lowpoly"
+      ],
+      "description": "Hexagonal grass ground tile; origin on the top surface (the tile extends 1 unit below y=0), 2 units across flats"
+    },
+    {
+      "path": "models/nature/hex-water.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hex_water.gltf",
+      "tags": [
+        "hex",
+        "tile",
+        "water",
+        "terrain",
+        "lowpoly"
+      ],
+      "description": "Hexagonal water tile; origin on the top surface, 2 units across flats"
+    },
+    {
+      "path": "models/props/crate.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/props/crate_A_big.gltf",
+      "tags": [
+        "crate",
+        "box",
+        "wood",
+        "prop"
+      ],
+      "description": "Wooden crate"
+    },
+    {
+      "path": "models/props/barrel.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/barrel_large.gltf.glb",
+      "tags": [
+        "barrel",
+        "wood",
+        "prop"
+      ],
+      "description": "Wooden barrel"
+    },
+    {
+      "path": "models/props/chest.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/chest_gold.glb",
+      "tags": [
+        "chest",
+        "treasure",
+        "gold",
+        "prop",
+        "loot"
+      ],
+      "description": "Treasure chest filled with gold"
+    },
+    {
+      "path": "models/props/coin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/coin.gltf.glb",
+      "tags": [
+        "coin",
+        "gold",
+        "collectible",
+        "prop"
+      ],
+      "description": "Chunky gold coin (dungeon loot)"
+    },
+    {
+      "path": "models/props/coin-stack.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/coin_stack_large.gltf.glb",
+      "tags": [
+        "coins",
+        "gold",
+        "treasure",
+        "prop"
+      ],
+      "description": "Stack of gold coins"
+    },
+    {
+      "path": "models/props/key.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/key.gltf.glb",
+      "tags": [
+        "key",
+        "collectible",
+        "prop"
+      ],
+      "description": "Old key"
+    },
+    {
+      "path": "models/props/torch.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/torch_lit.gltf.glb",
+      "tags": [
+        "torch",
+        "fire",
+        "light",
+        "prop"
+      ],
+      "description": "Lit torch"
+    },
+    {
+      "path": "models/props/sword-shield.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Dungeon Remastered 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/main/addons/kaykit_dungeon_remastered/Assets/gltf/sword_shield_gold.gltf.glb",
+      "tags": [
+        "sword",
+        "shield",
+        "weapon",
+        "prop"
+      ],
+      "description": "Golden sword and shield"
+    },
+    {
+      "path": "models/props/sword.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Assets/gltf/sword_1handed.gltf",
+      "tags": [
+        "sword",
+        "weapon",
+        "prop"
+      ],
+      "description": "One-handed sword"
+    },
+    {
+      "path": "models/props/shield.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Assets/gltf/shield_round_color.gltf",
+      "tags": [
+        "shield",
+        "weapon",
+        "prop"
+      ],
+      "description": "Round shield"
+    },
+    {
+      "path": "models/props/flag.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/props/flag_red.gltf",
+      "tags": [
+        "flag",
+        "banner",
+        "prop"
+      ],
+      "description": "Red flag on a pole"
+    },
+    {
+      "path": "models/props/tent.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/props/tent.gltf",
+      "tags": [
+        "tent",
+        "camp",
+        "prop"
+      ],
+      "description": "Camping tent"
+    },
+    {
+      "path": "models/props/lantern.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Halloween Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/lantern_standing.gltf",
+      "tags": [
+        "lantern",
+        "lamp",
+        "light",
+        "prop"
+      ],
+      "description": "Standing lantern"
+    },
+    {
+      "path": "models/props/trophy.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Mini Arena (Starter Kit Basic Scene sample)",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Basic-Scene/blob/main/sample/Mini%20Arena/Models/GLB%20format/trophy.glb",
+      "tags": [
+        "trophy",
+        "cup",
+        "award",
+        "prize",
+        "prop"
+      ],
+      "description": "Trophy cup"
+    },
+    {
+      "path": "models/props/lamp.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Furniture Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/lamp_standing.gltf",
+      "tags": [
+        "lamp",
+        "light",
+        "furniture",
+        "interior"
+      ],
+      "description": "Standing floor lamp"
+    },
+    {
+      "path": "models/props/armchair.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Furniture Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/armchair.gltf",
+      "tags": [
+        "armchair",
+        "chair",
+        "furniture",
+        "interior"
+      ],
+      "description": "Armchair"
+    },
+    {
+      "path": "models/props/couch.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Furniture Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/couch_pillows.gltf",
+      "tags": [
+        "couch",
+        "sofa",
+        "furniture",
+        "interior"
+      ],
+      "description": "Couch with pillows"
+    },
+    {
+      "path": "models/props/table.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Furniture Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/main/addons/kaykit_furniture_bits/Assets/gltf/table_medium.gltf",
+      "tags": [
+        "table",
+        "furniture",
+        "interior"
+      ],
+      "description": "Medium table"
+    },
+    {
+      "path": "models/props/bench.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/bench.gltf",
+      "tags": [
+        "bench",
+        "street",
+        "furniture",
+        "prop"
+      ],
+      "description": "Park bench"
+    },
+    {
+      "path": "models/props/gravestone.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Halloween Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0/blob/main/addons/kaykit_halloween_bits/Assets/gltf/gravestone.gltf",
+      "tags": [
+        "gravestone",
+        "grave",
+        "halloween",
+        "prop"
+      ],
+      "description": "Gravestone"
+    },
+    {
+      "path": "models/buildings/house.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/blue/building_home_A_blue.gltf",
+      "tags": [
+        "house",
+        "home",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "description": "Small medieval house (blue roof)"
+    },
+    {
+      "path": "models/buildings/castle.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/blue/building_castle_blue.gltf",
+      "tags": [
+        "castle",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "description": "Castle"
+    },
+    {
+      "path": "models/buildings/tower.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/red/building_tower_A_red.gltf",
+      "tags": [
+        "tower",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "description": "Watch tower (red roof)"
+    },
+    {
+      "path": "models/buildings/windmill.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/yellow/building_windmill_yellow.gltf",
+      "tags": [
+        "windmill",
+        "farm",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "description": "Windmill"
+    },
+    {
+      "path": "models/buildings/market.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/green/building_market_green.gltf",
+      "tags": [
+        "market",
+        "shop",
+        "stall",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "description": "Market stall"
+    },
+    {
+      "path": "models/buildings/tavern.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Medieval Hexagon Pack 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/blob/main/addons/kaykit_medieval_hexagon_pack/Assets/gltf/buildings/red/building_tavern_red.gltf",
+      "tags": [
+        "tavern",
+        "inn",
+        "building",
+        "medieval",
+        "lowpoly"
+      ],
+      "description": "Tavern"
+    },
+    {
+      "path": "models/city/building-a.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/building_A.gltf",
+      "tags": [
+        "building",
+        "city",
+        "shop",
+        "urban",
+        "lowpoly"
+      ],
+      "description": "City building A on its pavement tile"
+    },
+    {
+      "path": "models/city/building-b.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/building_B.gltf",
+      "tags": [
+        "building",
+        "city",
+        "urban",
+        "lowpoly"
+      ],
+      "description": "City building B on its pavement tile"
+    },
+    {
+      "path": "models/city/building-tall.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/building_E.gltf",
+      "tags": [
+        "building",
+        "city",
+        "tower",
+        "urban",
+        "lowpoly"
+      ],
+      "description": "Taller city building on its pavement tile"
+    },
+    {
+      "path": "models/city/suburban-house.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit City Builder",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-City-Builder/blob/main/models/building-small-a.glb",
+      "tags": [
+        "house",
+        "suburban",
+        "building",
+        "city",
+        "lowpoly"
+      ],
+      "description": "Kenney small suburban building"
+    },
+    {
+      "path": "models/city/road-straight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_straight.gltf",
+      "tags": [
+        "road",
+        "street",
+        "tile",
+        "city"
+      ],
+      "description": "Straight road tile"
+    },
+    {
+      "path": "models/city/road-corner.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_corner.gltf",
+      "tags": [
+        "road",
+        "street",
+        "corner",
+        "tile",
+        "city"
+      ],
+      "description": "Road corner tile"
+    },
+    {
+      "path": "models/city/road-junction.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_junction.gltf",
+      "tags": [
+        "road",
+        "street",
+        "junction",
+        "crossroads",
+        "tile",
+        "city"
+      ],
+      "description": "Four-way junction tile"
+    },
+    {
+      "path": "models/city/road-crossing.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/road_straight_crossing.gltf",
+      "tags": [
+        "road",
+        "street",
+        "crosswalk",
+        "tile",
+        "city"
+      ],
+      "description": "Straight road with pedestrian crossing"
+    },
+    {
+      "path": "models/city/streetlight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/streetlight.gltf",
+      "tags": [
+        "streetlight",
+        "lamp",
+        "city",
+        "prop"
+      ],
+      "description": "Street light"
+    },
+    {
+      "path": "models/city/traffic-light.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/trafficlight_A.gltf",
+      "tags": [
+        "trafficlight",
+        "city",
+        "prop"
+      ],
+      "description": "Traffic light"
+    },
+    {
+      "path": "models/city/fire-hydrant.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/firehydrant.gltf",
+      "tags": [
+        "hydrant",
+        "city",
+        "prop"
+      ],
+      "description": "Fire hydrant"
+    },
+    {
+      "path": "models/city/water-tower.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/watertower.gltf",
+      "tags": [
+        "watertower",
+        "city",
+        "building"
+      ],
+      "description": "Water tower"
+    },
+    {
+      "path": "models/vehicles/car.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_sedan.gltf",
+      "tags": [
+        "car",
+        "sedan",
+        "vehicle",
+        "lowpoly"
+      ],
+      "description": "Sedan car"
+    },
+    {
+      "path": "models/vehicles/taxi.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_taxi.gltf",
+      "tags": [
+        "car",
+        "taxi",
+        "vehicle",
+        "lowpoly"
+      ],
+      "description": "Taxi"
+    },
+    {
+      "path": "models/vehicles/police-car.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_police.gltf",
+      "tags": [
+        "car",
+        "police",
+        "vehicle",
+        "lowpoly"
+      ],
+      "description": "Police car"
+    },
+    {
+      "path": "models/vehicles/hatchback.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit City Builder Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/main/addons/kaykit_city_builder_bits/Assets/gltf/car_hatchback.gltf",
+      "tags": [
+        "car",
+        "hatchback",
+        "vehicle",
+        "lowpoly"
+      ],
+      "description": "Hatchback car"
+    },
+    {
+      "path": "models/vehicles/truck.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit Racing",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/vehicle-truck-red.glb",
+      "tags": [
+        "truck",
+        "vehicle",
+        "racing",
+        "lowpoly"
+      ],
+      "description": "Kenney red racing truck"
+    },
+    {
+      "path": "models/vehicles/motorcycle.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit Racing",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/vehicle-motorcycle.glb",
+      "tags": [
+        "motorcycle",
+        "bike",
+        "vehicle",
+        "racing",
+        "lowpoly"
+      ],
+      "description": "Kenney motorcycle"
+    },
+    {
+      "path": "models/food/burger.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_burger.gltf",
+      "tags": [
+        "burger",
+        "food",
+        "fastfood"
+      ],
+      "description": "Burger"
+    },
+    {
+      "path": "models/food/veggie-burger.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_vegetableburger.gltf",
+      "tags": [
+        "burger",
+        "vegetarian",
+        "food"
+      ],
+      "description": "Vegetable burger"
+    },
+    {
+      "path": "models/food/dinner-plate.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_dinner.gltf",
+      "tags": [
+        "dinner",
+        "plate",
+        "meal",
+        "food"
+      ],
+      "description": "Plated dinner"
+    },
+    {
+      "path": "models/food/stew.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/stew_bowl.gltf",
+      "tags": [
+        "stew",
+        "soup",
+        "bowl",
+        "food"
+      ],
+      "description": "Bowl of stew"
+    },
+    {
+      "path": "models/food/tomato.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_ingredient_tomato.gltf",
+      "tags": [
+        "tomato",
+        "vegetable",
+        "food"
+      ],
+      "description": "Tomato"
+    },
+    {
+      "path": "models/food/carrot.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_ingredient_carrot.gltf",
+      "tags": [
+        "carrot",
+        "vegetable",
+        "food"
+      ],
+      "description": "Carrot"
+    },
+    {
+      "path": "models/food/cheese.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/food_ingredient_cheese.gltf",
+      "tags": [
+        "cheese",
+        "food"
+      ],
+      "description": "Cheese wedge"
+    },
+    {
+      "path": "models/food/ketchup.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Restaurant Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0/blob/main/addons/kaykit_restaurant_bits/Assets/gltf/ketchup.gltf",
+      "tags": [
+        "ketchup",
+        "bottle",
+        "condiment",
+        "food"
+      ],
+      "description": "Ketchup bottle"
+    },
+    {
+      "path": "models/food/mug.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Assets/gltf/mug_full.gltf",
+      "tags": [
+        "mug",
+        "drink",
+        "beer",
+        "cup"
+      ],
+      "description": "Full mug"
+    },
+    {
+      "path": "models/food/avocado.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "pack": "Khronos glTF-Sample-Assets",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Avocado/glTF-Binary",
+      "tags": [
+        "avocado",
+        "fruit",
+        "food",
+        "pbr",
+        "realistic"
+      ],
+      "description": "Realistic PBR avocado half. Tiny: ~6 cm, scale up ~20x"
+    },
+    {
+      "path": "models/space/lander.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Space Base Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/lander_A.gltf",
+      "tags": [
+        "lander",
+        "rocket",
+        "spaceship",
+        "space",
+        "lowpoly"
+      ],
+      "description": "Space lander / rocket"
+    },
+    {
+      "path": "models/space/base-module.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Space Base Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/basemodule_A.gltf",
+      "tags": [
+        "base",
+        "module",
+        "habitat",
+        "space",
+        "lowpoly"
+      ],
+      "description": "Space base module"
+    },
+    {
+      "path": "models/space/solar-panel.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Space Base Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/solarpanel.gltf",
+      "tags": [
+        "solarpanel",
+        "energy",
+        "space",
+        "lowpoly"
+      ],
+      "description": "Solar panel"
+    },
+    {
+      "path": "models/space/space-truck.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Space Base Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/spacetruck.gltf",
+      "tags": [
+        "rover",
+        "truck",
+        "vehicle",
+        "space",
+        "lowpoly"
+      ],
+      "description": "Space rover truck"
+    },
+    {
+      "path": "models/space/rocks.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Space Base Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/rocks_A.gltf",
+      "tags": [
+        "rocks",
+        "planet",
+        "space",
+        "alien",
+        "lowpoly"
+      ],
+      "description": "Alien planet rocks"
+    },
+    {
+      "path": "models/space/landing-pad.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Space Base Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/landingpad_small.gltf",
+      "tags": [
+        "landingpad",
+        "space",
+        "platform",
+        "lowpoly"
+      ],
+      "description": "Small landing pad"
+    },
+    {
+      "path": "models/space/wind-turbine.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Space Base Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/blob/main/addons/kaykit_space_base_bits/Assets/gltf/windturbine_tall.gltf",
+      "tags": [
+        "windturbine",
+        "energy",
+        "space",
+        "lowpoly"
+      ],
+      "description": "Tall wind turbine"
+    },
+    {
+      "path": "models/platformer/platform.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform.glb",
+      "tags": [
+        "platform",
+        "platformer",
+        "game",
+        "block"
+      ],
+      "description": "Small floating platform"
+    },
+    {
+      "path": "models/platformer/platform-medium.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-medium.glb",
+      "tags": [
+        "platform",
+        "platformer",
+        "game"
+      ],
+      "description": "Medium platform"
+    },
+    {
+      "path": "models/platformer/platform-large.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-large.glb",
+      "tags": [
+        "platform",
+        "platformer",
+        "game"
+      ],
+      "description": "Large platform"
+    },
+    {
+      "path": "models/platformer/platform-grass-round.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-grass-large-round.glb",
+      "tags": [
+        "platform",
+        "grass",
+        "island",
+        "platformer",
+        "game"
+      ],
+      "description": "Large round grassy island platform"
+    },
+    {
+      "path": "models/platformer/platform-falling.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/platform-falling.glb",
+      "tags": [
+        "platform",
+        "falling",
+        "platformer",
+        "game"
+      ],
+      "description": "Falling platform"
+    },
+    {
+      "path": "models/platformer/brick.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/brick.glb",
+      "tags": [
+        "brick",
+        "block",
+        "platformer",
+        "game"
+      ],
+      "description": "Brick block"
+    },
+    {
+      "path": "models/platformer/block-coin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/block-coin.glb",
+      "tags": [
+        "block",
+        "coin",
+        "question",
+        "platformer",
+        "game"
+      ],
+      "description": "Coin block"
+    },
+    {
+      "path": "models/platformer/coin.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/coin.glb",
+      "tags": [
+        "coin",
+        "collectible",
+        "platformer",
+        "game"
+      ],
+      "description": "Platformer coin"
+    },
+    {
+      "path": "models/platformer/flag.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit 3D Platformer",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-3D-Platformer/blob/main/models/flag.glb",
+      "tags": [
+        "flag",
+        "goal",
+        "finish",
+        "platformer",
+        "game"
+      ],
+      "description": "Goal flag"
+    },
+    {
+      "path": "models/platformer/wall-low.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit FPS",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-FPS/blob/main/models/wall-low.glb",
+      "tags": [
+        "wall",
+        "obstacle",
+        "game"
+      ],
+      "description": "Low wall block"
+    },
+    {
+      "path": "models/platformer/enemy-flying.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit FPS",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-FPS/blob/main/models/enemy-flying.glb",
+      "tags": [
+        "enemy",
+        "drone",
+        "flying",
+        "game"
+      ],
+      "description": "Flying enemy drone"
+    },
+    {
+      "path": "models/platformer/blaster.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit FPS",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-FPS/blob/main/models/blaster.glb",
+      "tags": [
+        "blaster",
+        "gun",
+        "weapon",
+        "game",
+        "scifi"
+      ],
+      "description": "Toy blaster"
+    },
+    {
+      "path": "models/platformer/target.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Prototype Bits 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Prototype-Bits-1.0/blob/main/addons/kaykit_prototype_bits/Assets/gltf/target.gltf",
+      "tags": [
+        "target",
+        "game",
+        "prop"
+      ],
+      "description": "Shooting target"
+    },
+    {
+      "path": "models/platformer/track-straight.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit Racing",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/track-straight.glb",
+      "tags": [
+        "track",
+        "racing",
+        "road",
+        "game"
+      ],
+      "description": "Racing track straight piece"
+    },
+    {
+      "path": "models/platformer/track-corner.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "source": "kenney",
+      "pack": "Kenney Starter Kit Racing",
+      "sourceUrl": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/main/models/track-corner.glb",
+      "tags": [
+        "track",
+        "racing",
+        "road",
+        "corner",
+        "game"
+      ],
+      "description": "Racing track corner piece"
+    },
+    {
+      "path": "models/products/boombox.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "pack": "Khronos glTF-Sample-Assets",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/BoomBox/glTF-Binary",
+      "tags": [
+        "boombox",
+        "radio",
+        "product",
+        "pbr",
+        "realistic"
+      ],
+      "description": "Realistic PBR boombox. Tiny: ~2 cm, scale up ~50x"
+    },
+    {
+      "path": "models/products/water-bottle.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Microsoft",
+      "source": "khronos-gltf-samples",
+      "pack": "Khronos glTF-Sample-Assets",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/WaterBottle/glTF-Binary",
+      "tags": [
+        "bottle",
+        "product",
+        "pbr",
+        "realistic"
+      ],
+      "description": "Realistic PBR water bottle, ~26 cm"
+    },
+    {
+      "path": "models/products/lantern.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "sbtron, Frank Galligan",
+      "source": "khronos-gltf-samples",
+      "pack": "Khronos glTF-Sample-Assets",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Lantern/glTF-Binary",
+      "tags": [
+        "lantern",
+        "product",
+        "pbr",
+        "realistic"
+      ],
+      "description": "Realistic PBR lantern (~26 units tall, scale ~0.1)"
+    },
+    {
+      "path": "textures/wood-planks-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Dimitrios Savva",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/wood_floor_deck",
+      "set": "wood-planks",
+      "map": "color",
+      "tags": [
+        "wood",
+        "planks",
+        "floor",
+        "deck",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "description": "Weathered wooden deck planks — base colour (sRGB), 1024x1024. Tileable PBR set \"wood-planks\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/wood-planks-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Dimitrios Savva",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/wood_floor_deck",
+      "set": "wood-planks",
+      "map": "normal",
+      "tags": [
+        "wood",
+        "planks",
+        "floor",
+        "deck",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "description": "Weathered wooden deck planks — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"wood-planks\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/wood-planks-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Dimitrios Savva",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/wood_floor_deck",
+      "set": "wood-planks",
+      "map": "roughness",
+      "tags": [
+        "wood",
+        "planks",
+        "floor",
+        "deck",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "description": "Weathered wooden deck planks — roughness (linear, greyscale), 512x512. Tileable PBR set \"wood-planks\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/concrete-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/concrete_floor_02",
+      "set": "concrete",
+      "map": "color",
+      "tags": [
+        "concrete",
+        "floor",
+        "ground",
+        "urban",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "description": "Worn concrete floor — base colour (sRGB), 1024x1024. Tileable PBR set \"concrete\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/concrete-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/concrete_floor_02",
+      "set": "concrete",
+      "map": "normal",
+      "tags": [
+        "concrete",
+        "floor",
+        "ground",
+        "urban",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "description": "Worn concrete floor — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"concrete\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/concrete-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/concrete_floor_02",
+      "set": "concrete",
+      "map": "roughness",
+      "tags": [
+        "concrete",
+        "floor",
+        "ground",
+        "urban",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "description": "Worn concrete floor — roughness (linear, greyscale), 512x512. Tileable PBR set \"concrete\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/fabric-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/denim_fabric",
+      "set": "fabric",
+      "map": "color",
+      "tags": [
+        "fabric",
+        "denim",
+        "cloth",
+        "textile",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "description": "Blue denim fabric weave — base colour (sRGB), 1024x1024. Tileable PBR set \"fabric\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/fabric-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/denim_fabric",
+      "set": "fabric",
+      "map": "normal",
+      "tags": [
+        "fabric",
+        "denim",
+        "cloth",
+        "textile",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "description": "Blue denim fabric weave — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"fabric\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/fabric-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/denim_fabric",
+      "set": "fabric",
+      "map": "roughness",
+      "tags": [
+        "fabric",
+        "denim",
+        "cloth",
+        "textile",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "description": "Blue denim fabric weave — roughness (linear, greyscale), 512x512. Tileable PBR set \"fabric\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/grass-ground-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/aerial_grass_rock",
+      "set": "grass-ground",
+      "map": "color",
+      "tags": [
+        "grass",
+        "ground",
+        "terrain",
+        "nature",
+        "rock",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "description": "Grass with scattered rocks, seen from above — base colour (sRGB), 1024x1024. Tileable PBR set \"grass-ground\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/grass-ground-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/aerial_grass_rock",
+      "set": "grass-ground",
+      "map": "normal",
+      "tags": [
+        "grass",
+        "ground",
+        "terrain",
+        "nature",
+        "rock",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "description": "Grass with scattered rocks, seen from above — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"grass-ground\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/grass-ground-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/aerial_grass_rock",
+      "set": "grass-ground",
+      "map": "roughness",
+      "tags": [
+        "grass",
+        "ground",
+        "terrain",
+        "nature",
+        "rock",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "description": "Grass with scattered rocks, seen from above — roughness (linear, greyscale), 512x512. Tileable PBR set \"grass-ground\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/rusty-metal-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
+      "set": "rusty-metal",
+      "map": "color",
+      "tags": [
+        "metal",
+        "rust",
+        "industrial",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "description": "Rusty painted metal — base colour (sRGB), 1024x1024. Tileable PBR set \"rusty-metal\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/rusty-metal-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
+      "set": "rusty-metal",
+      "map": "normal",
+      "tags": [
+        "metal",
+        "rust",
+        "industrial",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "description": "Rusty painted metal — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"rusty-metal\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/rusty-metal-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
+      "set": "rusty-metal",
+      "map": "roughness",
+      "tags": [
+        "metal",
+        "rust",
+        "industrial",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "description": "Rusty painted metal — roughness (linear, greyscale), 512x512. Tileable PBR set \"rusty-metal\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/brick-color.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/red_brick_03",
+      "set": "brick",
+      "map": "color",
+      "tags": [
+        "brick",
+        "wall",
+        "red",
+        "building",
+        "pbr",
+        "tileable",
+        "color"
+      ],
+      "description": "Red brick wall — base colour (sRGB), 1024x1024. Tileable PBR set \"brick\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/brick-normal.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/red_brick_03",
+      "set": "brick",
+      "map": "normal",
+      "tags": [
+        "brick",
+        "wall",
+        "red",
+        "building",
+        "pbr",
+        "tileable",
+        "normal"
+      ],
+      "description": "Red brick wall — normal map (OpenGL convention, +Y), 512x512. Tileable PBR set \"brick\" (color + normal + roughness)."
+    },
+    {
+      "path": "textures/brick-roughness.jpg",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "Rob Tuytel",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/red_brick_03",
+      "set": "brick",
+      "map": "roughness",
+      "tags": [
+        "brick",
+        "wall",
+        "red",
+        "building",
+        "pbr",
+        "tileable",
+        "roughness"
+      ],
+      "description": "Red brick wall — roughness (linear, greyscale), 512x512. Tileable PBR set \"brick\" (color + normal + roughness)."
+    },
+    {
+      "path": "hdri/studio.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_09",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "neutral"
+      ],
+      "description": "Small photo studio with soft boxes — neutral product lighting. Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/studio.jpg as a sharper visible background."
+    },
+    {
+      "path": "hdri/studio.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_09",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "neutral",
+        "ldr",
+        "background"
+      ],
+      "description": "Small photo studio with soft boxes — neutral product lighting. Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/studio.hdr for lighting."
+    },
+    {
+      "path": "hdri/sunset.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/venice_sunset",
+      "tags": [
+        "sunset",
+        "outdoor",
+        "warm",
+        "golden-hour",
+        "city"
+      ],
+      "description": "Venice at sunset — warm golden-hour light. Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/sunset.jpg as a sharper visible background."
+    },
+    {
+      "path": "hdri/sunset.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/venice_sunset",
+      "tags": [
+        "sunset",
+        "outdoor",
+        "warm",
+        "golden-hour",
+        "city",
+        "ldr",
+        "background"
+      ],
+      "description": "Venice at sunset — warm golden-hour light. Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/sunset.hdr for lighting."
+    },
+    {
+      "path": "hdri/sky.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal, Jarod Guest",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+      "tags": [
+        "sky",
+        "day",
+        "clouds",
+        "outdoor",
+        "daylight"
+      ],
+      "description": "Pure sky, partly cloudy daylight (no ground). Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/sky.jpg as a sharper visible background."
+    },
+    {
+      "path": "hdri/sky.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal, Jarod Guest",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+      "tags": [
+        "sky",
+        "day",
+        "clouds",
+        "outdoor",
+        "daylight",
+        "ldr",
+        "background"
+      ],
+      "description": "Pure sky, partly cloudy daylight (no ground). Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/sky.hdr for lighting."
+    },
+    {
+      "path": "hdri/night.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/moonless_golf",
+      "tags": [
+        "night",
+        "outdoor",
+        "dark",
+        "stars"
+      ],
+      "description": "Moonless night on a golf course — dark, cool ambient. Radiance RGBE equirect 512x256 (HDR) for image-based lighting; pair with hdri/night.jpg as a sharper visible background."
+    },
+    {
+      "path": "hdri/night.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/moonless_golf",
+      "tags": [
+        "night",
+        "outdoor",
+        "dark",
+        "stars",
+        "ldr",
+        "background"
+      ],
+      "description": "Moonless night on a golf course — dark, cool ambient. Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/night.hdr for lighting."
+    }
+  ]
+}
