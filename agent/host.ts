@@ -2,7 +2,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import type { LibraryAsset, LibraryIndex, LibraryProvider } from "../src/core/library";
 import { CliError } from "./output";
-import { libraryDir, runtimeBuilt, runtimeDir, templatesDir } from "./paths";
+import { libraryDir, RUNTIME_SINGLE, runtimeBuilt, runtimeDir, templatesDir } from "./paths";
+import { parseTemplateInfo, type TemplateInfo } from "../src/ops/templates";
 
 // What the Node front doors (CLI, MCP, serve/studio API) provide to the
 // engine besides the ProjectFs: the built runtime files (export), the
@@ -28,13 +29,20 @@ export function walkFiles(root: string): string[] {
   return out.sort();
 }
 
-// Every file of dist/runtime (path relative to it → bytes).
-export function readRuntimeFiles(): Record<string, Uint8Array> {
+// dist/runtime files for an export format (path relative to it → bytes):
+// embed = agent3d-runtime.js + chunks/; single-html = agent3d-runtime.single.js.
+export function readRuntimeFiles(format: "embed" | "single-html" = "embed"): Record<string, Uint8Array> {
   if (!runtimeBuilt())
     throw new CliError("runtime-missing", `The runtime build is missing (${join(runtimeDir(), "agent3d-runtime.js")}).`, "Use the npm package (it ships dist/runtime), or run `npm run build:runtime` in a clone. AGENT3D_DIST can point at another dist/ folder.");
   const root = runtimeDir();
   const files: Record<string, Uint8Array> = {};
-  for (const f of walkFiles(root)) if (!f.endsWith(".map")) files[f] = new Uint8Array(readFileSync(join(root, f)));
+  for (const f of walkFiles(root)) {
+    if (f.endsWith(".map")) continue;
+    const keep = format === "single-html" ? f === RUNTIME_SINGLE : f !== RUNTIME_SINGLE && f !== "version.json";
+    if (keep) files[f] = new Uint8Array(readFileSync(join(root, f)));
+  }
+  if (format === "single-html" && !files[RUNTIME_SINGLE])
+    throw new CliError("runtime-missing", `The single-file runtime is missing (${join(root, RUNTIME_SINGLE)}).`, "Run `npm run build:runtime` (it builds both runtimes), or export --format embed.");
   return files;
 }
 
@@ -69,16 +77,7 @@ export function libraryProvider(): LibraryProvider {
   };
 }
 
-// templates/<id>/template.json { id, title, description, kind, tags }.
-export interface TemplateInfo {
-  id: string;
-  title: string;
-  description: string;
-  kind?: string;
-  tags?: string[];
-  [k: string]: unknown;
-}
-
+// templates/<folder>/template.json → TemplateInfo (src/ops/templates.ts).
 export function readTemplatesIndex(): TemplateInfo[] {
   const dir = templatesDir();
   if (!existsSync(dir)) return [];
@@ -87,8 +86,7 @@ export function readTemplatesIndex(): TemplateInfo[] {
     const meta = join(dir, name, "template.json");
     if (!existsSync(meta) || !statSync(join(dir, name)).isDirectory()) continue;
     try {
-      const t = JSON.parse(readFileSync(meta, "utf8")) as Partial<TemplateInfo>;
-      out.push({ ...t, id: t.id ?? name, title: t.title ?? name, description: t.description ?? "" } as TemplateInfo);
+      out.push(parseTemplateInfo(JSON.parse(readFileSync(meta, "utf8")), name));
     } catch {
       /* skip a broken template */
     }

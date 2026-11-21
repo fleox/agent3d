@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { basename, extname } from "node:path";
+import { inflateRawSync } from "node:zlib";
 import type { AssetEntry } from "../../src/core/types";
 import { readLibraryIndex } from "../host";
 import { CliError, printResult } from "../output";
@@ -58,27 +59,27 @@ export const assetsCommand: Command = {
     const [action = "list", ...rest] = positionals;
     if (action === "library") {
       const { listLibrary } = await import("../../src/ops/assets");
-      const assets = listLibrary(readLibraryIndex(), { query: strOpt(options, "query") ?? rest[0], kind: strOpt(options, "kind") as AssetEntry["kind"] | undefined });
-      return printResult(io, { assets }, () => table((assets as unknown as Record<string, unknown>[]).map((a) => ({ ...a, ref: `library:${a.id}` })), ["ref", "kind", "license", "description"]));
+      const r = listLibrary(readLibraryIndex(), { query: strOpt(options, "query") ?? rest[0], kind: strOpt(options, "kind") as AssetEntry["kind"] | undefined });
+      return printResult(io, r, () => `${table(r.assets as unknown as Record<string, unknown>[], ["ref", "kind", "kb", "description"])}\n${r.assets.length} of ${r.total}`);
     }
     if (action === "search") {
       const query = strOpt(options, "query") ?? rest.join(" ");
       if (!query.trim()) usage("assets search needs a query.", 'e.g. agent3d assets search "pine tree" --kind model');
-      const { searchAssets } = await import("../../src/ops/assets");
-      const hits = await searchAssets({ query, kind: strOpt(options, "kind") as never, source: strOpt(options, "source") as never }, fetch);
-      return printResult(io, { query, hits }, () => table(hits as unknown as Record<string, unknown>[], ["source", "id", "kind", "license", "title"]));
+      const { searchAssetsDetailed } = await import("../../src/ops/assets");
+      const r = await searchAssetsDetailed({ query, kind: strOpt(options, "kind") as never, source: strOpt(options, "source") as never }, fetch as never);
+      return printResult(io, { query, ...r }, () => [table(r.hits as unknown as Record<string, unknown>[], ["source", "id", "kind", "license", "title"]), ...r.errors.map((e) => `! ${e.source}: ${e.message}`)].join("\n"));
     }
     const fs = projectFs(options);
     if (action === "list") {
       const { listAssets } = await import("../../src/ops/assets");
-      const assets = await listAssets(fs);
-      return printResult(io, { assets }, () => table(assets as unknown as Record<string, unknown>[], ["path", "kind", "bytes", "source", "license"]));
+      const r = await listAssets(fs);
+      return printResult(io, r, () => `${table(r.assets as unknown as Record<string, unknown>[], ["path", "kind", "bytes", "source", "license"])}\nTotal ${r.totalKb} KB`);
     }
     if (action === "add") {
       const hit = jsonObjectOpt(options, "hit");
       const ops = await import("../../src/ops/assets");
       if (hit) {
-        const entry = await ops.downloadAsset(fs, hit as never, fetch, { resolution: strOpt(options, "resolution") });
+        const entry = await ops.downloadAsset(fs, hit as never, fetch as never, { resolution: strOpt(options, "resolution"), inflate: (d) => new Uint8Array(inflateRawSync(d)) });
         return printResult(io, { asset: entry }, () => `Downloaded ${entry.path} (${entry.license}${entry.author ? `, ${entry.author}` : ""}).`);
       }
       const file = positional(rest, 0, "file to add (or --hit)", "assets add <file> --license CC0-1.0");
@@ -93,12 +94,12 @@ export const assetsCommand: Command = {
     if (action === "remove") {
       const path = positional(rest, 0, "asset path", "assets remove <path>");
       const { listAssets, removeAsset } = await import("../../src/ops/assets");
-      const assets = await listAssets(fs);
-      const entry = (assets as AssetEntry[]).find((a) => a.path === path);
+      const { assets } = await listAssets(fs);
+      const entry = assets.find((a) => a.path === path);
       if (!entry && !(await fs.exists(path))) throw new CliError("notFound", `No asset "${path}".`, "`agent3d assets list` lists them.");
-      if (!confirmOrPlan(io, options, { remove: [path], entry: entry ?? null }, () => `Delete ${path}${entry ? ` (${entry.kind}, ${entry.license})` : ""}`)) return;
+      if (!confirmOrPlan(io, options, { remove: [path], entry: entry ?? null, usedBy: entry?.usedBy ?? [] }, () => `Delete ${path}${entry ? ` (${entry.kind}, ${entry.license})` : ""}`)) return;
       const r = await removeAsset(fs, path);
-      return printResult(io, { removed: path, result: r ?? null }, () => `Removed ${path}.`);
+      return printResult(io, { path, ...r }, () => `Removed ${path}.${r.usedBy.length ? ` Still referenced by: ${r.usedBy.join(", ")} — fix those references.` : ""}`);
     }
     usage(`Unknown assets action "${action}".`, "Use list, search, add, remove or library.");
   },

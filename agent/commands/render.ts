@@ -132,7 +132,7 @@ export const exportCommand: Command = {
         warnings.push(`No poster: ${err.message}${err.hint ? ` (${err.hint})` : ""} — the export works without it (no WebGL fallback image).`);
       }
     }
-    const runtime = readRuntimeFiles();
+    const runtime = { files: readRuntimeFiles(format as "embed" | "single-html") };
     const { buildExport } = await import("../../src/ops/export");
     const r = await buildExport(fs, { format: format as "embed" | "single-html", name: strOpt(options, "name"), runtime, library: libraryProvider(), poster });
     const written: string[] = [];
@@ -143,7 +143,7 @@ export const exportCommand: Command = {
       written.push(abs);
     }
     const entry = resolve(out, r.entry);
-    printResult(io, { format, out, entry, snippet: r.snippet, totalKb: r.totalKb, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) }, () =>
+    printResult(io, { format, out, entry, snippet: r.snippet, totalKb: r.totalKb, sizes: r.sizes, credits: r.credits, issues: r.issues, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) }, () =>
       [`Exported ${format} → ${out} (${r.totalKb} KB, ${written.length} files)`, `Open: ${entry}`, "", "Paste in your page:", r.snippet, ...warnings.map((w) => `! ${w}`)].join("\n"),
     );
   },

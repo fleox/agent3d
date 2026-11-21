@@ -77,7 +77,7 @@ describe("CLI contract", () => {
     const sections = (await ok(["catalog"])).sections.map((s: { section: string }) => s.section);
     expect(sections).toEqual(expect.arrayContaining(["geometries", "behaviours", "generators"]));
     expect((await ok(["catalog", "geometries", "box"])).entry).toMatchObject({ id: "box" });
-    expect((await cli(["catalog", "geometries", "boxx"])).body.error.code).toBe("notFound");
+    expect((await cli(["catalog", "geometries", "boxx"])).body.error?.code).toBe("notFound");
   });
 });
 
@@ -87,7 +87,7 @@ describe("project workflow (new → validate → patch → check)", () => {
     const created = await ok(["new", dir, "--target", "banner", "--title", "Spring sale"]);
     expect(created.target).toMatchObject({ kind: "banner" });
     expect(created.files).toEqual(expect.arrayContaining(["agent3d.json", "scene.json"]));
-    expect((await cli(["new", dir])).body.error.code).toBe("conflict");
+    expect((await cli(["new", dir])).body.error?.code).toBe("conflict");
 
     const v = await cli(["scene", "validate", "--project", dir]);
     expect(v.code).toBe(0);

@@ -28,7 +28,7 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     expect(r.stats.triangles).toBeGreaterThan(0);
 
     const ex = await cli(["export", "--project", dir]);
-    expect(ex.code).toBe(0);
+    expect({ code: ex.code, err: ex.body.error }).toMatchObject({ code: 0 });
     expect(existsSync(ex.body.data.entry)).toBe(true);
     expect(ex.body.data.snippet).toContain("<agent3d-scene");
     // Exporting again over the folder needs --yes.
