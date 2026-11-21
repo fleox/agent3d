@@ -1,4 +1,4 @@
-import { watch, type FSWatcher } from "node:fs";
+import { statSync, watch, type FSWatcher } from "node:fs";
 import { relative, sep } from "node:path";
 
 // Watches a project folder (fs.watch recursive) and reports changed
@@ -21,7 +21,7 @@ export function watchProject(root: string, onChange: (paths: string[]) => void, 
   const flush = () => {
     timer = null;
     const now = Date.now();
-    const paths = [...pending].filter((p) => !((muted.get(p) ?? 0) > now));
+    const paths = [...pending].filter((p) => !((muted.get(p) ?? 0) > now) && !isDir(`${root}/${p}`));
     pending.clear();
     if (paths.length) onChange(paths.sort());
   };
@@ -46,4 +46,12 @@ export function watchProject(root: string, onChange: (paths: string[]) => void, 
       muted.set(path, Date.now() + 1000);
     },
   };
+}
+
+function isDir(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
 }
