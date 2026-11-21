@@ -142,6 +142,12 @@ describe("project workflow (new → validate → patch → check)", () => {
     const check = await cli(["check", "--project", dir]);
     expect(check.stdout).toHaveLength(1);
     expect(check.body.data).toMatchObject({ ok: expect.any(Boolean), budget: { estimatedTriangles: expect.any(Number) } });
+    // AI tools through the CLI (same catalog as MCP).
+    const tools = (await ok(["tools", "list"])).tools.map((t: { name: string }) => t.name);
+    expect(tools).toEqual(expect.arrayContaining(["scene_patch", "render_preview", "export"]));
+    expect((await ok(["tools", "call", "scene_summary", "--project", dir])).result).toMatchObject({ title: "Summer sale" });
+    expect((await cli(["tools", "call", "nope", "--project", dir])).code).toBe(2);
+
     const info = await ok(["info", "--project", dir]);
     expect(info.manifest.title).toBe("Spring sale");
   });

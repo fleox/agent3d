@@ -1,8 +1,6 @@
-import { statSync } from "node:fs";
-import { join } from "node:path";
-import { readLibraryIndex } from "../host";
+import { readLibraryIndex, readRuntimeFiles } from "../host";
 import { printResult } from "../output";
-import { RUNTIME_ENTRY, runtimeBuilt, runtimeDir } from "../paths";
+import { runtimeBuilt } from "../paths";
 import type { Command } from "./types";
 import { boolOpt, PROJECT_OPTION, projectFs } from "./util";
 
@@ -35,8 +33,10 @@ export const checkCommand: Command = {
   },
 };
 
-// Size of the runtime entry the export ships (KB); lazy chunks load on demand.
+// Size of the runtime an embed export ships (entry + chunks, KB) — the same
+// number `export` reports as sizes.runtimeKb.
 function runtimeKb(): number | undefined {
   if (!runtimeBuilt()) return undefined;
-  return Math.round((statSync(join(runtimeDir(), RUNTIME_ENTRY)).size / 1024) * 10) / 10;
+  const bytes = Object.values(readRuntimeFiles("embed")).reduce((a, f) => a + f.byteLength, 0);
+  return Math.round((bytes / 1024) * 10) / 10;
 }

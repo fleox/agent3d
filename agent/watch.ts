@@ -4,24 +4,25 @@ import { relative, sep } from "node:path";
 // Watches a project folder (fs.watch recursive) and reports changed
 // project-relative paths, debounced. renders/, dist/, .git and
 // node_modules are ignored. Paths the caller just wrote itself can be
-// muted (`ignoreNext`) so API writes don't echo back as external changes.
+// muted (`ignoreWritten`, called AFTER the write) so API writes don't echo
+// back as external changes: the event is dropped only while the file still
+// has the size + mtime recorded then (a later external edit still reports).
 
 export interface ProjectWatcher {
   close(): void;
-  ignoreNext(path: string): void;
+  ignoreWritten(paths: string[]): void;
 }
 
 const IGNORED = /^(renders|dist|node_modules|\.git)(\/|$)|(^|\/)\.DS_Store$|~$|\.swp$/;
 
 export function watchProject(root: string, onChange: (paths: string[]) => void, debounceMs = 120): ProjectWatcher {
   const pending = new Set<string>();
-  const muted = new Map<string, number>();
+  const muted = new Map<string, string>();
   let timer: NodeJS.Timeout | null = null;
   let watcher: FSWatcher | null = null;
   const flush = () => {
     timer = null;
-    const now = Date.now();
-    const paths = [...pending].filter((p) => !((muted.get(p) ?? 0) > now) && !isDir(`${root}/${p}`));
+    const paths = [...pending].filter((p) => !isDir(`${root}/${p}`) && !(muted.has(p) && muted.get(p) === stamp(`${root}/${p}`)));
     pending.clear();
     if (paths.length) onChange(paths.sort());
   };
@@ -42,8 +43,8 @@ export function watchProject(root: string, onChange: (paths: string[]) => void, 
       if (timer) clearTimeout(timer);
       watcher?.close();
     },
-    ignoreNext(path: string) {
-      muted.set(path, Date.now() + 1000);
+    ignoreWritten(paths: string[]) {
+      for (const p of paths) muted.set(p, stamp(`${root}/${p}`));
     },
   };
 }
@@ -53,5 +54,14 @@ function isDir(path: string): boolean {
     return statSync(path).isDirectory();
   } catch {
     return false;
+  }
+}
+
+function stamp(path: string): string {
+  try {
+    const s = statSync(path);
+    return `${s.size}:${s.mtimeMs}`;
+  } catch {
+    return "missing";
   }
 }

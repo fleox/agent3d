@@ -96,6 +96,16 @@ describe("studio API", () => {
     expect((await http(studio.port, "GET", "/api/info", { headers: { origin: `http://localhost:${studio.port}` } })).status).toBe(200);
   });
 
+  it("runs AI tools through POST /api/tools/call", async () => {
+    const tools = JSON.parse((await http(studio.port, "GET", "/api/tools")).body);
+    expect(tools.data.tools.map((t: { name: string }) => t.name)).toContain("scene_validate");
+    const r = JSON.parse((await http(studio.port, "POST", "/api/tools/call", { headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "catalog_get", input: {} }) })).body);
+    expect(r.ok).toBe(true);
+    const bad = await http(studio.port, "POST", "/api/tools/call", { body: JSON.stringify({ name: "nope" }) });
+    expect(bad.status).toBe(404);
+    expect(JSON.parse(bad.body).error.code).toBe("notFound");
+  });
+
   it("streams external changes on /api/events", async () => {
     const done = sse(studio.port, "/api/events", (t) => t.includes("scene.json"));
     await new Promise((r) => setTimeout(r, 200));

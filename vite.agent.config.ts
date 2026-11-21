@@ -13,7 +13,21 @@ const CJS_SHIM = [
   "const __dirname = __a3dDirname(__filename);",
 ].join("\n");
 
+// Raw U+2028 / U+2029 characters are line terminators inside a regex
+// literal (a syntax error for the bundler's parser). Escaping them as
+// \u2028 / \u2029 means the same thing in regexes, strings, templates and
+// comments, so do it for every source module before transforming.
+const escapeLineSeparators = {
+  name: "agent3d-escape-line-separators",
+  enforce: "pre" as const,
+  transform(code: string) {
+    if (!/[\u2028\u2029]/.test(code)) return null;
+    return { code: code.replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029"), map: null };
+  },
+};
+
 export default defineConfig({
+  plugins: [escapeLineSeparators],
   // public/ belongs to the Studio build — keep it out of dist/agent/.
   publicDir: false,
   define: {

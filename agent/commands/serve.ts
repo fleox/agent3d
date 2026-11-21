@@ -236,9 +236,9 @@ export async function startStudioServer(opts: { project: string | null; port?: n
         }
         if (typeof body.name !== "string") return fail(res, new CliError("usage", '"name" (a tool name) is required.', "GET /api/tools lists them.", 2), 400), true;
         const input = body.input && typeof body.input === "object" ? (body.input as Record<string, unknown>) : {};
-        // The tool may write scene.json etc.: don't echo those as external changes.
-        for (const p of ["scene.json", "agent3d.json", "assets/manifest.json"]) watcher?.ignoreNext(p);
         const result = await callTool(fs, body.name, input);
+        // The tool may have written scene.json etc.: don't echo those as external changes.
+        watcher?.ignoreWritten(["scene.json", "agent3d.json", "assets/manifest.json"]);
         sendJson(res, 200, { ok: true, data: result });
         return true;
       }
@@ -267,15 +267,15 @@ export async function startStudioServer(opts: { project: string | null; port?: n
         }
         if (method === "PUT") {
           const body = await readBody(req);
-          watcher?.ignoreNext(path);
           await fs.writeBytes(path, new Uint8Array(body));
+          watcher?.ignoreWritten([path]);
           sendJson(res, 200, { ok: true, data: { path, bytes: body.byteLength } });
           return true;
         }
         if (method === "DELETE") {
           if (!(await fs.exists(path))) return fail(res, new CliError("notFound", `No file ${path}.`), 404), true;
-          watcher?.ignoreNext(path);
           await fs.remove(path);
+          watcher?.ignoreWritten([path]);
           sendJson(res, 200, { ok: true, data: { removed: path } });
           return true;
         }

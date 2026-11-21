@@ -85,7 +85,7 @@ event: change
 data: {"paths":["scene.json"]}
 ```
 Debounced (~120 ms); `renders/`, `dist/`, `.git`, `node_modules` are ignored; writes made
-through `PUT`/`DELETE`/`tools/call` of this server are muted for 1 s. A comment ping
+through `PUT`/`DELETE`/`tools/call` of this server are muted (while the file keeps the size + mtime the server wrote). A comment ping
 (`: ping`) is sent every 20 s. The Studio should reload `scene.json` (and call
 `player.update(scene)`) when it sees `scene.json` in `paths`, and refresh asset lists for
 `assets/…`.

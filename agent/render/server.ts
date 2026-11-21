@@ -134,6 +134,8 @@ export function startLocalServer(opts: LocalServerOptions): Promise<LocalServer>
     void (async () => {
       const url = new URL(req.url ?? "/", "http://127.0.0.1");
       if (url.pathname === "/" && opts.index) url.pathname = opts.index;
+      // Browsers ask for it on every page: answer "no content" instead of a 404 console error.
+      if (url.pathname === "/favicon.ico" && !opts.fallbackRoot) return void res.writeHead(204).end();
       for (const route of opts.routes ?? []) if (await route(req, res, url)) return;
       if (req.method !== "GET" && req.method !== "HEAD") return sendText(res, 405, "Method not allowed");
       // Match on the raw (still percent-encoded) path so "%2e%2e" is decoded once, under the root.
