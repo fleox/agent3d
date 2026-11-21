@@ -161,7 +161,10 @@ export class GameHost implements Pick<ScriptApi, "state"> {
       for (const h of this.collisionHandlers) this.safe(() => h(oa, ob), "onCollision");
     });
     world.scene.updateMatrixWorld(true);
-    for (const e of world.entries.values()) this.addBody(e);
+    for (const e of world.entries.values()) {
+      this.addBody(e);
+      this.addGeneratorBodies(e);
+    }
     this.instances = [];
     for (const { path, factory } of this.factories) {
       try {
@@ -204,6 +207,24 @@ export class GameHost implements Pick<ScriptApi, "state"> {
       mass: body.mass,
       restitution: body.restitution,
       friction: body.friction,
+    });
+  }
+
+  // Generators that publish local collision boxes (maze walls: userData.bodies
+  // [{ min, max }]) get one static body per box, id "<objectId>:body<i>".
+  private addGeneratorBodies(e: WorldEntry): void {
+    if (e.kind === "light") return;
+    const boxes = e.object.userData.bodies as { min: [number, number, number]; max: [number, number, number] }[] | undefined;
+    if (!Array.isArray(boxes) || (e.def as ObjectDef).body) return;
+    const m = e.object.matrixWorld;
+    const box = new THREE.Box3();
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    boxes.forEach((b, i) => {
+      box.set(new THREE.Vector3(...b.min), new THREE.Vector3(...b.max)).applyMatrix4(m);
+      box.getSize(size);
+      box.getCenter(center);
+      this.physics.add({ id: `${e.id}:body${i}`, type: "static", shape: "box", position: [center.x, center.y, center.z], size: [size.x, size.y, size.z] });
     });
   }
 

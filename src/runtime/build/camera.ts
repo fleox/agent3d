@@ -20,12 +20,29 @@ export function createCamera(def: CameraDef, aspect: number): THREE.PerspectiveC
   return cam;
 }
 
-export function setCameraAspect(cam: THREE.Camera, def: CameraDef, aspect: number): void {
+// Responsive framing: when the canvas is narrower than the scene's design
+// aspect (target.aspect — e.g. a 4:1 banner given a taller box on a phone),
+// widen the view so the authored horizontal framing stays visible instead of
+// cropping the sides. Capped so a perspective camera never exceeds ~100°.
+export function fitScale(aspect: number, designAspect?: number): number {
+  if (!designAspect || !(aspect > 0) || aspect >= designAspect) return 1;
+  return Math.min(designAspect / aspect, 3);
+}
+
+export function fittedFov(fov: number, scale: number): number {
+  if (scale <= 1) return fov;
+  return Math.min(100, (2 * Math.atan(Math.tan((fov * DEG) / 2) * scale)) / DEG);
+}
+
+export function setCameraAspect(cam: THREE.Camera, def: CameraDef, aspect: number, designAspect?: number): void {
+  const scale = fitScale(aspect, designAspect);
+  cam.userData.fitScale = scale;
   if (cam instanceof THREE.PerspectiveCamera) {
     cam.aspect = aspect;
+    cam.fov = fittedFov(num(cam.userData.restFov, num(def.fov, 45)), scale);
     cam.updateProjectionMatrix();
   } else if (cam instanceof THREE.OrthographicCamera) {
-    const h = (cam.userData.zoomHeight ?? num(def.zoom, 10)) / 2;
+    const h = ((cam.userData.zoomHeight ?? num(def.zoom, 10)) / 2) * scale;
     cam.left = -h * aspect;
     cam.right = h * aspect;
     cam.top = h;
@@ -81,9 +98,13 @@ export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | T
     shake,
     orbit,
     update(t, dt, input) {
-      if (cam instanceof THREE.PerspectiveCamera && cam.fov !== rest.fov) {
-        cam.fov = rest.fov;
-        cam.updateProjectionMatrix();
+      if (cam instanceof THREE.PerspectiveCamera) {
+        cam.userData.restFov = rest.fov;
+        const fov = fittedFov(rest.fov, num(cam.userData.fitScale, 1));
+        if (cam.fov !== fov) {
+          cam.fov = fov;
+          cam.updateProjectionMatrix();
+        }
       }
       if (orbit) {
         orbit.update();

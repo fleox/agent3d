@@ -10,14 +10,14 @@ import { noise3D } from "../random";
 import { generatorParams } from "./params";
 import { built } from "./geom";
 
-const PALETTE = ["#ff7eb3", "#a78bfa", "#60a5fa", "#5eead4"].map((c) => new THREE.Color(c));
-
 export const blob: GeneratorImpl = (raw, ctx) => {
   const p = generatorParams("blob", raw, ctx);
   const radius = p.num("radius");
   const amount = p.num("noise");
   const speed = p.num("speed");
   const detail = p.int("detail");
+  const ramp = p.colors("colors");
+  const PALETTE = ramp.length >= 2 ? ramp : [ramp[0]!, ramp[0]!];
   // detail² × 2 triangles ≈ 20 (n+1)² → n
   const n = Math.max(2, Math.round(Math.sqrt((detail * detail * 2) / 20)) - 1);
   let geometry = new THREE.IcosahedronGeometry(1, n);

@@ -600,6 +600,7 @@ Organic animated blob (noise-displaced sphere) — modern hero banners. _Cost: ~
 | `noise` | number (0…∞) | `0.3` | Displacement amount. |
 | `speed` | number (0…∞) | `0.4` | Morph speed. |
 | `detail` | integer (8…256) | `64` | Smoothness. |
+| `colors` | colors | `["#ff7eb3","#a78bfa","#60a5fa","#5eead4"]` | Colour ramp flowing over the surface (brand colours). |
 
 ### `waveGrid`
 
