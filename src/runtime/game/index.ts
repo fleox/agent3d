@@ -221,12 +221,25 @@ export class GameHost implements Pick<ScriptApi, "state"> {
 
   private syncObjectsFromBodies(): void {
     const tmp = new THREE.Vector3();
+    const axis = new THREE.Vector3();
+    const q = new THREE.Quaternion();
     for (const b of this.physics.bodies) {
       if (b.type !== "dynamic" && b.type !== "kinematic") continue;
       const e = this.world.entries.get(b.id);
       if (!e) continue;
       tmp.set(b.position[0], b.position[1], b.position[2]).sub(this.bodyOffsets.get(b.id) ?? new THREE.Vector3());
       if (e.object.parent) e.object.parent.worldToLocal(tmp);
+      // Visual rolling of dynamic spheres (the engine itself has no angular state).
+      const def = (e.def as ObjectDef).body;
+      if (b.shape === "sphere" && b.type === "dynamic" && !def?.fixedRotation) {
+        const dx = tmp.x - e.object.position.x, dz = tmp.z - e.object.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 1e-6 && b.radius > 0) {
+          axis.set(dz, 0, -dx).normalize();
+          e.object.quaternion.premultiply(q.setFromAxisAngle(axis, dist / b.radius));
+          if (e.animated) e.rest.quaternion.copy(e.object.quaternion);
+        }
+      }
       e.object.position.copy(tmp);
       if (e.animated) e.rest.position.copy(tmp);
     }

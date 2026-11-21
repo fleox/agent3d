@@ -12,7 +12,6 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { RGBShiftShader } from "three/addons/shaders/RGBShiftShader.js";
-import { VignetteShader } from "three/addons/shaders/VignetteShader.js";
 import type { PostFxDef } from "../../core/types";
 import { bool, num, toColor } from "../util";
 
@@ -34,10 +33,10 @@ export interface EffectHandle {
 
 // Hide helpers (sky dome, grids, particles) while a pass renders the scene
 // with an override material (depth / normals).
-function withoutHelpers(scene: THREE.Scene, fn: () => void): void {
+function withoutHelpers(scene: THREE.Scene, fn: () => void, hideGround = false): void {
   const hidden: THREE.Object3D[] = [];
   scene.traverse((o) => {
-    if (o.visible && (o.userData.helper && !o.userData.ground || (o as THREE.Points).isPoints || (o as THREE.Sprite).isSprite)) {
+    if (o.visible && ((o.userData.helper && (hideGround || !o.userData.ground)) || (o as THREE.Points).isPoints || (o as THREE.Sprite).isSprite)) {
       hidden.push(o);
       o.visible = false;
     }
@@ -60,6 +59,20 @@ const PixelateShader = {
   vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uResolution; uniform float uPixel; varying vec2 vUv;
     void main() { vec2 cell = uPixel / uResolution; vec2 uv = (floor(vUv / cell) + 0.5) * cell; gl_FragColor = texture2D(tDiffuse, uv); }`,
+};
+
+// Vignette that never goes negative (the addon's shader can, on HDR input).
+const VignetteShader = {
+  name: "Agent3DVignette",
+  uniforms: { tDiffuse: { value: null }, offset: { value: 1 }, darkness: { value: 1.1 } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float offset; uniform float darkness; varying vec2 vUv;
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      float d = length(vUv - 0.5) * 1.4142;
+      float v = 1.0 - clamp(darkness * 0.65 * smoothstep(0.3 * offset, 1.1 * offset, d), 0.0, 1.0);
+      gl_FragColor = vec4(texel.rgb * v, texel.a);
+    }`,
 };
 
 // Toon outlines: edges from a depth + normal pre-pass (Sobel-like cross filter).
@@ -122,7 +135,7 @@ class ToonOutlinePass extends Pass {
       renderer.setClearColor(0x000000, 0);
       renderer.clear();
       renderer.render(this.scene, this.camera);
-    });
+    }, true);
     this.scene.overrideMaterial = prevOverride;
     renderer.setClearColor(prevClear, prevAlpha);
     const u = this.mat.uniforms;

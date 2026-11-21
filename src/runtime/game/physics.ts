@@ -270,7 +270,8 @@ export class PhysicsWorld {
     const tv: V3 = [vr2[0] - nrm[0] * vn2, vr2[1] - nrm[1] * vn2, vr2[2] - nrm[2] * vn2];
     const tl = Math.hypot(tv[0], tv[1], tv[2]);
     if (tl < 1e-9) return;
-    const mu = Math.sqrt(a.friction * b.friction);
+    // Spheres roll: only a fraction of sliding friction applies.
+    const mu = Math.sqrt(a.friction * b.friction) * (a.shape === "sphere" || b.shape === "sphere" ? 0.08 : 1);
     const jt = Math.min(tl / inv, mu * j);
     for (let i = 0; i < 3; i++) {
       const t = tv[i] / tl;
