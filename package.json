@@ -1,0 +1,61 @@
+{
+  "name": "@fleox/agent3d",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The 3D studio your AI agent can run: describe a scene as JSON (banners, characters, landscapes, mini games), preview and screenshot it headless, and export a self-contained embed for any website. No server, no account.",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "agent3d": "dist/agent/agent3d.mjs"
+  },
+  "files": [
+    "dist/agent",
+    "dist/runtime",
+    "dist/studio",
+    "library",
+    "templates",
+    "plugin",
+    "changelog.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.agent.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build:runtime": "vite build --config vite.runtime.config.ts && vite build --config vite.runtime.config.ts --mode single",
+    "build:studio": "vite build",
+    "build:agent": "vite build --config vite.agent.config.ts",
+    "build": "npm run build:runtime && npm run build:studio && npm run build:agent && node scripts/write-version.mjs",
+    "check:skills": "node scripts/check-skills.mjs",
+    "hermes:build": "node scripts/build-hermes.mjs",
+    "check:hermes": "node scripts/build-hermes.mjs --check && python3 -m unittest discover -s hermes/tests",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build && npm run check:skills"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.187.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "autoprefixer": "^10.7.0",
+    "clsx": "^2.1.1",
+    "happy-dom": "^21.0.4",
+    "lucide-react": "^1.77.0",
+    "postcss": "^8.5.33",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^3.4.19",
+    "three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fleox/agent3d.git"
+  }
+}
