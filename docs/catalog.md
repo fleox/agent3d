@@ -341,12 +341,13 @@ Squash-bounce on click / tap.
 
 ### `spinOnClick`
 
-Do a full spin on click.
+Do a full spin on click (or each time the pointer enters, with trigger hover).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `axis` | vec3 | `[0,1,0]` | Axis. |
 | `duration` | number (0…∞) | `0.8` | Seconds. |
+| `trigger` | `click` \\| `hover` | `"click"` | What starts a spin: a click / tap, or the pointer entering the object. |
 
 ### `scrollRotate`
 

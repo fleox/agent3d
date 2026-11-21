@@ -123,7 +123,7 @@ export const BEHAVIOURS: CatalogEntry[] = [
   { id: "hoverScale", description: "Grow when hovered.", params: [n("scale", "Scale when hovered.", 1.15, 0), n("smoothing", "Smoothing.", 0.8, 0, 0.99)] },
   { id: "hoverLift", description: "Rise and tilt when hovered (cards, products).", params: [n("height", "Lift.", 0.2), n("tilt", "Tilt toward the pointer (degrees).", 10)] },
   { id: "clickBounce", description: "Squash-bounce on click / tap.", params: [n("amount", "Intensity.", 0.25, 0)] },
-  { id: "spinOnClick", description: "Do a full spin on click.", params: [AXIS, n("duration", "Seconds.", 0.8, 0)] },
+  { id: "spinOnClick", description: "Do a full spin on click (or each time the pointer enters, with trigger hover).", params: [AXIS, n("duration", "Seconds.", 0.8, 0), e("trigger", "What starts a spin: a click / tap, or the pointer entering the object.", ["click", "hover"], "click")] },
   { id: "scrollRotate", description: "Rotate with the page scroll.", params: [AXIS, n("degrees", "Rotation across the whole scroll range.", 360)] },
   { id: "scrollMove", description: "Move with the page scroll (parallax depth).", params: [v3("offset", "Offset across the scroll range.", [0, 2, 0])] },
   { id: "drift", description: "Slow random wandering inside a box (fish, dust, balloons).", params: [v3("area", "Box size around the start position.", [1, 1, 1]), n("speed", "Speed.", 0.3, 0), i("seed", "Random seed.", 1)] },
