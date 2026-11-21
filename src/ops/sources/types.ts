@@ -89,13 +89,16 @@ export function score(query: string, fields: { title?: string; id?: string; tags
   const tags = (fields.tags ?? []).map((t) => t.toLowerCase());
   const extra = (fields.extra ?? "").toLowerCase();
   let total = 0;
+  const titleWords = title.split(/[\s_\-/]+/);
+  const tagWords = tags.flatMap((t) => t.split(/[\s_\-/]+/));
+  const extraWords = extra.split(/[^a-z0-9]+/);
   for (const w of words) {
     let s = 0;
-    if (title.split(/[\s_-]+/).includes(w)) s = 5;
-    else if (title.includes(w)) s = 3;
+    if (titleWords.includes(w)) s = 5;
+    else if (titleWords.some((t) => t.startsWith(w))) s = 3;
     if (tags.includes(w)) s = Math.max(s, 4);
-    else if (tags.some((t) => t.includes(w))) s = Math.max(s, 2);
-    if (!s && extra.includes(w)) s = 1;
+    else if (tagWords.some((t) => t === w || t.startsWith(w))) s = Math.max(s, 2);
+    if (!s && extraWords.some((t) => t.startsWith(w))) s = 1;
     if (!s) return 0; // every word must match somewhere
     total += s;
   }

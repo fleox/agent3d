@@ -62,39 +62,62 @@ my-banner/
 
 ## Ops (src/ops/) — signatures every front door uses
 
-All ops take a `ProjectFs` (project root) and return JSON-able results. Errors are `OpsError(code, message, hint?, details?)` with codes `notFound | validation | conflict | invalid | forbidden-script | io`.
+All ops take a `ProjectFs` (project root) and return JSON-able results. Errors are `OpsError(code, message, hint?, details?)` (`src/ops/context.ts`, `toJSON()`) with codes `notFound | validation | conflict | invalid | forbidden-script | io`; validation failures carry `details.issues`. Network only through an injected `fetch` (`FetchLike`); zips through an injected `inflate` (default `DecompressionStream("deflate-raw")`).
 
 ```ts
 // project.ts
-createProject(fs, { name, title?, template?: string, templateFiles?: Record<string, Uint8Array|string>, target?: Partial<TargetDef> }): Promise<{ manifest, scene }>
+createProject(fs, { name, title?, template?: string, templateFiles?: Record<string, Uint8Array|string>, target?: Partial<TargetDef>, force?: boolean }): Promise<{ manifest, scene, files: string[], issues }>
+  // no template → starters.ts: an attractive valid scene per target kind (banner: gradient bg + studio lights + floating 3D title …; game: + scripts/game.js)
 loadProject(fs): Promise<{ manifest: ProjectManifest; scene: SceneDoc }>
-saveScene(fs, scene, opts?: { allowInvalid?: boolean }): Promise<{ issues: Issue[] }>   // validates; refuses errors unless allowInvalid
+saveScene(fs, scene, opts?: { allowInvalid?: boolean }): Promise<{ issues: Issue[] }>   // validates; throws OpsError("validation") on errors unless allowInvalid; bumps agent3d.json updatedAt
 // scene.ts
 getScene(fs): Promise<SceneDoc>
-summarizeScene(scene): SceneSummary          // compact outline: objects tree (id, kind, geometry/generator/preset), lights, camera, timeline tracks, scripts
-applyScene(fs, next: SceneDoc, { dryRun }): Promise<{ plan: ScenePlan; issues: Issue[]; applied: boolean }>   // full replace with a diff plan
-patchScene(fs, ops: PatchOp[], { dryRun }): Promise<{ plan; issues; applied; scene }>
-  // PatchOp = { op: "set", path: "camera.position", value } | { op: "merge", path, value } | { op: "remove", path }
-  //         | { op: "addObject", object: ObjectDef, parent?: string, index?: number } | { op: "updateObject", id, set: Partial<ObjectDef> }
-  //         | { op: "removeObject", id } | { op: "moveObject", id, parent?: string|null, index?: number }
-  //         | { op: "addBehaviour", id, behaviour } | { op: "addTrack", track } | { op: "removeTrack", target }
-  // paths accept "objects#<id>.material.color" (object by id) as well as indexes.
+summarizeScene(scene): SceneSummary          // { id, title, target, camera, background, lighting?, lights, objects: tree {id, kind, detail, position?, behaviours?, children?}, counts, timeline?, postfx?, scripts?, ui?, sounds? }
+diffScenes(before | null, after): ScenePlan  // { empty, objects: { added, removed, changed: {id, fields}[], moved: {id, from, to}[] }, sections: string[], summary }
+applyScene(fs, next: SceneDoc, { dryRun? }): Promise<{ plan: ScenePlan; issues: Issue[]; applied: boolean }>
+  // full replace. Never throws on invalid scenes: errors → applied false (nothing written). Same input twice → plan.empty, no write.
+patchScene(fs, ops: PatchOp[], { dryRun? }): Promise<{ plan; issues; applied; scene }>
+  // atomic: ops run on a copy (a failing op throws OpsError("invalid"|"conflict") with details.opIndex), the result is validated, errors → applied false.
+  // PatchOp = { op: "set", path, value } | { op: "merge", path, value }  (RFC 7396: objects merge, null deletes) | { op: "remove", path }
+  //         | { op: "addObject", object, parent?, index? } | { op: "updateObject", id, set }  (deep merge; id/children not changeable)
+  //         | { op: "removeObject", id }  (also drops its timeline tracks) | { op: "moveObject", id, parent?: string|null, index? }
+  //         | { op: "addBehaviour", id (object or light), behaviour } | { op: "addTrack", track } (replaces same target, creates/extends the timeline) | { op: "removeTrack", target }
+  // paths (src/core/jsonPath.ts): "camera.position", "lights[0].intensity", "lights#key.color", "objects#<id>.material.color" (id searched in the whole tree), "objects#<id>.position[1]".
+applyPatchOps(scene, ops): SceneDoc         // pure version
+// objects.ts (wrappers over patchScene + pure tree helpers from tree.ts)
+listObjects(fs): Promise<FlatObject[]>  getObject(fs, id): Promise<{ object, parent }>
+addObject(fs, object, { parent?, index?, dryRun? })  updateObject(fs, id, set, { dryRun? })  removeObject(fs, id, opts)  moveObject(fs, id, { parent?, index? }, opts)  addBehaviour(fs, id, behaviour, opts)
+findObject(objects, id) → { object, parent, container, index, depth } | null   walkObjects(objects, fn)   flattenObjects(scene)   allObjectIds(scene)
+// timeline.ts
+getTimeline(fs)  setTimeline(fs, timeline | null, opts)  addTrack(fs, track, opts)  removeTrack(fs, target, opts)  editTimeline(fs, { settings?, addTracks?, removeTargets? }, opts)
 // validate (src/core/validate.ts)
-validateScene(scene: unknown): Issue[]       // structural + catalog params (types, ranges, enums, unknown ids → "did you mean")
+validateScene(scene: unknown): Issue[]       // structural + catalog params (types, ranges, enums, unknown ids/fields/params → "did you mean"); paths "objects#logo.material.roughness"
+normalizeScene(scene): SceneDoc              // structural defaults only (version, empty lights/objects/tracks/elements)
+defaultScene({ id?, title?, kind?, aspect? }): SceneDoc   // minimal valid scene;  DEFAULT_ASPECT, DEFAULT_BUDGET_KB per kind
 // check.ts
-checkProject(fs, opts?: { runtimeStats?: FrameStats; inspect?: InspectResult }): Promise<CheckReport>
-  // CheckReport { ok, issues: Issue[], budget: { estimatedTriangles, assetsKb, scriptsKb, budgetKb, runtimeKb }, licences: {path, license, attribution}[] }
-  // validation + missing assets/scripts + script sandbox lint + budget estimate + framing (with inspect from a render) + licences needing attribution
-// assets.ts
-listAssets(fs), addAsset(fs, { path, bytes, kind?, source, license, author?, sourceUrl? }), removeAsset(fs, path)
-searchAssets({ query, kind?, source? }, fetchImpl): Promise<AssetHit[]>     // sources/: polyhaven, ambientcg, kenney (curated index), quaternius (curated index), khronos
-downloadAsset(fs, hit, fetchImpl, opts?: { resolution? }): Promise<AssetEntry>
-listLibrary(libraryIndex, { query?, kind? })
-// templates.ts
-listTemplates(index), templateFiles(id) — read from templates/ by the front door
+checkProject(fs, opts?: { runtimeStats?: FrameStats; inspect?: InspectResult; library?: LibraryIndex; runtimeKb?: number }): Promise<CheckReport>
+  // CheckReport { ok, issues, counts, budget: { estimatedTriangles, heaviestObjects, assetsKb, scriptsKb, sceneKb, totalKb, budgetKb, runtimeKb }, licences: { path, license, author?, attribution }[] }
+  // validation + missing assets (incl. .gltf buffers/images) / scripts + script sandbox lint (scriptLint.ts: lintScript(source, path)) + triangle (budget.ts, catalog `cost` formulas) and KB budgets
+  // + framing (framingIssues(scene, inspect)) + runtime perf (draw calls > 150, triangles per kind) + licences needing attribution + web (ariaLabel, reducedMotion, lazy, maxDpr)
+// assets.ts (+ sources/: polyhaven, ambientcg, khronos = live APIs; kenney, quaternius = curated indexes, manual zip download)
+listAssets(fs): Promise<{ assets: (AssetEntry & { exists, usedBy })[]; totalKb }>
+addAsset(fs, { path, bytes, kind?, source, license, author?, sourceUrl?, attribution? }): Promise<AssetEntry>   // bare file name → assets/<kind dir>/
+removeAsset(fs, path): Promise<{ removed: true; usedBy: string[] }>
+searchAssets({ query, kind?, source?, limit? }, fetchImpl): Promise<AssetHit[]>     // searchAssetsDetailed → { hits, errors } (per-source failures)
+  // AssetHit { source, id, title, kind, license, author?, attribution?, previewUrl?, pageUrl?, tags?, downloads: Record<resolution|format, url>, manual?, note? }
+downloadAsset(fs, hit, fetchImpl, opts?: { resolution?, name?, inflate? }): Promise<AssetEntry & { files: string[]; suggestion? }>   // → assets/<kind>s/<name>.<ext> or assets/<kind>s/<name>/…
+importAssetZip(fs, zipBytes, { name, source, license, author?, sourceUrl?, attribution?, filter?: string[], inflate?, maxFiles? }): Promise<{ assets, models, skipped }>   // Kenney / Quaternius packs
+listLibrary(libraryIndex, { query?, kind?, limit? }): { assets: { id, ref: "library:<id>", kind, license, author?, tags, description, kb }[]; total }
+// templates.ts   TemplateInfo { id, title, description, kind, tags, aspect }; TemplateIndex = TemplateInfo[]
+listTemplates(index, { kind?, query? })  findTemplate(index, id)  parseTemplateInfo(json, fallbackId)  instantiateTemplate(fs, id, files, { name, title?, force? }) — files read from templates/<id>/ by the front door
 // export.ts
 buildExport(fs, { format: "embed" | "single-html", name?, runtime: RuntimeFiles, library: LibraryProvider, poster?: Uint8Array }): Promise<ExportResult>
-  // ExportResult { files: Record<string, Uint8Array|string> (relative to the export root), snippet: string, totalKb, entry }
+  // RuntimeFiles { files: Record<string, Uint8Array> } (dist/runtime: "agent3d-runtime.js" + "chunks/…"; single-html: "agent3d-runtime.single.js")
+  // LibraryProvider { index: LibraryIndex; read(id): Promise<Uint8Array> } (src/core/library.ts)
+  // ExportResult { format, name, files: Record<string, Uint8Array|string> (relative to the export root), snippet, entry, totalKb, sizes: { runtimeKb, sceneKb, assetsKb, scriptsKb, posterKb }, credits, issues }
+  // pure (the front door writes files; prefixFiles(files, dir) helps). Throws on validation errors / missing files.
+// docs.ts
+renderCatalogMarkdown(): string               // docs/catalog.md (src/ops/docs.test.ts fails when stale; UPDATE_DOCS=1 rewrites)
 ```
 
 ## Export format
