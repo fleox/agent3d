@@ -1,6 +1,18 @@
 {
   "versions": [
     {
+      "version": "0.2.1",
+      "date": "2026-11-22",
+      "breaking": false,
+      "changes": [
+        "New README / npm page: a 2-minute demo film, real Claude Code sessions, terminal demos, showcase renders, Studio screenshots and a how-it-works diagram.",
+        "Studio: the new Agent3D logo; the editor grid is depth-tested, fades with distance and at grazing angles, and the G toggle hides it immediately; timeline ruler labels no longer overlap.",
+        "render / export: AGENT3D_CDP_TIMEOUT_MS raises the headless-browser timeouts on slow machines (CI runners with software WebGL).",
+        "Releases are published from GitHub Actions with npm provenance (trusted publishing)."
+      ],
+      "actions": []
+    },
+    {
       "version": "0.2.0",
       "date": "2026-11-22",
       "breaking": false,
