@@ -61,7 +61,7 @@ Generated from the CLI's own command list (`help --json`); `npm test` fails when
 | [`serve`](#serve) | Live preview of the project on 127.0.0.1 (scene at its aspect ratio, play / pause, time scrubber): scene.json edits update the open page instantly, asset / script edits reload it. Runs until stopped (Ctrl+C). |
 | [`studio`](#studio) | Open the Studio (visual editor: viewport, outliner, inspector, timeline, catalog, templates, assistant) on this computer, editing the project folder through a local API. Runs until stopped (Ctrl+C). |
 | [`export`](#export) | Export for a website: embed (Web Component + static files, default), single-html (one file), poster (still image), video (WebM). Overwriting a non-empty --out needs --yes. |
-| [`assets`](#assets) | Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), remove, and browse the built-in library. |
+| [`assets`](#assets) | Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (downscale textures, also inside .glb), remove, and browse the built-in library. |
 | [`tools`](#tools) | The AI tool catalog (src/ai/tools.ts + render_preview) — exactly what the MCP server and the Studio assistant expose: list the tools with their JSON schemas, or call one with a JSON input. |
 | [`mcp`](#mcp) | Run the MCP server on stdio (JSON-RPC 2.0, protocol 2025-06-18 / 2025-03-26 / 2024-11-05): tools = the AI catalog + render_preview (returns the contact sheet as an image), resources = scene, summary, catalog. For Claude Desktop / Claude Code / Cursor. |
 | [`doctor`](#doctor) | Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene (in a temp folder). A failed required check makes the command fail (exit 1, error code doctor-failed, one hint per failed check, every check in error.details.checks). |
@@ -318,17 +318,18 @@ _Writes to the project._
 
 ### assets
 
-Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), remove, and browse the built-in library.
+Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (downscale textures, also inside .glb), remove, and browse the built-in library.
 
 ```
-agent3d assets <list|search|add|remove|library> [--project <dir>]
+agent3d assets <list|search|add|optimize|remove|library> [--project <dir>]
 ```
 
 | Action | Usage | What it does |
 |---|---|---|
-| `list` | `agent3d assets list` | The project's assets (path, kind, size, source, licence). |
+| `list` | `agent3d assets list` | The project's assets (path, kind, size on disk, source, licence). Stale manifest sizes are refreshed (`refreshed` lists them). |
 | `search` | `agent3d assets search <query> [--kind model\|texture\|hdri] [--source polyhaven\|ambientcg\|kenney\|quaternius\|khronos]` | Search free, account-less CC0 sources (network). Hits can be added with `assets add --hit '<json>'`. |
-| `add` | `agent3d assets add <file> [--kind <k>] [--path assets/…] [--license CC0-1.0] [--author <name>] \| assets add <pack.zip> --source kenney\|quaternius\|local --license CC0-1.0 [--filter <word>]… [--name <pack>] \| assets add --hit <json\|@file> [--resolution 1k]` | Copy a local file into assets/, import a Kenney / Quaternius pack zip (only .glb/.gltf + textures, --filter keeps models whose path contains a word), or download a search hit (licence recorded in assets/manifest.json). |
+| `add` | `agent3d assets add <file> [--kind <k>] [--path assets/…] [--license CC0-1.0] [--author <name>] \| assets add <pack.zip> --source kenney\|quaternius\|local --license CC0-1.0 [--filter <word>]… [--name <pack>] \| assets add --hit <json\|@file> [--resolution 1k\|512] [--max-size <px>]` | Copy a local file into assets/, import a Kenney / Quaternius pack zip (only .glb/.gltf + textures, --filter keeps models whose path contains a word), or download a search hit (licence recorded in assets/manifest.json). Models return `bounds` (size w × h × d in model units + up-axis guess). --resolution below 1k (e.g. 512) downloads 1k and downscales (headless Chrome). |
+| `optimize` | `agent3d assets optimize [<path>…] [--all] [--max-size 1024] [--quality 80] [--yes]` | Downscale / re-encode textures to cut the bundle size: .jpg / .png / .webp files (format and path kept) and the images embedded in .glb models (opaque PNGs become JPEG). Files only change when they get smaller; manifest sizes are refreshed. Lossy: prints a plan unless --yes. Needs headless Chrome. **Plan + `--yes`.** |
 | `remove` | `agent3d assets remove <path> [--yes]` | Delete an asset and its manifest entry (plan + needsConfirmation unless --yes). **Plan + `--yes`.** |
 | `library` | `agent3d assets library [--query <text>] [--kind <k>] [--limit 50] [--offset 0] [--all]` | Built-in CC0 assets shipped with Agent3D — reference them as "library:<id>" (no download). Shows animation clips and triangles of models; 50 results per page (`more: true` → next page with --offset, or --all). |
 
@@ -342,9 +343,11 @@ agent3d assets <list|search|add|remove|library> [--project <dir>]
 | `--query <value>` | search / library: text to look for. |
 | `--limit <value>` | library: results per page (default 50). |
 | `--offset <value>` | library: skip the first N results (paging). |
-| `--all` | library: every match, no limit. |
+| `--all` | library: every match, no limit. optimize: every texture and .glb under assets/. |
 | `--hit <value>` | add: a hit from `assets search` (JSON, @file or -). |
-| `--resolution <value>` | add --hit: texture / HDRI resolution (1k, 2k…; default 1k). |
+| `--resolution <value>` | add --hit: texture / HDRI resolution (1k, 2k…; default 1k). Lower values (512, 256) download 1k and downscale to that size. |
+| `--max-size <value>` | optimize / add --hit: longest texture side in pixels (optimize default 1024; never upscales). |
+| `--quality <value>` | optimize / add --hit: JPEG / WebP quality 1-100 (default 80). |
 | `--path <value>` | add: destination path in the project (default assets/<kind>/<file name>). |
 | `--license <value>` | add: the file's licence (SPDX id, e.g. CC0-1.0, CC-BY-4.0). |
 | `--author <value>` | add: author / attribution name. |
