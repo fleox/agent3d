@@ -116,6 +116,19 @@ describe("generators", () => {
     expect(terrain.object.userData.waterLevel).toBe(0.6);
   });
 
+  it("terrain snowLine caps the high band with the last palette colour", async () => {
+    const whites = async (snowLine: number) => {
+      const t = await GENERATOR_IMPLS.terrain!({ resolution: 32, shape: "mountains", waterLevel: null, palette: ["#c9ad7f", "#5f8a3e", "#7a6a6e", "#ffffff"], snowLine }, makeCtx(1));
+      const col = (t.object.children[0] as THREE.Mesh).geometry.getAttribute("color");
+      let n = 0;
+      for (let i = 0; i < col.count; i++) if (col.getX(i) > 0.95 && col.getY(i) > 0.95 && col.getZ(i) > 0.95) n++;
+      return n / col.count;
+    };
+    const summit = await whites(1);
+    const capped = await whites(0.5);
+    expect(capped).toBeGreaterThan(summit + 0.03);
+  });
+
   it("terrain waterLevel null disables water", async () => {
     const t = await GENERATOR_IMPLS.terrain!({ resolution: 16, waterLevel: null }, makeCtx(1));
     expect(t.object.children.length).toBe(1);

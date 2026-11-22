@@ -454,6 +454,7 @@ Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, isla
 | `lowpoly` | boolean | `true` | Faceted shading. |
 | `waterLevel` | number | `0.6` | Water surface height in world units (absolute, not a fraction of height); null = no water. |
 | `waterColor` | color | `"#3d9bd6"` | Water colour. |
+| `snowLine` | number (0…1) | `1` | Height fraction (0..1, above the water) where the last palette colour (snow) caps the peaks; 1 = summit only. |
 
 ### `trees`
 

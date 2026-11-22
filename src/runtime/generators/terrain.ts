@@ -72,6 +72,7 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
   const palette = p.colors("palette");
   const lowpoly = p.bool("lowpoly");
   const waterLevel = p.numOrNull("waterLevel");
+  const snowLine = p.num("snowLine");
   const ox = ctx.rng.range(-500, 500);
   const oz = ctx.rng.range(-500, 500);
   const h01 = terrainHeightFn(shape, size, p.num("scale"), p.int("octaves"), ox, oz);
@@ -125,6 +126,11 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
     // steep → rock (second to last colour), except on the snow band
     const steep = smoothstep(0.5, 0.85, slope);
     if (steep > 0 && t < 0.9) out.lerp(palette[Math.max(1, pal - 2)]!, steep * 0.8);
+    // snow cap above snowLine (last colour); the steepest faces stay rocky
+    if (snowLine < 1 && pal >= 3 && t > snowLine - 0.04) {
+      const k = smoothstep(snowLine - 0.04, snowLine + 0.04, t) * (1 - smoothstep(0.75, 1.1, slope) * 0.7);
+      out.lerp(palette[pal - 1]!, k);
+    }
     return out;
   };
 
