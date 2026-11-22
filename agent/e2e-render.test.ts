@@ -35,6 +35,12 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     expect((await ok(["export", "--project", dir])).needsConfirmation).toBe(true);
   }, 120_000);
 
+  it("doctor's test render passes (renders into its own temp folder)", async () => {
+    const r = await cli(["doctor"]);
+    const checks = r.body.ok ? r.body.data.checks : (r.body.error as { details: { checks: unknown[] } }).details.checks as { id: string; ok: boolean; optional?: boolean; hint?: string }[];
+    expect(checks.find((c: { id: string }) => c.id === "render")).toMatchObject({ ok: true });
+  }, 120_000);
+
   it("plays a game headlessly with --input and returns its state", async () => {
     const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "game");
     await ok(["new", dir, "--target", "game"]);

@@ -17,7 +17,7 @@ Agent3D turns a JSON **scene** (`scene.json` in a project folder) into a 3D elem
 
 Every command is `npx -y @fleox/agent3d@0.1.0 <command> --json` and prints one object: `{"ok": true, "data": …}` or `{"ok": false, "error": {"code", "message", "hint"}}`. Read `error.hint` when `ok` is false: it says what to do. `npx -y @fleox/agent3d@0.1.0 help scene --json` lists any command's actions and options. Pass `--project <dir>` to every project command (default: the current directory).
 
-First run on a machine: `npx -y @fleox/agent3d@0.1.0 doctor --json` checks Node, Chrome and does a test render. Without Chrome, renders and posters fail with a hint (install Chrome, or set `AGENT3D_CHROME`); `export --no-poster` still works.
+First run on a machine: `npx -y @fleox/agent3d@0.1.0 doctor --json` checks Node, Chrome and does a test render: `{ ok: true, data: { checks } }` when everything required passes, else `{ ok: false, error: { code: "doctor-failed", hint } }` (exit 1) with one hint per failed check and every check in `error.details.checks`. Without Chrome, renders and posters fail with a hint (install Chrome, or set `AGENT3D_CHROME`); `export --no-poster` still works.
 
 ## The loop
 

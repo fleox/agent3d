@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { printResult } from "../output";
+import { join, resolve } from "node:path";
+import { CliError, printResult } from "../output";
 import { distRoot, isBundled, libraryDir, packageRoot, readVersionInfo, runtimeBuilt, runtimeDir, studioDir, templatesDir } from "../paths";
 import type { Command } from "./types";
 import { boolOpt } from "./util";
@@ -42,10 +42,24 @@ export const DOCTOR_SCENE = {
   objects: [{ id: "cube", kind: "mesh", geometry: { type: "box", width: 1.4, height: 1.4, depth: 1.4 }, material: { color: "#ff6a3d", roughness: 0.5 } }],
 };
 
+// Only blame the browser when the browser failed: errors with a known code
+// keep their own hint; anything else is reported as an Agent3D bug.
+const BROWSER_CODES = new Set(["browser-launch", "no-browser", "webgl-unavailable", "cdp-connect"]);
+export function renderFailure(e: unknown): DoctorCheck {
+  const err = e as Error & { code?: string; hint?: string };
+  const code = err instanceof CliError ? err.code : undefined;
+  const hint =
+    err.hint ??
+    (code && BROWSER_CODES.has(code)
+      ? "Update Chrome, or point AGENT3D_CHROME at Google Chrome / Chromium (`npx playwright install chromium`)."
+      : "The browser started but the test render failed inside Agent3D: retry once, then report it with this output (`agent3d version`).");
+  return { id: "render", ok: false, message: `Test render failed${code ? ` (${code})` : ""}: ${err.message}`, hint, ...(code ? { details: { code } } : {}) };
+}
+
 export const doctorCommand: Command = {
   name: "doctor",
   usage: "doctor [--no-render]",
-  summary: "Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene.",
+  summary: "Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene (in a temp folder). A failed required check makes the command fail (exit 1, error code doctor-failed, one hint per failed check, every check in error.details.checks).",
   options: [{ name: "no-render", type: "boolean", description: "Skip the test render." }],
   async run({ io, options }) {
     const checks: DoctorCheck[] = [];
@@ -81,14 +95,16 @@ export const doctorCommand: Command = {
       if (!browser || !runtimeBuilt() || major < 22) {
         checks.push({ id: "render", ok: false, message: "Test render skipped (needs Chrome, the runtime build and Node 22+).", hint: "Fix the checks above, then run `agent3d doctor` again." });
       } else {
+        // Everything (scene + renders) lives in a fresh temp folder; the
+        // result's frame paths are relative to it (`r.dir`).
         const dir = mkdtempSync(join(tmpdir(), "agent3d-doctor-"));
         try {
           writeFileSync(join(dir, "scene.json"), JSON.stringify(DOCTOR_SCENE));
           const { renderProject } = await import("../render/render");
           const { decodePng, pngVariance } = await import("../render/png");
           const t0 = Date.now();
-          const r = await renderProject({ projectDir: dir, frames: "0", size: "256x256", timeoutMs: 45_000 });
-          const v = pngVariance(decodePng(readFileSync(r.frames[0].path)));
+          const r = await renderProject({ projectDir: dir, frames: "0", size: "256x256", outDir: join(dir, "renders"), timeoutMs: 45_000 });
+          const v = pngVariance(decodePng(readFileSync(resolve(r.dir, r.frames[0].path))));
           const ok = v.distinct > 1 && v.stddev > 1;
           checks.push({
             id: "render",
@@ -98,8 +114,7 @@ export const doctorCommand: Command = {
             details: { timings: r.timings, issues: r.issues, consoleErrors: r.consoleErrors },
           });
         } catch (e) {
-          const err = e as Error & { hint?: string };
-          checks.push({ id: "render", ok: false, message: `Test render failed: ${err.message}`, hint: err.hint ?? "Run with AGENT3D_CHROME pointing at Google Chrome / Chromium." });
+          checks.push(renderFailure(e));
         } finally {
           rmSync(dir, { recursive: true, force: true });
         }
@@ -107,9 +122,25 @@ export const doctorCommand: Command = {
     }
     const ok = checks.every((c) => c.ok || c.optional);
     const info = readVersionInfo();
-    printResult(io, { ok, version: info.version, packageRoot: packageRoot(), dist: distRoot(), checks }, () =>
-      [`agent3d ${info.version} doctor`, ...checks.map((c) => `  ${c.ok ? "✓" : c.optional ? "·" : "✗"} ${c.id.padEnd(9)} ${c.message}${c.hint && !c.ok ? `\n              → ${c.hint}` : ""}`), "", ok ? "All good." : "Some checks failed."].join("\n"),
-    );
-    return ok ? 0 : 1;
+    const human = () =>
+      [`agent3d ${info.version} doctor`, ...checks.map((c) => `  ${c.ok ? "✓" : c.optional ? "·" : "✗"} ${c.id.padEnd(9)} ${c.message}${c.hint && !c.ok ? `\n              → ${c.hint}` : ""}`), "", ok ? "All good." : "Some checks failed."].join("\n");
+    if (!ok) {
+      // A failed required check is a failure of the command: { ok: false,
+      // error } with exit 1 (the checks are in error.details).
+      const failed = checks.filter((c) => !c.ok && !c.optional);
+      if (!io.json) {
+        io.out(human());
+        return 1;
+      }
+      throw new CliError(
+        "doctor-failed",
+        `${failed.length} required check(s) failed: ${failed.map((c) => `${c.id} (${c.message})`).join("; ")}`,
+        failed.map((c) => `${c.id}: ${c.hint ?? "see details.checks"}`).join(" | "),
+        1,
+        { version: info.version, packageRoot: packageRoot(), dist: distRoot(), failed: failed.map((c) => c.id), checks },
+      );
+    }
+    printResult(io, { ok, version: info.version, packageRoot: packageRoot(), dist: distRoot(), checks }, human);
+    return 0;
   },
 };

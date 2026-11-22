@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { COMMANDS } from "./commands";
+import { renderFailure } from "./commands/meta";
+import { CliError } from "./output";
 import { parseScalar, setPairs } from "./commands/util";
 import { cli, ok } from "./testing/cli";
 import { writeZipStored } from "../src/ops/zip";
@@ -70,8 +72,23 @@ describe("CLI contract", () => {
   it("doctor reports its checks", async () => {
     const r = await cli(["doctor", "--no-render"]);
     expect(r.stdout).toHaveLength(1);
-    expect(r.body.data.checks.map((c: { id: string }) => c.id)).toEqual(["node", "browser", "runtime", "studio", "library", "templates"]);
-    for (const c of r.body.data.checks) if (!c.ok && !c.optional) expect(c.hint).toBeTruthy();
+    // ok mirrors the checks: { ok: true, data } (exit 0) or { ok: false, error: doctor-failed } (exit 1).
+    const checks = r.body.ok ? r.body.data.checks : (r.body.error as { details: { checks: unknown[] } }).details.checks as { id: string; ok: boolean; optional?: boolean; hint?: string }[];
+    expect(checks.map((c: { id: string }) => c.id)).toEqual(["node", "browser", "runtime", "studio", "library", "templates"]);
+    for (const c of checks) if (!c.ok && !c.optional) expect(c.hint).toBeTruthy();
+    const failed = checks.some((c: { ok: boolean; optional?: boolean }) => !c.ok && !c.optional);
+    expect(r.body.ok).toBe(!failed);
+    expect(r.code).toBe(failed ? 1 : 0);
+    if (failed) expect(r.body.error).toMatchObject({ code: "doctor-failed", hint: expect.any(String) });
+    else expect(r.body.data.ok).toBe(true);
+  });
+
+  it("doctor only blames the browser when the browser failed", () => {
+    expect(renderFailure(new CliError("browser-launch", "boom", "Could not start Chrome")).hint).toBe("Could not start Chrome");
+    expect(renderFailure(new CliError("webgl-unavailable", "no gl")).hint).toMatch(/Chrome/);
+    const internal = renderFailure(new Error("ENOENT: no such file or directory, open 'renders/x-t0.png'"));
+    expect(internal.hint).not.toMatch(/AGENT3D_CHROME/);
+    expect(internal.message).toContain("ENOENT");
   });
 
   it("pages the built-in library and shows animation clips", async () => {

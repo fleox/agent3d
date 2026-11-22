@@ -6,7 +6,7 @@ Agent3D is meant to be driven by an AI agent, but every step is a plain command 
 npx -y @fleox/agent3d@0.1.0 doctor
 ```
 
-`doctor` checks Node, finds your browser, and renders a one-object test scene headless.
+`doctor` checks Node, finds your browser, and renders a one-object test scene headless (in a temp folder). It exits 1 when a required check fails, with a hint per failed check (`--json`: `{ ok: false, error: { code: "doctor-failed", details: { checks } } }`).
 
 ## With an agent
 
