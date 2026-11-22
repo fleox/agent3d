@@ -161,8 +161,8 @@ The lint is a contract checked before export, not a runtime isolation boundary: 
 ## Testing scripts
 
 ```bash
-npx -y @fleox/agent3d@0.2.0 check --project my-game --json
-npx -y @fleox/agent3d@0.2.0 render --project my-game --sheet --frames 0,2,4,6 --json
+npx -y @fleox/agent3d@0.2.1 check --project my-game --json
+npx -y @fleox/agent3d@0.2.1 render --project my-game --sheet --frames 0,2,4,6 --json
 ```
 
 Plain renders have no input: give the game an attract mode (an autopilot during the `ready` phase) so frames show action, and read `issues` / `consoleErrors` of the render for script errors. The render result also carries `state` (the script's `api.state` after the last frame).
@@ -170,7 +170,7 @@ Plain renders have no input: give the game an attract mode (an autopilot during 
 To play the game headlessly, pass a script of simulated input with `--input` (JSON array, `@file` or `-`); events are applied while seeking, in time order, and the frames are rendered in time order:
 
 ```bash
-npx -y @fleox/agent3d@0.2.0 render --project my-game --frames 0,1,2 --input '[{"t": 0.2, "key": "ArrowRight", "hold": 0.8}, {"t": 1.2, "click": [0, 0]}]' --json
+npx -y @fleox/agent3d@0.2.1 render --project my-game --frames 0,1,2 --input '[{"t": 0.2, "key": "ArrowRight", "hold": 0.8}, {"t": 1.2, "click": [0, 0]}]' --json
 ```
 
 | Event | Meaning |

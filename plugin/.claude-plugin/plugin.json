@@ -1,6 +1,6 @@
 {
   "name": "agent3d",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Skills to run Agent3D (the 3D studio your AI agent can run): create, edit, preview with headless screenshots the agent looks at, check and publish 3D elements for web pages — animated banners, heroes, product shots, characters, landscapes and mini games — exported as a self-contained Web Component for any site, with no server and no account.",
   "author": {
     "name": "fleox"
