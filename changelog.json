@@ -1,6 +1,31 @@
 {
   "versions": [
     {
+      "version": "0.2.0",
+      "date": "2026-11-22",
+      "breaking": false,
+      "changes": [
+        "Lookdev: physical sky presets with a sun, height fog, `meshGradient` backgrounds, HDRI rotation and ground projection, 6 new built-in HDRIs (softbox, warehouse, city, night-city, forest, beach), one-line light rigs (`catalog lightRigs`), contact shadows, shadow settings, rect panel lights and volumetric spots, 19 new material presets (car paint, ceramic, marble, velvet, diamond, soap bubble…), physical material parameters, texture slots with procedural textures (`{ \"procedural\": \"marble\" }`) and triplanar mapping, 10 new shaders.",
+        "Cinematic post effects: `look` presets, ambient occlusion, god rays, lens flare, FXAA / SMAA / TAA, tilt-shift, halftone, ASCII, glitch, sharpen, colour grading looks, depth of field with `focusOn`; `target.quality` tiers (auto / low / medium / high / ultra) drop costly passes on weak devices; `check` reports `budget.gpu` and warns about expensive post effects.",
+        "Typography: 13 kerned fonts (Inter, Montserrat, Space Grotesk, Bebas Neue, Anton, Playfair Display, JetBrains Mono, Fredoka, Pacifico, Lobster), `maxWidth` wrapping, outlines, `splitLetters` with per-letter timeline targets (`title/0`), `reveal` animations; SVG logos gain strokes, `keepColors` and `fit`.",
+        "Motion: every easing family plus `cubicBezier()`, `spring()` and `steps()`, per-key eases, relative values, multi-target stagger selectors, markers and segments, manual triggers, scroll-driven timelines (`timeline.scroll`), camera shots, shake and look-at, model clip / blend / morph tracks, 6 new behaviours (spring, parallax, tilt, breathe, noise, lookAt), and `scene.interactions` (hover / click rules, `openUrl`) with the new `interactions_set` AI tool.",
+        "Real rigid-body physics (cannon-es, in a lazy chunk): bodies that tumble, stack and roll, impulses and forces, joints (hinges with motors), collision events with impulse and speed, `character` controllers and `fixedRotation`.",
+        "Content: new character parameters, 6 new generators (floating island, globe, crystals, galaxy, 3D bars, abstract shapes), better water, clouds and grass, new particle presets (smoke, fire, petals, leaves, galaxy dust, bokeh) and emitter shapes, new built-in product, prop and character models (some CC BY: exports credit them in CREDITS.txt).",
+        "Smart `assets optimize`: a target size per texture from how the scene uses it, WebP, meshopt geometry compression, optional simplification, `--dry-run` with real savings; `export --optimize` ships optimised copies and leaves the sources untouched.",
+        "Web embeds: `<agent3d-scene>` gains `aspect`, `alt`, `autoplay`, `paused`, `loop`, `quality`, `interactive`, `data-*` bindings (`{data.key}` in the scene), methods (`play`, `pause`, `seek`, `setData`, `trigger`, `reload`, `ready`), events and CSS parts; exports add a slotted `<img slot=\"poster\">`, `og-image.png`, Subresource Integrity, `--cache-bust`, `--base-url`, `--format zip|gif`, `EMBED.md` and React / Vue / Svelte wrappers.",
+        "Renders: `render --video` (MP4 H.264 or WebM, frame-exact), `--gif`, `--webp`, `--quality high|ultra` supersampling, `--transparent`, `--scroll` and scroll events in `--input`.",
+        "Studio: transform gizmos (move / rotate / scale) in the viewport.",
+        "Skills, docs and recipes rewritten for the new features, with premium defaults per target kind; the AgentCMS block reserves the scene's aspect ratio, ships the poster as markup and supports cache-busted exports."
+      ],
+      "actions": [
+        "Dynamic physics bodies now rotate (real rigid bodies). A script-driven player or character that must stay upright needs `\"character\": true` (or `\"fixedRotation\": true`) on its `physics` block; check your games with `agent3d render --input …`.",
+        "Font ids are unchanged but now map to new, kerned typefaces (`sans-bold` / `sans` = Inter, `serif-bold` / `serif` = Playfair Display, `mono` = JetBrains Mono, `display` = Fredoka): text widths change slightly — re-render scenes with 3D text and check nothing is cut at the edges.",
+        "The `chromatic` post effect is radial by default (`\"radial\": false` restores the uniform shift) and `film` grain is gentler with scanlines off by default (`scanlines`): re-render scenes that use them and adjust `amount` / `intensity` if needed.",
+        "Scenes with models compressed by `assets optimize` / `export --optimize` (meshopt, the default) need `'wasm-unsafe-eval'` in the page's `script-src` if the site sets a Content-Security-Policy; use `--compress none` to avoid it.",
+        "Update the skills (`/plugin update agent3d` in Claude Code, or `npm run hermes:build` for Hermes) so agents pin `@fleox/agent3d@0.2.0`; re-export embeds to get the new runtime (cannon-es and meshoptimizer are bundled, no new install step)."
+      ]
+    },
+    {
       "version": "0.1.0",
       "date": "2026-11-22",
       "breaking": false,

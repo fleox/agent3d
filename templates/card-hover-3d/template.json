@@ -1,16 +1,21 @@
 {
   "id": "card-hover-3d",
   "title": "3D product card",
-  "description": "Clean product card (4:5): a PBR water bottle floating over a soft disc that lifts, tilts toward the pointer and grows on hover \u2014 drop it into any product grid.",
+  "description": "Clean product card (4:5): a PBR water bottle turning over a glossy sage disc with a soft contact shadow, softbox lighting and product look; it lifts, tilts toward the pointer and grows on hover, with a data-bound name, price and link \u2014 drop it into any product grid.",
   "kind": "card",
   "tags": [
     "card",
     "product",
     "ecommerce",
     "hover",
-    "interactive",
-    "minimal",
-    "pbr"
+    "bottle",
+    "studio",
+    "price",
+    "shop",
+    "grid",
+    "light",
+    "contact-shadows",
+    "data-bindings"
   ],
   "aspect": "4:5"
 }

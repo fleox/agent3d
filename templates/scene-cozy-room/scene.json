@@ -1,0 +1,728 @@
+{
+  "version": 1,
+  "id": "scene-cozy-room",
+  "title": "Cozy room diorama",
+  "ariaLabel": "An isometric cozy living-room corner at golden hour: a modern armchair, a round wooden coffee table with a potted succulent, a rug, a warm floor lamp and sunlight from a window with floating dust",
+  "seed": 4,
+  "target": {
+    "kind": "square",
+    "aspect": "1:1",
+    "budgetKb": 2600,
+    "reducedMotion": "static",
+    "posterTime": 2,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "orthographic",
+    "zoom": 6.1,
+    "position": [
+      9,
+      7.4,
+      9
+    ],
+    "target": [
+      0,
+      1.1,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.25,
+      "smoothing": 0.94
+    }
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#f6e6d6",
+        "#e3c9b3"
+      ],
+      "center": [
+        0.5,
+        0.55
+      ]
+    },
+    "lighting": "soft",
+    "lightingIntensity": 0.45,
+    "shadows": {
+      "type": "vsm",
+      "softness": 6,
+      "mapSize": 2048
+    }
+  },
+  "lights": [
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [
+        -3,
+        5,
+        6
+      ],
+      "target": [
+        0.5,
+        0,
+        -0.5
+      ],
+      "color": "#ffc98f",
+      "intensity": 2.6,
+      "castShadow": true
+    },
+    {
+      "id": "windowLight",
+      "type": "rect",
+      "position": [
+        -1.985,
+        1.55,
+        0.3
+      ],
+      "target": [
+        2,
+        0.6,
+        0.3
+      ],
+      "width": 1.26,
+      "height": 1.16,
+      "color": "#ffe1b8",
+      "intensity": 6,
+      "panel": true
+    },
+    {
+      "id": "lampGlow",
+      "type": "point",
+      "position": [
+        1.25,
+        1.45,
+        -1.3
+      ],
+      "color": "#ffb466",
+      "intensity": 5,
+      "distance": 5,
+      "behaviours": [
+        {
+          "type": "flicker",
+          "amount": 0.05,
+          "speed": 2
+        }
+      ]
+    },
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#ffe9d6",
+      "groundColor": "#6b4b3a",
+      "intensity": 0.5
+    }
+  ],
+  "objects": [
+    {
+      "id": "floor",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 4,
+        "height": 0.2,
+        "depth": 4
+      },
+      "position": [
+        0,
+        -0.1,
+        0
+      ],
+      "receiveShadow": true,
+      "material": {
+        "type": "physical",
+        "color": "#d8c3b0",
+        "roughness": 0.6,
+        "map": "library:textures/wood-planks-color.jpg",
+        "normalMap": "library:textures/wood-planks-normal.jpg",
+        "repeat": [
+          2,
+          2
+        ],
+        "clearcoat": 0.25,
+        "clearcoatRoughness": 0.4
+      }
+    },
+    {
+      "id": "wallLeft",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 0.16,
+        "height": 2.7,
+        "depth": 4
+      },
+      "position": [
+        -2.08,
+        1.35,
+        0
+      ],
+      "receiveShadow": true,
+      "material": {
+        "preset": "matte",
+        "color": "#e7b7a0"
+      }
+    },
+    {
+      "id": "wallBack",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 4.32,
+        "height": 2.7,
+        "depth": 0.16
+      },
+      "position": [
+        -0.08,
+        1.35,
+        -2.08
+      ],
+      "receiveShadow": true,
+      "material": {
+        "preset": "matte",
+        "color": "#f1d3bd"
+      }
+    },
+    {
+      "id": "rug",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.25,
+        "radiusBottom": 1.25,
+        "height": 0.02,
+        "segments": 64
+      },
+      "position": [
+        0.25,
+        0.01,
+        0.35
+      ],
+      "receiveShadow": true,
+      "material": {
+        "type": "physical",
+        "color": "#d9c2a4",
+        "roughness": 1,
+        "sheen": 1,
+        "sheenColor": "#fff3e0",
+        "map": {
+          "procedural": "stripes",
+          "colors": [
+            "#e8d6bd",
+            "#c9a988"
+          ]
+        }
+      }
+    },
+    {
+      "id": "armchair",
+      "kind": "model",
+      "src": "library:models/props/modern-armchair.glb",
+      "fit": 1.0,
+      "position": [
+        -0.85,
+        0,
+        -0.75
+      ],
+      "rotation": [
+        0,
+        35,
+        0
+      ],
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    {
+      "id": "table",
+      "kind": "model",
+      "src": "library:models/props/coffee-table.glb",
+      "fit": 1.12,
+      "position": [
+        0.55,
+        0,
+        0.55
+      ],
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    {
+      "id": "succulent",
+      "kind": "model",
+      "src": "library:models/props/potted-succulent.glb",
+      "fit": 0.32,
+      "position": [
+        0.55,
+        0.42,
+        0.55
+      ],
+      "castShadow": true
+    },
+    {
+      "id": "lamp",
+      "kind": "group",
+      "position": [
+        1.25,
+        0,
+        -1.3
+      ],
+      "children": [
+        {
+          "id": "lampBase",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cylinder",
+            "radiusTop": 0.16,
+            "radiusBottom": 0.18,
+            "height": 0.04,
+            "segments": 32
+          },
+          "position": [
+            0,
+            0.02,
+            0
+          ],
+          "material": {
+            "preset": "brushedMetal",
+            "color": "#c9a46a"
+          },
+          "castShadow": true
+        },
+        {
+          "id": "lampPole",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cylinder",
+            "radiusTop": 0.015,
+            "radiusBottom": 0.015,
+            "height": 1.4,
+            "segments": 12
+          },
+          "position": [
+            0,
+            0.72,
+            0
+          ],
+          "material": {
+            "preset": "brushedMetal",
+            "color": "#c9a46a"
+          },
+          "castShadow": true
+        },
+        {
+          "id": "lampShade",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cylinder",
+            "radiusTop": 0.17,
+            "radiusBottom": 0.26,
+            "height": 0.32,
+            "segments": 40,
+            "openEnded": true
+          },
+          "position": [
+            0,
+            1.5,
+            0
+          ],
+          "material": {
+            "type": "standard",
+            "color": "#fff1dc",
+            "emissive": "#ffb466",
+            "emissiveIntensity": 1.4,
+            "side": "double",
+            "roughness": 0.9
+          },
+          "castShadow": true
+        }
+      ]
+    },
+    {
+      "id": "frame",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 0.9,
+        "height": 0.65,
+        "depth": 0.04
+      },
+      "position": [
+        0.35,
+        1.6,
+        -1.98
+      ],
+      "material": {
+        "preset": "wood",
+        "color": "#7a5236"
+      }
+    },
+    {
+      "id": "art",
+      "kind": "mesh",
+      "geometry": {
+        "type": "plane",
+        "width": 0.76,
+        "height": 0.51
+      },
+      "position": [
+        0.35,
+        1.6,
+        -1.955
+      ],
+      "material": {
+        "type": "shader",
+        "shader": "grainGradient",
+        "uniforms": {
+          "colors": [
+            "#ffcf9e",
+            "#e2725b",
+            "#5b3a6e"
+          ],
+          "angle": 120,
+          "grain": 0.05
+        }
+      }
+    },
+    {
+      "id": "books",
+      "kind": "group",
+      "position": [
+        -1.65,
+        0,
+        0.9
+      ],
+      "rotation": [
+        0,
+        20,
+        0
+      ],
+      "children": [
+        {
+          "id": "book1",
+          "kind": "mesh",
+          "geometry": {
+            "type": "roundedBox",
+            "width": 0.34,
+            "height": 0.06,
+            "depth": 0.24,
+            "radius": 0.01
+          },
+          "position": [
+            0,
+            0.03,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#2f5d62"
+          }
+        },
+        {
+          "id": "book2",
+          "kind": "mesh",
+          "geometry": {
+            "type": "roundedBox",
+            "width": 0.3,
+            "height": 0.05,
+            "depth": 0.22,
+            "radius": 0.01
+          },
+          "position": [
+            0.01,
+            0.085,
+            0
+          ],
+          "rotation": [
+            0,
+            12,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#e9b44c"
+          }
+        },
+        {
+          "id": "book3",
+          "kind": "mesh",
+          "geometry": {
+            "type": "roundedBox",
+            "width": 0.28,
+            "height": 0.05,
+            "depth": 0.2,
+            "radius": 0.01
+          },
+          "position": [
+            -0.01,
+            0.135,
+            0
+          ],
+          "rotation": [
+            0,
+            -8,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#c0504d"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dust",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 140,
+      "area": [
+        2.6,
+        1.8,
+        2.2
+      ],
+      "position": [
+        -0.6,
+        1.1,
+        0.3
+      ],
+      "color": [
+        "#fff3dc",
+        "#ffe0b0"
+      ],
+      "size": 0.02,
+      "opacity": 0.7
+    },
+    {
+      "id": "plant",
+      "kind": "model",
+      "src": "library:models/props/potted-succulent.glb",
+      "fit": 0.55,
+      "position": [
+        -1.55,
+        0,
+        1.45
+      ],
+      "rotation": [
+        0,
+        60,
+        0
+      ],
+      "castShadow": true
+    },
+    {
+      "id": "window",
+      "kind": "group",
+      "position": [
+        -1.97,
+        1.55,
+        0.3
+      ],
+      "children": [
+        {
+          "id": "winBar0",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 0.06,
+            "height": 0.08,
+            "depth": 1.42
+          },
+          "position": [
+            0,
+            0.62,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#fbf3ea"
+          }
+        },
+        {
+          "id": "winBar1",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 0.06,
+            "height": 0.08,
+            "depth": 1.42
+          },
+          "position": [
+            0,
+            -0.62,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#fbf3ea"
+          }
+        },
+        {
+          "id": "winBar2",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 0.06,
+            "height": 1.32,
+            "depth": 0.08
+          },
+          "position": [
+            0,
+            0,
+            0.67
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#fbf3ea"
+          }
+        },
+        {
+          "id": "winBar3",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 0.06,
+            "height": 1.32,
+            "depth": 0.08
+          },
+          "position": [
+            0,
+            0,
+            -0.67
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#fbf3ea"
+          }
+        },
+        {
+          "id": "winBar4",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 0.05,
+            "height": 1.2,
+            "depth": 0.04
+          },
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#fbf3ea"
+          }
+        },
+        {
+          "id": "winBar5",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 0.05,
+            "height": 0.04,
+            "depth": 1.3
+          },
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#fbf3ea"
+          }
+        },
+        {
+          "id": "winSill",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 0.18,
+            "height": 0.05,
+            "depth": 1.55
+          },
+          "position": [
+            0.06,
+            -0.69,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#fbf3ea"
+          },
+          "castShadow": true
+        }
+      ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "cinematic",
+      "intensity": 0.7
+    },
+    {
+      "type": "ao",
+      "intensity": 1,
+      "radius": 0.35
+    },
+    {
+      "type": "grading",
+      "look": "warm",
+      "intensity": 0.5
+    }
+  ],
+  "timeline": {
+    "duration": 16,
+    "loop": true,
+    "tracks": [
+      {
+        "target": "camera.position",
+        "keys": [
+          [
+            0,
+            [
+              9,
+              7.4,
+              9
+            ]
+          ],
+          [
+            8,
+            [
+              9.8,
+              7.4,
+              8.1
+            ]
+          ],
+          [
+            16,
+            [
+              9,
+              7.4,
+              9
+            ]
+          ]
+        ],
+        "ease": "inOutSine"
+      },
+      {
+        "target": "sun.intensity",
+        "keys": [
+          [
+            0,
+            2.6
+          ],
+          [
+            8,
+            2.9
+          ],
+          [
+            16,
+            2.6
+          ]
+        ],
+        "ease": "inOutSine"
+      }
+    ]
+  }
+}

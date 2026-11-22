@@ -122,7 +122,7 @@ export function Toggle({ checked, onChange, ariaLabel }: { checked: boolean; onC
 export function Row({ label, children, hint, onReset, overridden, align = "center" }: { label: ReactNode; children: ReactNode; hint?: string; onReset?: () => void; overridden?: boolean; align?: "center" | "start" }) {
   return (
     <div className={clsx("group grid grid-cols-[84px_minmax(0,1fr)_16px] gap-x-2 px-3 py-[3px]", align === "center" ? "items-center" : "items-start")}>
-      <div className={clsx("truncate text-xs text-fg-muted", align === "start" && "pt-1")} title={hint}>
+      <div className={clsx("truncate text-xs text-fg-muted", align === "start" && "pt-1")} title={typeof label === "string" ? (hint ? `${label} — ${hint}` : label) : hint}>
         {label}
       </div>
       <div className="flex min-w-0 items-center gap-1">{children}</div>

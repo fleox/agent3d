@@ -106,6 +106,10 @@ export function prepareScene(scene: SceneDoc, opts: { data?: Record<string, unkn
     s = { ...s, timeline: { ...s.timeline, loop } };
   }
   const q = opts.quality ? (opts.quality === "auto" ? autoQuality() : opts.quality) : null;
+  if (opts.quality === "low" || opts.quality === "medium" || opts.quality === "high" || opts.quality === "ultra") {
+    // An explicit attribute picks the postfx quality tier (target.quality).
+    s = { ...s, target: { ...s.target, quality: opts.quality } };
+  }
   if (q === "low" || q === "medium" || q === "high") {
     const cap = q === "low" ? 1 : q === "medium" ? 1.5 : 2;
     const target = { ...s.target, maxDpr: Math.min(s.target?.maxDpr ?? 2, cap) };

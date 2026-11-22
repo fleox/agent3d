@@ -1,0 +1,24 @@
+{
+  "id": "banner-liquid-chrome",
+  "title": "Liquid chrome banner",
+  "description": "Abstract 4:1 banner: a flowing liquid-chrome backdrop softly out of focus, morphing holographic and chrome blobs, and a bold kerned title (data-bound) revealed letter by letter from the centre, with cinematic grading and grain.",
+  "kind": "banner",
+  "tags": [
+    "banner",
+    "abstract",
+    "chrome",
+    "liquid",
+    "iridescent",
+    "holographic",
+    "blob",
+    "title",
+    "reveal",
+    "dark",
+    "cinematic",
+    "fashion",
+    "music",
+    "launch",
+    "data-bindings"
+  ],
+  "aspect": "4:1"
+}

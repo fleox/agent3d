@@ -1,23 +1,26 @@
 // Inspector when nothing is selected: the scene itself — meta, target,
 // camera, environment, lights, post effects, physics, audio, HUD.
 
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import clsx from "clsx";
-import { useEffect, useRef } from "react";
-import { POSTFX, SOUND_PRESETS, catalogEntry } from "../../core/catalog";
-import type { BackgroundDef, EnvironmentDef, LightDef, SceneDoc } from "../../core/types";
-import { LIGHTING_PRESETS, TARGET_KINDS } from "../../core/validate";
+import { useEffect, useRef, useState } from "react";
+import { SOUND_PRESETS } from "../../core/catalog";
+import type { LightDef, SceneDoc } from "../../core/types";
+import { TARGET_KINDS } from "../../core/validate";
+import { EnvironmentSection } from "./EnvironmentSection";
+import { PhysicsSection } from "./PhysicsSection";
+import { PostFxSection } from "./PostFxSection";
+import { ShotsSection } from "./ShotsSection";
 import { uniqueId } from "../../core/ids";
 import { LIGHT_ICONS } from "../components/icons";
-import { ColorField, ColorsField } from "../components/ui/ColorField";
 import { PickMenu } from "../components/ui/Menu";
 import { NumberField } from "../components/ui/NumberField";
-import { Button, IconButton, Row, Section, Select, TextField, Toggle } from "../components/ui/controls";
+import { IconButton, Row, Section, Select, Toggle } from "../components/ui/controls";
 import { useI18n } from "../i18n";
 import { takenIds } from "../lib/patches";
 import { useEditor, useSnapshot, useUi } from "../state/context";
-import { ParamForm, useBinder } from "./fields";
-import { CAMERA_SPECS, GROUND_SPECS, LIGHT_SPECS, PHYSICS_SPECS, SCENE_META_SPECS, TARGET_SPECS, UI_ELEMENT_SPECS, UI_THEME_SPECS } from "./specs";
+import { ParamForm, SubForm, useBinder } from "./fields";
+import { CAMERA_SPECS, LIGHT_SHADOW_SPECS, LIGHT_SPECS, SCENE_META_SPECS, TARGET_SPECS, UI_ELEMENT_SPECS, UI_THEME_SPECS, VOLUMETRIC_SPECS } from "./specs";
 import { DEFAULT_ASPECT } from "../../core/validate";
 import { pretty } from "../lib/labels";
 
@@ -46,142 +49,14 @@ export function SceneSettings() {
       <Section title={t("scene.camera")} id="camera">
         <ParamForm specs={CAMERA_SPECS.filter((s) => (scene.camera.type === "orthographic" ? s.name !== "fov" : s.name !== "zoom"))} base="camera" values={rec(scene.camera)} />
       </Section>
+      <ShotsSection scene={scene} />
       <EnvironmentSection scene={scene} />
       <LightsSection scene={scene} />
       <PostFxSection scene={scene} />
-      <Section title={t("scene.physics")} id="physics" defaultOpen={!!scene.physics}>
-        {scene.physics ? (
-          <>
-            <ParamForm specs={PHYSICS_SPECS} base="physics" values={rec(scene.physics)} />
-            <div className="px-3">
-              <Button size="xs" variant="ghost" onClick={() => bind("physics", undefined)}>
-                <Trash2 size={11} /> {t("scene.disable")}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <div className="px-3">
-            <Button size="xs" onClick={() => bind("physics", { gravity: [0, -9.81, 0] })}>
-              <Plus size={11} /> {t("scene.enablePhysics")}
-            </Button>
-          </div>
-        )}
-      </Section>
+      <PhysicsSection scene={scene} />
       <AudioSection scene={scene} />
       <UiSection scene={scene} />
     </div>
-  );
-}
-
-type BgMode = "color" | "gradient" | "radial" | "sky" | "hdri" | "transparent";
-function bgMode(bg: BackgroundDef): BgMode {
-  if (bg === "transparent") return "transparent";
-  if (typeof bg === "string") return "color";
-  if ("gradient" in bg) return "gradient";
-  if ("radial" in bg) return "radial";
-  if ("sky" in bg) return "sky";
-  return "hdri";
-}
-const BG_DEFAULTS: Record<BgMode, BackgroundDef> = {
-  color: "#15171c",
-  gradient: { gradient: ["#141e30", "#243b55"], angle: 0 },
-  radial: { radial: ["#2b3350", "#0d0f16"] },
-  sky: { sky: { top: "#3a7bd5", horizon: "#f6d5a8", bottom: "#d1d7e0" } },
-  hdri: { hdri: "library:hdri/studio", blur: 0.5 },
-  transparent: "transparent",
-};
-
-function EnvironmentSection({ scene }: { scene: SceneDoc }) {
-  const { t } = useI18n();
-  const bind = useBinder();
-  const env: EnvironmentDef = scene.environment ?? { background: "#000000" };
-  const bg = env.background;
-  const mode = bgMode(bg);
-  const lighting = typeof env.lighting === "object" ? "hdri" : (env.lighting ?? "none");
-  const fog = env.fog;
-  const fogMode = fog ? ("density" in fog ? "exp" : "linear") : "off";
-  return (
-    <Section title={t("scene.environment")} id="environment">
-      <Row label={t("scene.background")}>
-        <Select value={mode} options={(["color", "gradient", "radial", "sky", "hdri", "transparent"] as const).map((m) => ({ value: m, label: t(`bg.${m}`) }))} onChange={(v) => bind("environment.background", BG_DEFAULTS[v as BgMode])} ariaLabel={t("scene.background")} />
-      </Row>
-      {mode === "color" && (
-        <Row label={t("scene.color")}>
-          <ColorField value={bg as string} onChange={(v, f) => bind("environment.background", v, f)} />
-        </Row>
-      )}
-      {(mode === "gradient" || mode === "radial") && (
-        <>
-          <Row label={t("scene.colors")}>
-            <ColorsField value={(bg as { gradient?: string[]; radial?: string[] })[mode === "gradient" ? "gradient" : "radial"] ?? []} onChange={(v, f) => bind(`environment.background.${mode}`, v, f)} />
-          </Row>
-          {mode === "gradient" && (
-            <Row label={t("scene.angle")}>
-              <NumberField value={(bg as { angle?: number }).angle ?? 0} suffix="°" onChange={(n, f) => bind("environment.background.angle", n, f)} ariaLabel={t("scene.angle")} />
-            </Row>
-          )}
-        </>
-      )}
-      {mode === "sky" && (
-        <>
-          {(["top", "horizon", "bottom"] as const).map((k) => (
-            <Row key={k} label={pretty(k)}>
-              <ColorField value={(bg as { sky: Record<string, string> }).sky[k] ?? "#ffffff"} onChange={(v, f) => bind(`environment.background.sky.${k}`, v, f)} />
-            </Row>
-          ))}
-          <Row label={t("scene.stars")}>
-            <NumberField value={(bg as { sky: { stars?: number } }).sky.stars ?? 0} integer min={0} onChange={(n, f) => bind("environment.background.sky.stars", n || undefined, f)} ariaLabel={t("scene.stars")} />
-          </Row>
-        </>
-      )}
-      {mode === "hdri" && (
-        <>
-          <Row label="HDRI">
-            <TextField value={(bg as { hdri: string }).hdri} onCommit={(v) => bind("environment.background.hdri", v)} ariaLabel="HDRI" />
-          </Row>
-          <Row label={t("scene.blur")}>
-            <NumberField value={(bg as { blur?: number }).blur ?? 0} min={0} max={1} onChange={(n, f) => bind("environment.background.blur", n, f)} ariaLabel={t("scene.blur")} />
-          </Row>
-        </>
-      )}
-      <Row label={t("scene.lighting")} hint={t("scene.lightingHint")}>
-        <Select value={lighting} options={[...LIGHTING_PRESETS, ...(lighting === "hdri" ? ["hdri"] : [])]} onChange={(v) => bind("environment.lighting", v === "none" ? "none" : v)} ariaLabel={t("scene.lighting")} />
-      </Row>
-      <Row label={t("scene.intensity")}>
-        <NumberField value={env.lightingIntensity ?? 1} min={0} placeholder={env.lightingIntensity === undefined} onChange={(n, f) => bind("environment.lightingIntensity", n === 1 ? undefined : n, f)} ariaLabel={t("scene.intensity")} />
-      </Row>
-      <Row label={t("scene.fog")}>
-        <Select
-          value={fogMode}
-          options={[
-            { value: "off", label: t("scene.off") },
-            { value: "linear", label: t("scene.fogLinear") },
-            { value: "exp", label: t("scene.fogDensity") },
-          ]}
-          onChange={(v) => bind("environment.fog", v === "off" ? undefined : v === "linear" ? { color: fog?.color ?? "#a0b4c8", near: 10, far: 40 } : { color: fog?.color ?? "#a0b4c8", density: 0.03 })}
-          ariaLabel={t("scene.fog")}
-        />
-      </Row>
-      {fog && (
-        <ParamForm
-          specs={[
-            { name: "color", type: "color", description: "", default: "#ffffff" },
-            ...("density" in fog
-              ? [{ name: "density", type: "number" as const, description: "", min: 0, max: 1 }]
-              : [
-                  { name: "near", type: "number" as const, description: "", min: 0 },
-                  { name: "far", type: "number" as const, description: "", min: 0 },
-                ]),
-          ]}
-          base="environment.fog"
-          values={rec(fog)}
-        />
-      )}
-      <Row label={t("scene.ground")}>
-        <Toggle checked={!!env.ground} onChange={(v) => bind("environment.ground", v ? { y: 0, shadowOnly: true } : undefined)} ariaLabel={t("scene.ground")} />
-      </Row>
-      {env.ground && <ParamForm specs={GROUND_SPECS} base="environment.ground" values={rec(env.ground)} />}
-    </Section>
   );
 }
 
@@ -252,6 +127,7 @@ function LightsSection({ scene }: { scene: SceneDoc }) {
                 </IconButton>
               </div>
               <ParamForm specs={LIGHT_SPECS[l.type] ?? []} base={path} values={rec(l)} />
+              <LightExtras light={l} path={path} />
             </div>
           );
         })}
@@ -261,52 +137,31 @@ function LightsSection({ scene }: { scene: SceneDoc }) {
   );
 }
 
-function PostFxSection({ scene }: { scene: SceneDoc }) {
+function LightExtras({ light: l, path }: { light: LightDef; path: string }) {
   const { t } = useI18n();
-  const { edit } = useEditor();
-  const list = scene.postfx ?? [];
+  const bind = useBinder();
+  const [shadowOpen, setShadowOpen] = useState(!!l.shadow);
+  const shadows = l.castShadow && (l.type === "directional" || l.type === "spot" || l.type === "point");
   return (
-    <Section
-      title={
-        <span>
-          {t("scene.postfx")} {list.length > 0 && <span className="font-normal text-fg-faint">{list.length}</span>}
-        </span>
-      }
-      id="postfx"
-      defaultOpen={list.length > 0}
-      actions={
-        <PickMenu
-          placeholder={t("scene.searchEffects")}
-          items={POSTFX.map((p) => ({ id: p.id, label: pretty(p.id), hint: p.description }))}
-          onPick={(id) => edit([{ op: "set", path: `postfx[${list.length}]`, value: { type: id } }])}
-          trigger={(open) => (
-            <IconButton label={t("scene.addEffect")} onClick={open} className="h-6 w-6">
-              <Plus size={13} />
-            </IconButton>
-          )}
-        />
-      }
-    >
-      <div className="space-y-1.5 px-2">
-        {list.map((fx, i) => {
-          const entry = catalogEntry("postfx", fx.type);
-          return (
-            <div key={`${fx.type}-${i}`} className="rounded-md border border-line bg-ink-0/40 pb-1">
-              <div className="flex h-7 items-center gap-1 pl-2 pr-1">
-                <span className="flex-1 truncate text-xs font-medium" title={entry?.description}>
-                  {pretty(fx.type)}
-                </span>
-                <IconButton label={t("scene.removeEffect")} className="h-5 w-5" onClick={() => edit(list.length === 1 ? [{ op: "remove", path: "postfx" }] : [{ op: "remove", path: `postfx[${i}]` }])}>
-                  <X size={11} />
-                </IconButton>
-              </div>
-              {entry && <ParamForm specs={entry.params} base={`postfx[${i}]`} values={rec(fx)} />}
-            </div>
-          );
-        })}
-        {!list.length && <div className="px-1 text-2xs text-fg-faint">{t("scene.noEffects")}</div>}
-      </div>
-    </Section>
+    <>
+      {l.type === "spot" && (
+        <>
+          <Row label={t("lights.volumetric")} hint={t("lights.volumetricHint")}>
+            <Toggle checked={!!l.volumetric} onChange={(v) => bind(`${path}.volumetric`, v || undefined)} ariaLabel={t("lights.volumetric")} />
+          </Row>
+          {l.volumetric && <SubForm specs={VOLUMETRIC_SPECS} path={`${path}.volumetric`} value={l.volumetric} collapse={(x) => (Object.keys(x).length ? x : true)} />}
+        </>
+      )}
+      {shadows && (
+        <>
+          <button type="button" onClick={() => setShadowOpen((x) => !x)} className="mx-3 mt-0.5 text-2xs text-fg-faint hover:text-fg">
+            {shadowOpen ? "−" : "+"} {t("lights.shadow")}
+            {l.shadow && <span className="ml-1 text-accent">•</span>}
+          </button>
+          {shadowOpen && <SubForm specs={LIGHT_SHADOW_SPECS} path={`${path}.shadow`} value={l.shadow} collapse={(x) => (Object.keys(x).length ? x : undefined)} />}
+        </>
+      )}
+    </>
   );
 }
 

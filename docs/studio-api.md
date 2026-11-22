@@ -94,7 +94,9 @@ relative to the project folder, plus `dir`, its absolute path): fetch them with
 Media exports go through the same route (headless Chrome on the CLI host):
 `{ "name": "export", "input": { "format": "poster", "time": 2 } }` → `{ format, path: "dist/poster.webp", kb, size, t }`;
 `{ "name": "export", "input": { "format": "video", "duration": 6, "fps": 30, "size": "960x540" } }` →
-`{ format, path: "dist/video.webm", kb, size, frames, fps, duration }` (`out` picks another file under `dist/`).
+`{ format, path: "dist/video.webm", kb, size, frames, fps, duration }` (`out` picks another file under `dist/` or `renders/`; `codec: "mp4"` or a `.mp4` out renders H.264).
+`gif` / `animated-webp` work the same way (`quality`, `transparent`); embed / zip exports take `baseUrl`, `cacheBust`,
+`integrity`, `optimize` and `og` (renders `og-image.png`). The Studio's render and export dialogs use exactly these.
 
 ### `GET /api/events` (Server-Sent Events)
 External changes to the project folder (another agent, an editor, `agent3d` in a terminal):

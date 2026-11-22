@@ -1,18 +1,24 @@
 {
   "id": "character-showcase",
   "title": "Character showcase",
-  "description": "Cartoon character line-up: an animated library knight cheering on a central pedestal between two procedural characters (a waving robot and a dancing cat), toon outlines and confetti.",
+  "description": "Cartoon character line-up (16:9) for mascots, kids' products, games or team pages: five procedural characters on pastel pedestals \u2014 an astronaut cheering in the centre, a dancing robot, a waving fox, a dancing kid with headphones and a jumping cat \u2014 heads following the pointer, falling confetti and a 'Meet the crew' 3D title (from scene.data). Zero downloads.",
   "kind": "hero",
   "tags": [
     "character",
     "mascot",
+    "lineup",
+    "team",
     "animated",
-    "toon",
-    "outline",
-    "pedestal",
-    "knight",
+    "cute",
+    "astronaut",
     "robot",
-    "cartoon"
+    "fox",
+    "cat",
+    "kids",
+    "pedestal",
+    "confetti",
+    "cartoon",
+    "hero"
   ],
   "aspect": "16:9"
 }

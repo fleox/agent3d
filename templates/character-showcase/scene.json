@@ -2,40 +2,73 @@
   "version": 1,
   "id": "character-showcase",
   "title": "Character showcase",
-  "ariaLabel": "A cartoon knight cheering on a pedestal between a waving robot and a dancing cat",
+  "ariaLabel": "A line-up of five cute 3D characters on pastel pedestals: an astronaut cheering in the centre, a robot dancing, a fox waving, a cat jumping and a kid with headphones dancing, under falling confetti",
   "seed": 6,
   "target": {
     "kind": "hero",
     "aspect": "16:9",
-    "budgetKb": 1000,
+    "budgetKb": 600,
     "reducedMotion": "static",
-    "posterTime": 1,
+    "posterTime": 1.8,
     "maxDpr": 2
   },
   "camera": {
     "type": "perspective",
-    "fov": 32,
-    "position": [0, 2.4, 9.2],
-    "target": [0, 1.25, 0],
+    "fov": 29,
+    "position": [
+      0,
+      1.9,
+      12.8
+    ],
+    "target": [
+      0,
+      1.05,
+      0
+    ],
     "controls": "orbit",
     "orbitZoom": false,
-    "orbitLimits": {"minPolar": 60, "maxPolar": 88}
+    "orbitLimits": {
+      "minPolar": 62,
+      "maxPolar": 86
+    }
   },
   "environment": {
-    "background": {"radial": ["#fff0c9", "#ffb48f"]},
-    "lighting": "soft",
-    "lightingIntensity": 0.6,
-    "ground": {"y": 0, "size": 30, "shadowOnly": true, "color": "#7a4a3a"}
+    "background": {
+      "radial": [
+        "#fff3dc",
+        "#ffc29e"
+      ],
+      "center": [
+        0.5,
+        0.62
+      ],
+      "grain": 0.03
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.5,
+    "rig": {
+      "preset": "softbox",
+      "intensity": 0.8,
+      "scale": 2.2
+    },
+    "contactShadows": {
+      "opacity": 0.55,
+      "blur": 2.2,
+      "y": 0
+    }
   },
   "lights": [
     {
-      "id": "fill",
-      "type": "hemisphere",
-      "skyColor": "#ffffff",
-      "groundColor": "#e8b49a",
-      "intensity": 1.2
-    },
-    {"id": "key", "type": "directional", "position": [4, 8, 6], "intensity": 2.2, "castShadow": true}
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        -5,
+        5,
+        -6
+      ],
+      "color": "#ffd8b0",
+      "intensity": 1.4
+    }
   ],
   "objects": [
     {
@@ -43,56 +76,147 @@
       "kind": "mesh",
       "geometry": {
         "type": "cylinder",
-        "radiusTop": 1.3,
-        "radiusBottom": 1.3650000000000002,
-        "height": 0.6,
-        "segments": 48
+        "radiusTop": 1.15,
+        "radiusBottom": 1.2075,
+        "height": 0.7,
+        "segments": 64
       },
-      "position": [0, 0.3, 0],
-      "material": {"preset": "toon", "color": "#ffd166"},
-      "castShadow": true,
+      "position": [
+        0,
+        0.35,
+        0
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#ffc94a",
+        "roughness": 0.75
+      },
       "receiveShadow": true
     },
     {
-      "id": "pedLeft",
+      "id": "pedL1",
       "kind": "mesh",
       "geometry": {
         "type": "cylinder",
-        "radiusTop": 0.9,
-        "radiusBottom": 0.9450000000000001,
-        "height": 0.35,
-        "segments": 48
+        "radiusTop": 0.85,
+        "radiusBottom": 0.8925,
+        "height": 0.45,
+        "segments": 64
       },
-      "position": [-3.4, 0.175, 0],
-      "material": {"preset": "toon", "color": "#8ecae6"},
-      "castShadow": true,
+      "position": [
+        -2.6,
+        0.225,
+        0.3
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#6fb8e0",
+        "roughness": 0.75
+      },
       "receiveShadow": true
     },
     {
-      "id": "pedRight",
+      "id": "pedR1",
       "kind": "mesh",
       "geometry": {
         "type": "cylinder",
-        "radiusTop": 0.9,
-        "radiusBottom": 0.9450000000000001,
-        "height": 0.35,
-        "segments": 48
+        "radiusTop": 0.85,
+        "radiusBottom": 0.8925,
+        "height": 0.45,
+        "segments": 64
       },
-      "position": [3.4, 0.175, 0],
-      "material": {"preset": "toon", "color": "#f4a6c1"},
-      "castShadow": true,
+      "position": [
+        2.6,
+        0.225,
+        0.3
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#f28bb0",
+        "roughness": 0.75
+      },
       "receiveShadow": true
     },
     {
-      "id": "knight",
-      "kind": "model",
-      "src": "library:models/characters/knight.glb",
-      "fit": 2.4,
-      "position": [0, 0.6, 0],
-      "rotation": [0, 0, 0],
-      "animation": {"clip": "Cheer", "loop": true, "speed": 1},
+      "id": "pedL2",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.78,
+        "radiusBottom": 0.8190000000000001,
+        "height": 0.3,
+        "segments": 64
+      },
+      "position": [
+        -4.9,
+        0.15,
+        -0.6
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#8fd18a",
+        "roughness": 0.75
+      },
+      "receiveShadow": true
+    },
+    {
+      "id": "pedR2",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.78,
+        "radiusBottom": 0.8190000000000001,
+        "height": 0.3,
+        "segments": 64
+      },
+      "position": [
+        4.9,
+        0.15,
+        -0.6
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#a993f0",
+        "roughness": 0.75
+      },
+      "receiveShadow": true
+    },
+    {
+      "id": "astronaut",
+      "kind": "generator",
+      "generator": "character",
+      "params": {
+        "style": "astronaut",
+        "animation": "cheer",
+        "expression": "laugh",
+        "shirt": "#f8f9fb",
+        "accent": "#ff7a45",
+        "height": 2.0,
+        "eyesFollowPointer": true
+      },
+      "position": [
+        0,
+        0.7,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "castShadow": true,
-      "behaviours": [{"type": "hoverScale", "scale": 1.05}]
+      "behaviours": [
+        {
+          "type": "hoverScale",
+          "scale": 1.06
+        },
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 0.5
+        }
+      ]
     },
     {
       "id": "robot",
@@ -100,15 +224,112 @@
       "generator": "character",
       "params": {
         "style": "robot",
-        "shirt": "#3a86ff",
+        "animation": "dance",
+        "shirt": "#4f8df7",
         "accent": "#ffbe0b",
-        "animation": "wave",
         "height": 1.6,
         "eyesFollowPointer": true
       },
-      "position": [-3.4, 0.35, 0.2],
-      "rotation": [0, 25, 0],
-      "castShadow": true
+      "position": [
+        -2.6,
+        0.45,
+        0.3
+      ],
+      "rotation": [
+        0,
+        22,
+        0
+      ],
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "hoverScale",
+          "scale": 1.06
+        },
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 0.6000000000000001
+        }
+      ]
+    },
+    {
+      "id": "fox",
+      "kind": "generator",
+      "generator": "character",
+      "params": {
+        "style": "fox",
+        "animation": "wave",
+        "expression": "happy",
+        "height": 1.6,
+        "eyesFollowPointer": true
+      },
+      "position": [
+        2.6,
+        0.45,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -22,
+        0
+      ],
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "hoverScale",
+          "scale": 1.06
+        },
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 0.7000000000000001
+        }
+      ]
+    },
+    {
+      "id": "kid",
+      "kind": "generator",
+      "generator": "character",
+      "params": {
+        "style": "humanoid",
+        "animation": "dance",
+        "hairStyle": "curly",
+        "outfit": "hoodie",
+        "shirt": "#ff6b6b",
+        "pants": "#2b2d42",
+        "accessories": [
+          "headphones"
+        ],
+        "expression": "wink",
+        "height": 1.6,
+        "eyesFollowPointer": true
+      },
+      "position": [
+        -4.9,
+        0.3,
+        -0.6
+      ],
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "hoverScale",
+          "scale": 1.06
+        },
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 0.8
+        }
+      ]
     },
     {
       "id": "cat",
@@ -116,25 +337,104 @@
       "generator": "character",
       "params": {
         "style": "cat",
-        "skin": "#ff9f68",
+        "animation": "jump",
+        "skin": "#ffb36b",
         "accent": "#ff006e",
-        "animation": "dance",
-        "height": 1.3,
+        "expression": "surprised",
+        "height": 1.55,
         "eyesFollowPointer": true
       },
-      "position": [3.4, 0.35, 0.2],
-      "rotation": [0, -25, 0],
-      "castShadow": true
+      "position": [
+        4.9,
+        0.3,
+        -0.6
+      ],
+      "rotation": [
+        0,
+        -30,
+        0
+      ],
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "hoverScale",
+          "scale": 1.06
+        },
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 0.9
+        }
+      ]
     },
     {
       "id": "confetti",
       "kind": "particles",
       "preset": "confetti",
-      "count": 120,
-      "area": [10, 5, 3],
-      "position": [0, 4, -1],
+      "count": 160,
+      "area": [
+        13,
+        6,
+        4
+      ],
+      "position": [
+        0,
+        4,
+        -1
+      ],
       "size": 0.09
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "{data.title}",
+      "font": "display",
+      "size": 0.42,
+      "depth": 0.18,
+      "position": [
+        0,
+        0.05,
+        4.6
+      ],
+      "rotation": [
+        -12,
+        0,
+        0
+      ],
+      "outline": {
+        "width": 0.05,
+        "color": "#7a2e1f"
+      },
+      "material": {
+        "preset": "plastic",
+        "color": "#ffffff",
+        "roughness": 0.35
+      },
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "scale",
+          "duration": 0.8,
+          "delay": 0.6
+        },
+        {
+          "type": "float",
+          "amplitude": 0.04,
+          "speed": 0.4
+        }
+      ]
     }
   ],
-  "postfx": [{"type": "outline", "color": "#3b2232", "thickness": 1.2}]
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "product",
+      "intensity": 0.6
+    }
+  ],
+  "data": {
+    "title": "Meet the crew"
+  }
 }

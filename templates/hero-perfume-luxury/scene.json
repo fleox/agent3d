@@ -1,0 +1,527 @@
+{
+  "version": 1,
+  "id": "hero-perfume-luxury",
+  "title": "Luxury perfume hero",
+  "ariaLabel": "Luxury hero: an amber glass perfume bottle with a gold cap on a marble pedestal, diamonds sparkling around it, and the name {data.title|ÉLIXIR}",
+  "seed": 8,
+  "data": {
+    "title": "ÉLIXIR",
+    "subtitle": "EAU DE PARFUM"
+  },
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "budgetKb": 1200,
+    "reducedMotion": "static",
+    "posterTime": 3.5,
+    "maxDpr": 2,
+    "toneMapping": "neutral",
+    "exposure": 1.0
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 28,
+    "position": [
+      -1.6,
+      1.25,
+      8.6
+    ],
+    "target": [
+      -1.55,
+      1.0,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.2,
+      "smoothing": 0.95
+    },
+    "shots": [
+      {
+        "type": "focus",
+        "at": 0,
+        "duration": 0.1,
+        "object": "gemFront"
+      },
+      {
+        "type": "pushIn",
+        "at": 0,
+        "duration": 6,
+        "distance": 0.9,
+        "ease": "inOutSine"
+      },
+      {
+        "type": "focus",
+        "at": 1.2,
+        "duration": 1.6,
+        "object": "bottle",
+        "ease": "inOutCubic"
+      }
+    ]
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#3a2a1c",
+        "#060504"
+      ],
+      "center": [
+        0.6,
+        0.55
+      ],
+      "radius": 0.7,
+      "grain": 0.03
+    },
+    "lighting": {
+      "hdri": "library:hdri/studio.hdr",
+      "intensity": 0.9,
+      "rotation": 40
+    },
+    "rig": {
+      "preset": "product-top",
+      "intensity": 0.7,
+      "color": "#ffe2bf",
+      "rotation": 35
+    },
+    "contactShadows": {
+      "opacity": 0.7,
+      "blur": 2,
+      "y": 0.401,
+      "size": 2.6
+    }
+  },
+  "lights": [
+    {
+      "id": "rimBack",
+      "type": "spot",
+      "position": [
+        1.2,
+        3.5,
+        -3.5
+      ],
+      "target": [
+        0.6,
+        0.8,
+        0
+      ],
+      "color": "#ffcf8a",
+      "intensity": 60,
+      "angle": 30,
+      "penumbra": 0.8
+    }
+  ],
+  "objects": [
+    {
+      "id": "pedestal",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.05,
+        "radiusBottom": 1.05,
+        "height": 0.8,
+        "segments": 96
+      },
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "material": {
+        "preset": "marble",
+        "color": "#ffffff",
+        "map": {
+          "procedural": "marble",
+          "colors": [
+            "#1a1817",
+            "#3a3633",
+            "#c9b38a"
+          ],
+          "veins": 0.7,
+          "scale": 1.2
+        },
+        "roughness": 0.15
+      }
+    },
+    {
+      "id": "pedestalTrim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 1.05,
+        "tube": 0.014,
+        "radialSegments": 8,
+        "tubularSegments": 160
+      },
+      "position": [
+        0,
+        0.4,
+        0
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "material": {
+        "preset": "gold",
+        "roughness": 0.15
+      }
+    },
+    {
+      "id": "bottle",
+      "kind": "mesh",
+      "geometry": {
+        "type": "lathe",
+        "segments": 96,
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            0.5,
+            0
+          ],
+          [
+            0.58,
+            0.03
+          ],
+          [
+            0.62,
+            0.1
+          ],
+          [
+            0.62,
+            1.05
+          ],
+          [
+            0.6,
+            1.15
+          ],
+          [
+            0.48,
+            1.24
+          ],
+          [
+            0.24,
+            1.29
+          ],
+          [
+            0.17,
+            1.31
+          ],
+          [
+            0.17,
+            1.42
+          ]
+        ]
+      },
+      "position": [
+        0,
+        0.4,
+        0
+      ],
+      "material": {
+        "type": "physical",
+        "color": "#ffffff",
+        "roughness": 0.02,
+        "metalness": 0,
+        "transmission": 1,
+        "thickness": 1.1,
+        "ior": 1.5,
+        "attenuationColor": "#e08a2c",
+        "attenuationDistance": 0.55,
+        "specularIntensity": 1,
+        "clearcoat": 1,
+        "envMapIntensity": 1.6
+      },
+      "scale": 0.82
+    },
+    {
+      "id": "collar",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.2,
+        "radiusBottom": 0.2,
+        "height": 0.08,
+        "segments": 48
+      },
+      "position": [
+        0,
+        1.6044,
+        0
+      ],
+      "material": {
+        "preset": "gold",
+        "color": "#d9a04a",
+        "roughness": 0.25
+      },
+      "scale": 0.82
+    },
+    {
+      "id": "cap",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.3,
+        "radiusBottom": 0.34,
+        "height": 0.62,
+        "segments": 8
+      },
+      "position": [
+        0,
+        1.8944,
+        0
+      ],
+      "rotation": [
+        0,
+        22.5,
+        0
+      ],
+      "material": {
+        "preset": "gold",
+        "color": "#d9a04a",
+        "roughness": 0.28,
+        "flatShading": true,
+        "envMapIntensity": 0.8
+      },
+      "scale": 0.82
+    },
+    {
+      "id": "gemFront",
+      "kind": "mesh",
+      "geometry": {
+        "type": "octahedron",
+        "radius": 0.2,
+        "detail": 0
+      },
+      "position": [
+        0.72,
+        0.62,
+        0.62
+      ],
+      "rotation": [
+        0,
+        20,
+        0
+      ],
+      "scale": [
+        1,
+        0.8,
+        1
+      ],
+      "material": {
+        "preset": "diamond"
+      },
+      "behaviours": [
+        {
+          "type": "rotate",
+          "speed": 12
+        }
+      ]
+    },
+    {
+      "id": "gemBack",
+      "kind": "mesh",
+      "geometry": {
+        "type": "octahedron",
+        "radius": 0.15,
+        "detail": 0
+      },
+      "position": [
+        -0.7,
+        0.58,
+        -0.3
+      ],
+      "scale": [
+        1,
+        0.8,
+        1
+      ],
+      "material": {
+        "preset": "diamond"
+      },
+      "behaviours": [
+        {
+          "type": "rotate",
+          "speed": -10
+        }
+      ]
+    },
+    {
+      "id": "gemRuby",
+      "kind": "mesh",
+      "geometry": {
+        "type": "octahedron",
+        "radius": 0.13,
+        "detail": 0
+      },
+      "position": [
+        -0.5,
+        0.55,
+        0.62
+      ],
+      "scale": [
+        1,
+        0.8,
+        1
+      ],
+      "material": {
+        "preset": "gem",
+        "attenuationColor": "#b5122e"
+      },
+      "behaviours": [
+        {
+          "type": "rotate",
+          "speed": 15
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "{data.title|ÉLIXIR}",
+      "font": "serif",
+      "size": 0.62,
+      "depth": 0.04,
+      "letterSpacing": 0.12,
+      "align": "left",
+      "position": [
+        -4.9,
+        1.45,
+        0
+      ],
+      "material": {
+        "preset": "gold",
+        "color": "#d9a54a",
+        "roughness": 0.3
+      },
+      "reveal": {
+        "effect": "fade",
+        "stagger": 0.09,
+        "duration": 1.2,
+        "delay": 1.0,
+        "ease": "outCubic"
+      }
+    },
+    {
+      "id": "subtitle",
+      "kind": "text",
+      "text": "{data.subtitle|EAU DE PARFUM}",
+      "font": "sans",
+      "size": 0.11,
+      "depth": 0,
+      "letterSpacing": 0.2,
+      "align": "left",
+      "position": [
+        -4.86,
+        0.98,
+        0
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#cbb79a"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "fade",
+          "duration": 1.2,
+          "delay": 2.0,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "glints",
+      "kind": "particles",
+      "preset": "magic",
+      "count": 40,
+      "area": [
+        3,
+        2.4,
+        2
+      ],
+      "position": [
+        0,
+        1.4,
+        0
+      ],
+      "color": [
+        "#fff3d6",
+        "#ffd28a"
+      ],
+      "size": 0.05,
+      "speed": 0.3
+    }
+  ],
+  "timeline": {
+    "duration": 6,
+    "loop": false,
+    "tracks": [
+      {
+        "target": "rimBack.intensity",
+        "keys": [
+          [
+            0,
+            0
+          ],
+          [
+            2.2,
+            22,
+            "inOutSine"
+          ]
+        ]
+      },
+      {
+        "target": "environment.exposure",
+        "keys": [
+          [
+            0,
+            0.6
+          ],
+          [
+            1.8,
+            1.1,
+            "outCubic"
+          ]
+        ]
+      }
+    ]
+  },
+  "postfx": [
+    {
+      "type": "dof",
+      "focus": 7,
+      "aperture": 0.004,
+      "maxblur": 0.008
+    },
+    {
+      "type": "bloom",
+      "strength": 0.25,
+      "radius": 0.5,
+      "threshold": 3.0,
+      "smoothing": 0.4
+    },
+    {
+      "type": "grading",
+      "look": "warm",
+      "intensity": 0.6,
+      "contrast": 1.1
+    },
+    {
+      "type": "vignette",
+      "offset": 1,
+      "darkness": 1.0
+    },
+    {
+      "type": "film",
+      "intensity": 0.05
+    },
+    {
+      "type": "taa",
+      "samples": 12
+    }
+  ]
+}

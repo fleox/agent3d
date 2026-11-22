@@ -1,0 +1,23 @@
+{
+  "id": "hero-sneaker-showcase",
+  "title": "Sneaker showcase hero",
+  "description": "E-commerce product hero: a real PBR sneaker spins onto a ceramic pedestal on a bold coral backdrop, with a data-bound title, tagline, price and Shop now button; click the shoe to glide the camera to a detail view.",
+  "kind": "hero",
+  "tags": [
+    "hero",
+    "product",
+    "ecommerce",
+    "sneaker",
+    "shoe",
+    "fashion",
+    "shop",
+    "price",
+    "cta",
+    "data-bindings",
+    "click",
+    "camera-move",
+    "studio",
+    "contact-shadows"
+  ],
+  "aspect": "16:9"
+}

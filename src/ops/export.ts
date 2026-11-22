@@ -18,6 +18,7 @@
 // .d.ts), Subresource Integrity on the runtime script, modulepreload hints,
 // --base-url (absolute / sub-path URLs) and --cache-bust (versioned runtime folder).
 
+import { substituteData } from "../core/data";
 import type { ProjectFs } from "../core/fs";
 import { slugify } from "../core/ids";
 import { findLibraryAsset, isLibraryRef, libraryId, type LibraryProvider } from "../core/library";
@@ -341,7 +342,10 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
   const posterBytes = opts.poster?.byteLength ?? 0;
   const out: Record<string, Uint8Array | string> = {};
   const outIssues: Issue[] = [...issues];
-  const label = scene.ariaLabel ?? scene.title;
+  // {data.*} placeholders in title / ariaLabel are resolved with scene.data (and
+  // their `|fallback`) for the generated markup: screen readers, <title>, og:title.
+  const title = substituteData(scene.title ?? "", scene.data).trim() || name;
+  const label = scene.ariaLabel !== undefined ? substituteData(scene.ariaLabel, scene.data).trim() || title : title;
   const aspect = parseAspect(scene.target?.aspect) ?? { width: 16, height: 9, ratio: 16 / 9 };
   const sizeStyle = scene.target?.height ? `height:${scene.target.height}` : `aspect-ratio:${aspect.width} / ${aspect.height}`;
   let snippet: string;
@@ -391,7 +395,9 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     head = allPreloads.join("\n");
     const cacheQ = opts.cacheBust ? `?v=${await shortHash([enc.encode(sceneJson), ...assetFiles.values()])}` : "";
     const aspectAttr = scene.target?.height ? "" : ` aspect="${aspect.width}:${aspect.height}"`;
-    const posterImg = posterRel ? posterMarkup({ src: url(posterRel), avif: opts.posterAvif ? url(`${name}/poster.avif`) : undefined, alt: label, size: opts.posterSize }) : "";
+    // --cache-bust versions the poster too (its name never changes).
+    const posterQ = opts.cacheBust && opts.poster ? `?v=${await shortHash([opts.poster, ...(opts.posterAvif ? [opts.posterAvif] : [])])}` : "";
+    const posterImg = posterRel ? posterMarkup({ src: url(posterRel) + posterQ, avif: opts.posterAvif ? url(`${name}/poster.avif`) + posterQ : undefined, alt: label, size: opts.posterSize }) : "";
     snippet = [
       ...preloads,
       `<script type="module" src="${url(`${runtimeDirName}/${runtimeEntry}`)}"${integrity ? ` integrity="${integrity}"` : ""}></script>`,
@@ -399,15 +405,15 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     ].join("\n");
     out["snippet.html"] = `${snippet}\n`;
     if (head) out["head.html"] = `<!-- Optional: in the <head> of pages showing Agent3D scenes (preloads the runtime's modules). -->\n${head}\n`;
-    if (credits.length) out[`${name}/CREDITS.txt`] = creditsText(scene.title, credits);
-    out["index.html"] = demoPage({ title: scene.title, description: scene.description, snippet, credits, sizeStyle, poster: posterRel ? url(posterRel) : undefined, ogImage: ogRel });
+    if (credits.length) out[`${name}/CREDITS.txt`] = creditsText(title, credits);
+    out["index.html"] = demoPage({ title, description: scene.description === undefined ? undefined : substituteData(scene.description, scene.data), snippet, credits, sizeStyle, poster: posterRel ? url(posterRel) : undefined, ogImage: ogRel ? (baseUrl === "./" ? `./${ogRel}` : url(ogRel)) : undefined }); // og:image absolute with an https --base-url
     if (opts.extras !== false) {
       const doc: EmbedDocInput = {
         name,
-        title: scene.title,
+        title,
         runtimeSrc: url(`${runtimeDirName}/${runtimeEntry}`),
         sceneSrc: url(`${name}/scene.json`),
-        posterSrc: posterRel ? url(posterRel) : undefined,
+        posterSrc: posterRel ? url(posterRel) + posterQ : undefined,
         aspect: `${aspect.width}:${aspect.height}`,
         snippet,
         dataKeys: Object.keys(scene.data ?? {}).filter((k) => /^[a-zA-Z][\w]*$/.test(k)),
@@ -449,7 +455,7 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
       `<script type="module">${inlineJs(runtimeJs)}</script>`,
     ].join("\n");
     entry = `${name}.html`;
-    out[entry] = singlePage({ title: scene.title, body: snippet, credits });
+    out[entry] = singlePage({ title, body: snippet, credits });
     const size = byteLen(out[entry]);
     if (size > SINGLE_HTML_WARN_BYTES) {
       outIssues.push({ severity: "warning", code: "single-html-size", path: entry, message: `${entry} weighs ${(size / 1048576).toFixed(1)} MB (data: URIs inflate assets by ~33%).`, hint: 'Use the "embed" format for heavy scenes, or shrink textures / models.' });
@@ -514,7 +520,7 @@ function demoPage(p: { title: string; description?: string; snippet: string; cre
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(p.title)} — Agent3D embed</title>${p.description ? `\n<meta name="description" content="${escapeHtml(p.description)}">` : ""}${p.ogImage ? `\n<meta property="og:title" content="${escapeHtml(p.title)}">\n<meta property="og:image" content="./${escapeHtml(p.ogImage)}">\n<meta name="twitter:card" content="summary_large_image">` : ""}
+<title>${escapeHtml(p.title)} — Agent3D embed</title>${p.description ? `\n<meta name="description" content="${escapeHtml(p.description)}">` : ""}${p.ogImage ? `\n<meta property="og:title" content="${escapeHtml(p.title)}">\n<meta property="og:image" content="${escapeHtml(p.ogImage)}">\n<meta name="twitter:card" content="summary_large_image">` : ""}
 <style>
   :root { color-scheme: light dark; --fg: #1d1d22; --muted: #666; --bg: #f6f6f8; --card: #fff; --code: #0f1117; }
   @media (prefers-color-scheme: dark) { :root { --fg: #ececf1; --muted: #9a9aa5; --bg: #111216; --card: #1a1b21; } }

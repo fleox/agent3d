@@ -228,3 +228,81 @@ describe("validation of the lookdev fields", () => {
     expect(errs(s)).toEqual([]);
   });
 });
+
+describe("contact shadows fit", () => {
+  it("ignores particles / points / helpers when fitting the subject box", async () => {
+    const THREE = await import("three");
+    const { meshBox } = await import("./contactShadows");
+    const root = new THREE.Group();
+    const box = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2));
+    box.position.set(3, 1, 0);
+    root.add(box);
+    const dust = new THREE.Points(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute([-50, 0, -50, 50, 20, 50], 3)));
+    root.add(dust);
+    const helper = new THREE.Mesh(new THREE.BoxGeometry(100, 1, 100));
+    helper.userData.helper = true;
+    root.add(helper);
+    const b = meshBox(root);
+    expect(b.min.toArray()).toEqual([2, 0, -1]);
+    expect(b.max.toArray()).toEqual([4, 2, 1]);
+  });
+});
+
+describe("gems, text fades, volumetric cones", () => {
+  it("diamond / gem presets get the sparkle patch; plain glass does not", async () => {
+    const diamond = (await createMaterial({ preset: "diamond" }, ctx())) as THREE.MeshPhysicalMaterial;
+    const gem = (await createMaterial({ preset: "gem" }, ctx())) as THREE.MeshPhysicalMaterial;
+    const glass = (await createMaterial({ type: "physical", transmission: 1, ior: 1.5, roughness: 0 }, ctx())) as THREE.MeshPhysicalMaterial;
+    expect(diamond.customProgramCacheKey()).toContain("gem-sparkle");
+    expect(gem.customProgramCacheKey()).toContain("gem-sparkle");
+    expect(glass.userData.gemSparkle).toBeUndefined();
+    const u = diamond.userData.gemSparkle as { uA3dGemAmount: { value: number }; uA3dGemDisp: { value: number } };
+    expect(u.uA3dGemAmount.value).toBeGreaterThan((gem.userData.gemSparkle as typeof u).uA3dGemAmount.value);
+    expect(u.uA3dGemDisp.value).toBeGreaterThan(0);
+  });
+  it("fading text letters get a depth-only twin, hidden once opaque", async () => {
+    const { revealImpl, depthTwin } = await import("./text");
+    const letter = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    letter.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    const run = revealImpl({ effect: "fade", duration: 1 }, 1)({ type: "appear" } as never, { object: letter } as never) as { update(t: number): void };
+    const twins = letter.children.filter((c) => c.userData.depthTwin);
+    expect(twins).toHaveLength(1);
+    expect(letter.children[0].children.filter((c) => c.userData.depthTwin)).toHaveLength(1);
+    run.update(0.2);
+    expect(twins[0].visible).toBe(true);
+    expect((twins[0] as THREE.Mesh).material).toMatchObject({ colorWrite: false, depthWrite: true });
+    run.update(2);
+    expect(twins[0].visible).toBe(false);
+    expect(typeof depthTwin).toBe("function");
+  });
+  it("volumetric cones fade against the ground / scene depth and never write coverage", async () => {
+    const { buildLight } = await import("./lights");
+    const spot = await buildLight({ id: "s", type: "spot", position: [0, 4, 0], target: [0, 0, 0], volumetric: true });
+    const cone = spot.children.find((c) => c.name === "__volumetric") as THREE.Mesh;
+    const mat = cone.material as THREE.ShaderMaterial;
+    expect(mat.premultipliedAlpha).toBe(true);
+    expect(mat.fragmentShader).toContain("gl_FragColor = vec4(uColor * a, 0.0)");
+    const scene = new THREE.Scene();
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry());
+    ground.userData.ground = true;
+    ground.position.y = -0.5;
+    scene.add(ground, spot);
+    scene.updateMatrixWorld(true);
+    const renderer = { getRenderTarget: () => null } as unknown as THREE.WebGLRenderer;
+    cone.onBeforeRender(renderer, scene, new THREE.PerspectiveCamera(), cone.geometry, mat, null as never);
+    expect(mat.uniforms.uUseGround.value).toBe(1);
+    expect(mat.uniforms.uGroundY.value).toBeCloseTo(-0.5);
+    expect(mat.uniforms.uUseDepth.value).toBe(0);
+    scene.userData.a3dDepth = { texture: new THREE.Texture(), width: 100, height: 50 };
+    const rendererRt = { getRenderTarget: () => ({}) } as unknown as THREE.WebGLRenderer;
+    cone.onBeforeRender(rendererRt, scene, new THREE.PerspectiveCamera(), cone.geometry, mat, null as never);
+    expect(mat.uniforms.uUseDepth.value).toBe(1);
+    expect(mat.uniforms.uViewport.value.toArray()).toEqual([100, 50]);
+  });
+  it("a light rig halves the default IBL (pastels stay coloured)", async () => {
+    const { RIG_IBL_SCALE } = await import("./environment");
+    expect(RIG_IBL_SCALE).toBeLessThan(0.6);
+    const top = expandRig("softbox").find((l) => l.id === "rig:top")!;
+    expect(top.intensity).toBeLessThanOrEqual(2.2);
+  });
+});

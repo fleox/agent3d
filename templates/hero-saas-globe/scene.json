@@ -1,0 +1,318 @@
+{
+  "version": 1,
+  "id": "hero-saas-globe",
+  "title": "Global network hero",
+  "ariaLabel": "A glowing dotted globe slowly turning, with light arcs travelling between cities around the world",
+  "seed": 11,
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "budgetKb": 400,
+    "reducedMotion": "static",
+    "posterTime": 2,
+    "maxDpr": 2,
+    "exposure": 1
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [
+      -2.5,
+      0.4,
+      12.5
+    ],
+    "target": [
+      -2.5,
+      0.1,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.35,
+      "smoothing": 0.94
+    }
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#101a3d",
+        "#03050f"
+      ],
+      "center": [
+        0.7,
+        0.5
+      ],
+      "radius": 0.75,
+      "grain": 0.02
+    },
+    "lighting": "night",
+    "lightingIntensity": 0.6
+  },
+  "lights": [
+    {
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        -4,
+        3,
+        -4
+      ],
+      "color": "#7c9cff",
+      "intensity": 1.5
+    },
+    {
+      "id": "key",
+      "type": "directional",
+      "position": [
+        3,
+        2,
+        6
+      ],
+      "color": "#ffffff",
+      "intensity": 0.4
+    }
+  ],
+  "objects": [
+    {
+      "id": "globe",
+      "kind": "generator",
+      "generator": "globe",
+      "position": [
+        0,
+        -0.35,
+        0
+      ],
+      "params": {
+        "radius": 2.3,
+        "dots": 32000,
+        "dotColor": "#6f8fe8",
+        "oceanDotColor": "#0f1a3a",
+        "baseColor": "#060b1f",
+        "dotSize": 0.75,
+        "arcColor": "#f0abfc",
+        "arcSpeed": 0.8,
+        "arcWidth": 1.5,
+        "markerColor": "#fdf4ff",
+        "markerSize": 1,
+        "atmosphereColor": "#5b7cfa",
+        "spin": 3,
+        "longitude": 0,
+        "tilt": 18,
+        "arcs": [
+          {
+            "from": [
+              37.77,
+              -122.42
+            ],
+            "to": [
+              51.51,
+              -0.13
+            ]
+          },
+          {
+            "from": [
+              40.71,
+              -74.0
+            ],
+            "to": [
+              48.86,
+              2.35
+            ]
+          },
+          {
+            "from": [
+              51.51,
+              -0.13
+            ],
+            "to": [
+              1.35,
+              103.82
+            ]
+          },
+          {
+            "from": [
+              48.86,
+              2.35
+            ],
+            "to": [
+              25.2,
+              55.27
+            ]
+          },
+          {
+            "from": [
+              35.68,
+              139.69
+            ],
+            "to": [
+              37.77,
+              -122.42
+            ]
+          },
+          {
+            "from": [
+              -23.55,
+              -46.63
+            ],
+            "to": [
+              40.71,
+              -74.0
+            ]
+          },
+          {
+            "from": [
+              1.35,
+              103.82
+            ],
+            "to": [
+              -33.87,
+              151.21
+            ]
+          },
+          {
+            "from": [
+              52.52,
+              13.4
+            ],
+            "to": [
+              19.08,
+              72.88
+            ]
+          },
+          {
+            "from": [
+              6.52,
+              3.38
+            ],
+            "to": [
+              48.86,
+              2.35
+            ]
+          },
+          {
+            "from": [
+              -33.92,
+              18.42
+            ],
+            "to": [
+              51.51,
+              -0.13
+            ]
+          },
+          {
+            "from": [
+              -23.55,
+              -46.63
+            ],
+            "to": [
+              -33.92,
+              18.42
+            ]
+          },
+          {
+            "from": [
+              19.43,
+              -99.13
+            ],
+            "to": [
+              -12.05,
+              -77.04
+            ]
+          }
+        ]
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "scale",
+          "duration": 1.4,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "ring",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 3.3,
+        "tube": 0.006,
+        "radialSegments": 6,
+        "tubularSegments": 200
+      },
+      "position": [
+        0,
+        -0.35,
+        0
+      ],
+      "rotation": [
+        74,
+        0,
+        -14
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#6d8bff",
+        "opacity": 0.22,
+        "transparent": true
+      },
+      "behaviours": [
+        {
+          "type": "rotate",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "speed": 4
+        }
+      ]
+    },
+    {
+      "id": "stars",
+      "kind": "particles",
+      "preset": "stars",
+      "count": 260,
+      "area": [
+        26,
+        14,
+        10
+      ],
+      "position": [
+        0,
+        0,
+        -8
+      ],
+      "color": [
+        "#ffffff",
+        "#a5b4fc"
+      ],
+      "size": 0.035,
+      "opacity": 0.7
+    }
+  ],
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.65,
+      "radius": 0.6,
+      "threshold": 0.65,
+      "smoothing": 0.3
+    },
+    {
+      "type": "grading",
+      "look": "cool",
+      "intensity": 0.5,
+      "contrast": 1.08
+    },
+    {
+      "type": "vignette",
+      "offset": 1,
+      "darkness": 0.8
+    },
+    {
+      "type": "taa",
+      "samples": 8
+    }
+  ]
+}

@@ -303,3 +303,26 @@ describe("check suggests assets optimize", () => {
     expect(info.hint).toContain("agent3d assets optimize --all");
   });
 });
+
+describe("check budget hint for HDRIs", () => {
+  it("does not send heavy HDRIs to assets optimize (it never shrinks .hdr)", async () => {
+    const fs = new MemoryFs();
+    await createProject(fs, { name: "t", target: { kind: "banner", budgetKb: 10 } as never });
+    await addAsset(fs, { path: "assets/hdri/big.hdr", bytes: new Uint8Array(80_000), source: "local", license: "CC0-1.0" });
+    await patchScene(fs, [{ op: "set", path: "environment.lighting", value: { hdri: "assets/hdri/big.hdr" } }]);
+    const budget = (await checkProject(fs)).issues.find((i) => i.code === "budget")!;
+    expect(budget.hint).toContain("assets/hdri/big.hdr");
+    expect(budget.hint).toContain("never shrinks .hdr");
+    expect(budget.hint).toContain('"studio"');
+    expect(budget.hint).not.toContain("assets optimize --all");
+  });
+  it("counts library HDRIs among the heaviest files", async () => {
+    const fs = new MemoryFs();
+    await createProject(fs, { name: "t", target: { kind: "banner", budgetKb: 10 } as never });
+    await patchScene(fs, [{ op: "set", path: "environment.lighting", value: { hdri: "library:hdri/studio.hdr" } }]);
+    const library = { version: 1, assets: [{ id: "hdri/studio.hdr", path: "hdri/studio.hdr", kind: "hdri", license: "CC0-1.0", bytes: 900_000, tags: [], description: "" }] };
+    const budget = (await checkProject(fs, { library: library as never })).issues.find((i) => i.code === "budget")!;
+    expect(budget.hint).toContain("library:hdri/studio.hdr");
+    expect(budget.hint).toContain("never shrinks .hdr");
+  });
+});

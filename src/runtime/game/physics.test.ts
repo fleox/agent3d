@@ -166,6 +166,34 @@ describe("physics (rigid bodies)", () => {
     expect(p[1]).toBeCloseTo(1, 2);
   });
 
+  it("hinge limits stop a door at its max angle (and at min the other way)", () => {
+    const angleOf = (p: [number, number, number]) => Math.atan2(p[2], p[0]); // door centre around the y axis at the origin
+    const w = new PhysicsWorld([0, 0, 0]);
+    const door = w.add(box("door", "dynamic", [0.5, 1, 0], [1, 2, 0.1]));
+    w.addJoint({ type: "hinge", a: "door", pivot: [0, 1, 0], axis: [0, 1, 0], limits: [-0.2, Math.PI / 4] });
+    // Spin it hard in the negative-angle direction around +y (z → +).
+    w.setAngularVelocity("door", [0, -6, 0]);
+    let maxA = 0;
+    for (let i = 0; i < 120; i++) {
+      w.step(1 / 60);
+      maxA = Math.max(maxA, angleOf(door.position as [number, number, number]));
+    }
+    // +z at x>0 is a rotation of −angle about +y: the hinge angle is −atan2(z, x).
+    expect(maxA).toBeLessThan(0.25);
+    expect(Math.hypot(door.position[0], door.position[2])).toBeCloseTo(0.5, 1);
+    const w2 = new PhysicsWorld([0, 0, 0]);
+    const d2 = w2.add(box("door", "dynamic", [0.5, 1, 0], [1, 2, 0.1]));
+    w2.addJoint({ type: "hinge", a: "door", pivot: [0, 1, 0], axis: [0, 1, 0], limits: [-0.2, Math.PI / 4] });
+    w2.setAngularVelocity("door", [0, 6, 0]);
+    let minA = 0;
+    for (let i = 0; i < 120; i++) {
+      w2.step(1 / 60);
+      minA = Math.min(minA, angleOf(d2.position as [number, number, number]));
+    }
+    expect(minA).toBeGreaterThan(-Math.PI / 4 - 0.06);
+    expect(minA).toBeLessThan(-Math.PI / 4 + 0.06);
+  });
+
   it("a point joint pendulum keeps its length and swings", () => {
     const w = new PhysicsWorld();
     const bob = w.add(ball("bob", "dynamic", [2, 3, 0], 0.25));
@@ -331,5 +359,30 @@ describe("physics (rigid bodies)", () => {
     expect(w.jointIds()).toEqual([]);
     expect(w.contactsOf("floor")).toEqual([]);
     run(w, 0.2);
+  });
+});
+
+describe("physics bridge: scripted scale", () => {
+  it("rebuilds a body's collider when a script scales its object", async () => {
+    const THREE = await import("three");
+    const { PhysicsBridge } = await import("./physicsHost");
+    const scene = new THREE.Scene();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
+    mesh.position.set(0, 2, 0);
+    scene.add(mesh);
+    const def = { id: "crate", kind: "mesh", geometry: { type: "box" }, body: { type: "dynamic", shape: "box" } };
+    const entry = { id: "crate", kind: "mesh", def, object: mesh, rest: {}, runners: [], animated: false, topLevel: true, interactive: false };
+    const world = { scene, entries: new Map([["crate", entry]]) };
+    const issues: unknown[] = [];
+    const bridge = new PhysicsBridge({ gravity: [0, 0, 0] }, world as never, (i) => issues.push(i));
+    bridge.attachAll();
+    const half = () => (bridge.engine.get("crate")!.shapes[0] as { half: number[] }).half[0];
+    expect(half()).toBeCloseTo(0.5);
+    bridge.engine.setVelocity("crate", [1, 0, 0]);
+    mesh.scale.setScalar(3);
+    bridge.moved("crate");
+    expect(half()).toBeCloseTo(1.5);
+    expect(bridge.engine.get("crate")!.velocity[0]).toBeCloseTo(1);
+    expect(issues).toEqual([]);
   });
 });

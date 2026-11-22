@@ -18,6 +18,23 @@ const errors = (s: SceneDoc) => validateScene(s).filter((i) => i.severity === "e
 const codes = (s: SceneDoc) => validateScene(s).map((i) => `${i.severity}:${i.code}:${i.path}`);
 
 describe("motion validation", () => {
+  it("warns about letter targets past the end of a split text, with the letter count", () => {
+    const s = scene({
+      objects: [{ id: "title", kind: "text", text: "Hello World", splitLetters: true }, { id: "tag", kind: "text", text: "{data.title}", splitLetters: true }],
+      timeline: { duration: 2, tracks: [{ target: "title/40.position.y", keys: [[0, 0], [1, 1]] }, { target: "title/9.position.y", keys: [[0, 0], [1, 1]] }, { target: "tag/40.position.y", keys: [[0, 0], [1, 1]] }] },
+    });
+    const issues = validateScene(s).filter((i) => i.code === "track-target");
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe("warning");
+    expect(issues[0].path).toBe("timeline.tracks[0].target");
+    expect(issues[0].message).toContain("has 10 letters");
+  });
+  it("post effect tracks may animate effects brought by a look preset", () => {
+    const ok = scene({ postfx: [{ type: "look", preset: "product" }], timeline: { duration: 2, tracks: [{ target: "postfx.bloom.strength", keys: [[0, 0], [2, 1]] }, { target: "postfx.vignette.darkness", keys: [[0, 0], [2, 1]] }] } });
+    expect(errors(ok)).toEqual([]);
+    const bad = scene({ postfx: [{ type: "look", preset: "product" }], timeline: { duration: 2, tracks: [{ target: "postfx.dof.focus", keys: [[0, 1], [2, 5]] }] } });
+    expect(errors(bad).map((i) => i.message).join()).toContain("nor brought by a look preset");
+  });
   it("accepts the full motion vocabulary", () => {
     const s = scene({
       postfx: [{ type: "bloom" }, { type: "dof" }],

@@ -18,6 +18,8 @@ export interface SceneAttrs {
   label: string;
   /** Optional caption shown under the scene. */
   caption: string;
+  /** Aspect ratio "W:H" reserved before the scene loads (no layout shift). Empty = the scene's own target.aspect once loaded. */
+  aspect: string;
 }
 
 export interface UploadedScene {
@@ -26,6 +28,8 @@ export interface UploadedScene {
   poster: string;
   runtime: string;
   label: string;
+  /** target.aspect of the uploaded scene.json ("4:1"), when known. */
+  aspect?: string;
 }
 
 export interface PluginConfig {
@@ -36,7 +40,7 @@ export interface PluginConfig {
 }
 
 export const DEFAULT_CONFIG: PluginConfig = { folder: DEFAULT_FOLDER, scenes: [] };
-export const DEFAULT_ATTRS: SceneAttrs = { src: "", poster: "", runtime: "", label: "", caption: "" };
+export const DEFAULT_ATTRS: SceneAttrs = { src: "", poster: "", runtime: "", label: "", caption: "", aspect: "" };
 
 // UTF-8 safe base64 (btoa alone only takes Latin-1).
 export function encodeAttrs(a: SceneAttrs): string {
@@ -58,6 +62,7 @@ export function decodeAttrs(value: string | null | undefined): SceneAttrs {
       runtime: String(p.runtime ?? ""),
       label: String(p.label ?? ""),
       caption: String(p.caption ?? ""),
+      aspect: String(p.aspect ?? ""),
     };
   } catch {
     return { ...DEFAULT_ATTRS };
@@ -76,6 +81,22 @@ export function safeUrl(url: string): string {
   if (/^(\/(?!\/)|\.\.?\/)[^\s"'<>:]*$/.test(u)) return u;
   if (/^[A-Za-z0-9_-][^\s"'<>:]*$/.test(u)) return u; // plain relative path
   return "";
+}
+
+/** "W:H" (also "W/H", "WxH") → "W:H"; anything else → "". */
+export function safeAspect(aspect: string | null | undefined): string {
+  const m = /^\s*(\d+(?:\.\d+)?)\s*[:/x]\s*(\d+(?:\.\d+)?)\s*$/.exec(aspect ?? "");
+  return m && Number(m[1]) > 0 && Number(m[2]) > 0 ? `${m[1]}:${m[2]}` : "";
+}
+
+/** target.aspect of an exported scene.json ("" when missing or unreadable). */
+export function aspectFromScene(json: string): string {
+  try {
+    const scene = JSON.parse(json) as { target?: { aspect?: unknown } };
+    return typeof scene.target?.aspect === "string" ? safeAspect(scene.target.aspect) : "";
+  } catch {
+    return "";
+  }
 }
 
 /** Folder URL of the scene (".../name/") from its scene.json URL. */
@@ -108,16 +129,21 @@ export function withBase(url: string, basePath: string): string {
   return url === base || url.startsWith(base + "/") ? url : base + url;
 }
 
-/** The published HTML: the runtime module (browsers run a module URL once per page) + the element. */
+/** The published HTML: the runtime module (browsers run a module URL once per page) + the element.
+ *  The poster is markup (`<img slot="poster">`): visible before the runtime loads, a crawlable image and
+ *  an LCP candidate; `aspect` (attribute + inline aspect-ratio) reserves the height before scene.json arrives. */
 export function sceneHtml(attrs: SceneAttrs, basePath = ""): string {
   const a = withDefaults(attrs);
   if (!a.src) return "";
   const src = escapeHtml(withBase(a.src, basePath));
-  const poster = a.poster ? ` poster="${escapeHtml(withBase(a.poster, basePath))}"` : "";
   const label = escapeHtml(a.label.trim() || "3D scene");
+  const aspect = safeAspect(a.aspect);
+  const ratio = aspect ? `;aspect-ratio:${aspect.replace(":", " / ")}` : "";
+  const aspectAttr = aspect ? ` aspect="${aspect}"` : "";
+  const poster = a.poster ? `<img slot="poster" src="${escapeHtml(withBase(a.poster, basePath))}" alt="${label}" decoding="async" style="display:block;width:100%;height:100%;object-fit:cover">` : "";
   const caption = a.caption.trim() ? `<figcaption style="margin-top:.5rem;font-size:.875em;opacity:.75;text-align:center">${escapeHtml(a.caption.trim())}</figcaption>` : "";
   const script = a.runtime ? `<script type="module" src="${escapeHtml(withBase(a.runtime, basePath))}"></script>` : "";
-  return `<figure class="agent3d-scene-block" style="margin:1.5rem 0">${script}<agent3d-scene src="${src}"${poster} aria-label="${label}" style="display:block;width:100%"></agent3d-scene>${caption}</figure>`;
+  return `<figure class="agent3d-scene-block" style="margin:1.5rem 0">${script}<agent3d-scene src="${src}"${aspectAttr} role="img" aria-label="${label}" style="display:block;width:100%${ratio}">${poster}</agent3d-scene>${caption}</figure>`;
 }
 
 const MARKER = /<div\s+([^>]*data-cms-block="agent3d-scene\/scene"[^>]*)>\s*<\/div>/g;
@@ -127,20 +153,29 @@ export function renderSceneMarkers(html: string, basePath = ""): string {
   return html.replace(MARKER, (_m, attrs: string) => sceneHtml(decodeAttrs(/data-attrs="([^"]*)"/.exec(attrs)?.[1]), basePath));
 }
 
-/** Scenes found in an uploaded export folder: "<name>/scene.json" files (relative paths inside the folder). */
-export function scenesInExport(paths: string[], folder: string): UploadedScene[] {
+const RUNTIME_DIR = /^agent3d-runtime(?:-[A-Za-z0-9]+)?$/;
+
+/** Scenes found in an uploaded export folder: "<name>/scene.json" files (relative paths inside the folder).
+ *  The runtime folder is agent3d-runtime/ or, with `export --cache-bust`, agent3d-runtime-<hash>/.
+ *  `aspects` maps a scene name to its target.aspect (read from its scene.json by the caller). */
+export function scenesInExport(paths: string[], folder: string, aspects: Record<string, string> = {}): UploadedScene[] {
   const base = `/${folder.replace(/^\/+|\/+$/g, "")}`;
-  const hasRuntime = paths.includes("agent3d-runtime/agent3d-runtime.js");
+  const runtimeDir = paths.map((p) => /^([^/]+)\/agent3d-runtime\.js$/.exec(p)?.[1]).find((d) => !!d && RUNTIME_DIR.test(d));
   return paths
     .map((p) => /^([^/]+)\/scene\.json$/.exec(p)?.[1])
-    .filter((n): n is string => !!n && n !== "agent3d-runtime")
-    .map((name) => ({
-      name,
-      src: `${base}/${name}/scene.json`,
-      poster: paths.includes(`${name}/poster.webp`) ? `${base}/${name}/poster.webp` : "",
-      runtime: hasRuntime ? `${base}/agent3d-runtime/agent3d-runtime.js` : "",
-      label: "",
-    }));
+    .filter((n): n is string => !!n && !RUNTIME_DIR.test(n))
+    .map((name) => {
+      const scene: UploadedScene = {
+        name,
+        src: `${base}/${name}/scene.json`,
+        poster: paths.includes(`${name}/poster.webp`) ? `${base}/${name}/poster.webp` : "",
+        runtime: runtimeDir ? `${base}/${runtimeDir}/agent3d-runtime.js` : "",
+        label: "",
+      };
+      const aspect = safeAspect(aspects[name]);
+      if (aspect) scene.aspect = aspect;
+      return scene;
+    });
 }
 
 /** Strips the export folder's own name ("embed/agent3d-runtime/…" → "agent3d-runtime/…"). */
@@ -149,8 +184,10 @@ export function relativeToExport(webkitRelativePath: string): string {
   return parts.length > 1 ? parts.slice(1).join("/") : webkitRelativePath;
 }
 
-/** Files of an export worth uploading (the demo page and snippet stay local). */
+const LOCAL_ONLY = new Set(["index.html", "snippet.html", "head.html", "EMBED.md"]);
+
+/** Files of an export worth uploading (the demo page, snippets, EMBED.md and frameworks/ wrappers stay local). */
 export function shouldUpload(rel: string): boolean {
   if (!rel || rel.split("/").some((p) => p.startsWith(".") || p === "..")) return false;
-  return rel !== "index.html" && rel !== "snippet.html";
+  return !LOCAL_ONLY.has(rel) && !rel.startsWith("frameworks/");
 }

@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "id": "card-product-tilt",
+  "title": "Product tilt card",
+  "ariaLabel": "Product card: a glossy rubber duck popping out of a holographic card that tilts toward the pointer, named {data.name|Sunny Duck}, {data.price|$12}",
+  "seed": 6,
+  "data": {
+    "name": "Sunny Duck",
+    "price": "$12",
+    "badge": "NEW",
+    "url": "#product"
+  },
+  "target": {
+    "kind": "card",
+    "aspect": "4:5",
+    "budgetKb": 400,
+    "reducedMotion": "static",
+    "posterTime": 1.5,
+    "maxDpr": 2,
+    "toneMapping": "neutral",
+    "exposure": 1
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [
+      0,
+      0.1,
+      7.4
+    ],
+    "target": [
+      0,
+      0.05,
+      0
+    ]
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#24305e",
+        "#0c1024"
+      ],
+      "center": [
+        0.5,
+        0.55
+      ]
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.9,
+    "rig": {
+      "preset": "studio-3point",
+      "intensity": 0.9
+    },
+    "contactShadows": false
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "card",
+      "kind": "group",
+      "href": "{data.url|#product}",
+      "behaviours": [
+        {
+          "type": "tilt",
+          "maxAngle": 14,
+          "scale": 1.03,
+          "lift": 0.15,
+          "hoverOnly": false,
+          "smoothing": 0.88
+        },
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.9,
+          "ease": "outCubic"
+        }
+      ],
+      "children": [
+        {
+          "id": "plate",
+          "kind": "mesh",
+          "geometry": {
+            "type": "roundedBox",
+            "width": 2.3,
+            "height": 3.0,
+            "depth": 0.08,
+            "radius": 0.04,
+            "segments": 4
+          },
+          "material": {
+            "type": "physical",
+            "color": "#141a33",
+            "roughness": 0.35,
+            "clearcoat": 1,
+            "clearcoatRoughness": 0.05
+          }
+        },
+        {
+          "id": "face",
+          "kind": "mesh",
+          "geometry": {
+            "type": "plane",
+            "width": 2.14,
+            "height": 2.84
+          },
+          "position": [
+            0,
+            0,
+            0.045
+          ],
+          "material": {
+            "type": "shader",
+            "shader": "iridescentFoil",
+            "uniforms": {
+              "speed": 0.25,
+              "scale": 1.6,
+              "sparkle": 0.35,
+              "tint": "#7f9cff"
+            }
+          }
+        },
+        {
+          "id": "window",
+          "kind": "mesh",
+          "geometry": {
+            "type": "circle",
+            "radius": 0.92,
+            "segments": 96
+          },
+          "position": [
+            0,
+            0.2,
+            0.05
+          ],
+          "material": {
+            "type": "basic",
+            "color": "#ffd23f"
+          }
+        },
+        {
+          "id": "duck",
+          "kind": "model",
+          "src": "library:models/props/rubber-duck.glb",
+          "fit": 1.9,
+          "position": [
+            -0.05,
+            -0.5,
+            0.6
+          ],
+          "rotation": [
+            0,
+            -18,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "float",
+              "amplitude": 0.05,
+              "speed": 0.4
+            },
+            {
+              "type": "clickBounce",
+              "amount": 0.2
+            }
+          ]
+        },
+        {
+          "id": "name",
+          "kind": "text",
+          "text": "{data.name|Sunny Duck}",
+          "font": "sans-bold",
+          "size": 0.15,
+          "depth": 0,
+          "align": "left",
+          "position": [
+            -0.9,
+            -1.13,
+            0.06
+          ],
+          "material": {
+            "type": "basic",
+            "color": "#ffffff"
+          }
+        },
+        {
+          "id": "price",
+          "kind": "text",
+          "text": "{data.price|$12}",
+          "font": "sans-bold",
+          "size": 0.15,
+          "depth": 0,
+          "align": "right",
+          "position": [
+            0.9,
+            -1.13,
+            0.06
+          ],
+          "material": {
+            "type": "basic",
+            "color": "#ffd23f"
+          }
+        },
+        {
+          "id": "badge",
+          "kind": "group",
+          "position": [
+            0.7,
+            1.12,
+            0.12
+          ],
+          "children": [
+            {
+              "id": "badgePill",
+              "kind": "mesh",
+              "geometry": {
+                "type": "capsule",
+                "radius": 0.12,
+                "length": 0.32,
+                "segments": 16
+              },
+              "rotation": [
+                0,
+                0,
+                90
+              ],
+              "scale": [
+                1,
+                1,
+                0.3
+              ],
+              "material": {
+                "type": "basic",
+                "color": "#ff5a7a"
+              }
+            },
+            {
+              "id": "badgeText",
+              "kind": "text",
+              "text": "{data.badge|NEW}",
+              "font": "sans-bold",
+              "size": 0.09,
+              "depth": 0,
+              "letterSpacing": 0.04,
+              "position": [
+                0,
+                0,
+                0.05
+              ],
+              "material": {
+                "type": "basic",
+                "color": "#ffffff"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sparkles",
+      "kind": "particles",
+      "preset": "magic",
+      "count": 30,
+      "area": [
+        2.6,
+        3.2,
+        1
+      ],
+      "position": [
+        0,
+        0,
+        0.6
+      ],
+      "color": [
+        "#ffffff",
+        "#ffe27a"
+      ],
+      "size": 0.05
+    }
+  ],
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.3,
+      "threshold": 1.2,
+      "radius": 0.5
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.6
+    },
+    {
+      "type": "taa",
+      "samples": 8
+    }
+  ]
+}

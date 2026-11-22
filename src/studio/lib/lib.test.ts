@@ -98,6 +98,9 @@ describe("timeline helpers", () => {
     const m = moveKey(tr, 0, 2.5);
     expect(m.track.keys.map((k) => k[0])).toEqual([1, 2, 2.5]);
     expect(m.index).toBe(2);
+    const eased = { target: "c.scale", keys: [[0, 1], [1, 2, "outBack"]] as [number, number, string?][] } as never as Parameters<typeof moveKey>[0];
+    expect(moveKey(eased, 1, 1.5).track.keys[1]).toEqual([1.5, 2, "outBack"]);
+    expect(upsertKey(eased, 1, 3).keys[1]).toEqual([1, 3, "outBack"]);
     expect(snapTime(1.234)).toBe(1.25);
     expect(rulerStep(4)).toBe(0.25);
   });

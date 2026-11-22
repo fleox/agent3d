@@ -1,15 +1,17 @@
 import clsx from "clsx";
-import { Braces, ChevronDown, ChevronUp, ListChecks, ShieldCheck } from "lucide-react";
+import { Braces, ChevronDown, ChevronUp, ListChecks, MousePointerClick, ShieldCheck } from "lucide-react";
 import { useRef } from "react";
 import { IconButton } from "../components/ui/controls";
 import { useI18n, type MessageKey } from "../i18n";
 import { useEditor, useSnapshot, useUi, type BottomTab } from "../state/context";
 import { Timeline } from "../timeline/Timeline";
 import { CheckPanel } from "./CheckPanel";
+import { InteractionsPanel } from "./InteractionsPanel";
 import { JsonPanel } from "./JsonPanel";
 
 const TABS: { id: BottomTab; label: MessageKey; icon: typeof Braces; key: string }[] = [
   { id: "timeline", label: "bottom.timeline", icon: ListChecks, key: "T" },
+  { id: "interactions", label: "bottom.interactions", icon: MousePointerClick, key: "" },
   { id: "json", label: "bottom.json", icon: Braces, key: "J" },
   { id: "check", label: "bottom.check", icon: ShieldCheck, key: "" },
 ];
@@ -44,7 +46,7 @@ export function BottomPanel() {
       <div className="flex h-[33px] shrink-0 items-center gap-0.5 border-b border-line px-1.5" role="tablist">
         {TABS.map((tb) => {
           const I = tb.icon;
-          const badge = tb.id === "timeline" ? tracks : tb.id === "json" ? errors : check ? (check.counts?.errors ?? 0) + (check.counts?.warnings ?? 0) : 0;
+          const badge = tb.id === "timeline" ? tracks : tb.id === "interactions" ? (snap.scene?.interactions?.length ?? 0) : tb.id === "json" ? errors : check ? (check.counts?.errors ?? 0) + (check.counts?.warnings ?? 0) : 0;
           return (
             <button
               key={tb.id}
@@ -70,6 +72,7 @@ export function BottomPanel() {
       {bottom && (
         <div className="min-h-0 flex-1">
           {bottom === "timeline" && <Timeline />}
+          {bottom === "interactions" && <InteractionsPanel />}
           {bottom === "json" && <JsonPanel />}
           {bottom === "check" && <CheckPanel />}
         </div>

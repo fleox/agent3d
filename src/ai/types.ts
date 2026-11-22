@@ -65,18 +65,27 @@ export interface RenderResult {
 }
 
 export interface MediaOptions {
-  format: "poster" | "video";
+  // poster: a still; video: MP4 / WebM; gif / webp: animated image; og: the
+  // 1200×630 social preview (the poster frame fitted over a blurred copy).
+  format: "poster" | "video" | "gif" | "webp" | "og";
   // poster: "webp" (default) or "png"; time in seconds (default target.posterTime).
   image?: "webp" | "png";
   time?: number;
-  // video: seconds (default the timeline duration, else 5) and frames per second (default 30).
+  // video / gif / webp: seconds (default the timeline duration, else 5) and frames per second.
   duration?: number;
   fps?: number;
   size?: string;
+  // video container / codec: "webm" (VP9, default) or "mp4" (H.264, needs Google Chrome).
+  video?: "webm" | "mp4";
+  // Supersampling: draft / standard (1×, default), high (2×), ultra (3×).
+  quality?: "draft" | "standard" | "high" | "ultra";
+  // poster / gif / webp: transparent background.
+  transparent?: boolean;
 }
 
 export interface MediaResult {
   bytes: Uint8Array;
+  codec?: string;
   t?: number;
   frames?: number;
   fps?: number;
@@ -87,7 +96,8 @@ export interface MediaResult {
 export interface ToolHost {
   // Headless render (CLI / MCP only — needs Chrome). Enables `render_preview`.
   render?(opts: RenderOptions): Promise<RenderResult>;
-  // Poster still / WebM video (CLI / MCP / Studio API host — needs Chrome). Enables `export` formats poster and video.
+  // Poster still, MP4 / WebM video, animated GIF / WebP, og image (CLI / MCP / Studio API host — needs Chrome).
+  // Enables `export` formats poster, video, gif and animated-webp, and `og`.
   media?(opts: MediaOptions): Promise<MediaResult>;
   // dist/runtime files for an export format (see RuntimeFiles in src/ops/export.ts).
   runtimeFiles?(format: ExportFormat): Promise<Record<string, Uint8Array>>;

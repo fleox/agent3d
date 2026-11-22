@@ -1,0 +1,512 @@
+{
+  "version": 1,
+  "id": "character-mascot-hero",
+  "title": "Mascot hero",
+  "ariaLabel": "A friendly fox mascot waving next to a speech bubble; it follows the pointer with its eyes and celebrates when clicked",
+  "seed": 3,
+  "data": {
+    "greeting": "Hi, I'm Pixel!",
+    "cheer": "Yay! Let's go!"
+  },
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "reducedMotion": "static",
+    "posterTime": 1.5,
+    "maxDpr": 2,
+    "exposure": 0.95
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [
+      0,
+      1.6,
+      9.5
+    ],
+    "target": [
+      0,
+      1.25,
+      0
+    ],
+    "controls": "none"
+  },
+  "environment": {
+    "background": {
+      "meshGradient": [
+        "#ffd7b0",
+        "#ffb98f",
+        "#ffc2d4",
+        "#ffe6c9"
+      ],
+      "speed": 0.08,
+      "scale": 1.1,
+      "grain": 0.03
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.45,
+    "rig": {
+      "preset": "softbox",
+      "intensity": 0.75
+    },
+    "contactShadows": {
+      "opacity": 0.45,
+      "blur": 2.8
+    }
+  },
+  "lights": [
+    {
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        -4,
+        4,
+        -5
+      ],
+      "color": "#ffd2a8",
+      "intensity": 1.6
+    }
+  ],
+  "objects": [
+    {
+      "id": "disc",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.5,
+        "radiusBottom": 1.55,
+        "height": 0.22,
+        "segments": 64
+      },
+      "position": [
+        2.4,
+        0.11,
+        0
+      ],
+      "material": {
+        "preset": "mattePastel",
+        "color": "#ffb48a"
+      },
+      "receiveShadow": true
+    },
+    {
+      "id": "mascot",
+      "kind": "group",
+      "position": [
+        2.4,
+        0.22,
+        0
+      ],
+      "rotation": [
+        0,
+        -14,
+        0
+      ],
+      "children": [
+        {
+          "id": "foxWave",
+          "kind": "generator",
+          "generator": "character",
+          "params": {
+            "style": "fox",
+            "animation": "wave",
+            "expression": "happy",
+            "height": 2.3,
+            "eyesFollowPointer": true
+          },
+          "castShadow": true
+        },
+        {
+          "id": "foxParty",
+          "kind": "generator",
+          "generator": "character",
+          "visible": false,
+          "params": {
+            "style": "fox",
+            "animation": "celebrate",
+            "expression": "laugh",
+            "height": 2.3,
+            "eyesFollowPointer": true
+          },
+          "castShadow": true
+        }
+      ]
+    },
+    {
+      "id": "bubble",
+      "kind": "group",
+      "position": [
+        0.15,
+        2.6,
+        0.2
+      ],
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.06,
+          "speed": 0.35
+        },
+        {
+          "type": "appear",
+          "effect": "scale",
+          "duration": 0.7,
+          "delay": 0.4
+        }
+      ],
+      "children": [
+        {
+          "id": "bubbleBody",
+          "kind": "mesh",
+          "geometry": {
+            "type": "roundedBox",
+            "width": 2.7,
+            "height": 0.85,
+            "depth": 0.18,
+            "radius": 0.09
+          },
+          "material": {
+            "preset": "mattePastel",
+            "color": "#fffaf4"
+          }
+        },
+        {
+          "id": "bubbleTail",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cone",
+            "radius": 0.2,
+            "height": 0.5,
+            "segments": 16
+          },
+          "position": [
+            0.95,
+            -0.5,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            -150
+          ],
+          "material": {
+            "preset": "mattePastel",
+            "color": "#fffaf4"
+          },
+          "scale": [
+            1,
+            1,
+            0.35
+          ]
+        },
+        {
+          "id": "hello",
+          "kind": "text",
+          "text": "{data.greeting}",
+          "font": "display",
+          "size": 0.3,
+          "depth": 0.04,
+          "position": [
+            0,
+            -0.02,
+            0.12
+          ],
+          "material": {
+            "color": "#2d1f47",
+            "roughness": 0.7
+          }
+        },
+        {
+          "id": "cheer",
+          "kind": "text",
+          "text": "{data.cheer}",
+          "font": "display",
+          "size": 0.3,
+          "depth": 0.04,
+          "position": [
+            0,
+            -0.02,
+            0.12
+          ],
+          "visible": false,
+          "material": {
+            "color": "#d81b60",
+            "roughness": 0.7
+          }
+        }
+      ]
+    },
+    {
+      "id": "confetti",
+      "kind": "particles",
+      "preset": "confetti",
+      "count": 260,
+      "area": [
+        5,
+        4.5,
+        3
+      ],
+      "position": [
+        2.4,
+        2.6,
+        0
+      ],
+      "visible": false
+    },
+    {
+      "id": "sparkles",
+      "kind": "particles",
+      "preset": "magic",
+      "count": 50,
+      "area": [
+        3.5,
+        2.6,
+        2
+      ],
+      "position": [
+        2.4,
+        1.6,
+        0
+      ],
+      "color": [
+        "#fff3b0",
+        "#ffd1e8"
+      ],
+      "size": 0.1
+    }
+  ],
+  "timeline": {
+    "duration": 4.2,
+    "trigger": "manual",
+    "autoplay": false,
+    "segments": {
+      "celebrate": [
+        0,
+        4.2
+      ]
+    },
+    "tracks": [
+      {
+        "target": "foxWave.visible",
+        "keys": [
+          [
+            0,
+            true
+          ],
+          [
+            0.02,
+            false,
+            "step"
+          ],
+          [
+            4,
+            false
+          ],
+          [
+            4.02,
+            true,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "foxParty.visible",
+        "keys": [
+          [
+            0,
+            false
+          ],
+          [
+            0.02,
+            true,
+            "step"
+          ],
+          [
+            4,
+            true
+          ],
+          [
+            4.02,
+            false,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "confetti.visible",
+        "keys": [
+          [
+            0,
+            false
+          ],
+          [
+            0.02,
+            true,
+            "step"
+          ],
+          [
+            4,
+            true
+          ],
+          [
+            4.02,
+            false,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "hello.visible",
+        "keys": [
+          [
+            0,
+            true
+          ],
+          [
+            0.02,
+            false,
+            "step"
+          ],
+          [
+            4,
+            false
+          ],
+          [
+            4.02,
+            true,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "cheer.visible",
+        "keys": [
+          [
+            0,
+            false
+          ],
+          [
+            0.02,
+            true,
+            "step"
+          ],
+          [
+            4,
+            true
+          ],
+          [
+            4.02,
+            false,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "mascot.scale",
+        "keys": [
+          [
+            0,
+            1
+          ],
+          [
+            0.12,
+            0.9,
+            "outQuad"
+          ],
+          [
+            0.5,
+            1,
+            "outBack"
+          ],
+          [
+            4.2,
+            1
+          ]
+        ]
+      },
+      {
+        "target": "bubble.scale",
+        "keys": [
+          [
+            0,
+            1
+          ],
+          [
+            0.1,
+            0.85
+          ],
+          [
+            0.45,
+            1.08,
+            "outBack"
+          ],
+          [
+            0.7,
+            1,
+            "outCubic"
+          ]
+        ]
+      },
+      {
+        "target": "disc.material.color",
+        "keys": [
+          [
+            0,
+            "#ffb48a"
+          ],
+          [
+            0.3,
+            "#ff8fb1",
+            "outCubic"
+          ],
+          [
+            3.6,
+            "#ff8fb1"
+          ],
+          [
+            4.2,
+            "#ffb48a",
+            "inOutCubic"
+          ]
+        ]
+      }
+    ]
+  },
+  "interactions": [
+    {
+      "on": "click",
+      "target": "mascot",
+      "do": [
+        {
+          "play": "celebrate"
+        },
+        {
+          "emit": "mascot-click"
+        }
+      ]
+    },
+    {
+      "on": "click",
+      "target": "disc",
+      "do": [
+        {
+          "play": "celebrate"
+        },
+        {
+          "emit": "mascot-click"
+        }
+      ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "product",
+      "intensity": 0.6
+    },
+    {
+      "type": "bloom",
+      "threshold": 3,
+      "strength": 0.1
+    }
+  ]
+}

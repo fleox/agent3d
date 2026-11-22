@@ -5,6 +5,7 @@
 
 import * as THREE from "three";
 import type { TimelineDef, TrackDef, TrackKey } from "../../core/types";
+import { envScaleUniform } from "../build/materials";
 import { DEG, meshMaterials } from "../util";
 import { resolveKeys, sampleKeys, splitTarget, staggerOrder, type AbsKey, type Sampled } from "./sample";
 
@@ -107,6 +108,32 @@ function materialAccessor(obj: THREE.Object3D, prop: string): Accessor {
           } else if (Array.isArray(v) && u.value?.set) u.value.set(...v);
           else u.value = v;
         }
+      },
+    };
+  }
+  if (prop === "envMapIntensity") {
+    // three ignores material.envMapIntensity under scene.environment: drive the env-scale patch.
+    const lit = () => all().filter((m): m is THREE.MeshStandardMaterial => (m as THREE.MeshStandardMaterial).isMeshStandardMaterial);
+    return {
+      get: () => {
+        const m = lit()[0];
+        return m ? envScaleUniform(m).value : undefined;
+      },
+      set: (v) => {
+        if (typeof v === "number") for (const m of lit()) envScaleUniform(m).value = v;
+      },
+    };
+  }
+  if (prop === "anisotropyRotation" || prop === "iridescenceIOR") {
+    const k = prop === "anisotropyRotation" ? DEG : 1; // degrees in scenes, radians in three
+    return {
+      get() {
+        const cur = (all()[0] as unknown as Record<string, unknown> | undefined)?.[prop];
+        return typeof cur === "number" ? cur / k : undefined;
+      },
+      set(v) {
+        if (typeof v !== "number") return;
+        for (const m of all()) if (prop in m) (m as unknown as Record<string, number>)[prop] = v * k;
       },
     };
   }

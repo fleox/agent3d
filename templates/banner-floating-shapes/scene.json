@@ -2,7 +2,7 @@
   "version": 1,
   "id": "banner-floating-shapes",
   "title": "Floating shapes banner",
-  "ariaLabel": "Animated banner: the headline Make it playful surrounded by floating pastel 3D shapes",
+  "ariaLabel": "Animated banner: the headline {data.title|Make it playful} surrounded by floating pastel 3D shapes",
   "seed": 3,
   "target": {
     "kind": "banner",
@@ -10,18 +10,40 @@
     "budgetKb": 300,
     "reducedMotion": "static",
     "posterTime": 2.5,
-    "maxDpr": 2
+    "maxDpr": 2,
+    "toneMapping": "neutral"
   },
   "camera": {
     "type": "perspective",
     "fov": 28,
-    "position": [0, 0, 11],
-    "target": [0, 0, 0],
+    "position": [
+      0,
+      0,
+      11
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ],
     "controls": "parallax",
-    "parallax": {"strength": 0.35, "smoothing": 0.94}
+    "parallax": {
+      "strength": 0.35,
+      "smoothing": 0.94
+    }
   },
   "environment": {
-    "background": {"gradient": ["#ffe3ee", "#f1e6ff", "#d9ebff"], "angle": 110},
+    "background": {
+      "meshGradient": [
+        "#ffd6e7",
+        "#efe0ff",
+        "#cfe4ff",
+        "#fff0c9"
+      ],
+      "speed": 0.12,
+      "scale": 1.1,
+      "grain": 0.025
+    },
     "lighting": "soft",
     "lightingIntensity": 0.6
   },
@@ -33,169 +55,649 @@
       "groundColor": "#e8d9ff",
       "intensity": 0.8
     },
-    {"id": "key", "type": "directional", "position": [3, 6, 8], "intensity": 2.6, "color": "#fff6ee"},
-    {"id": "rim", "type": "directional", "position": [-6, -2, -4], "intensity": 0.8, "color": "#d6c4ff"}
+    {
+      "id": "key",
+      "type": "directional",
+      "position": [
+        3,
+        6,
+        8
+      ],
+      "intensity": 2.6,
+      "color": "#fff6ee"
+    },
+    {
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        -6,
+        -2,
+        -4
+      ],
+      "intensity": 0.8,
+      "color": "#d6c4ff"
+    }
   ],
   "objects": [
     {
       "id": "title",
       "kind": "text",
-      "text": "Make it playful",
+      "text": "{data.title|Make it playful}",
       "font": "display",
       "size": 0.95,
-      "depth": 0.28,
+      "depth": 0.3,
       "bevel": 0.04,
-      "position": [0, 0.05, 0.5],
-      "material": {"preset": "plastic", "color": "#3d2c63", "roughness": 0.3, "clearcoat": 0.6},
+      "position": [
+        0,
+        0.05,
+        0.5
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#3d2c63",
+        "roughness": 0.28,
+        "clearcoat": 0.8
+      },
       "behaviours": [
-        {"type": "appear", "effect": "rise", "duration": 1, "ease": "outBack"},
-        {"type": "followPointer", "mode": "rotate", "strength": 0.25, "smoothing": 0.93}
-      ]
+        {
+          "type": "followPointer",
+          "mode": "rotate",
+          "strength": 0.25,
+          "smoothing": 0.93
+        }
+      ],
+      "outline": {
+        "width": 0.06,
+        "color": "#ffffff",
+        "depth": 0.1
+      },
+      "reveal": {
+        "effect": "scale",
+        "stagger": 0.045,
+        "duration": 0.7,
+        "delay": 0.5,
+        "order": "forward"
+      }
     },
     {
       "id": "torus",
       "kind": "mesh",
-      "geometry": {"type": "torus", "radius": 0.62, "tube": 0.24, "radialSegments": 32, "tubularSegments": 96},
-      "position": [-6.9, 0.95, -0.8],
-      "rotation": [60, 20, 0],
-      "material": {"preset": "plastic", "color": "#ff7fb0", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.0},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 14.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.35, "smoothing": 0.92}
+      "geometry": {
+        "type": "torus",
+        "radius": 0.62,
+        "tube": 0.24,
+        "radialSegments": 32,
+        "tubularSegments": 96
+      },
+      "position": [
+        -6.9,
+        0.95,
+        -0.8
       ],
-      "scale": 1.6
+      "rotation": [
+        60,
+        20,
+        0
+      ],
+      "material": {
+        "preset": "jelly",
+        "color": "#ffc2da",
+        "attenuationColor": "#ff8ab8",
+        "attenuationDistance": 2.5
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.0
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 14.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.5,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "ball",
       "kind": "mesh",
-      "geometry": {"type": "sphere", "radius": 0.45, "segments": 48, "heightSegments": 32},
-      "position": [-5.3, -1.15, 0.6],
-      "rotation": [20, 30, 0],
-      "material": {"preset": "plastic", "color": "#ffc94d", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.3},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 20.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.6, "smoothing": 0.92}
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.45,
+        "segments": 48,
+        "heightSegments": 32
+      },
+      "position": [
+        -5.3,
+        -1.15,
+        0.6
       ],
-      "scale": 1.6
+      "rotation": [
+        20,
+        30,
+        0
+      ],
+      "material": {
+        "preset": "mattePastel",
+        "color": "#ffd166"
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.3
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 20.0
+        },
+        {
+          "type": "parallax",
+          "depth": 1,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "cube",
       "kind": "mesh",
-      "geometry": {"type": "roundedBox", "width": 0.85, "height": 0.85, "depth": 0.85, "radius": 0.18, "segments": 5},
-      "position": [-9.6, -0.4, -1.5],
-      "rotation": [25, 40, 10],
-      "material": {"preset": "plastic", "color": "#7cc0ff", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.6},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 26.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.2, "smoothing": 0.92}
+      "geometry": {
+        "type": "roundedBox",
+        "width": 0.85,
+        "height": 0.85,
+        "depth": 0.85,
+        "radius": 0.18,
+        "segments": 5
+      },
+      "position": [
+        -9.6,
+        -0.4,
+        -1.5
       ],
-      "scale": 1.6
+      "rotation": [
+        25,
+        40,
+        10
+      ],
+      "material": {
+        "preset": "jelly",
+        "color": "#cfe6ff",
+        "attenuationColor": "#8cc0ff",
+        "attenuationDistance": 2.5
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.6
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 26.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.2,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "pill",
       "kind": "mesh",
-      "geometry": {"type": "capsule", "radius": 0.24, "length": 0.6, "segments": 20},
-      "position": [-3.3, 1.55, -1.8],
-      "rotation": [0, 0, 55],
-      "material": {"preset": "plastic", "color": "#7fe0a0", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.15},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 17.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.25, "smoothing": 0.92}
+      "geometry": {
+        "type": "capsule",
+        "radius": 0.24,
+        "length": 0.6,
+        "segments": 20
+      },
+      "position": [
+        -3.3,
+        1.55,
+        -1.8
       ],
-      "scale": 1.6
+      "rotation": [
+        0,
+        0,
+        55
+      ],
+      "material": {
+        "preset": "mattePastel",
+        "color": "#8fe3b0"
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.15
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 17.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.2,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "knot",
       "kind": "mesh",
-      "geometry": {"type": "torusKnot", "radius": 0.48, "tube": 0.16, "tubularSegments": 160, "radialSegments": 20},
-      "position": [7.4, 0.6, -0.6],
-      "rotation": [20, 30, 0],
-      "material": {"preset": "plastic", "color": "#a98bff", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.45},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 23.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.35, "smoothing": 0.92}
+      "geometry": {
+        "type": "torusKnot",
+        "radius": 0.48,
+        "tube": 0.16,
+        "tubularSegments": 160,
+        "radialSegments": 20
+      },
+      "position": [
+        7.4,
+        0.6,
+        -0.6
       ],
-      "scale": 1.6
+      "rotation": [
+        20,
+        30,
+        0
+      ],
+      "material": {
+        "preset": "pearl",
+        "color": "#c7b2ff"
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.45
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 23.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.5,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "cone",
       "kind": "mesh",
-      "geometry": {"type": "cone", "radius": 0.45, "height": 0.9, "segments": 48},
-      "position": [5.5, -1.2, 0.6],
-      "rotation": [160, 0, 20],
-      "material": {"preset": "plastic", "color": "#ff9a6b", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.8},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 30.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.6, "smoothing": 0.92}
+      "geometry": {
+        "type": "cone",
+        "radius": 0.45,
+        "height": 0.9,
+        "segments": 48
+      },
+      "position": [
+        5.5,
+        -1.2,
+        0.6
       ],
-      "scale": 1.6
+      "rotation": [
+        160,
+        0,
+        20
+      ],
+      "material": {
+        "preset": "mattePastel",
+        "color": "#ffa27a"
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.8
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 30.0
+        },
+        {
+          "type": "parallax",
+          "depth": 1,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "gem",
       "kind": "mesh",
-      "geometry": {"type": "icosahedron", "radius": 0.5, "detail": 0},
-      "position": [9.8, -0.5, -1.4],
-      "rotation": [10, 10, 10],
-      "material": {"preset": "plastic", "color": "#4fd1c5", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.25},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 19.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.2, "smoothing": 0.92}
+      "geometry": {
+        "type": "icosahedron",
+        "radius": 0.5,
+        "detail": 0
+      },
+      "position": [
+        9.8,
+        -0.5,
+        -1.4
       ],
-      "scale": 1.6
+      "rotation": [
+        10,
+        10,
+        10
+      ],
+      "material": {
+        "preset": "jelly",
+        "color": "#c9fff6",
+        "attenuationColor": "#5fe0cf",
+        "attenuationDistance": 2.5,
+        "flatShading": true
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.25
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 19.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.2,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "ring",
       "kind": "mesh",
-      "geometry": {"type": "torus", "radius": 0.32, "tube": 0.1, "radialSegments": 24, "tubularSegments": 64},
-      "position": [3.4, 1.6, -1.8],
-      "rotation": [70, 0, 30],
-      "material": {"preset": "plastic", "color": "#ffd25e", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.7},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 28.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.25, "smoothing": 0.92}
+      "geometry": {
+        "type": "torus",
+        "radius": 0.32,
+        "tube": 0.1,
+        "radialSegments": 24,
+        "tubularSegments": 64
+      },
+      "position": [
+        3.4,
+        1.6,
+        -1.8
       ],
-      "scale": 1.6
+      "rotation": [
+        70,
+        0,
+        30
+      ],
+      "material": {
+        "preset": "gold",
+        "roughness": 0.2
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.7
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 28.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.2,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.6,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "dot",
       "kind": "mesh",
-      "geometry": {"type": "sphere", "radius": 0.2, "segments": 32, "heightSegments": 24},
-      "position": [-1.9, -1.7, -0.6],
-      "rotation": [20, 30, 0],
-      "material": {"preset": "plastic", "color": "#ff7fb0", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.9},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 32.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.3, "smoothing": 0.92}
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.2,
+        "segments": 32,
+        "heightSegments": 24
+      },
+      "position": [
+        -1.9,
+        -1.7,
+        -0.6
       ],
-      "scale": 1.3
+      "rotation": [
+        20,
+        30,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#ff7fb0",
+        "roughness": 0.2,
+        "clearcoat": 1
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.9
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 32.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.5,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.3,
+      "tags": [
+        "shape"
+      ]
     },
     {
       "id": "dot2",
       "kind": "mesh",
-      "geometry": {"type": "sphere", "radius": 0.16, "segments": 32, "heightSegments": 24},
-      "position": [2.3, -1.7, -0.4],
-      "rotation": [20, 30, 0],
-      "material": {"preset": "plastic", "color": "#7cc0ff", "roughness": 0.22, "clearcoat": 1},
-      "behaviours": [
-        {"type": "float", "amplitude": 0.18, "speed": 0.28, "phase": 0.5},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 24.0},
-        {"type": "followPointer", "mode": "move", "strength": 0.3, "smoothing": 0.92}
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.16,
+        "segments": 32,
+        "heightSegments": 24
+      },
+      "position": [
+        2.3,
+        -1.7,
+        -0.4
       ],
-      "scale": 1.3
+      "rotation": [
+        20,
+        30,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#7cc0ff",
+        "roughness": 0.2,
+        "clearcoat": 1
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.18,
+          "speed": 0.28,
+          "phase": 0.5
+        },
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 24.0
+        },
+        {
+          "type": "parallax",
+          "depth": 0.5,
+          "pointer": 0.5
+        }
+      ],
+      "scale": 1.3,
+      "tags": [
+        "shape"
+      ]
     }
   ],
   "timeline": {
     "duration": 10,
     "loop": true,
-    "tracks": [{"target": "title.rotation.y", "keys": [[0, -4], [5, 4], [10, -4]], "ease": "inOutSine"}]
-  }
+    "tracks": [
+      {
+        "target": "title.rotation.y",
+        "keys": [
+          [
+            0,
+            -4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            10,
+            -4
+          ]
+        ],
+        "ease": "inOutSine"
+      },
+      {
+        "target": "tag:shape.scale",
+        "keys": [
+          [
+            0,
+            0.001
+          ],
+          [
+            1.1,
+            "+=0",
+            "spring(170, 11)"
+          ]
+        ],
+        "stagger": 0.06,
+        "staggerFrom": "edges"
+      }
+    ]
+  },
+  "data": {
+    "title": "Make it playful"
+  },
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.2,
+      "threshold": 1.5,
+      "radius": 0.6
+    },
+    {
+      "type": "grading",
+      "look": "pastel",
+      "intensity": 0.4
+    },
+    {
+      "type": "vignette",
+      "offset": 1.2,
+      "darkness": 0.3
+    },
+    {
+      "type": "taa",
+      "samples": 8
+    }
+  ]
 }

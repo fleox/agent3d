@@ -27,6 +27,10 @@ export interface BuildContext {
   color(c: Color): THREE.Color;
   // Resolve a project asset path / library id to a URL.
   resolveAsset(path: string): string;
+  // Where the object being built will be placed in its parent (its def's
+  // position / scale): scatterers convert their local points to the terrain's
+  // frame with it ("onTerrain"). Absent = at the origin, unscaled.
+  placement?: { position: [number, number, number]; scale: [number, number, number] };
 }
 
 export interface BuiltObject {

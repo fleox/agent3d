@@ -146,11 +146,24 @@ export function findGround(ctx: BuildContext): Ground | null {
   all.sort((a, b) => (b.object.userData.surface === "terrain" ? 1 : 0) - (a.object.userData.surface === "terrain" ? 1 : 0));
   for (const s of all) {
     if (!s.heightAt) continue;
+    // Scatter points are local to the scatterer (placed at ctx.placement in the
+    // same parent as the terrain): local → parent → terrain-local and back.
+    // (Before, the terrain offset was applied as if both sat at the origin, so
+    // two objects at the same `position` buried / floated their trees.)
     const o = s.object.position;
     const sc = s.object.scale;
+    const pp = ctx.placement?.position ?? [0, 0, 0];
+    const ps = ctx.placement?.scale ?? [1, 1, 1];
     const fn = s.heightAt.bind(s);
-    const water = typeof s.object.userData.waterLevel === "number" ? (s.object.userData.waterLevel as number) * sc.y + o.y : null;
-    return { height: (x, z) => fn((x - o.x) / (sc.x || 1), (z - o.z) / (sc.z || 1)) * sc.y + o.y, water };
+    const toLocalY = (yParent: number) => (yParent - pp[1]) / (ps[1] || 1);
+    const water = typeof s.object.userData.waterLevel === "number" ? toLocalY((s.object.userData.waterLevel as number) * sc.y + o.y) : null;
+    return {
+      height: (x, z) => {
+        const px = pp[0] + x * ps[0], pz = pp[2] + z * ps[2];
+        return toLocalY(fn((px - o.x) / (sc.x || 1), (pz - o.z) / (sc.z || 1)) * sc.y + o.y);
+      },
+      water,
+    };
   }
   return null;
 }

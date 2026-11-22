@@ -1,0 +1,23 @@
+{
+  "id": "card-product-tilt",
+  "title": "Product tilt card",
+  "description": "Collectible-style product card (4:5): a glossy PBR rubber duck pops out of a holographic-foil card with a sun disc, tilting toward the pointer with a shifting rainbow glare; data-bound name, price, badge and link \u2014 drop it in any product grid.",
+  "kind": "card",
+  "tags": [
+    "card",
+    "product",
+    "ecommerce",
+    "tilt",
+    "hover",
+    "holographic",
+    "foil",
+    "glare",
+    "collectible",
+    "toy",
+    "price",
+    "badge",
+    "pop-out",
+    "data-bindings"
+  ],
+  "aspect": "4:5"
+}

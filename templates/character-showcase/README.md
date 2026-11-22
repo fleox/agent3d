@@ -1,16 +1,27 @@
 # Character showcase
 
-A 16:9 cartoon line-up for mascots, games or kids' products: a rigged library knight (`library:models/characters/knight.glb`, clip `Cheer`) on a central pedestal, flanked by two procedural `character` generators — a robot waving and a cat dancing, both with eyes that follow the pointer. Toon pedestals, a soft contact shadow, falling confetti and an `outline` post effect give a comic-book look. Drag to orbit (zoom off).
+A 16:9 cartoon line-up, 100 % procedural (0 KB of assets): five `character` generators on pastel clay pedestals, each with its own style, expression and animation, all turning their heads toward the pointer (`eyesFollowPointer`) and growing a little on hover:
+
+| Object | Style | Animation | Expression |
+|---|---|---|---|
+| `astronaut` (centre) | `astronaut` | `cheer` | `laugh` |
+| `robot` | `robot` | `dance` | — (screen face) |
+| `fox` | `fox` | `wave` | `happy` |
+| `kid` | `humanoid` (curly hair, hoodie, headphones) | `dance` | `wink` |
+| `cat` | `cat` | `jump` | `surprised` |
+
+They rise in one after the other (`appear`), a "Meet the crew" title (text from `data.title`, Fredoka `display` font with an outline) pops in (`appear`), confetti falls, soft studio light + contact shadows + the `product` look finish it. Drag to orbit (zoom off, limited tilt).
 
 ## What to tweak
 
 | Change | Where |
 |---|---|
-| Hero character | `objects#knight.src`: `library:models/characters/mage.glb`, `skeleton.glb`, `robot.glb` (clips `Dance`, `Wave`, `ThumbsUp`…), `platformer-hero.glb`, `mini-soldier.glb` |
-| Its animation | `objects#knight.animation.clip` — clip names are listed by `agent3d assets library --query characters` (knight: `Idle`, `Cheer`, `Running_A`, `1H_Melee_Attack_Chop`…) |
-| Side characters | `objects#robot.params` / `objects#cat.params`: `style` (`humanoid`, `robot`, `blob`, `cat`, `bird`), colours (`skin`, `shirt`, `pants`, `hair`, `accent`), `animation` (`idle`, `walk`, `run`, `wave`, `jump`, `dance`) |
-| Pedestal colours | `objects#pedCenter/pedLeft/pedRight.material.color` |
-| Outline | `postfx[0]` (`color`, `thickness`), remove it for a softer look |
+| Title | `data.title` (or `data-title="…"` on the element); remove `objects#title` for an image-only hero |
+| A character | `objects#<id>.params`: `style` (`humanoid`, `astronaut`, `robot`, `blob`, `cat`, `fox`, `bird`, `ghost`), colours (`skin`, `shirt`, `pants`, `hair`, `accent`), `expression` (`happy`, `laugh`, `neutral`, `surprised`, `wink`, `sad`, `angry`, `sleepy`), `animation` (`idle`, `walk`, `run`, `wave`, `jump`, `dance`, `cheer`, `celebrate`, `sit`, `point`, `talk`), humanoid `hairStyle` / `outfit` / `accessories` |
+| Toon look | each character `params.shading: "toon"` + `postfx: [{ "type": "outline", "color": "#3b2232" }]` |
+| Fewer characters | remove the outer pair (`kid`, `cat`, `pedL2`, `pedR2`) and narrow `camera.fov` to ~22 |
+| Pedestal colours | `objects#ped*.material.color` |
 | Background | `environment.background.radial` |
+| A rigged library hero instead | replace `astronaut` by `{ "kind": "model", "src": "library:models/characters/knight.glb", "fit": 2.2, "animation": { "clip": "Cheer" } }` (≈ 700 KB) |
 
-~180 draw calls (the procedural characters are built from many parts): fine on desktop; for low-end mobiles keep only the knight.
+~75 draw calls ; ~100 k triangles per frame (more counted with the AO pre-pass). `quality: auto` drops AO on low-end devices.

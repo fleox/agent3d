@@ -1,0 +1,8 @@
+{
+  "name": "hero-floating-island",
+  "title": "Floating island hero",
+  "createdAt": "2026-11-22T00:00:00.000Z",
+  "updatedAt": "2026-11-22T00:00:00.000Z",
+  "template": "hero-floating-island",
+  "agent3d": "0.1.0"
+}

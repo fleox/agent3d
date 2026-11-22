@@ -1,0 +1,327 @@
+{
+  "version": 1,
+  "id": "banner-aurora-night",
+  "title": "Aurora night banner",
+  "ariaLabel": "Animated banner: northern lights rippling over dark mountains, glowing crystals in the snow, and the words NORTHERN LIGHTS appearing letter by letter",
+  "seed": 21,
+  "data": {
+    "title": "NORTHERN LIGHTS"
+  },
+  "target": {
+    "kind": "banner",
+    "aspect": "4:1",
+    "budgetKb": 300,
+    "reducedMotion": "static",
+    "posterTime": 3,
+    "maxDpr": 2,
+    "exposure": 1
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 24,
+    "position": [
+      0,
+      0.6,
+      16
+    ],
+    "target": [
+      0,
+      1.0,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.35,
+      "smoothing": 0.94
+    }
+  },
+  "environment": {
+    "background": "#020611",
+    "lighting": "night",
+    "lightingIntensity": 0.5,
+    "fog": {
+      "color": "#06142a",
+      "near": 18,
+      "far": 60
+    }
+  },
+  "lights": [
+    {
+      "id": "moon",
+      "type": "directional",
+      "position": [
+        -6,
+        8,
+        -4
+      ],
+      "color": "#9cc8ff",
+      "intensity": 0.6
+    },
+    {
+      "id": "glowL",
+      "type": "point",
+      "position": [
+        -8.3,
+        0.3,
+        2
+      ],
+      "color": "#22d3ee",
+      "intensity": 6,
+      "distance": 5
+    },
+    {
+      "id": "glowR",
+      "type": "point",
+      "position": [
+        8.4,
+        0.3,
+        1.8
+      ],
+      "color": "#a855f7",
+      "intensity": 6,
+      "distance": 5
+    }
+  ],
+  "objects": [
+    {
+      "id": "sky",
+      "kind": "mesh",
+      "geometry": {
+        "type": "plane",
+        "width": 120,
+        "height": 34
+      },
+      "position": [
+        0,
+        6,
+        -40
+      ],
+      "material": {
+        "type": "shader",
+        "shader": "aurora",
+        "uniforms": {
+          "colors": [
+            "#00ffa3",
+            "#00c2ff",
+            "#a855f7"
+          ],
+          "background": "#020611",
+          "speed": 0.25,
+          "intensity": 1.3
+        }
+      }
+    },
+    {
+      "id": "stars",
+      "kind": "particles",
+      "preset": "stars",
+      "count": 400,
+      "area": [
+        70,
+        22,
+        4
+      ],
+      "position": [
+        0,
+        9,
+        -36
+      ],
+      "size": 0.08,
+      "color": [
+        "#ffffff",
+        "#bfe3ff"
+      ],
+      "opacity": 0.8
+    },
+    {
+      "id": "mountains",
+      "kind": "generator",
+      "generator": "terrain",
+      "position": [
+        0,
+        -1.5,
+        -48
+      ],
+      "params": {
+        "size": 64,
+        "height": 9,
+        "resolution": 110,
+        "shape": "mountains",
+        "lowpoly": true,
+        "palette": [
+          "#060b18",
+          "#0d1930",
+          "#1b2c4c",
+          "#33496f",
+          "#d6e4f7"
+        ],
+        "waterLevel": null,
+        "snowLine": 0.8
+      }
+    },
+    {
+      "id": "snow",
+      "kind": "mesh",
+      "geometry": {
+        "type": "plane",
+        "width": 80,
+        "height": 40
+      },
+      "rotation": [
+        -90,
+        0,
+        0
+      ],
+      "position": [
+        0,
+        -1.0,
+        -6
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#22324f",
+        "roughness": 0.25,
+        "metalness": 0.2
+      }
+    },
+    {
+      "id": "crystalsL",
+      "kind": "generator",
+      "generator": "crystals",
+      "position": [
+        -8.3,
+        -1.0,
+        0.5
+      ],
+      "seed": 4,
+      "params": {
+        "count": 14,
+        "size": 1.9,
+        "colors": [
+          "#0e7490",
+          "#22d3ee",
+          "#e0fbff"
+        ],
+        "spread": 1.1,
+        "glow": 1.1,
+        "baseColor": "#141a2c"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 1.4,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "crystalsR",
+      "kind": "generator",
+      "generator": "crystals",
+      "position": [
+        8.4,
+        -1.0,
+        0.2
+      ],
+      "seed": 9,
+      "params": {
+        "count": 12,
+        "size": 1.6,
+        "colors": [
+          "#6b21a8",
+          "#c084fc",
+          "#fdf4ff"
+        ],
+        "spread": 0.9,
+        "glow": 1.1,
+        "baseColor": "#141a2c"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 1.4,
+          "delay": 0.2,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "{data.title|NORTHERN LIGHTS}",
+      "font": "montserrat-extrabold",
+      "size": 0.8,
+      "depth": 0.12,
+      "letterSpacing": 0.06,
+      "position": [
+        0,
+        1.0,
+        0
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#ffffff",
+        "emissive": "#dff4ff",
+        "emissiveIntensity": 0.55,
+        "roughness": 0.4,
+        "metalness": 0
+      },
+      "reveal": {
+        "effect": "fade",
+        "stagger": 0.06,
+        "duration": 1.0,
+        "delay": 0.6,
+        "order": "forward",
+        "ease": "outCubic"
+      }
+    },
+    {
+      "id": "dust",
+      "kind": "particles",
+      "preset": "snow",
+      "count": 160,
+      "area": [
+        26,
+        8,
+        6
+      ],
+      "position": [
+        0,
+        2,
+        0
+      ],
+      "size": 0.04,
+      "speed": 0.25,
+      "opacity": 0.6
+    }
+  ],
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.8,
+      "radius": 0.6,
+      "threshold": 0.8,
+      "smoothing": 0.3
+    },
+    {
+      "type": "grading",
+      "look": "cool",
+      "intensity": 0.5
+    },
+    {
+      "type": "vignette",
+      "offset": 1,
+      "darkness": 0.9
+    },
+    {
+      "type": "film",
+      "intensity": 0.04
+    },
+    {
+      "type": "taa",
+      "samples": 8
+    }
+  ]
+}

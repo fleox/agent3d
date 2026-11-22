@@ -118,7 +118,7 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
   { id: "jelly", description: "Gummy jelly: coloured, translucent, glossy.", props: { type: "physical", color: "#ff7aa2", roughness: 0.12, metalness: 0, transmission: 0.95, thickness: 1.5, ior: 1.35, attenuationColor: "#ff2d6f", attenuationDistance: 0.6, clearcoat: 1, clearcoatRoughness: 0.1 } },
   { id: "chromeGradient", description: "Chrome tinted by a colour ramp (set `gradient`).", props: { type: "gradient", gradient: ["#7f5cff", "#ff5ca8", "#ffd36e"], metalness: 1, roughness: 0.08 } },
   { id: "soapBubble", description: "Soap bubble: clear with thin-film rainbow reflections.", props: { type: "physical", color: "#ffffff", roughness: 0, metalness: 0, transmission: 1, thickness: 0.05, ior: 1.1, iridescence: 1, iridescenceIOR: 1.33, iridescenceThicknessRange: [120, 900], side: "double" } },
-  { id: "mattePastel", description: "Soft matte pastel with a velvety edge (stylised product renders).", props: { type: "physical", color: "#f7c8d8", roughness: 0.75, metalness: 0, sheen: 0.4, sheenRoughness: 0.8, sheenColor: "#ffffff" } },
+  { id: "mattePastel", description: "Soft matte pastel with a velvety edge (stylised product renders).", props: { type: "physical", color: "#f7c8d8", roughness: 0.75, metalness: 0, sheen: 0.35, sheenRoughness: 0.8 } },
   { id: "emissiveGradient", description: "Glowing colour ramp (set `gradient`; blooms with postfx bloom).", props: { type: "gradient", gradient: ["#00e5ff", "#7c4dff", "#ff3d9a"], emissive: "#ffffff", emissiveIntensity: 1.6, gradientEmissive: true, roughness: 0.4 } },
 ];
 

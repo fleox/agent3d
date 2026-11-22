@@ -1,18 +1,23 @@
 {
   "id": "banner-wave-grid",
   "title": "Wave grid banner",
-  "description": "Tech / data banner: a field of glowing dots rippling like a signal, reacting to the pointer, with a monospace headline and bloom.",
+  "description": "Dark tech / data 4:1 banner: a field of ~8,000 dots in a cyan-indigo-pink ramp undulating like a signal and rippling under the pointer, beneath a crisp Space Grotesk headline revealed letter by letter and a blinking mono kicker (data-bound).",
   "kind": "banner",
   "tags": [
     "banner",
     "tech",
     "data",
-    "waves",
-    "grid",
+    "ai",
+    "saas",
+    "analytics",
     "dots",
+    "wave",
+    "grid",
+    "signal",
+    "dark",
     "pointer",
-    "bloom",
-    "dark"
+    "reveal",
+    "data-bindings"
   ],
   "aspect": "4:1"
 }

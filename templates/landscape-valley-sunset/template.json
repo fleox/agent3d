@@ -1,18 +1,22 @@
 {
   "id": "landscape-valley-sunset",
   "title": "Mountain valley at sunset",
-  "description": "Atmospheric 21:9 landscape: snowy low-poly mountains, a pine forest and a lake in golden-hour light with layered fog, a low sun and fireflies.",
+  "description": "Atmospheric 21:9 landscape: snowy low-poly mountains, a pine forest and an animated lake under a physical golden-hour sky, the sun just above the ridge with soft god rays, valley height fog, pink clouds and fireflies \u2014 cinematic grade, slow camera drift + pointer parallax.",
   "kind": "hero",
   "tags": [
     "landscape",
     "mountains",
     "sunset",
+    "golden-hour",
     "fog",
+    "godrays",
     "pine",
     "forest",
     "lake",
     "nature",
-    "cinematic"
+    "cinematic",
+    "outdoor",
+    "travel"
   ],
   "aspect": "21:9"
 }

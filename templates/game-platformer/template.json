@@ -1,0 +1,8 @@
+{
+  "id": "game-platformer",
+  "title": "Sky platformer",
+  "description": "Playable side-scrolling platformer (16:9): a rigged KayKit knight runs and jumps (physics character controller with coyote time) across floating grass platforms, a sliding lift and an elevator lift, collects 13 coins and reaches the goal flag against a 90 s timer — 3 lives, checkpoints, best time saved, synth sounds, keyboard + touch (hold a side to run, tap the middle to jump), self-playing attract mode, floating islands and clouds behind.",
+  "kind": "game",
+  "tags": ["game", "platformer", "side-scroller", "jump", "physics", "character-controller", "moving-platforms", "coins", "knight", "kaykit", "touch", "keyboard", "timer", "lives", "arcade"],
+  "aspect": "16:9"
+}

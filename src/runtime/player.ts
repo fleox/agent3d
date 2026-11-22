@@ -405,9 +405,12 @@ class PlayerImpl implements Player {
       // Report script / UI events to the host page (element: `agent3d:event`).
       const game = this.game;
       const emit = game.emit.bind(game);
+      // Script api.emit and HUD button actions go through here too: they also
+      // reach Player.on listeners and { on: "event" } interactions.
       game.emit = (name: string, payload?: unknown) => {
         emit(name, payload);
         this.notify(name, payload);
+        this.dispatchMotionEvent(name, payload);
       };
     }
     // Compile shaders up front so the first visible frame does not hitch.
@@ -446,9 +449,13 @@ class PlayerImpl implements Player {
   // Player.emit (api.ts): scripts' api.on(name) + MountOptions.onEvent (the
   // element re-dispatches it as `agent3d:event`). Interactions / markers can hook in here.
   emit(name: string, payload?: unknown): void {
-    if (this.game) this.game.emit(name, payload);
-    else this.notify(name, payload);
-    // Motion: Player.on listeners and interactions { on: "event" } (markers, emit actions).
+    if (this.game) return this.game.emit(name, payload); // the wrapper (attachWorld) dispatches everything
+    this.notify(name, payload);
+    this.dispatchMotionEvent(name, payload);
+  }
+
+  // Motion: Player.on listeners and interactions { on: "event" } (markers, emit actions, script api.emit, HUD buttons).
+  private dispatchMotionEvent(name: string, payload?: unknown): void {
     for (const h of this.eventListeners.get(name) ?? []) {
       try {
         h(payload);
@@ -711,14 +718,12 @@ class PlayerImpl implements Player {
   private navigate(href: string): void {
     const win = this.container.ownerDocument.defaultView;
     if (!win) return;
-    try {
-      const url = new URL(href, win.location.href);
-      if (url.protocol === "javascript:") return;
-      if (url.origin !== win.location.origin) win.open(url.href, "_blank", "noopener");
-      else win.location.assign(url.href);
-    } catch {
-      /* invalid URL */
-    }
+    // Same rules as the openUrl interaction: http(s) / page-relative only.
+    const safe = safeUrl(href, win.location.href);
+    if (!safe) return;
+    const url = new URL(safe);
+    if (url.origin !== win.location.origin) win.open(url.href, "_blank", "noopener,noreferrer");
+    else win.location.assign(url.href);
   }
 
   private render(withOverlay = true): void {

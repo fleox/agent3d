@@ -64,3 +64,49 @@ describe("post effect live params", () => {
     expect(f.material.version).toBe(version);
   });
 });
+
+describe("bloom / lensflare / godrays internals", () => {
+  it("bloom mip weights are normalised (strength = share of over-threshold energy) and follow radius", () => {
+    const bloom = createBloom({ type: "bloom", radius: 0 }, fakeRuntime());
+    const pass = bloom.pass as unknown as { levelWeights(): number[]; radius: number };
+    const tight = pass.levelWeights();
+    expect(tight.reduce((a, b) => a + b, 0)).toBeCloseTo(1);
+    expect(tight[0]).toBeGreaterThan(tight[tight.length - 1]);
+    bloom.set!("radius", 1);
+    const wide = pass.levelWeights();
+    expect(wide.reduce((a, b) => a + b, 0)).toBeCloseTo(1);
+    expect(wide[wide.length - 1]).toBeGreaterThan(wide[0]);
+  });
+  it("bloom prefilter subtracts the threshold (soft knee) and lensflare ghosts read a blurred low-res source", () => {
+    const bloom = createBloom({ type: "bloom" }, fakeRuntime());
+    const pre = (bloom.pass as unknown as { preMat: THREE.ShaderMaterial }).preMat.fragmentShader;
+    expect(pre).toContain("l - uThreshold");
+    const flare = createLensflare({ type: "lensflare" }, fakeRuntime());
+    const f = flare.pass as unknown as { compMat: THREE.ShaderMaterial; g2: THREE.WebGLRenderTarget };
+    expect(f.compMat.fragmentShader).not.toContain("fract(");
+    expect(f.compMat.fragmentShader).not.toContain("texture2D(tBright");
+    expect(f.compMat.uniforms.tGhost.value).toBe(f.g2.texture);
+    expect(f.g2.width).toBeLessThanOrEqual(Math.max(8, 320 / 32));
+  });
+  it("godrays find the physical sky sun", async () => {
+    const { createGodrays } = await import("./hdr");
+    const rt = fakeRuntime();
+    const sky = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial());
+    sky.name = "__sky";
+    sky.userData.sunDir = new THREE.Vector3(0, 0.05, -1).normalize();
+    sky.userData.sunColor = new THREE.Color(1, 0.6, 0.3);
+    sky.userData.sunUp = true;
+    rt.scene.add(sky);
+    const cam = rt.camera as THREE.PerspectiveCamera;
+    cam.position.set(0, 0, 0);
+    cam.lookAt(0, 0, -1);
+    cam.updateMatrixWorld();
+    const h = createGodrays({ type: "godrays" }, rt);
+    h.update!(0);
+    const p = h.pass as unknown as { maskMat: THREE.ShaderMaterial; visible: number };
+    const src = p.maskMat.uniforms.uSrc.value as THREE.Vector2;
+    expect(src.x).toBeCloseTo(0.5, 2);
+    expect(src.y).toBeGreaterThan(0.5);
+    expect(p.visible).toBeGreaterThan(0.9);
+  });
+});

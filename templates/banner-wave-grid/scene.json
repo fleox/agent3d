@@ -2,7 +2,7 @@
   "version": 1,
   "id": "banner-wave-grid",
   "title": "Wave grid banner",
-  "ariaLabel": "Animated banner: a rippling grid of glowing dots under the headline Real-time insights",
+  "ariaLabel": "Animated banner: a rippling grid of glowing dots under the headline {data.headline|Real-time insights}",
   "seed": 5,
   "target": {
     "kind": "banner",
@@ -15,19 +15,52 @@
   "camera": {
     "type": "perspective",
     "fov": 32,
-    "position": [0, 3.4, 11],
-    "target": [0, 0.3, 0],
+    "position": [
+      0,
+      3.4,
+      11
+    ],
+    "target": [
+      0,
+      0.3,
+      0
+    ],
     "controls": "parallax",
-    "parallax": {"strength": 0.6, "smoothing": 0.94}
+    "parallax": {
+      "strength": 0.6,
+      "smoothing": 0.94
+    }
   },
   "environment": {
-    "background": {"radial": ["#0d1b3d", "#040814"]},
+    "background": {
+      "radial": [
+        "#0d1b3d",
+        "#040814"
+      ]
+    },
     "lighting": "night",
-    "fog": {"color": "#050a18", "near": 10, "far": 26}
+    "fog": {
+      "color": "#050a18",
+      "near": 10,
+      "far": 26
+    }
   },
   "lights": [
-    {"id": "ambient", "type": "ambient", "intensity": 0.4},
-    {"id": "key", "type": "directional", "position": [2, 5, 6], "intensity": 1}
+    {
+      "id": "ambient",
+      "type": "ambient",
+      "intensity": 0.4
+    },
+    {
+      "id": "key",
+      "type": "directional",
+      "position": [
+        2,
+        5,
+        6
+      ],
+      "intensity": 1
+    }
   ],
   "objects": [
     {
@@ -35,36 +68,92 @@
       "kind": "generator",
       "generator": "waveGrid",
       "params": {
-        "columns": 150,
-        "rows": 44,
-        "spacing": 0.26,
+        "columns": 170,
+        "rows": 48,
+        "spacing": 0.24,
         "amplitude": 0.5,
         "speed": 0.8,
         "shape": "dots",
-        "colors": ["#22d3ee", "#6366f1", "#e879f9"],
+        "colors": [
+          "#22d3ee",
+          "#6366f1",
+          "#e879f9"
+        ],
         "pointerRipple": true
       },
-      "position": [0, -1.6, -4]
+      "position": [
+        0,
+        -2.1,
+        -4
+      ]
     },
     {
       "id": "headline",
       "kind": "text",
-      "text": "REAL-TIME INSIGHTS",
-      "font": "mono",
-      "size": 0.55,
-      "depth": 0.04,
+      "text": "{data.headline|Real-time insights}",
+      "font": "space-grotesk-bold",
+      "size": 0.7,
+      "depth": 0,
       "bevel": 0,
-      "letterSpacing": 0.12,
-      "position": [0, 1.45, 1],
-      "material": {"type": "standard", "color": "#e0f2fe", "emissive": "#7dd3fc", "emissiveIntensity": 0.4},
-      "behaviours": [{"type": "appear", "effect": "fade", "duration": 1.2}]
+      "letterSpacing": -0.01,
+      "position": [
+        0,
+        1.55,
+        1
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#c9e6ff"
+      },
+      "behaviours": [],
+      "reveal": {
+        "effect": "rise",
+        "stagger": 0.035,
+        "duration": 0.7,
+        "delay": 0.3
+      }
+    },
+    {
+      "id": "kicker",
+      "kind": "text",
+      "text": "{data.kicker|LIVE DATA · 24/7}",
+      "font": "mono",
+      "size": 0.17,
+      "depth": 0,
+      "letterSpacing": 0.14,
+      "position": [
+        0,
+        2.45,
+        1
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#67e8f9"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "fade",
+          "duration": 0.8,
+          "delay": 0.1
+        },
+        {
+          "type": "blink",
+          "interval": 3,
+          "duration": 0.08
+        }
+      ]
     },
     {
       "id": "motes",
       "kind": "particles",
       "preset": "dust",
       "count": 120,
-      "area": [30, 5, 8],
+      "area": [
+        30,
+        5,
+        8
+      ],
       "color": "#7dd3fc",
       "size": 0.03,
       "opacity": 0.6
@@ -73,10 +162,56 @@
   "timeline": {
     "duration": 8,
     "loop": true,
-    "tracks": [{"target": "grid.rotation.y", "keys": [[0, -3], [4, 3], [8, -3]], "ease": "inOutSine"}]
+    "tracks": [
+      {
+        "target": "grid.rotation.y",
+        "keys": [
+          [
+            0,
+            -3
+          ],
+          [
+            4,
+            3
+          ],
+          [
+            8,
+            -3
+          ]
+        ],
+        "ease": "inOutSine"
+      }
+    ]
   },
   "postfx": [
-    {"type": "bloom", "strength": 0.9, "radius": 0.5, "threshold": 0.4},
-    {"type": "vignette", "darkness": 1}
-  ]
+    {
+      "type": "bloom",
+      "strength": 1.0,
+      "radius": 0.55,
+      "threshold": 0.9,
+      "smoothing": 0.3
+    },
+    {
+      "type": "grading",
+      "look": "cool",
+      "intensity": 0.5,
+      "contrast": 1.1
+    },
+    {
+      "type": "chromatic",
+      "amount": 0.001
+    },
+    {
+      "type": "vignette",
+      "darkness": 1
+    },
+    {
+      "type": "taa",
+      "samples": 8
+    }
+  ],
+  "data": {
+    "headline": "Real-time insights",
+    "kicker": "LIVE DATA · 24/7"
+  }
 }

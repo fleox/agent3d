@@ -103,7 +103,7 @@ Generators that publish collision boxes (the maze generator with `bodies: true`)
 
 | `type` | Fields |
 |---|---|
-| `hinge` | `pivot`, `axis` (default `[0, 1, 0]`), `motor: { speed (degrees / s), maxForce? }` — doors, wheels, flippers |
+| `hinge` | `pivot`, `axis` (default `[0, 1, 0]`), `motor: { speed (degrees / s), maxForce? }`, `limits: [minDeg, maxDeg]` (relative to the start pose) — doors, wheels, flippers |
 | `point` | `pivot` — ball-and-socket: pendulums, chains, ragdoll joints |
 | `distance` | `distance` (default: current distance between the centres) — rigid rods |
 | `lock` | — welds two bodies together (breakable with `maxForce`) |
@@ -123,7 +123,7 @@ Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports i
 | `api.physics.setVelocity(obj, v)` / `getVelocity(obj)` | Linear velocity (m/s) — also `obj.velocity.x = …` |
 | `api.physics.setAngularVelocity(obj, deg)` / `getAngularVelocity(obj)` | Spin in degrees / s |
 | `api.physics.grounded(obj)` | Standing on something (a contact pushing up) |
-| `api.physics.moveCharacter(obj, { x, z }, { speed?, acceleration?, airControl? }?)` | Character controller: steer horizontally toward `move × speed` (move length ≤ 1, default speed 5), keeps the vertical velocity, reduced control in the air; turns the body into a character (no rotation, no friction). Call once per update |
+| `api.physics.moveCharacter(obj, { x, z } \| [x, z], { speed?, acceleration?, airControl? }?)` | Character controller: steer horizontally toward `move × speed` (move length ≤ 1, default speed 5), keeps the vertical velocity, reduced control in the air; turns the body into a character (no rotation, no friction). Call once per update |
 | `api.physics.jump(obj, speed?)` | Jumps (default 6 m/s) when grounded or within 0.12 s of leaving the ground (coyote time); no double jump; returns `true` when it jumped |
 | `api.physics.wake(obj)` | Wake a sleeping body |
 | `api.physics.setMotorSpeed(jointId, deg)` | Hinge motor speed of a `physics.joints` entry |
@@ -162,10 +162,45 @@ Declared in `scene.ui.elements` (`type` text, button or bar; `anchor` top-left �
 |---|---|
 | `api.audio.play(name)` | A sound from `scene.audio.sounds` (`{ "preset": "coin" }` synthesised, or `{ "src": "assets/audio/x.mp3" }`) |
 | `api.audio.music(on)` | Start / stop `scene.audio.music` |
-| `api.on(event, handler)`, `api.emit(event, payload?)` | Custom events between scripts (HUD buttons emit their `action`) |
+| `api.on(event, handler)`, `api.emit(event, payload?)` | Custom events between scripts (HUD buttons emit their `action`); also delivered to every script's `onEvent(name, payload)` |
 | `api.storage.get(key)`, `api.storage.set(key, value)` | Small persistent values (best score), namespaced per scene, never throws |
-| `api.data` | `scene.data` (read it for tuning and levels) |
+| `api.data` | `scene.data` (tuning, levels), merged with the page's `data-*` attributes / `element.setData()` overrides |
 | `api.restart()` | Rebuild the scene from its definition |
 | `api.log(...args)` | Debug output (browser console) |
 
 Audio only starts after a user gesture; the HUD shows a mute button bottom-right when the scene has sounds.
+
+## Events in and out
+
+| Source | Reaches scripts as |
+|---|---|
+| HUD button `action` | `onEvent(action)` / `api.on(action)` |
+| Timeline marker crossed (`timeline.markers: { "peak": 1 }`) | `api.on("peak", (p) => …)` / `onEvent("peak", { marker, time })` |
+| Interaction action `{ "emit": "name", "payload"? }` | `api.on("name")` / `onEvent` |
+| The page: `document.querySelector("agent3d-scene").trigger("start", { level: 2 })` | `api.on("start")` / `onEvent("start", { level: 2 })` |
+| A blocked `openUrl` in headless renders | `api.on("openUrl", ({ url, blocked }) => …)` |
+
+Out: every `api.emit(name, payload)` and HUD action is re-dispatched on the element as an `agent3d:event` DOM event (`detail: { name, payload }`), e.g. `api.emit("score", { score: 12 })` for the page's analytics. Script-emitted events and HUD actions also fire the scene's `{ "on": "event", "event": "<name>" }` interactions (like markers, interaction `emit` actions and page `trigger()` calls): to play a timeline segment from a script, `api.emit("win")` with `{ "on": "event", "event": "win", "do": [{ "play": "celebrate" }] }` in `scene.interactions`.
+
+Example — a timeline marker starts the round, the page learns the score:
+
+```js
+export default function (api) {
+  return {
+    start() {
+      api.state.phase = "intro";
+      api.on("go", () => { api.state.phase = "play"; }); // timeline.markers: { "go": 1.5 }
+    },
+    onEvent(name) {
+      if (name === "retry") { api.state.score = 0; api.state.phase = "play"; }
+    },
+    update() {
+      if (api.state.phase === "play" && api.input.pressed("Space")) {
+        api.state.score = Number(api.state.score ?? 0) + 1;
+        api.emit("score", { score: api.state.score }); // page: agent3d:event
+      }
+    },
+  };
+}
+```
+

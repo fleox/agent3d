@@ -17,11 +17,12 @@ export interface NumberFieldProps {
   integer?: boolean;
   suffix?: string;
   placeholder?: boolean; // value shown is a default (dimmed)
+  empty?: boolean; // no value and no default: show "auto" instead of a number
   ariaLabel?: string;
   className?: string;
 }
 
-export function NumberField({ value, onChange, label, labelClass, step, min, max, integer, suffix, placeholder, ariaLabel, className }: NumberFieldProps) {
+export function NumberField({ value, onChange, label, labelClass, step, min, max, integer, suffix, placeholder, empty, ariaLabel, className }: NumberFieldProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const drag = useRef<{ x: number; start: number; moved: boolean; last: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,7 +86,8 @@ export function NumberField({ value, onChange, label, labelClass, step, min, max
         ref={inputRef}
         aria-label={ariaLabel ?? label}
         inputMode="decimal"
-        value={draft ?? formatNumber(value, integer ? 0 : 3)}
+        value={draft ?? (empty ? "" : formatNumber(value, integer ? 0 : 3))}
+        placeholder={empty ? "auto" : undefined}
         onPointerDown={label === undefined ? onPointerDown : undefined}
         onPointerMove={label === undefined ? onPointerMove : undefined}
         onPointerUp={label === undefined ? onPointerUp : undefined}
@@ -136,6 +138,36 @@ export function VecField({ value, onChange, labels = ["X", "Y", "Z"], step, suff
           }}
         />
       ))}
+    </div>
+  );
+}
+
+// Number with a slider (bounded params, e.g. roughness 0..1): drag the track
+// or type in the field. onChange(value, final) like NumberField.
+export function SliderField({ value, min, max, onChange, integer, placeholder, empty, ariaLabel, step }: { value: number; min: number; max: number; onChange(v: number, final: boolean): void; integer?: boolean; placeholder?: boolean; empty?: boolean; ariaLabel?: string; step?: number }) {
+  const range = max - min || 1;
+  const s = step ?? (integer ? 1 : range <= 2 ? 0.01 : range <= 20 ? 0.05 : range / 200);
+  const pct = empty ? 0 : Math.max(0, Math.min(1, (value - min) / range)) * 100;
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      <div className="relative flex h-6 min-w-0 flex-1 items-center">
+        <div className="pointer-events-none absolute inset-x-0 h-[3px] rounded-full bg-ink-4">
+          <div className={clsx("h-full rounded-full", placeholder ? "bg-fg-faint/50" : "bg-accent")} style={{ width: `${pct}%` }} />
+        </div>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={s}
+          value={Number.isFinite(value) ? value : min}
+          aria-label={ariaLabel}
+          onChange={(e) => onChange(clampNumber({ min, max, type: integer ? "integer" : "number" }, Number(e.target.value)), false)}
+          onPointerUp={(e) => onChange(clampNumber({ min, max, type: integer ? "integer" : "number" }, Number((e.target as HTMLInputElement).value)), true)}
+          onKeyUp={(e) => onChange(clampNumber({ min, max, type: integer ? "integer" : "number" }, Number((e.target as HTMLInputElement).value)), true)}
+          className={clsx("slider relative h-6 w-full cursor-pointer appearance-none bg-transparent", empty && "opacity-40")}
+        />
+      </div>
+      <NumberField value={value} min={min} max={max} integer={integer} placeholder={placeholder} empty={empty} onChange={onChange} ariaLabel={ariaLabel} className="w-[52px] flex-none" step={s} />
     </div>
   );
 }

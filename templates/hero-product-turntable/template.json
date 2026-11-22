@@ -1,18 +1,21 @@
 {
   "id": "hero-product-turntable",
   "title": "Product turntable hero",
-  "description": "Studio product shot: a realistic PBR boombox slowly turning on a pedestal, studio HDRI reflections, soft contact shadow and drag-to-orbit.",
+  "description": "Studio product hero: a realistic PBR boombox slowly turning on a terrazzo pedestal with a gold rim, softbox light rig, studio HDRI reflections, soft contact shadow, product look and drag-to-orbit.",
   "kind": "hero",
   "tags": [
     "hero",
     "product",
     "ecommerce",
     "turntable",
-    "studio",
-    "hdri",
     "orbit",
+    "studio",
+    "pedestal",
+    "terrazzo",
     "pbr",
-    "shadow"
+    "model",
+    "showcase",
+    "contact-shadows"
   ],
   "aspect": "16:9"
 }

@@ -34,48 +34,32 @@
   "environment": {
     "background": {
       "sky": {
-        "top": "#2b3a78",
-        "horizon": "#ffb070",
-        "bottom": "#f08a5d",
+        "preset": "golden-hour",
         "sun": {
-          "direction": [
-            0.15,
-            0.08,
-            -1
-          ],
-          "color": "#ffd9a0",
-          "size": 1.6
-        }
+          "elevation": 3,
+          "azimuth": 160,
+          "intensity": 2.8
+        },
+        "turbidity": 5,
+        "clouds": 0.3,
+        "exposure": 0.6,
+        "rayleigh": 3.6,
+        "mieDirectionalG": 0.8,
+        "mieCoefficient": 0.004
       }
     },
-    "lighting": "sunset",
-    "lightingIntensity": 0.8,
+    "lightingIntensity": 0.9,
     "fog": {
-      "color": "#f2bf94",
-      "near": 45,
-      "far": 150
+      "density": 0.012,
+      "height": 5,
+      "falloff": 0.3
+    },
+    "shadows": {
+      "type": "pcf",
+      "softness": 3
     }
   },
   "lights": [
-    {
-      "id": "sky",
-      "type": "hemisphere",
-      "skyColor": "#ffcfa0",
-      "groundColor": "#3b2a4a",
-      "intensity": 0.8
-    },
-    {
-      "id": "sun",
-      "type": "directional",
-      "position": [
-        8,
-        10,
-        -40
-      ],
-      "color": "#ffb36b",
-      "intensity": 3,
-      "castShadow": true
-    },
     {
       "id": "front",
       "type": "directional",
@@ -84,8 +68,8 @@
         12,
         30
       ],
-      "color": "#9fb2ff",
-      "intensity": 0.6
+      "color": "#8fa2e8",
+      "intensity": 0.5
     }
   ],
   "objects": [
@@ -120,15 +104,37 @@
       "receiveShadow": true
     },
     {
+      "id": "lake",
+      "kind": "generator",
+      "generator": "water",
+      "params": {
+        "size": 110,
+        "color": "#2f3d5e",
+        "shallowColor": "#c98f68",
+        "foamColor": "#ffe6c8",
+        "waveHeight": 0.06,
+        "waveSpeed": 0.6,
+        "foam": 0.5,
+        "ripples": 1.6,
+        "depthRange": 4,
+        "opacity": 0.95
+      },
+      "position": [
+        0,
+        3.03,
+        -20
+      ]
+    },
+    {
       "id": "pines",
       "kind": "generator",
       "generator": "trees",
       "params": {
-        "count": 260,
+        "count": 220,
         "area": [
           90,
           0,
-          70
+          46
         ],
         "style": "pine",
         "minScale": 0.8,
@@ -146,7 +152,7 @@
       "position": [
         0,
         0,
-        -20
+        -6
       ],
       "castShadow": true
     },
@@ -229,14 +235,25 @@
   },
   "postfx": [
     {
-      "type": "bloom",
-      "strength": 0.4,
-      "radius": 0.7,
-      "threshold": 0.85
+      "type": "look",
+      "preset": "cinematic",
+      "intensity": 0.7
     },
     {
-      "type": "vignette",
-      "darkness": 0.9
+      "type": "godrays",
+      "intensity": 0.35,
+      "length": 0.7
+    },
+    {
+      "type": "lensflare",
+      "intensity": 0.2,
+      "threshold": 3
+    },
+    {
+      "type": "grading",
+      "look": "warm",
+      "intensity": 0.4,
+      "saturation": 1.1
     }
   ]
 }

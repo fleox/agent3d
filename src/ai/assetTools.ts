@@ -3,7 +3,7 @@
 import type { AssetEntry } from "../core/types";
 import { downloadAsset, importAssetZip, listAssets, listLibrary, parseResolution, searchAssetsDetailed, addAsset, type AssetHit } from "../ops/assets";
 import { modelFileBounds } from "../ops/gltf";
-import { optimizeAssets, type TextureFormat } from "../ops/optimize";
+import { optimizeAssets, optimizedExportSources, type ImageCodec, type TextureFormat } from "../ops/optimize";
 import { OpsError } from "../ops/context";
 import { buildExport, prefixFiles, type ExportFormat } from "../ops/export";
 import { SOURCE_IDS, type SourceId } from "../ops/sources";
@@ -140,52 +140,129 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "export",
     description:
-      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page) and snippet.html (paste into the page). "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Run check first; returns the snippet, sizes and budget warnings. When the host can render (CLI / MCP / Studio with Chrome): "poster" writes a still image (dist/poster.webp; `time`, `image`) and "video" a WebM (dist/video.webm; `duration`, `fps`, `size`), returning { path }.',
+      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page), snippet.html (paste into the page), EMBED.md and frameworks/ (React / Vue / Svelte wrappers). "zip": the same folder as one <name>-embed.zip. "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Options: `baseUrl` (where the folder is served, so the snippet works from any page), `cacheBust` (versioned runtime folder + ?v= hash for long-term caching), `integrity` (SRI hash on the runtime script, default true), `optimize` (export lighter copies of the assets — the project is not modified), `og` (render a 1200×630 og-image.png social preview). Run check first; returns the snippet, sizes and budget warnings. When the host can render (CLI / MCP / Studio with Chrome): "poster" writes a still image (dist/poster.webp; `time`, `image`), "video" an MP4 / WebM (dist/video.webm; `codec`, `duration`, `fps`, `size`), "gif" / "animated-webp" an animated image (dist/animation.gif / .webp), returning { path } — `quality` supersamples, `transparent` keeps the alpha (poster, gif, animated-webp).',
     inputSchema: {
       type: "object",
       properties: {
-        format: { type: "string", enum: ["embed", "single-html", "poster", "video"], description: "Default embed. poster / video need a host that can render (Chrome)." },
+        format: { type: "string", enum: ["embed", "zip", "single-html", "poster", "video", "gif", "animated-webp"], description: "Default embed. poster / video / gif / animated-webp need a host that can render (Chrome)." },
         name: { type: "string", description: "Folder / file name of the scene in the export (default: project name)." },
-        outDir: { type: "string", description: 'Project-relative output folder (default "dist/<format>").' },
+        outDir: { type: "string", description: 'embed / zip / single-html: project-relative output folder (default "dist/<format>").' },
         poster: { type: "string", description: "Project path of a PNG/WebP still to use as poster (e.g. a frame from renders/)." },
-        out: { type: "string", description: 'poster / video: project-relative output file under dist/ (default "dist/poster.webp" / "dist/video.webm").' },
+        baseUrl: { type: "string", description: 'embed / zip: URL of the export folder as seen from the pages (default "./"), e.g. "/static/3d/" or "https://cdn.example.com/3d/".' },
+        cacheBust: { type: "boolean", description: "embed / zip: versioned runtime folder (agent3d-runtime-<hash>/) and ?v=<hash> on the scene URL, for year-long caching (default false)." },
+        integrity: { type: "boolean", description: 'embed / zip: Subresource Integrity (sha384) on the runtime <script> (default true).' },
+        extras: { type: "boolean", description: "embed / zip: EMBED.md and framework wrappers (default true)." },
+        optimize: { type: "boolean", description: "embed / zip / single-html: export optimised copies of the assets — textures at the size the scene needs, .glb geometry meshopt-compressed (textures need a host with headless Chrome). The project is not modified (default false)." },
+        og: { type: "boolean", description: "embed / zip: render a 1200×630 og-image.png social preview (needs a host that can render; default false)." },
+        out: { type: "string", description: 'poster / video / gif / animated-webp: project-relative output file under dist/ or renders/ (default "dist/poster.webp", "dist/video.webm" (.mp4 with codec mp4), "dist/animation.gif", "dist/animation.webp").' },
         time: { type: "number", minimum: 0, description: "poster: time in seconds (default target.posterTime)." },
         image: { type: "string", enum: ["webp", "png"], description: "poster: image format (default webp)." },
-        duration: { type: "number", minimum: 0.1, maximum: 120, description: "video: seconds (default the timeline duration, else 5)." },
-        fps: { type: "integer", minimum: 1, maximum: 60, description: "video: frames per second (default 30)." },
-        size: { type: "string", description: 'poster / video: pixel size "WxH" (default from the target aspect).' },
+        codec: { type: "string", enum: ["webm", "mp4"], description: "video: WebM VP9 (default) or MP4 H.264 (needs Google Chrome); an .mp4 `out` implies mp4." },
+        duration: { type: "number", minimum: 0.1, maximum: 120, description: "video / gif / animated-webp: seconds (default the timeline duration, else 5)." },
+        fps: { type: "integer", minimum: 1, maximum: 60, description: "video / gif / animated-webp: frames per second (default 30 / 15 / 20)." },
+        size: { type: "string", description: 'poster / video / gif / animated-webp: pixel size "WxH" (default from the target aspect).' },
+        quality: { type: "string", enum: ["draft", "standard", "high", "ultra"], description: "poster / video / gif / animated-webp: supersampling — draft / standard (1×, default), high (2×), ultra (3×)." },
+        transparent: { type: "boolean", description: "poster / gif / animated-webp: transparent background (alpha)." },
       },
     },
     mutating: true,
     async handler(ctx, input) {
       const requested = optStr(input, "format") ?? "embed";
-      if (requested === "poster" || requested === "video") {
-        if (!ctx.host?.media) throw new OpsError("invalid", `This host cannot render a ${requested}.`, `Export it with the CLI: agent3d export --format ${requested} (needs Chrome / Chromium).`);
-        const image = (optStr(input, "image") ?? (optStr(input, "out")?.endsWith(".png") ? "png" : "webp")) as "webp" | "png";
-        const out = (optStr(input, "out") ?? (requested === "poster" ? `dist/poster.${image}` : "dist/video.webm")).replace(/^\.?\//, "");
-        if (!out.startsWith("dist/")) throw new OpsError("invalid", `out must be under dist/ (got "${out}").`, `Use e.g. "dist/${requested === "poster" ? "poster.webp" : "video.webm"}".`);
-        const r = await ctx.host.media({ format: requested, image, time: num(input, "time"), duration: num(input, "duration"), fps: num(input, "fps"), size: optStr(input, "size") });
-        await ctx.fs.writeBytes(out, r.bytes);
-        return { format: requested, path: out, kb: Math.round(r.bytes.byteLength / 102.4) / 10, size: r.size, ...(r.t !== undefined ? { t: r.t } : {}), ...(r.frames !== undefined ? { frames: r.frames, fps: r.fps, duration: r.duration } : {}) };
-      }
+      if ((MEDIA_FORMATS as readonly string[]).includes(requested)) return mediaExport(ctx, requested as (typeof MEDIA_FORMATS)[number], input);
       const format = requested as ExportFormat;
-      if (format !== "embed" && format !== "single-html") throw new OpsError("invalid", `Unknown export format "${requested}".`, "Use embed, single-html, poster or video.");
+      if (format !== "embed" && format !== "single-html" && format !== "zip") throw new OpsError("invalid", `Unknown export format "${requested}".`, `Use ${["embed", "zip", "single-html", ...MEDIA_FORMATS].join(", ")}.`);
       if (!ctx.host?.runtimeFiles) throw new OpsError("invalid", "This host cannot provide the runtime files.", "Export with the CLI: agent3d export --format " + format);
-      const runtime = { files: await ctx.host.runtimeFiles(format) };
-      const library = ctx.host.library ?? { index: { assets: [] }, read: async (id: string) => Promise.reject(new OpsError("notFound", `Library asset ${id} unavailable`)) };
-      const posterPath = optStr(input, "poster");
-      const poster = posterPath ? await ctx.fs.readBytes(posterPath) : undefined;
-      const r = await buildExport(ctx.fs, { format, name: optStr(input, "name"), runtime, library, poster });
+      const quality = optStr(input, "quality");
+      if (quality !== undefined && !QUALITIES.includes(quality)) throw new OpsError("invalid", `Unknown quality "${quality}".`, `Use ${QUALITIES.join(", ")}.`);
       const outDir = (optStr(input, "outDir") ?? `dist/${format}`).replace(/^\.?\//, "");
       if (!outDir.startsWith("dist/") && outDir !== "dist") throw new OpsError("invalid", `outDir must be under dist/ (got "${outDir}").`, 'Use e.g. "dist/embed".');
+      const wantsOg = input.og === true && format !== "single-html";
+      if (wantsOg && !ctx.host.media) throw new OpsError("invalid", "This host cannot render the og image.", "Export without og, or with the CLI: agent3d export (renders the poster and og-image.png with Chrome).");
+      const runtime = { files: await ctx.host.runtimeFiles(format) };
+      let library = ctx.host.library ?? { index: { assets: [] }, read: async (id: string) => Promise.reject(new OpsError("notFound", `Library asset ${id} unavailable`)) };
+      const posterPath = optStr(input, "poster");
+      const poster = posterPath ? await ctx.fs.readBytes(posterPath) : undefined;
+      const ogImage = wantsOg ? (await ctx.host.media!({ format: "og" })).bytes : undefined;
+      const build = async (fs: typeof ctx.fs, lib: typeof library) =>
+        buildExport(fs, {
+          format,
+          name: optStr(input, "name"),
+          runtime,
+          library: lib,
+          poster,
+          ogImage,
+          baseUrl: optStr(input, "baseUrl"),
+          cacheBust: input.cacheBust === true,
+          integrity: input.integrity !== false,
+          extras: input.extras !== false,
+        });
+      let optimized: unknown;
+      let r: Awaited<ReturnType<typeof buildExport>>;
+      if (input.optimize === true) {
+        const run = async (codec?: ImageCodec) => {
+          const o = await optimizedExportSources(ctx.fs, library, { codec });
+          library = o.library;
+          const res = await build(o.fs, o.library);
+          optimized = o.report();
+          return res;
+        };
+        r = ctx.host.withImageCodec ? await ctx.host.withImageCodec((codec) => run(codec)) : await run();
+      } else r = await build(ctx.fs, library);
       for (const [path, content] of Object.entries(prefixFiles(r.files, outDir))) {
         if (typeof content === "string") await ctx.fs.writeText(path, content);
         else await ctx.fs.writeBytes(path, content);
       }
-      return { outDir, entry: `${outDir}/${r.entry}`, files: Object.keys(r.files).length, totalKb: r.totalKb, sizes: r.sizes, snippet: r.format === "embed" ? r.snippet : `(single file) ${outDir}/${r.entry}`, credits: r.credits, ...compactIssues(r.issues) };
+      return {
+        format,
+        outDir,
+        entry: `${outDir}/${r.entry}`,
+        files: Object.keys(r.files).length,
+        totalKb: r.totalKb,
+        sizes: r.sizes,
+        snippet: format === "single-html" ? `(single file) ${outDir}/${r.entry}` : r.snippet,
+        ...(r.head ? { head: r.head } : {}),
+        ...(r.runtimeDir ? { runtimeDir: r.runtimeDir } : {}),
+        ...(ogImage ? { ogImage: true } : {}),
+        ...(optimized ? { optimized } : {}),
+        credits: r.credits,
+        ...compactIssues(r.issues),
+        ...(input.optimize === true && !ctx.host.withImageCodec ? { hint: "Textures were not resized (this host has no headless Chrome); geometry was compressed." } : {}),
+      };
     },
   },
 ];
+
+const MEDIA_FORMATS = ["poster", "video", "gif", "animated-webp"] as const;
+const QUALITIES = ["draft", "standard", "high", "ultra"];
+
+async function mediaExport(ctx: Parameters<AiTool["handler"]>[0], requested: (typeof MEDIA_FORMATS)[number], input: Record<string, unknown>) {
+  if (!ctx.host?.media) throw new OpsError("invalid", `This host cannot render a ${requested}.`, `Export it with the CLI: agent3d export --format ${requested === "animated-webp" ? "gif" : requested} (needs Chrome / Chromium).`);
+  const quality = optStr(input, "quality");
+  if (quality !== undefined && !QUALITIES.includes(quality)) throw new OpsError("invalid", `Unknown quality "${quality}".`, `Use ${QUALITIES.join(", ")}.`);
+  const outIn = optStr(input, "out")?.replace(/^\.?\//, "");
+  const image = (optStr(input, "image") ?? (outIn?.endsWith(".png") ? "png" : "webp")) as "webp" | "png";
+  const codec = (optStr(input, "codec") ?? (outIn?.toLowerCase().endsWith(".mp4") ? "mp4" : "webm")) as "webm" | "mp4";
+  if (codec !== "webm" && codec !== "mp4") throw new OpsError("invalid", `Unknown codec "${codec}".`, "Use webm or mp4.");
+  const def = requested === "poster" ? `dist/poster.${image}` : requested === "video" ? `dist/video.${codec}` : requested === "gif" ? "dist/animation.gif" : "dist/animation.webp";
+  const out = outIn ?? def;
+  if (!out.startsWith("dist/") && !out.startsWith("renders/")) throw new OpsError("invalid", `out must be under dist/ or renders/ (got "${out}").`, `Use e.g. "${def}".`);
+  const ext = out.split(".").pop()?.toLowerCase();
+  const wantExt = requested === "poster" ? ["webp", "png"] : requested === "video" ? [codec] : requested === "gif" ? ["gif"] : ["webp"];
+  if (!ext || !wantExt.includes(ext)) throw new OpsError("invalid", `out "${out}" does not match the ${requested} format (expected .${wantExt.join(" / .")}).`, `Use e.g. "${def}".`);
+  const r = await ctx.host.media({
+    format: requested === "animated-webp" ? "webp" : requested,
+    image,
+    time: num(input, "time"),
+    duration: num(input, "duration"),
+    fps: num(input, "fps"),
+    size: optStr(input, "size"),
+    ...(requested === "video" ? { video: codec } : {}),
+    ...(quality ? { quality: quality as "draft" } : {}),
+    ...(input.transparent === true ? { transparent: true } : {}),
+  });
+  await ctx.fs.writeBytes(out, r.bytes);
+  return { format: requested, path: out, kb: Math.round(r.bytes.byteLength / 102.4) / 10, size: r.size, ...(r.codec ? { codec: r.codec } : {}), ...(r.t !== undefined ? { t: r.t } : {}), ...(r.frames !== undefined ? { frames: r.frames, fps: r.fps, duration: r.duration } : {}) };
+}
 
 export const RENDER_TOOL: AiTool = {
   name: "render_preview",

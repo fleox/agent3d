@@ -95,7 +95,7 @@ export function meshMaterials(root: THREE.Object3D): THREE.Material[] {
   const out = new Set<THREE.Material>();
   root.traverse((o) => {
     const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
-    if (!mat) return;
+    if (!mat || o.userData.depthTwin) return; // text reveal depth twins (build/text.ts) share one internal material
     for (const x of Array.isArray(mat) ? mat : [mat]) out.add(x);
   });
   return [...out];

@@ -1,18 +1,24 @@
 {
   "id": "landscape-island",
-  "title": "Low-poly island",
-  "description": "A procedural low-poly island in a turquoise sea: beaches, hills, forests, rocks, flowers, drifting clouds and a warm sky, slowly orbiting. Behind a headline: set camera.autoRotate to 0 and shift the camera so the island leaves room for the text (see README).",
+  "title": "Tropical low-poly island",
+  "description": "Sunny 16:9 procedural diorama: a tropical low-poly island (palm-lined beaches, round-canopy forest, rocky summit) in turquoise lagoon water with animated shore foam, puffy clouds and seabirds circling, cinematic grade, slow orbit + drag. Zero downloads. Behind a headline: set camera.autoRotate to 0 and shift camera.target (see README).",
   "kind": "hero",
   "tags": [
     "landscape",
     "island",
+    "tropical",
     "nature",
     "lowpoly",
     "terrain",
     "water",
+    "lagoon",
+    "palm",
     "trees",
+    "birds",
     "procedural",
-    "orbit"
+    "orbit",
+    "summer",
+    "travel"
   ],
   "aspect": "16:9"
 }

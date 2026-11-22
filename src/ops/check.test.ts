@@ -201,6 +201,23 @@ describe("checkProject", () => {
     expect(codes(r.issues)).toContain("out-of-view");
   });
 
+  it("objects the timeline brings in later (scroll stories) are info, not out-of-view warnings", async () => {
+    const fs = await project();
+    const scene = await getScene(fs);
+    scene.timeline = { duration: 4, trigger: "scroll", tracks: [{ target: "torus.position.x", keys: [[0, -30], [4, 0]] }] } as never;
+    const inspect: InspectResult = {
+      camera: { position: [0, 0, 12], target: [0, 0, 0] },
+      objects: [
+        { id: "title", min: [-3, -0.5, 0], max: [3, 0.5, 0.3], inView: "full", screenCoverage: 0.3 },
+        { id: "torus", min: [-30, 0, 0], max: [-29, 1, 1], inView: "none", screenCoverage: 0 },
+        { id: "gem", min: [-60, 0, 0], max: [-59, 1, 1], inView: "none", screenCoverage: 0 },
+      ],
+    };
+    const issues = framingIssues(scene, inspect);
+    expect(issues.find((i) => i.path === "objects#torus")).toMatchObject({ severity: "info", code: "out-of-view-at-start" });
+    expect(issues.find((i) => i.path === "objects#gem")).toMatchObject({ severity: "warning", code: "out-of-view" });
+  });
+
   it("framing ignores runtime clones and never calls scattered content clipped", async () => {
     const fs = await project();
     const scene = await getScene(fs);

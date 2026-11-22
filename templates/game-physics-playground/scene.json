@@ -142,9 +142,26 @@
         -0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e76f51",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -175,9 +192,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e76f51",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -208,9 +242,26 @@
         0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e76f51",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -246,9 +297,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#f4a261",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -284,9 +352,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#f4a261",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -322,9 +407,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#f4a261",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -355,9 +457,26 @@
         -0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e9c46a",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -388,9 +507,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e9c46a",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -421,9 +557,26 @@
         0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e9c46a",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -459,9 +612,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#2a9d8f",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -497,9 +667,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#2a9d8f",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -535,9 +722,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#2a9d8f",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -568,9 +772,26 @@
         -0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#3a86ff",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -601,9 +822,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#3a86ff",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -634,9 +872,26 @@
         0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#3a86ff",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -672,9 +927,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#8e5cf7",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -710,9 +982,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#8e5cf7",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -748,9 +1037,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#8e5cf7",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -781,9 +1087,26 @@
         -0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e76f51",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -814,9 +1137,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e76f51",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -847,9 +1187,26 @@
         0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e76f51",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -885,9 +1242,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#f4a261",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -923,9 +1297,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#f4a261",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -961,9 +1352,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#f4a261",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -994,9 +1402,26 @@
         -0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e9c46a",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -1027,9 +1452,26 @@
         0
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e9c46a",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -1060,9 +1502,26 @@
         0.51
       ],
       "material": {
-        "preset": "plastic",
+        "type": "physical",
         "color": "#e9c46a",
-        "roughness": 0.42
+        "roughness": 0.5,
+        "clearcoat": 0.5,
+        "clearcoatRoughness": 0.3,
+        "map": {
+          "procedural": "wood",
+          "rings": 3,
+          "colors": [
+            "#ffffff",
+            "#eadbc6"
+          ],
+          "resolution": 128
+        },
+        "bumpMap": {
+          "procedural": "wood",
+          "rings": 3,
+          "resolution": 128
+        },
+        "bumpScale": 0.06
       },
       "castShadow": true,
       "receiveShadow": true,
@@ -1163,7 +1622,7 @@
       {
         "id": "hint",
         "type": "text",
-        "text": "Click or tap to throw — knock the whole tower off",
+        "text": "Click or tap to throw \u2014 knock the whole tower off",
         "anchor": "bottom",
         "style": "subtitle",
         "visible": "phase == 'attract'"
@@ -1228,5 +1687,26 @@
         "volume": 0.4
       }
     }
-  }
+  },
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.2,
+      "threshold": 1.6,
+      "radius": 0.5
+    },
+    {
+      "type": "grading",
+      "contrast": 1.05,
+      "saturation": 1.05,
+      "vibrance": 0.1
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.55
+    },
+    {
+      "type": "fxaa"
+    }
+  ]
 }

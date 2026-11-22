@@ -8,7 +8,7 @@ Sibling of AgentCRM (`../agentcrm/`) and AgentCMS (`../cms/`): when in doubt abo
 
 1. **Self-contained, no server, no account.** The runtime, the CLI, the Studio and the exports never call a third-party service at run time. The only network use is the *optional* `assets search|add` against free, account-less CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos samples) — files are downloaded **once into the project** with their licence in `assets/manifest.json`. Exports never hotlink. No CDN, no web fonts, no analytics.
 2. **One engine, four front doors.** Business logic lives in `src/ops/` (pure TS over `ProjectFs`, no DOM, no Node APIs). The Studio (`src/studio/`), the CLI (`agent/`), the MCP server (`agent/mcp/`) and the Studio assistant call ops. Never re-implement a rule in a command or a page.
-3. **The catalog is declared once** (`src/core/catalog.ts`): geometries, material presets, shaders, behaviours, generators, particle presets, post effects, fonts, sounds. Validation, runtime registries, AI tools and docs derive from it. A catalog id without a runtime implementation fails the tests.
+3. **The catalog is declared once** (`src/core/catalog.ts`): geometries, material presets, shaders, procedural textures, light rigs, behaviours, generators, particle presets, post effects, fonts, sounds. Validation, runtime registries, AI tools and docs derive from it. A catalog id without a runtime implementation fails the tests.
 4. **AI tools are declared once** in `src/ai/tools.ts` (name, description, JSON schema, `mutating`, handler calling `src/ops/`). MCP `tools/list`, `agent3d tools list|call` and the Studio assistant expose exactly that list.
 5. **Scenes are data.** Everything a scene can do must be expressible in `scene.json` (+ optional scripts). The runtime is a pure function of (scene, assets, time) in deterministic mode — screenshots must be reproducible.
 6. **Web-friendly by default**: lazy start (IntersectionObserver), pause off-screen, `prefers-reduced-motion`, DPR cap, poster fallback when WebGL is missing, `aria-label`, responsive aspect ratio, budgets checked by `agent3d check`.
@@ -20,23 +20,24 @@ Sibling of AgentCRM (`../agentcrm/`) and AgentCMS (`../cms/`): when in doubt abo
 
 ```
 src/
-  core/        types.ts (SceneDoc — THE format), catalog.ts, validate.ts, fs.ts (ProjectFs + MemoryFs), ids.ts, json paths, color
+  core/        types.ts (SceneDoc — THE format), catalog.ts, validate.ts (+ validateMotion.ts: timeline / interactions / camera shots), fs.ts (ProjectFs + MemoryFs), ids.ts, json paths, color, ease.ts (ease specs), postfx.ts (look presets, quality tiers, GPU cost), library.ts
   runtime/     the Three.js player shipped to websites
     api.ts         public contract (mountScene, Player, ScriptApi)       registry.ts  implementation registries contract
     index.ts       exports mountScene + defines <agent3d-scene>          element.ts   the Web Component
     player.ts      Player implementation (renderer, loop, deterministic clock, resize, lazy/offscreen, reduced motion)
-    build/         scene graph builder: objects, geometry, materials (+presets), text (fonts), svg, models (GLTF), instances, lights, environment (bg, sky, IBL, fog, ground), camera + controls
-    behaviours/    one file per catalog behaviour          timeline/  keyframes + easing
-    particles/     particle system + presets               postfx/    effect composer + effects
+    build/         scene graph builder: objects, geometry (+ extrude), materials (+presets, textures.ts: texture slots, procedural textures, triplanar), text (kerned fonts, letters, reveal), svg, models (GLTF, meshopt, clips/morphs), instances, lights (+ rigs.ts, rect panels, volumetric spots), environment (bg incl. meshGradient, sky.ts physical sky + sun, HDRI, heightFog.ts, ground, contactShadows.ts), camera + controls + shots
+    data.ts        `{data.key}` bindings (element data-* → scene)   editor/   Studio gizmos (transform handles)
+    behaviours/    one file per catalog behaviour          timeline/  keyframes, eases, stagger selectors, segments / markers, scroll, interactions
+    particles/     particle system + presets               postfx/    HDR / LDR passes, look presets, quality tiers
     generators/    procedural content (terrain, trees, character, city, …)   shaders/  GLSL shader materials
-    game/          script host (ScriptApi), input, physics (light AABB/sphere), HUD, events, storage
+    game/          script host (ScriptApi), input, rigid-body physics (cannon-es: physics.ts / physicsHost.ts / physicsShapes.ts; dynamic bodies rotate unless `character` / `fixedRotation`), HUD, events, storage
     audio/         WebAudio synth presets + audio files
     random.ts      seeded RNG + noise (simplex/fbm) shared by procedural code
-  ops/         engine: project.ts, scene.ts (get/apply/patch), objects.ts, timeline.ts, check.ts, assets.ts (+ sources/), templates.ts, export.ts, docs.ts
-  ai/          tools.ts — the AI tool catalog
-  studio/      Studio SPA (React + Tailwind): viewport, outliner, inspector, timeline, catalog browser, templates gallery, assistant
+  ops/         engine: project.ts, scene.ts (get/apply/patch), objects.ts, timeline.ts, check.ts (+ budget.ts, postfxCheck.ts), assets.ts (+ sources/), optimize.ts (+ optimizeGlb.ts, optimizeSizing.ts), templates.ts, export.ts (+ exportFrameworks.ts, zip.ts), docs.ts
+  ai/          tools.ts — the AI tool catalog (+ sceneTools.ts, assetTools.ts)
+  studio/      Studio SPA (React + Tailwind): viewport (+ transform gizmos from runtime/editor/), outliner, inspector, timeline, catalog browser, templates gallery, assistant
 agent/         `agent3d` CLI (Node ≥ 20, bundled to dist/agent/agent3d.mjs) — commands/, mcp/, render/ (CDP headless Chrome), serve, nodeFs
-library/       built-in CC0 assets shipped in the npm package (fonts/, models/, textures/, hdri/) + library/index.json (id, path, licence, author, tags)
+library/       built-in CC0 / CC-BY assets shipped in the npm package (fonts/, models/, textures/, hdri/) + library/index.json (id, path, licence, author, tags)
 templates/     starter projects (folder per template: agent3d.json, scene.json, scripts/, template.json {id,title,description,kind,tags})
 plugin/skills/ Claude Code skills (single source)          hermes/  generated Python-agent skills (+ python/ wrapper, tests/)
 integrations/agentcms/  AgentCMS plugin: "Agent3D scene" editor block (packed agent3d-scene.zip)
@@ -46,7 +47,7 @@ AGENTS.md      what must stay in sync (catalog, tools, skills, versions, Hermes,
 
 ### Builds
 
-- `vite.runtime.config.ts` → `dist/runtime/agent3d-runtime.js` (+ lazy `chunks/` for postfx, generators, physics/game, loaders, fonts) and, with `--mode single`, `dist/runtime/agent3d-runtime.single.js` (one file, dynamic imports inlined — for single-html exports).
+- `vite.runtime.config.ts` → `dist/runtime/agent3d-runtime.js` (+ lazy `chunks/` for postfx, generators, physics (cannon-es) / game, loaders (incl. meshopt decoder), fonts) and, with `--mode single`, `dist/runtime/agent3d-runtime.single.js` (one file, dynamic imports inlined — for single-html exports).
 - `vite.config.ts` → `dist/studio/` (the Studio SPA; `agent3d studio` / `serve` serve it).
 - `vite.agent.config.ts` → `dist/agent/agent3d.mjs`, every dependency inlined (no runtime dependency). The CLI finds the runtime, studio, library and templates relative to its own file (`agent/paths.ts`, overridable with `AGENT3D_DIST`).
 
@@ -98,7 +99,7 @@ normalizeScene(scene): SceneDoc              // structural defaults only (versio
 defaultScene({ id?, title?, kind?, aspect? }): SceneDoc   // minimal valid scene;  DEFAULT_ASPECT, DEFAULT_BUDGET_KB per kind
 // check.ts
 checkProject(fs, opts?: { runtimeStats?: FrameStats; inspect?: InspectResult; library?: LibraryIndex; runtimeKb?: number }): Promise<CheckReport>
-  // CheckReport { ok, issues, counts, budget: { estimatedTriangles, runtimeTriangles?, triangles, trianglesSource: "estimate"|"runtime", heaviestObjects, assetsKb, scriptsKb, sceneKb, totalKb, budgetKb, runtimeKb }, licences: { path, license, author?, attribution }[] }
+  // CheckReport { ok, issues, counts, budget: { estimatedTriangles, runtimeTriangles?, triangles, trianglesSource: "estimate"|"runtime", heaviestObjects, assetsKb, scriptsKb, sceneKb, totalKb, budgetKb, runtimeKb, gpu (postfx cost per quality tier, postfxCheck.ts) }, licences: { path, license, author?, attribution }[] }
   // validation + missing assets (incl. .gltf buffers/images) / scripts + script sandbox lint (scriptLint.ts: lintScript(source, path)) + triangle (budget.ts: catalog `cost` formulas, measured per-glyph text costs, model triangles from the library index / GLB JSON via gltf.ts; runtime stats win when given — they count every pass) and KB budgets
   // + framing (framingIssues(scene, inspect)) + runtime perf (draw calls > 150, triangles per kind) + licences needing attribution + web (ariaLabel, reducedMotion, lazy, maxDpr)
 // assets.ts (+ sources/: polyhaven, ambientcg, khronos = live APIs; kenney, quaternius = curated indexes, manual zip download)
@@ -110,6 +111,10 @@ searchAssets({ query, kind?, source?, limit? }, fetchImpl): Promise<AssetHit[]> 
 downloadAsset(fs, hit, fetchImpl, opts?: { resolution?, name?, inflate? }): Promise<AssetEntry & { files: string[]; suggestion? }>   // → assets/<kind>s/<name>.<ext> or assets/<kind>s/<name>/…
 importAssetZip(fs, zipBytes, { name, source, license, author?, sourceUrl?, attribution?, filter?: string[], inflate?, maxFiles? }): Promise<{ assets, models, skipped }>   // Kenney / Quaternius packs
 listLibrary(libraryIndex, { query?, kind?, limit? }): { assets: { id, ref: "library:<id>", kind, license, author?, tags, description, kb }[]; total }
+// optimize.ts — smart asset optimisation (needs an ImageCodec from the host: headless Chrome)
+planOptimize(fs, OptimizeOptions): Promise<OptimizePlan>     // per-texture target size from how the scene uses it (optimizeSizing.ts), format, geometry treatment — no codec, no write
+optimizeAssets(fs, { paths?, all?, maxSize?, quality?, format?: auto|webp|jpeg|png|keep, compress? (meshopt), simplify?, dryRun? }, codec?): Promise<OptimizeResult>
+optimizedExportSources(...)                                 // `export --optimize`: optimised copies of project + library assets, sources untouched
 // templates.ts   TemplateInfo { id, title, description, kind, tags, aspect }; TemplateIndex = TemplateInfo[]
 listTemplates(index, { kind?, query? })  findTemplate(index, id)  parseTemplateInfo(json, fallbackId)  instantiateTemplate(fs, id, files, { name, title?, force? }) — files read from templates/<id>/ by the front door
 // export.ts
@@ -142,12 +147,12 @@ Element API (`src/runtime/element.ts`, docs/export.md): attributes src, poster /
 
 ## Headless render (agent/render/)
 
-`agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--sheet] [--isolate <id>] [--bg checker|<colour>|none] [--out renders/]` →
+`agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--sheet] [--isolate <id>] [--bg checker|<colour>|none] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--input <json>] [--video x.mp4|x.webm | --gif x.gif | --webp x.webp] [--out renders/]` →
 1. starts a 127.0.0.1 HTTP server serving `dist/runtime`, the library and the project;
 2. launches the user's **installed Chrome / Chromium / Edge / Brave** (`agent/render/browser.ts` finds it; `AGENT3D_CHROME` overrides; none → hint to install Chrome or `npx playwright install chromium`) with `--headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --remote-debugging-port=0` and a temp profile;
 3. drives it with a hand-written CDP client over Node's global `WebSocket` (no puppeteer);
 4. the preview page mounts the scene with `deterministic: true`, sets `window.__agent3d`, then for each frame `player.seek(t)` + `snapshot()`; with `--sheet` composes a contact sheet (grid with small time labels in each cell's bottom-left corner, clear of top HUDs) in the page canvas;
-5. writes PNGs, returns `{ dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors }` (paths relative to the project folder `dir`) so the agent can *look* at the images and fix framing / budget problems. `--input <json>` (games) applies simulated keys / clicks / pointer moves / presses / drags / swipes between seeks (unknown event fields → usage error) (`render_preview` `input`); `state` is `player.state()` after the last frame.
+5. writes PNGs, returns `{ dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors }` (paths relative to the project folder `dir`) so the agent can *look* at the images and fix framing / budget problems. `--input <json>` (games) applies simulated keys / clicks / pointer moves / presses / drags / swipes / scrolls between seeks (unknown event fields → usage error) (`render_preview` `input`); `state` is `player.state()` after the last frame.
 
 ## CLI contract (mirror of agentcrm)
 
@@ -155,11 +160,11 @@ Element API (`src/runtime/element.ts`, docs/export.md): attributes src, poster /
 - Every error a user can hit has an actionable `hint`.
 - Destructive or overwriting commands print `{ needsConfirmation: true, plan }` unless `--yes` (scene apply replacing objects, export overwriting a folder, assets remove).
 - The project is `--project <dir>` (default: current directory).
-- Commands: `help`, `version`, `new <dir> [--template id] [--title] [--target banner|hero|…] [--aspect]`, `info`, `scene get|summary|apply|patch|validate`, `object add|update|remove|list|get|move`, `timeline get|set|add-track|remove-track`, `catalog [section] [id]`, `templates list|show`, `check`, `render`, `serve [--port]` (live-reload preview), `studio [--port]`, `export [--format embed|single-html|poster|video] [--out]`, `assets list|search|add|remove|library`, `tools list|call <name> --input`, `mcp [--read-only]`, `doctor`.
+- Commands: `help`, `version`, `new <dir> [--template id] [--title] [--target banner|hero|…] [--aspect]`, `info`, `scene get|summary|apply|patch|validate`, `object add|update|remove|list|get|move`, `timeline get|set|add-track|remove-track`, `catalog [section] [id]`, `templates list|show`, `check`, `render`, `serve [--port]` (live-reload preview), `studio [--port]`, `export [--format embed|zip|single-html|poster|video|gif] [--out] [--optimize] [--base-url] [--cache-bust]`, `assets list|search|add|remove|library|optimize`, `tools list|call <name> --input`, `mcp [--read-only]`, `doctor`.
 
 ## AI tools (src/ai/tools.ts)
 
-`project_info`, `scene_get`, `scene_summary`, `scene_apply`, `scene_patch`, `scene_validate`, `object_add`, `object_update`, `object_remove`, `object_list`, `timeline_set`, `catalog_get`, `templates_list`, `project_create`, `check`, `assets_list`, `assets_search`, `assets_add`, `assets_optimize` (needs the host's `withImageCodec`, i.e. headless Chrome), `library_list`, `export` — plus `render_preview` registered by the CLI/MCP host only (it needs Chrome; the tool returns image paths, and MCP returns the contact sheet as an `image` content block — scaled to `maxWidth`, default 800 px — so multimodal clients see it; refusals (`status: "refused"`) come back with `isError: true`). Tools take `ToolContext { fs, fetch?, host: { render?, runtimeFiles?, library?, templates? } }`.
+`project_info`, `scene_get`, `scene_summary`, `scene_apply`, `scene_patch`, `scene_validate`, `object_add`, `object_update`, `object_remove`, `object_list`, `timeline_set`, `interactions_set`, `catalog_get`, `templates_list`, `project_create`, `check`, `assets_list`, `assets_search`, `assets_add`, `assets_optimize` (needs the host's `withImageCodec`, i.e. headless Chrome), `library_list`, `export` — plus `render_preview` registered by the CLI/MCP host only (it needs Chrome; the tool returns image paths, and MCP returns the contact sheet as an `image` content block — scaled to `maxWidth`, default 800 px — so multimodal clients see it; refusals (`status: "refused"`) come back with `isError: true`). Tools take `ToolContext { fs, fetch?, host: { render?, runtimeFiles?, library?, templates? } }`.
 
 ## Ownership boundaries (parallel work)
 
@@ -173,4 +178,4 @@ Element API (`src/runtime/element.ts`, docs/export.md): attributes src, poster /
 | Content | `templates/`, `library/` (except fonts), `examples/` |
 | Distribution | `plugin/`, `hermes/`, `.claude-plugin/`, `docs/` (except `catalog.md`, `studio-api.md`), `integrations/agentcms/`, `scripts/check-skills.mjs`, `scripts/build-hermes.mjs`, `scripts/build-cli-docs.mjs` (+ `cli-docs.mjs`, `cli-docs.test.ts`), `scripts/sync-version.mjs`, `scripts/write-version.mjs`, `README.md`, `AGENTS.md`, `changelog.json` |
 
-`src/core/types.ts`, `src/core/catalog.ts`, `src/runtime/api.ts`, `src/runtime/registry.ts` are **contracts**: change them only additively and say so in your report. `package.json` dependencies: ask the lead (no new runtime dependency besides `three` without a strong reason).
+`src/core/types.ts`, `src/core/catalog.ts`, `src/runtime/api.ts`, `src/runtime/registry.ts` are **contracts**: change them only additively and say so in your report. `package.json` dependencies: ask the lead (no new runtime dependency besides `three`, `cannon-es` (lazy physics chunk) and `meshoptimizer` (meshopt decode / optimize), all bundled, without a strong reason).

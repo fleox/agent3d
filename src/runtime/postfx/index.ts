@@ -234,6 +234,14 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
   let clearColor = new THREE.Color();
   let clearAlpha = 1;
   function renderScene(target: THREE.WebGLRenderTarget) {
+    // Volumetric spot cones fade softly against the scene depth (lights.ts):
+    // publish the shared depth pre-pass (it never contains the cones).
+    const cone = scene.getObjectByName("__volumetric");
+    if (cone?.visible) {
+      const gb = fx.gbuffer();
+      gb.ensure(renderer, scene, camera, frame);
+      scene.userData.a3dDepth = { texture: gb.depthTexture, width: pw, height: ph };
+    }
     const bg = scene.background;
     scene.background = null;
     renderer.setRenderTarget(target);
@@ -243,6 +251,7 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
       renderer.render(scene, camera);
     } finally {
       scene.background = bg;
+      delete scene.userData.a3dDepth;
     }
   }
 

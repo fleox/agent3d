@@ -163,3 +163,37 @@ describe("reveal", () => {
     expect((mesh.material as THREE.Material).transparent).toBe(false);
   });
 });
+
+describe("outline offset polygon", () => {
+  it("round-joins sharp convex corners instead of spiking (any width)", async () => {
+    const { offsetRing } = await import("./text");
+    // A very sharp CCW triangle (tip at (10, 0.5)).
+    const ring = [{ x: 0, y: 0 }, { x: 10, y: 0.5 }, { x: 0, y: 1 }];
+    const w = 0.4;
+    const out = offsetRing(ring, w);
+    for (const p of out) {
+      const d = Math.min(...ring.map((q) => Math.hypot(p.x - q.x, p.y - q.y)));
+      // Every offset point stays within the miter limit (2 × width) of the
+      // ring — a raw miter at the tip would be ~ w / sin(2.9°) ≈ 8 units away.
+      expect(d).toBeLessThanOrEqual(2 * w + 1e-6);
+    }
+    // The tip is rounded: several points, all exactly `w` from it.
+    const tipPts = out.filter((p) => Math.abs(Math.hypot(p.x - 10, p.y - 0.5) - w) < 1e-6);
+    expect(tipPts.length).toBeGreaterThan(3);
+  });
+  it("grows outer contours and shrinks holes", async () => {
+    const THREE = await import("three");
+    const { offsetShapes } = await import("./text");
+    const sq = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(4, 0), new THREE.Vector2(4, 4), new THREE.Vector2(0, 4)]);
+    sq.holes.push(new THREE.Path([new THREE.Vector2(1, 1), new THREE.Vector2(1, 3), new THREE.Vector2(3, 3), new THREE.Vector2(3, 1)]));
+    const [o] = offsetShapes([sq], 0.2);
+    const { shape, holes } = o.extractPoints(1);
+    const xs = shape.map((p) => p.x);
+    expect(Math.min(...xs)).toBeCloseTo(-0.2);
+    expect(Math.max(...xs)).toBeCloseTo(4.2);
+    expect(holes).toHaveLength(1);
+    expect(Math.min(...holes[0].map((p) => p.x))).toBeCloseTo(1.2);
+    // A hole narrower than twice the width disappears.
+    expect(offsetShapes([sq], 1.2)[0].holes).toHaveLength(0);
+  });
+});

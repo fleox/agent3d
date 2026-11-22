@@ -84,8 +84,59 @@ export interface JointInit {
   stiffness?: number;
   damping?: number;
   motor?: { speed: number; maxForce?: number }; // rad / s
+  limits?: [number, number]; // hinge angle limits, radians, relative to the start pose
   maxForce?: number;
   collideConnected?: boolean;
+}
+
+interface HingeLimit {
+  A: C.Body;
+  B: C.Body;
+  pivotB: C.Vec3; // pivot in B's frame
+  axisB: C.Vec3; // hinge axis in B's frame
+  rel0: C.Quaternion; // B⁻¹·A at creation
+  min: number;
+  max: number;
+}
+
+/** Signed hinge angle of A relative to B around the axis, since the joint was made (radians, −π … π). */
+export function hingeAngle(l: Pick<HingeLimit, "A" | "B" | "axisB" | "rel0">): number {
+  const rel = l.B.quaternion.conjugate().mult(l.A.quaternion);
+  const d = rel.mult(l.rel0.conjugate());
+  const s = d.x * l.axisB.x + d.y * l.axisB.y + d.z * l.axisB.z;
+  let a = 2 * Math.atan2(s, d.w);
+  if (a > Math.PI) a -= 2 * Math.PI;
+  if (a < -Math.PI) a += 2 * Math.PI;
+  return a;
+}
+
+// Rotates the dynamic side of a limited hinge back inside [min, max] (about
+// the world pivot) and cancels the relative spin that pushes it out.
+function enforceLimit(l: HingeLimit): void {
+  const angle = hingeAngle(l);
+  const over = angle > l.max ? angle - l.max : angle < l.min ? angle - l.min : 0;
+  if (!over) return;
+  const moveA = l.A.mass > 0 || l.B.mass <= 0;
+  const body = moveA ? l.A : l.B;
+  if (body.mass <= 0) return;
+  const axis = l.B.quaternion.vmult(l.axisB);
+  axis.normalize();
+  const pivot = l.B.quaternion.vmult(l.pivotB).vadd(l.B.position);
+  // Turning A by −over (or B by +over) brings the relative angle back to the limit.
+  const turn = new C.Quaternion().setFromAxisAngle(axis, moveA ? -over : over);
+  const r = body.position.vsub(pivot);
+  body.position.copy(turn.vmult(r).vadd(pivot));
+  body.quaternion.copy(turn.mult(body.quaternion));
+  body.quaternion.normalize();
+  const wRel = l.A.angularVelocity.vsub(l.B.angularVelocity).dot(axis);
+  if (wRel * over > 0) {
+    const dw = axis.scale(moveA ? wRel : -wRel);
+    body.angularVelocity.vsub(dw, body.angularVelocity);
+    // Keep the linear velocity consistent with turning about the pivot.
+    const rr = body.position.vsub(pivot);
+    body.velocity.vsub(dw.cross(rr), body.velocity);
+  }
+  body.aabbNeedsUpdate = true;
 }
 
 export interface ContactInfo {
@@ -211,7 +262,7 @@ export class PhysicsWorld {
   private namedMaterials: Record<string, { friction?: number; restitution?: number }>;
   private pairOverrides = new Map<string, { friction?: number; restitution?: number }>();
   private layerBits = new Map<string, number>();
-  private joints: { id: string; a: string; b?: string; constraint?: C.Constraint; spring?: C.Spring; anchor?: C.Body }[] = [];
+  private joints: { id: string; a: string; b?: string; constraint?: C.Constraint; spring?: C.Spring; anchor?: C.Body; limit?: HingeLimit }[] = [];
   private contactsNow = new Map<string, ContactNow>();
   private contactsPrev = new Map<string, ContactNow>();
   private beginHandlers: ((a: Body, b: Body, info: ContactInfo) => void)[] = [];
@@ -532,12 +583,25 @@ export class PhysicsWorld {
     const collideConnected = j.collideConnected ?? false;
     let constraint: C.Constraint | undefined;
     let spring: C.Spring | undefined;
+    let limit: HingeLimit | undefined;
     switch (j.type) {
       case "hinge": {
         const axis = new C.Vec3(...(j.axis ?? [0, 1, 0]));
         if (axis.length() < 1e-9) axis.set(0, 1, 0);
         axis.normalize();
         const h = new C.HingeConstraint(A, B, { pivotA: local(A, pivot), pivotB: local(B, pivot), axisA: localDir(A, axis), axisB: localDir(B, axis), maxForce, collideConnected });
+        if (j.limits) {
+          // cannon's hinge has no limits: enforced after each sub-step (enforceLimit).
+          limit = {
+            A,
+            B,
+            pivotB: local(B, pivot),
+            axisB: localDir(B, axis),
+            rel0: B.quaternion.conjugate().mult(A.quaternion),
+            min: Math.min(j.limits[0], j.limits[1]),
+            max: Math.max(j.limits[0], j.limits[1]),
+          };
+        }
         if (j.motor) {
           h.enableMotor();
           // cannon drives B relative to A; with the world anchor as B, negate.
@@ -570,7 +634,7 @@ export class PhysicsWorld {
       }
     }
     if (constraint) this.world.addConstraint(constraint);
-    this.joints.push({ id, a: j.a, b: j.b, constraint, spring, anchor });
+    this.joints.push({ id, a: j.a, b: j.b, constraint, spring, anchor, limit });
     return id;
   }
 
@@ -590,6 +654,11 @@ export class PhysicsWorld {
       j.constraint.setMotorSpeed(j.b ? speed : -speed);
       this.byId.get(j.a)?.main.wakeUp();
     }
+  }
+
+  /** True when a joint holds this body. */
+  hasJoints(id: string): boolean {
+    return this.joints.some((j) => j.a === id || j.b === id);
   }
 
   jointIds(): string[] {
@@ -720,6 +789,7 @@ export class PhysicsWorld {
       this.preVel.clear();
       for (const r of this.recs) if (r.type !== "static") this.preVel.set(r, r.main.velocity.clone());
       this.world.step(h);
+      for (const j of this.joints) if (j.limit) enforceLimit(j.limit);
       this.time += h;
       this.collectContacts(merged, h);
     }

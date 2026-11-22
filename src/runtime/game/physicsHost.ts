@@ -18,6 +18,9 @@ export { PhysicsWorld } from "./physics";
 export class PhysicsBridge {
   readonly engine: PhysicsWorld;
   private offsets = new Map<string, THREE.Vector3>();
+  // World scale each body's shapes were built with (cannon shapes cannot scale).
+  private scales = new Map<string, THREE.Vector3>();
+  private scaleWarned = new Set<string>();
   private debug: PhysicsDebug | null = null;
   private world: World;
 
@@ -60,6 +63,7 @@ export class PhysicsBridge {
         stiffness: j.stiffness,
         damping: j.damping,
         motor: j.motor ? { speed: j.motor.speed * DEG, maxForce: j.motor.maxForce } : undefined,
+        limits: j.limits ? [j.limits[0] * DEG, j.limits[1] * DEG] : undefined,
         maxForce: j.maxForce,
         collideConnected: j.collideConnected,
       });
@@ -74,6 +78,7 @@ export class PhysicsBridge {
     const { init, offset, note } = bodyInit(e.id, { object: e.object, def, objectDef: e.def as ObjectDef, built: e.built });
     if (note) this.issue({ code: "physics", message: `objects#${e.id}.body: ${note}.`, path: `objects#${e.id}.body` });
     this.offsets.set(e.id, offset);
+    this.scales.set(e.id, e.object.getWorldScale(new THREE.Vector3()));
     this.engine.add(init);
     return true;
   }
@@ -100,11 +105,36 @@ export class PhysicsBridge {
     return !!this.engine.get(id);
   }
 
-  // Scripts moved the object: move its body.
+  // Scripts moved the object: move its body. A changed scale rebuilds the
+  // body's shapes at the new size (keeping its velocity) — except for bodies
+  // held by joints, which would lose them (one warning).
   moved(id: string): void {
     const e = this.world.entries.get(id);
     const off = this.offsets.get(id);
-    if (!e || !off || !this.engine.get(id)) return;
+    const body = this.engine.get(id);
+    if (!e || !off || !body) return;
+    const s0 = this.scales.get(id);
+    if (s0 && (e.def as ObjectDef).body) {
+      const s = e.object.getWorldScale(new THREE.Vector3());
+      const changed = Math.abs(s.x - s0.x) > 1e-4 * Math.abs(s0.x) + 1e-6 || Math.abs(s.y - s0.y) > 1e-4 * Math.abs(s0.y) + 1e-6 || Math.abs(s.z - s0.z) > 1e-4 * Math.abs(s0.z) + 1e-6;
+      if (changed) {
+        if (this.engine.hasJoints(id)) {
+          if (!this.scaleWarned.has(id)) {
+            this.scaleWarned.add(id);
+            this.issue({ code: "physics", message: `objects#${id}: its scale changed but its collider keeps the start size (the body is held by a joint).`, path: `objects#${id}.body` });
+          }
+        } else {
+          const v = [...body.velocity] as [number, number, number];
+          const w = [...body.angularVelocity] as [number, number, number];
+          e.object.updateWorldMatrix(true, false);
+          this.addEntry(e);
+          this.engine.setVelocity(id, v);
+          this.engine.setAngularVelocity(id, w);
+          this.debug?.sync(this.engine.bodies);
+          return;
+        }
+      }
+    }
     const pose = bodyPose(e.object, off);
     this.engine.setPose(id, pose.position, pose.quaternion);
   }
@@ -112,6 +142,7 @@ export class PhysicsBridge {
   remove(id: string): void {
     this.engine.remove(id);
     this.offsets.delete(id);
+    this.scales.delete(id);
   }
 
   step(dt: number): void {

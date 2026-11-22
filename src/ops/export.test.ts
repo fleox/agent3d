@@ -169,3 +169,35 @@ describe("buildExport", () => {
     expect(r.issues.some((i) => i.code === "budget")).toBe(true);
   });
 });
+
+describe("export: data-bound labels, absolute og:image, poster cache-bust, wrapper props", () => {
+  it("resolves {data.*} in title / ariaLabel everywhere in the generated markup", async () => {
+    const fs = await project();
+    await patchScene(fs, [
+      { op: "set", path: "title", value: "{data.brand|Acme} spring sale" },
+      { op: "set", path: "ariaLabel", value: "{data.headline} — 3D banner" },
+      { op: "set", path: "data", value: { headline: "Up to 50% off" } },
+    ]);
+    const r = await buildExport(fs, { format: "embed", runtime, library, poster: new Uint8Array([0x52, 0x49]), ogImage: new Uint8Array([0x89, 0x50]) });
+    expect(r.snippet).toContain('aria-label="Up to 50% off — 3D banner"');
+    expect(r.snippet).toContain('alt="Up to 50% off — 3D banner"');
+    const index = r.files["index.html"] as string;
+    expect(index).toContain("<title>Acme spring sale — Agent3D embed</title>");
+    expect(index).toContain('og:title" content="Acme spring sale"');
+    expect(index).toContain('og:image" content="./spring-sale/og-image.png"');
+    for (const f of ["index.html", "EMBED.md", "snippet.html"]) for (const k of ["{data.headline", "{data.brand"]) expect(r.files[f] as string).not.toContain(k);
+  });
+  it("makes og:image absolute with an https base URL and versions the poster with --cache-bust", async () => {
+    const fs = await project();
+    const r = await buildExport(fs, { format: "embed", runtime, library, poster: new Uint8Array([0x52, 0x49]), ogImage: new Uint8Array([0x89, 0x50]), baseUrl: "https://cdn.example.com/3d/", cacheBust: true });
+    expect(r.files["index.html"]).toContain('og:image" content="https://cdn.example.com/3d/spring-sale/og-image.png"');
+    expect(r.snippet).toMatch(/src="https:\/\/cdn\.example\.com\/3d\/spring-sale\/poster\.\w+\?v=[0-9a-f]{10}"/);
+  });
+  it("Vue and Svelte wrappers take loop, autoplay and interactive like React", async () => {
+    const r = await buildExport(await project(), { format: "embed", runtime, library });
+    for (const f of ["frameworks/vue/Agent3DScene.vue", "frameworks/svelte/Agent3DScene.svelte"]) {
+      const src = r.files[f] as string;
+      for (const p of ["loop", "autoplay", "interactive"]) expect(src).toContain(p);
+    }
+  });
+});

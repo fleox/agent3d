@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fileToBase64, toast, uploadFile, withStorageBatch, type PluginSettingsPageProps, type SettingsSchema } from "@agent-cms/runtime";
-import { DEFAULT_CONFIG, PLUGIN_ID, relativeToExport, scenesInExport, shouldUpload, type PluginConfig, type UploadedScene } from "./render";
+import { aspectFromScene, DEFAULT_CONFIG, PLUGIN_ID, relativeToExport, scenesInExport, shouldUpload, type PluginConfig, type UploadedScene } from "./render";
 
 // Settings → Agent3D scenes: upload an Agent3D export folder (the `dist/embed`
 // folder written by `agent3d export`) to <folder>/ on the site's hosting and
@@ -26,7 +26,12 @@ export function SettingsPage({ config, save }: PluginSettingsPageProps<PluginCon
     if (!files?.length) return;
     const target = (folder || DEFAULT_CONFIG.folder).replace(/^\/+|\/+$/g, "");
     const list = Array.from(files).map((f) => ({ file: f, rel: relativeToExport((f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name) }));
-    const found = scenesInExport(list.map((x) => x.rel), target);
+    const aspects: Record<string, string> = {};
+    for (const { file, rel } of list) {
+      const name = /^([^/]+)\/scene\.json$/.exec(rel)?.[1];
+      if (name) aspects[name] = aspectFromScene(await file.text());
+    }
+    const found = scenesInExport(list.map((x) => x.rel), target, aspects);
     if (!found.length) {
       toast.error(t("settings.noScene"));
       return;

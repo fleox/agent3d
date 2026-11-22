@@ -18,7 +18,7 @@ The clock starts with the first move.
 | Another maze | `seed` (scene) — every seed is a new perfect maze |
 | Size / difficulty | `objects#maze.params.columns` / `.rows` (then move `objects#goal` / `goalGlow` to x = columns·cellSize/2 + 0.9, z = rows·cellSize/2 − cellSize/2, enlarge `objects#floor`, raise the camera) |
 | Ball handling | `data.maze`: `accel`, `maxSpeed`, `damping` |
-| Colours | `objects#maze.params.wallColor` / `.floorColor`, `objects#ball.material.color`, `environment.background` |
+| Colours | neon night look by default: `objects#maze.params.wallColor` / `.floorColor`, the glowing ball (`objects#ball.material.emissive`), the exit light `lights#glowExit`, `environment.background`; daylight: light floor, `environment.lighting: "studio"`, bloom strength 0.3 |
 | Texts | `ui.elements` |
 
 `api.state`: `phase` (`attract` | `play` | `won`), `time`, `best`, `progress` (attract-mode % along the solution path).

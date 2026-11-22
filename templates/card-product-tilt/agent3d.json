@@ -1,0 +1,8 @@
+{
+  "name": "card-product-tilt",
+  "title": "Product tilt card",
+  "createdAt": "2026-11-22T00:00:00.000Z",
+  "updatedAt": "2026-11-22T00:00:00.000Z",
+  "template": "card-product-tilt",
+  "agent3d": "0.1.0"
+}

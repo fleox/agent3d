@@ -161,6 +161,14 @@ void main() {
     pointer.active = true;
     pointer.strength = 1;
   };
+  // Exact placement: the pointer ray hit on the grid plane, in grid-local
+  // x / z (the World calls this after setPointer when the ray hits the plane).
+  group.userData.setPointerLocal = (x: number, z: number) => {
+    pointer.x = x / Math.max(1e-6, W * 0.5);
+    pointer.y = -z / Math.max(1e-6, D * 0.5);
+    pointer.active = true;
+    pointer.strength = 1;
+  };
   update(0);
   return built(group, { update: (t) => update(t) });
 };

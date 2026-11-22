@@ -4,7 +4,7 @@ description: Export an Agent3D scene and put it on a website - embed folder (Web
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   repository: "https://github.com/fleox/agent3d"
 allowed-tools: Bash Read Write
 ---
@@ -13,12 +13,12 @@ allowed-tools: Bash Read Write
 
 **Language:** talk to the user in their language; keep commands, code and files in English.
 
-Every command is `npx -y @fleox/agent3d@0.1.0 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
+Every command is `npx -y @fleox/agent3d@0.2.0 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
 
 ## Before exporting
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 check --project my-banner --render --json
+npx -y @fleox/agent3d@0.2.0 check --project my-banner --render --json
 ```
 
 No errors, no warnings (or warnings the user accepted). Keep the `licences` list: credits ship in the export.
@@ -27,39 +27,54 @@ No errors, no warnings (or warnings the user accepted). Keep the `licences` list
 
 | Format | Command | Gives | Use it for |
 |---|---|---|---|
-| `embed` (default) | `export --project my-banner` | a folder: `agent3d-runtime/` (shared), `<name>/` (scene.json, assets, scripts, poster.webp, og-image.png, CREDITS.txt), `index.html` (demo), `snippet.html`, `head.html`, `EMBED.md` (for the website owner), `frameworks/` (React / Vue / Svelte wrappers + types) | Any website you can upload files to; several scenes share one runtime |
-| `zip` | `export --format zip --project my-banner` | the embed folder as one `<name>-embed.zip` | Handing the export to someone, uploading through a file manager |
-| `single-html` | `export --format single-html --project my-banner` | one `<name>.html` with the runtime, the scene and the assets inline (data: URIs) | Sending a file, a standalone page, an `<iframe>` in Squarespace / Wix / Framer. ~1.8 MB minimum (the runtime) |
-| `poster` | `export --format poster --project my-banner` | `dist/poster.webp` (`--image png\|jpeg`, `--quality high`, `--transparent`) at `target.posterTime` (`--time 2`), 2x pixel ratio | Social images, email, a fallback |
-| `video` | `export --format video --out dist/promo.mp4 --project my-banner` | MP4 (H.264) for a `.mp4` `--out`, else `dist/video.webm` (VP9) | Social posts, presentations, places that can't run WebGL |
-| `gif` | `export --format gif --project my-banner` | `dist/animation.gif` (looping, 640 px, 15 fps) | Email, chat, READMEs |
+| `embed` (default) | `export --project my-banner` | `<project>/dist/embed/`: `agent3d-runtime/` (shared), `<name>/` (scene.json, assets, scripts, poster.webp, og-image.png, CREDITS.txt), `index.html` (demo), `snippet.html`, `head.html`, `EMBED.md` (for the website owner), `frameworks/` (React / Vue / Svelte wrappers + `agent3d-scene.d.ts`) | Any website you can upload files to; several scenes share one runtime |
+| `zip` | `export --format zip --project my-banner` | the embed folder as one `dist/zip/<name>-embed.zip` | Handing the export to someone, uploading through a file manager |
+| `single-html` | `export --format single-html --project my-banner` | one `dist/single-html/<name>.html` with the runtime, the scene and the assets inline (data: URIs) — about 2 MB minimum (the runtime is not split) | Sending a file, a standalone page, an `<iframe>` in Squarespace / Wix / Framer |
+| `poster` | `export --format poster --project my-banner` | `dist/poster.webp` at `target.posterTime` (`--time 2`), 2× pixel ratio (`--scale`); `--image png\|jpeg`, `--quality high\|ultra`, `--transparent` (png / webp) | Social images, email, a fallback |
+| `video` | `export --format video --project my-banner` | `dist/video.webm` (VP9), or MP4 (H.264) when `--out` ends in `.mp4`; `--duration`, `--fps`, `--size`, `--quality` | Social posts, presentations, places that can't run WebGL |
+| `gif` | `export --format gif --project my-banner` | `dist/animation.gif` (looping, 640 px wide, 15 fps by default) | Email, chat, READMEs |
+
+Default outputs land in `<project>/dist/`. A relative `--out` is resolved from the **project folder** (like every output path of `render` and `export`): `--project my-banner --out dist/promo.mp4` writes `my-banner/dist/promo.mp4`; absolute paths are kept.
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 export --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 export --project my-banner --name spring-banner --out ./site/agent3d --json
-npx -y @fleox/agent3d@0.1.0 export --project my-banner --base-url /wp-content/uploads/agent3d/ --cache-bust --json
-npx -y @fleox/agent3d@0.1.0 export --format zip --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 export --format single-html --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 export --format poster --time 2 --image png --quality high --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 export --format video --out dist/promo.mp4 --duration 8 --fps 30 --size 1920x1080 --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 export --format gif --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 export --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 export --project my-banner --name spring-banner --out ./site/agent3d --json
+npx -y @fleox/agent3d@0.2.0 export --project my-banner --base-url /wp-content/uploads/agent3d/ --cache-bust --out ./wp --json
+npx -y @fleox/agent3d@0.2.0 export --project my-banner --optimize --json
+npx -y @fleox/agent3d@0.2.0 export --format zip --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 export --format single-html --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 export --format poster --time 2 --image png --quality high --transparent --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 export --format video --out my-banner/dist/promo.mp4 --duration 8 --fps 30 --size 1920x1080 --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 export --format gif --duration 4 --project my-banner --json
 ```
 
+Embed / zip options:
+
+| Option | Effect |
+|---|---|
+| `--name <slug>` | The scene folder / file name (default: the project name) |
+| `--base-url <url>` | The snippet, the framework wrappers and EMBED.md use this base (the folder's final location: `/wp-content/uploads/agent3d/`, `https://cdn.example.com/3d/`), so the snippet works from pages at any depth or another origin |
+| `--cache-bust` | Runtime in `agent3d-runtime-<hash>/` and `scene.json?v=<hash>`: serve both with `Cache-Control: max-age=31536000, immutable` |
+| `--no-integrity` | Drops the Subresource Integrity hashes (`integrity="sha384-…"` on the runtime script and preloads, default on) |
+| `--optimize` | Optimised copies of the assets in the export only (the project is untouched): textures resized to what the scene needs, `.glb` geometry meshopt-compressed with WebP textures (the result's `optimized` lists before / after bytes). Texture work needs Chrome. Meshopt models need `'wasm-unsafe-eval'` in a CSP (below) |
+| `--no-poster` | No poster nor og-image (no Chrome needed). The element then shows nothing until the first frame and has no fallback without WebGL: prefer keeping it |
+| `--no-og` | No `<name>/og-image.png` (1200×630 social preview). To use it, add `<meta property="og:image" content="https://<site>/…/<name>/og-image.png">` and `<meta name="twitter:card" content="summary_large_image">` to the page head — crawlers need an absolute URL (the demo `index.html` uses a relative one) |
+| `--no-extras` | No `EMBED.md` and no `frameworks/` |
+
 - Exporting again into a non-empty folder prints a plan (`needsConfirmation`, with the existing entries): re-run with `--yes` after the user agreed.
-- `--base-url` makes every URL absolute from that base (the folder's final location on the site), so the snippet works on pages at any depth or from a CDN. `--cache-bust` versions the runtime folder (`agent3d-runtime-<hash>/`) and the scene URL so they can be cached for a year. The snippet pins the runtime with Subresource Integrity (`--no-integrity` to drop it).
-- `--no-poster` skips the poster and the og-image (no Chrome needed); the element then shows nothing until the first frame and has no fallback without WebGL. Prefer keeping it.
-- The result gives `snippet`, `head` (all modulepreload links), `integrity`, `out`, `entry` (the demo page), `totalKb`, `sizes` (runtime, scene, assets, scripts, poster), `credits` and `issues`.
+- The result gives `snippet`, `head` (all modulepreload links), `integrity`, `runtimeDir`, `out`, `entry` (the demo page, or the zip / html file), `totalKb`, `sizes` (`runtimeKb`, `sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`), `credits`, `issues` (+ `optimized` with `--optimize`). Media formats return `{ format, path, codec?, frames?, fps?, duration?, size, bytes }`.
 
 Media straight from `render` (frame-exact, any size / fps; LOOK at a few frames of the result):
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 render --video renders/promo.mp4 --duration 6 --size 1920x1080 --quality high --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 render --gif renders/banner.gif --duration 4 --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 render --webp renders/banner.webp --duration 4 --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 render --frames 2 --size 2400x600 --quality ultra --transparent --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --video my-banner/renders/promo.mp4 --duration 6 --size 1920x1080 --quality high --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --gif my-banner/renders/banner.gif --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --webp my-banner/renders/banner.webp --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --frames 2 --size 2400x600 --quality ultra --transparent --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --scroll 0.5 --project my-scroll-story --json
 ```
 
-`--quality high|ultra` supersamples 2× / 3× (smoother edges), `--transparent` gives alpha PNG / GIF / WebP, `--scroll 0.5` renders a scroll-driven scene at that scroll progress. MP4 needs Google Chrome or Edge (H.264 encoder); with Chromium, render `.webm`.
+`--quality high|ultra` supersamples 2× / 3× (smoother edges), `--transparent` gives alpha PNG / GIF / WebP, `--scroll 0.5` holds a scroll-driven scene at that scroll progress, `--fps` / `--start` / `--bitrate` tune videos, `--yes` overwrites an existing media file. `--video`, `--gif` and `--webp` paths (like `--out`) are relative to the project folder. MP4 needs Google Chrome or Edge (H.264 encoder); with Chromium, render `.webm`. Videos capture the WebGL canvas only (no HUD).
 
 ## The snippet
 
@@ -77,8 +92,9 @@ Always paste the snippet from the export result (hashes and file names change wi
 - The `<img slot="poster">` shows before the runtime loads, without JavaScript / WebGL and when printing, at the right size (no layout shift); keep it.
 - The element is `display: block; width: 100%` and keeps the scene's aspect ratio, or `target.height` when set. Size it with its container (`max-width`, grid column…); CSS on the element wins.
 - It loads lazily (starts when visible), pauses off-screen, caps the pixel ratio, freezes on the poster frame for visitors who prefer reduced motion, recovers from a lost GPU context, frees everything when removed (SPAs).
-- Attributes: `autoplay="false"`, `paused`, `loop="false|true|pingpong"`, `quality="low|medium|high|auto"`, `interactive="false"`, `data-*` (below).
-- JavaScript: `await el.ready`, `el.play()`, `el.pause()`, `await el.seek(t)`, `await el.setData({...})`, `el.trigger(name, payload)`. Events: `agent3d:ready`, `agent3d:error` (`{ code, message, path }`), `agent3d:event` (`{ name, payload }`: script / HUD events), `agent3d:click` (`{ id }`: the object clicked), `agent3d:progress`.
+- Attributes: `src`, `poster` (or the `<img slot="poster">`), `aspect` (reserved before scene.json loads), `alt`, `autoplay="false"`, `paused`, `loop="false|true|pingpong"`, `quality="low|medium|high|auto"` (pixel-ratio cap 1 / 1.5 / 2; `low` also drops antialiasing, shadows and post effects), `interactive="false"` (page scroll and clicks pass through), `library-base`, `aria-label`, `data-*` (below). The element reflects `status="loading|ready|error|unsupported"`.
+- JavaScript: `const player = await el.ready` (after the first frame), `el.play()`, `el.pause()`, `await el.seek(t)`, `await el.setData({...})`, `el.data`, `el.trigger(name, payload)` (scene scripts' `api.on(name)`, `{ "on": "event" }` interactions), `await el.reload()`. Events (bubbling): `agent3d:ready` (`{ player }`), `agent3d:error` (`{ code, message, path? }`), `agent3d:event` (`{ name, payload }`: scripts' `api.emit`, HUD actions, timeline markers, interaction `emit`), `agent3d:click` (`{ id, x, y }`: the object clicked, `null` for the background), `agent3d:progress` (`{ loaded, total }`).
+- Styling: `::part(poster)`, `::part(loading)`, `::part(loading-bar)`, `::part(fallback)`, `--agent3d-background`, `--agent3d-loading-color`, `--agent3d-poster-fit`, `--agent3d-fade`; a child with `slot="fallback"` replaces the no-WebGL fallback.
 - The same runtime folder serves every scene of the site: upload it once, re-upload it after updating Agent3D.
 
 ## Personalised scenes (data bindings)
@@ -86,20 +102,20 @@ Always paste the snippet from the export result (hashes and file names change wi
 Write `{data.key}` in a text object's `text` (or an `href`), give defaults in `scene.data`, and the page fills them per embed — no re-export:
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 scene patch --project my-banner '[{"op":"set","path":"data","value":{"title":"Spring sale"}},{"op":"updateObject","id":"title","set":{"text":"{data.title}"}}]' --json
+npx -y @fleox/agent3d@0.2.0 scene patch --project my-banner '[{"op":"set","path":"data","value":{"title":"Spring sale"}},{"op":"updateObject","id":"title","set":{"text":"{data.title}"}}]' --json
 ```
 
 ```html
 <agent3d-scene src="./my-banner/scene.json" data-title="Summer sale −30%"></agent3d-scene>
 ```
 
-`{data.cta|Shop now}` has a fallback; `data-cta-label` maps to `ctaLabel`; `el.setData({ title: "…" })` changes it live. Renders show the `scene.data` values.
+Placeholders work in text objects' `text`, any object's `href` and HUD texts. `{data.cta|Shop now}` has a fallback; `data-cta-label` maps to `ctaLabel`; `data-json='{"price": 9}'` merges an object; `el.setData({ title: "…" })` changes it live; scripts read the merged values as `api.data`. Renders and posters show the `scene.data` values. Keep the scene `title` / `ariaLabel` free of placeholders: the export copies them as written into the snippet's `aria-label` / `alt`, `index.html` and EMBED.md.
 
 ## Where it goes
 
 Step-by-step per platform (plain HTML, WordPress, AgentCMS, React / Next.js, Astro, Vue / Nuxt, Svelte, static hosts and CDNs): [references/integrations.md](references/integrations.md). In short:
 
-- **Plain HTML / static hosts** (Netlify, GitHub Pages, Cloudflare Pages, S3): copy the export folder next to the page, paste the snippet. Open `index.html` of the export through a local server (`npx -y @fleox/agent3d@0.1.0 serve --project my-banner` previews the project; module scripts don't run from `file://`: opened that way, the demo page only shows the poster and a note asking for a web server).
+- **Plain HTML / static hosts** (Netlify, GitHub Pages, Cloudflare Pages, S3): copy the export folder next to the page, paste the snippet. Open `index.html` of the export through a local server (`npx -y @fleox/agent3d@0.2.0 serve --project my-banner` previews the project; module scripts don't run from `file://`: opened that way, the demo page only shows the poster and a note asking for a web server).
 - **WordPress**: export with `--base-url /wp-content/uploads/agent3d/`, upload the export folder there (SFTP / the host's file manager), then a **Custom HTML** block with the snippet. The media library refuses `.js` / `.json` files.
 - **Webflow / Shopify**: host the folder on a static host or CDN, export with `--base-url https://…/`, paste the snippet in an Embed element / Custom Liquid section.
 - **Squarespace / Wix / Framer**: `single-html` in an `<iframe>`.
@@ -112,14 +128,14 @@ Step-by-step per platform (plain HTML, WordPress, AgentCMS, React / Next.js, Ast
 - [ ] `aria-label` describes the scene in one sentence (from `ariaLabel` or `title`); purely decorative scenes can say so ("Decorative animated background").
 - [ ] Important text is also in the HTML of the page (search engines and screen readers don't read WebGL).
 - [ ] `target.reducedMotion` is `static` for banners and heroes (default), `ignore` only for games.
-- [ ] Size: `totalKb` minus the runtime is within the target budget; images are 1k; the poster is a few tens of KB.
+- [ ] Size: `sizes` minus `runtimeKb` is within the target budget (`export --optimize` shrinks textures and models); the poster is a few tens of KB.
 - [ ] Phones: rendered at phone width (`render --size 390x98` for a 4:1 banner) and the text is readable.
 - [ ] Credits: `CREDITS.txt` lines are shown on the site when a licence requires attribution.
 - [ ] The page's Content-Security-Policy allows the runtime (below).
 
 ## Content-Security-Policy
 
-The runtime never calls third-party hosts, uses no `eval` / `new Function`, and needs no web fonts. What a CSP must allow:
+The runtime never calls third-party hosts, uses no `eval` / `new Function`, and needs no web fonts: no `'unsafe-eval'`, ever. `'wasm-unsafe-eval'` is needed only for meshopt-compressed models (`export --optimize`, `assets optimize`). What a CSP must allow:
 
 | Export | Directives |
 |---|---|

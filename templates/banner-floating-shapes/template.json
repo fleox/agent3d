@@ -1,16 +1,24 @@
 {
   "id": "banner-floating-shapes",
   "title": "Floating shapes banner",
-  "description": "Pastel glossy primitives drifting at different depths around a headline, with pointer parallax and a soft gradient background.",
+  "description": "Pastel 4:1 banner: a rounded 3D headline (data-bound) popping in letter by letter, framed by jelly, pearl, matte-pastel and gold shapes that spring in, float and shift with the pointer in depth layers over a drifting mesh-gradient backdrop.",
   "kind": "banner",
   "tags": [
     "banner",
-    "shapes",
+    "text",
     "pastel",
     "playful",
+    "shapes",
+    "abstract",
+    "jelly",
     "parallax",
-    "glossy",
-    "minimal"
+    "kids",
+    "app",
+    "startup",
+    "friendly",
+    "light",
+    "reveal",
+    "data-bindings"
   ],
   "aspect": "4:1"
 }

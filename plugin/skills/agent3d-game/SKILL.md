@@ -4,7 +4,7 @@ description: Build a mini game or an interactive 3D experience for a web page wi
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   repository: "https://github.com/fleox/agent3d"
 allowed-tools: Bash Read Write
 ---
@@ -15,16 +15,16 @@ A game is an ordinary scene (`target.kind: "game"`) plus **scripts**: ES modules
 
 **Language:** talk to the user in their language; keep commands, ids, code and files in English.
 
-Every command is `npx -y @fleox/agent3d@0.1.0 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
+Every command is `npx -y @fleox/agent3d@0.2.0 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
 
 ## Start
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 new dodge --target game --title "Dodge" --json
-npx -y @fleox/agent3d@0.1.0 scene summary --project dodge --json
+npx -y @fleox/agent3d@0.2.0 new dodge --target game --title "Dodge" --json
+npx -y @fleox/agent3d@0.2.0 scene summary --project dodge --json
 ```
 
-The game starter has a player, coins with a `coin` tag, a follow camera, a score HUD, a coin sound and `scripts/game.js` (move with arrows / WASD, collect coins). A complete validated example (lane runner: lanes, spawning by cloning, difficulty ramp, best score, attract mode) is in skill `agent3d-create` → `references/recipes.md` ("Game"); patterns in [references/game-patterns.md](references/game-patterns.md); the full API in [references/script-api.md](references/script-api.md).
+The game starter has a `kinematic` player moved by position, coins with a `coin` tag, a follow camera, a score HUD, a coin sound and `scripts/game.js` (move with arrows / WASD, collect coins). Game templates to start from (`templates list --json`): `game-coin-collector`, `game-runner`, `game-maze`, `game-tap-targets`, `game-physics-playground` (rigid bodies, impulses, impact sounds) — `new my-game --template game-physics-playground --json`. A complete validated example (lane runner: lanes, spawning by cloning, difficulty ramp, best score, attract mode) is in skill `agent3d-create` → `references/recipes.md` ("Game"); patterns in [references/game-patterns.md](references/game-patterns.md); the full API in [references/script-api.md](references/script-api.md).
 
 ## The script contract
 
@@ -55,17 +55,17 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
 1. Design the loop with the user in one paragraph: goal, controls (keyboard + touch), how you lose, what the score counts, how long a round lasts (30–90 s for a web page).
 2. Declare the scene: player and obstacle templates (hidden, with `tags` and a `body`), camera, HUD elements per phase, sounds (`catalog sounds`), `data` for tuning.
 3. Write the script (patterns below). Keep it under ~200 lines; one file is fine.
-4. Validate and lint: `npx -y @fleox/agent3d@0.1.0 check --project dodge --json` (sandbox errors carry the line: `scripts/game.js:12`).
+4. Validate and lint: `npx -y @fleox/agent3d@0.2.0 check --project dodge --json` (sandbox errors carry the line: `scripts/game.js:12`).
 5. Render several moments and LOOK:
    ```bash
-   npx -y @fleox/agent3d@0.1.0 render --project dodge --sheet --frames 0,2,4,6 --json
+   npx -y @fleox/agent3d@0.2.0 render --project dodge --sheet --frames 0,2,4,6 --json
    ```
    Plain renders have no player input, so the game must show something on its own: an **attract mode** (an autopilot plays during the `ready` phase, behind the title and Play button). The HUD is captured because the scene has a `ui` (`--capture page` forces it). Check `data.issues` and `data.consoleErrors` for `script-error`. `data.state` is the script's `api.state` after the last frame (e.g. `{ "score": 0, "phase": "ready" }`); frame and sheet paths are relative to the project folder `data.dir`.
 6. **Play it headlessly** with `--input`: a JSON script of simulated keys / clicks applied while seeking (frames are rendered in time order), then check `data.state` and the frames:
    ```bash
-   npx -y @fleox/agent3d@0.1.0 render --project dodge --sheet --frames 0,1,2,3 --input '[{"t": 0.2, "click": [0, -0.3]}, {"t": 0.5, "key": "ArrowLeft", "hold": 0.6}, {"t": 1.5, "key": "Space", "down": true}, {"t": 1.6, "key": "Space", "down": false}]' --json
+   npx -y @fleox/agent3d@0.2.0 render --project dodge --sheet --frames 0,1,2,3 --input '[{"t": 0.2, "click": [0, -0.3]}, {"t": 0.5, "key": "ArrowLeft", "hold": 0.6}, {"t": 1.5, "key": "Space", "down": true}, {"t": 1.6, "key": "Space", "down": false}]' --json
    ```
-   Events: `{ "t", "key", "down" }` (`key` is a `KeyboardEvent.code`: `ArrowLeft`, `KeyA`, `Space`…; `down: false` releases), `{ "t", "key", "hold": seconds }` (press and release), `{ "t", "click": [x, y] }`, `{ "t", "pointer": [x, y] }` (add `"down": true` / `false` to press / release there), `{ "t", "pointerDown": [x, y] }` and `{ "t", "pointerUp": [x, y] }` (hold the pointer: `api.input.pointer.down`), `{ "t", "drag": { "from": [x, y], "to": [x, y], "duration": 0.4 } }` (press, move, release), `{ "t", "swipe": "left" | "right" | "up" | "down" }` (what `api.input.swipe()` returns next step) — canvas coordinates −1..1, y up; a click on a HUD button does not trigger it — emit the action from a key instead while testing. Unknown fields are rejected (exit 2, the hint lists the valid shapes). Test the touch controls too, e.g. `--input '[{"t": 0.5, "swipe": "left"}, {"t": 1.2, "drag": {"from": [0, -0.5], "to": [0, 0.3], "duration": 0.3}}]'`. Use `@inputs.json` for longer scripts. MCP: `render_preview` takes the same events as `input`.
+   Events: `{ "t", "key", "down" }` (`key` is a `KeyboardEvent.code`: `ArrowLeft`, `KeyA`, `Space`…; `down: false` releases), `{ "t", "key", "hold": seconds }` (press and release), `{ "t", "click": [x, y] }`, `{ "t", "pointer": [x, y] }` (add `"down": true` / `false` to press / release there), `{ "t", "pointerDown": [x, y] }` and `{ "t", "pointerUp": [x, y] }` (hold the pointer: `api.input.pointer.down`), `{ "t", "drag": { "from": [x, y], "to": [x, y], "duration": 0.4 } }` (press, move, release), `{ "t", "swipe": "left" | "right" | "up" | "down" }` (what `api.input.swipe()` returns next step), `{ "t", "scroll": 0.5 }` (page scroll progress, scroll-driven scenes) — canvas coordinates −1..1, y up; a click on a HUD button does not trigger it — emit the action from a key instead while testing. Unknown fields are rejected (exit 2, the hint lists the valid shapes). Test the touch controls too, e.g. `--input '[{"t": 0.5, "swipe": "left"}, {"t": 1.2, "drag": {"from": [0, -0.5], "to": [0, 0.3], "duration": 0.3}}]'`. Use `@inputs.json` for longer scripts. MCP: `render_preview` takes the same events as `input`.
 7. To test a state that is hard to reach with input (game over screen, high score), temporarily set the starting phase in `api.data` (e.g. `"startPhase": "over"`), render, then restore it.
 8. `check`, then `export` (skill `agent3d-publish`). Games export like any scene; the embed gets keyboard focus on click (`tabindex`, `role="application"`).
 
@@ -74,11 +74,31 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
 - **Phases**: `ready` (title, Play button, attract mode) → `play` → `over` (score, Retry button). HUD elements use `visible` expressions on `phase`; buttons emit their `action` to `onEvent`.
 - **Input**: `api.input.pressed("ArrowLeft")` (went down this step) for discrete moves, `isDown` for continuous movement, `api.input.swipe()` for touch ("left" / "right" / "up" / "down"), `api.input.pointer` (normalised −1..1, `down`, `justPressed`), `api.input.pointerWorld()` for aiming on the ground plane. Always support both keyboard and touch.
 - **Spawning**: hide a template object (`"visible": false`), then `api.clone("block", { id, position })` (synchronous, cheap) and set `visible = true`; `obj.remove()` when it leaves the screen. Keep your own array of live clones.
-- **Physics**: give objects a `body` (`static`, `dynamic`, `kinematic`, `trigger`; shape `box` (default), `sphere`, `cylinder`, `capsule`, `convex`, `trimesh`, `heightfield`, `compound` or `auto`). Bodies really rotate, tumble, stack and sleep (deterministic fixed step). `api.physics.overlaps(a, b)` for pickups, `onCollision((a, b, info) => …)` (`info.impulse` for impact sounds), `onTriggerEnter`, `raycast` on the real shapes, `applyImpulse` / `applyForce` / `setVelocity`, `moveCharacter` + `jump` + `grounded` for platformers (`"character": true`). A player you drive by velocity needs `"fixedRotation": true` (or `character`), or it tips over. Joints (`physics.joints`: hinge, point, distance, lock, spring) build doors, pendulums, chains, wheels. Set `"physics": { "debug": true }` and render to see the colliders. Patterns: `references/game-patterns.md` → Physics recipes; template `game-physics-playground`.
+- **Physics** (real rigid bodies, cannon-es, deterministic fixed step): give objects a `body` — `type` `static` (floor, walls), `dynamic` (simulated: it falls, **rotates**, tumbles, stacks, sleeps), `kinematic` (you set its position, it pushes dynamic bodies), `trigger` (overlap detection only); `shape` `box` (default, from the bounds), `sphere`, `cylinder`, `capsule`, `convex`, `trimesh`, `heightfield`, `compound` or `auto`. Pick the body by role:
+
+  | Role | Body | Drive it with |
+  |---|---|---|
+  | Player moved by position (top-down, lanes, the starter) | `kinematic` | `obj.position.x += …` |
+  | Platformer hero (gravity, jumps) | `dynamic`, `capsule`, `"character": true` | `api.physics.moveCharacter` + `jump`, `grounded` |
+  | Player driven by velocity / impulses (roller, ship) | `dynamic` + `"fixedRotation": true` | `setVelocity`, `applyImpulse`, `applyForce` |
+  | Props that should tumble (crates, balls, pins) | `dynamic` (`sphere` for balls, `ccd` for fast ones) | impulses, collisions |
+  | Pickups, goals, kill zones | `trigger` | `onTriggerEnter`, `overlaps` |
+  | Moving platforms | `kinematic` | position every update (carries what stands on it) |
+
+  A dynamic player without `character` / `fixedRotation` tips over as soon as friction acts on it. Events: `onCollision((a, b, info) => …)` (`info.impulse` gates impact sounds), `onTriggerEnter` / `Exit`, `contacts`, `raycast` on the real shapes. Joints (`physics.joints`: hinge, point, distance, lock, spring) build doors, pendulums, chains, wheels. `"physics": { "debug": true }` + a render shows the colliders. Recipes: `references/game-patterns.md` → Physics recipes; complete example: template `game-physics-playground`.
+- **Motion from scripts**: timeline markers (`timeline.markers`) reach scripts as events — `api.on("peak", fn)` or `onEvent("peak", { marker, time })` — so a timeline can cue gameplay. Segments are played by `scene.interactions` (`on: click | hover | key | scroll | event`, `do: [{ "play": "<segment>" }]`) and by the page (`element.trigger`, `player.playSegment`); a script plays one by emitting an event: `api.emit("win")` (and HUD button `action`s) fire `{ "on": "event", "event": "win", "do": [{ "play": "celebrate" }] }`. Per-frame gameplay feedback stays in `update` (scale, position, `setColor`). `api.camera.shake(intensity, duration)` for hits; `camera.shake` / `camera.shots` in the scene are for cinematic (non-game) motion.
+- **Links**: scripts cannot navigate. A "Shop now" / "Play the full game" object gets an `href` or a click interaction `{ "openUrl": "https://…" }` (user gesture only; renders emit an `openUrl` event instead).
+- **Page ↔ game**: every `api.emit(name, payload)` (and HUD button action) reaches the page as an `agent3d:event` DOM event on `<agent3d-scene>`, and `element.trigger(name, payload)` from the page calls `api.on(name)` / `onEvent` (e.g. report the score, start a level from an HTML button). Details: skill `agent3d-publish`.
 - **Difficulty ramp**: speed and spawn rate grow with time, clamped (`speed = Math.min(max, speed + dt * 0.4)`).
 - **Best score**: `api.storage.get("best")` / `api.storage.set("best", n)` (namespaced, never throws).
 - **Feedback**: `api.audio.play("hit")`, `api.camera.shake(0.3, 0.4)`, `api.ui.toast("+10", 1)`, `obj.setColor(...)`.
 - **Restart**: reset your own state in a function called from `onEvent("retry")`, or `api.restart()` to rebuild the scene from its definition.
+
+## Performance (games need a steady 60 fps)
+
+- Post effects: no `ao` or `dof` (and no `look` preset `cinematic` / `product`, which contain `ao`): `check` warns (`postfx-cost`). Avoid `godrays`, `lensflare`, `outline`, `smaa` unless they are the point. Cheap: `bloom`, `grading`, `vignette`, `film`, `chromatic`, `fxaa` (merged or single passes). `taa` costs nothing while playing (it only supersamples stills). Read `data.budget.gpu` of `check`.
+- Leave `target.quality` at `auto` (drops heavy effects and the pixel ratio on weak devices and adapts while playing); `low` for very busy scenes.
+- One shadow-casting light; static level geometry as primitives or `trimesh`; clone templates instead of `spawn` in loops; `remove()` what leaves the screen; keep `physics.substeps` at 1 unless tall stacks jitter.
 
 ## Rules
 

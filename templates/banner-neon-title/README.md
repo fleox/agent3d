@@ -1,17 +1,18 @@
 # Neon title banner
 
-A 4:1 synthwave banner: a glowing neon 3D headline ("AFTER DARK"), flickering neon tubes, a scrolling neon grid floor, a gradient sun, rising sparks and bloom. The camera drifts with the pointer (parallax).
+A 4:1 synthwave banner: a Bebas Neue headline ("AFTER DARK") with a sunset gradient that glows (`gradientEmissive`) and a dark recessed `outline`, dropping in letter by letter from the centre (`reveal`); a cyan neon script tagline in Pacifico that pops in and flickers; neon tubes, a scrolling neon grid floor, a gradient sun, rising sparks and dust. Bloom + punchy grade + light chromatic fringes. The camera drifts with the pointer.
 
 ## What to tweak
 
 | Change | Where |
 |---|---|
-| Headline text | `objects#title.text` |
-| Headline colour | `objects#title.material.color` (a deep shade) / `.emissive` (the neon hue, `emissiveIntensity` ≈ 0.6). Keep the bloom `threshold` ≈ 0.9 and the `night` IBL: brighter faces or a white studio IBL wash the letters to pinkish white |
+| Headline / tagline | `data.title`, `data.script` (or `data-title` / `data-script` on the embed) |
+| Headline colours | `objects#title.material.gradient` (bottom → top), `emissiveIntensity` for the glow |
+| Tagline colour | `objects#script.material` (neon preset: `color` + `emissive`) |
 | Grid colour | `objects#gridLong.material` and `objects#gridCross.material` |
 | Sun colours | `objects#sun.material.gradient` (bottom → top) |
 | Tube colours / shapes | `objects#tubeLeft`, `objects#tubeRight` (`geometry.points`) |
 | Glow amount | `postfx[0]` (bloom `strength`, `threshold`) |
 | Grid speed | timeline track `gridCross.position.z` (keep the distance a multiple of 1.6 for a seamless loop) |
 
-Longer text: reduce `objects#title.size` (≈ 0.8 for 14 characters). Reduced motion shows the frame at `target.posterTime` (3 s, after the entrance animation).
+~10 characters fit at `size` 1.5; reduce `objects#title.size` for longer text. Reduced motion shows the frame at `target.posterTime` (3 s, after the entrance).

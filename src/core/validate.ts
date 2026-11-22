@@ -94,7 +94,7 @@ export const BODY_SHAPES = ["box", "sphere", "auto", "cylinder", "capsule", "con
 export const COLLIDER_SHAPES = ["box", "sphere", "cylinder", "capsule"] as const;
 export const JOINT_TYPES = ["hinge", "point", "distance", "lock", "spring"] as const;
 const PHYSICS_KEYS = ["gravity", "step", "substeps", "iterations", "sleep", "debug", "materials", "contacts", "layers", "joints"];
-const JOINT_KEYS = ["id", "type", "a", "b", "pivot", "axis", "distance", "restLength", "stiffness", "damping", "motor", "maxForce", "collideConnected"];
+const JOINT_KEYS = ["id", "type", "a", "b", "pivot", "axis", "distance", "restLength", "stiffness", "damping", "motor", "limits", "maxForce", "collideConnected"];
 // Bodies seen while walking objects (joints / materials / layers are checked in physics()).
 const bodiesSeen = new WeakMap<object, { id: string; path: string; body: Record<string, unknown> }[]>();
 const UI_ELEMENT_KEYS = ["id", "type", "text", "anchor", "style", "value", "action", "visible"];
@@ -126,6 +126,7 @@ class V {
   objectIds = new Set<string>();
   lightIds = new Set<string>();
   letterTexts = new Set<string>(); // text ids split into letters ("<id>/<n>" track targets)
+  letterCounts = new Map<string, number>(); // their letter counts (non-space characters)
 
   add(severity: Issue["severity"], code: string, path: string, message: string, hint?: string) {
     this.issues.push(hint ? { severity, code, path, message, hint } : { severity, code, path, message });
@@ -293,6 +294,9 @@ class V {
         if (spec.required) this.error("required", p, `${sectionLabel(section)} "${entry.id}" requires "${spec.name}" (${spec.description}).`, `Add "${spec.name}" (${spec.type}).`);
         continue;
       }
+      // Generator params bound to scene data ("{data.values}" → the raw value at
+      // runtime, src/runtime/data.ts): the type is only known once bound.
+      if (section === "generators" && JSON.stringify(v).includes("{data.")) continue;
       this.param(`${section}.${entry.id}.${spec.name}`, spec, v, p, entry.id);
     }
     for (const k of Object.keys(params)) {
@@ -450,7 +454,7 @@ export function validateScene(scene: unknown): Issue[] {
 
   // References now that every id is known.
   cameraRefs(v, s.camera);
-  v.issues.push(...validateMotion(s, { objects: v.objectIds, lights: v.lightIds, letters: v.letterTexts }));
+  v.issues.push(...validateMotion(s, { objects: v.objectIds, lights: v.lightIds, letters: v.letterTexts, letterCounts: v.letterCounts }));
   if (s.postfx !== undefined) postfx(v, s.postfx);
   if (s.physics !== undefined) physics(v, s.physics);
   if (s.scripts !== undefined) scripts(v, s.scripts);
@@ -612,7 +616,8 @@ function environment(v: V, e: unknown) {
     const cp = "environment.contactShadows";
     if (!isObj(c)) v.error("type", cp, "contactShadows must be true or an object.", 'Example: { "opacity": 0.6, "blur": 2.5 }.');
     else {
-      v.unknownKeys(c, ["y", "size", "opacity", "blur", "far", "resolution", "color", "frames"], cp, "contactShadows");
+      v.unknownKeys(c, ["y", "size", "center", "opacity", "blur", "far", "resolution", "color", "frames"], cp, "contactShadows");
+      v.vec(c.center, 2, `${cp}.center`);
       v.number(c.y, `${cp}.y`);
       v.number(c.size, `${cp}.size`, { min: 0, exclusiveMin: true });
       v.number(c.opacity, `${cp}.opacity`, { min: 0, max: 1 });
@@ -808,6 +813,7 @@ function object(v: V, o: unknown, fallback: string) {
   if (o.userData !== undefined && !isObj(o.userData)) v.error("type", `${p}.userData`, "userData must be an object.");
   if (o.body !== undefined) {
     body(v, o.body, `${p}.body`);
+    bodySizeFrame(v, o, `${p}.body`);
     if (isObj(o.body) && typeof o.id === "string") {
       const list = bodiesSeen.get(v) ?? [];
       list.push({ id: o.id, path: `${p}.body`, body: o.body });
@@ -973,7 +979,7 @@ function material(v: V, m: unknown, path: string) {
   v.number(m.displacementScale, `${path}.displacementScale`);
   if (m.triplanar !== undefined && typeof m.triplanar !== "boolean") v.number(m.triplanar, `${path}.triplanar`, { min: 0, exclusiveMin: true });
   v.boolean(m.gradientEmissive, `${path}.gradientEmissive`);
-  const PHYSICAL_ONLY = ["clearcoatRoughness", "sheenColor", "sheenRoughness", "anisotropy", "anisotropyRotation", "attenuationColor", "attenuationDistance", "specularIntensity", "specularColor", "dispersion", "iridescenceIOR", "iridescenceThicknessRange"];
+  const PHYSICAL_ONLY = ["transmission", "thickness", "ior", "clearcoat", "iridescence", "sheen", "clearcoatRoughness", "sheenColor", "sheenRoughness", "anisotropy", "anisotropyRotation", "attenuationColor", "attenuationDistance", "specularIntensity", "specularColor", "dispersion", "iridescenceIOR", "iridescenceThicknessRange"];
   const resolvedType = m.type ?? (typeof m.preset === "string" ? (materialPreset(m.preset)?.props.type as string | undefined) : undefined);
   if (resolvedType !== undefined && resolvedType !== "physical") {
     for (const k of PHYSICAL_ONLY) if (m[k] !== undefined) v.warn("ignored", `${path}.${k}`, `"${k}" needs a physical material (type is ${show(resolvedType)}).`, 'Set "type": "physical".');
@@ -1066,6 +1072,56 @@ function layout(v: V, l: unknown, path: string) {
   }
 }
 
+// body.size is in the object's own frame (before its rotation). A floor made
+// of a plane rotated [-90, 0, 0] has its thin axis on local z: a size written
+// in world terms ([10, 0.2, 10]) turns into a wall. Warn when the size's thin
+// axis is not the geometry's thin axis.
+function bodySizeFrame(v: V, o: Obj, path: string) {
+  const b = o.body;
+  const g = o.geometry;
+  if (!isObj(b) || !Array.isArray(b.size) || b.size.length !== 3 || !b.size.every(isNum) || !isObj(g)) return;
+  const n = (x: unknown, d: number) => (isNum(x) ? x : d);
+  const dims = g.type === "plane" ? [n(g.width, 1), n(g.height, 1), 0] : g.type === "box" ? [n(g.width, 1), n(g.height, 1), n(g.depth, 1)] : null;
+  if (!dims) return;
+  const thin = (d: number[]) => {
+    const i = d.indexOf(Math.min(...d));
+    const others = d.filter((_, k) => k !== i);
+    return d[i] <= 0.5 * Math.min(...others) ? i : -1;
+  };
+  const gi = thin(dims), si = thin(b.size as number[]);
+  if (gi < 0 || si < 0 || gi === si) return;
+  const axes = ["x", "y", "z"];
+  const fixed = [...(b.size as number[])];
+  [fixed[gi], fixed[si]] = [fixed[si], fixed[gi]];
+  const rotated = Array.isArray(o.rotation) && o.rotation.some((r) => isNum(r) && Math.abs(r) > 1);
+  v.warn(
+    "body-frame",
+    `${path}.size`,
+    `body.size ${JSON.stringify(b.size)} is thin on ${axes[si]}, but this ${g.type}'s own thin axis is ${axes[gi]}: the size is applied in the object's frame${rotated ? " (before its rotation)" : ""}, so the collider ${g.type === "plane" && rotated ? "stands up like a wall" : "does not match the mesh"}.`,
+    `Write it in the object's frame: "size": ${JSON.stringify(fixed)} — or drop size to fit the geometry automatically.`,
+  );
+}
+
+// HUD `visible` expressions (src/runtime/game/expr.ts): a bare word on the
+// right of a comparison is read as a state path, so `phase == attract`
+// compares phase with state.attract (undefined) — almost always a missing quote.
+const EXPR_LITERALS = new Set(["true", "false", "null", "undefined"]);
+export function lintStateExpr(v: V, src: string, path: string): void {
+  const re = /([A-Za-z_$][\w$.]*)\s*(===|!==|==|!=)\s*([A-Za-z_$][\w$.]*)/g;
+  // Ignore quoted strings.
+  const bare = src.replace(/'[^']*'|"[^"]*"/g, (m) => " ".repeat(m.length));
+  for (let m = re.exec(bare); m; m = re.exec(bare)) {
+    const [, left, op, right] = m;
+    if (EXPR_LITERALS.has(right) || EXPR_LITERALS.has(left) || right.startsWith("state.")) continue;
+    v.warn(
+      "expr-bare-word",
+      path,
+      `"${left} ${op} ${right}" compares two state values: "${right}" is read as state.${right.replace(/^state\./, "")} (probably undefined), not as the text "${right}".`,
+      `Quote the text: ${JSON.stringify(src.replace(m[0], `${left} ${op} '${right}'`))} (or write state.${right.replace(/^state\./, "")} to compare two state keys on purpose).`,
+    );
+  }
+}
+
 function body(v: V, b: unknown, path: string) {
   if (!isObj(b)) return v.error("type", path, "body must be an object.", 'Example: { "type": "dynamic", "shape": "box", "mass": 1 }.');
   v.unknownKeys(b, BODY_KEYS, path, "a physics body");
@@ -1149,7 +1205,13 @@ function joint(v: V, j: unknown, p: string, bodies: Map<string, Record<string, u
     }
     if (j.type !== "hinge") v.warn("ignored", `${p}.motor`, `motor only drives hinge joints (this one is ${show(j.type)}).`);
   }
-  const only: Record<string, string[]> = { distance: ["distance"], restLength: ["spring"], stiffness: ["spring"], damping: ["spring"], axis: ["hinge"] };
+  if (j.limits !== undefined) {
+    const l = j.limits;
+    if (!Array.isArray(l) || l.length !== 2 || !l.every(isNum)) v.error("type", `${p}.limits`, "limits must be [minDegrees, maxDegrees].", "Example: [0, 110] (a door opening one way) or [-45, 45] (a flipper).");
+    else if (l[0] > l[1]) v.error("range", `${p}.limits`, `limits min (${l[0]}) is greater than max (${l[1]}).`, `Write [${l[1]}, ${l[0]}].`);
+    else if (l[0] < -360 || l[1] > 360) v.error("range", `${p}.limits`, "limits must stay within -360 … 360 degrees.", "Angles are relative to the start pose, e.g. [-90, 90].");
+  }
+  const only: Record<string, string[]> = { distance: ["distance"], restLength: ["spring"], stiffness: ["spring"], damping: ["spring"], axis: ["hinge"], limits: ["hinge"] };
   for (const [k, types] of Object.entries(only)) if (j[k] !== undefined && typeof j.type === "string" && !types.includes(j.type)) v.warn("ignored", `${p}.${k}`, `${k} is ignored on ${show(j.type)} joints (used by ${types.join(", ")}).`);
 }
 
@@ -1187,7 +1249,11 @@ function textExtras(v: V, o: Obj, p: string) {
       }
     }
   }
-  if ((o.splitLetters === true || isObj(o.reveal)) && typeof o.id === "string") v.letterTexts.add(o.id);
+  if ((o.splitLetters === true || isObj(o.reveal)) && typeof o.id === "string") {
+    v.letterTexts.add(o.id);
+    // Placeholders ({data.title}) change the text at runtime: no count then.
+    if (typeof o.text === "string" && !/\{data\./.test(o.text)) v.letterCounts.set(o.id, Array.from(o.text).filter((ch) => ch.trim()).length);
+  }
 }
 
 // ─── Timeline, interactions, camera shots: src/core/validateMotion.ts ────
@@ -1321,6 +1387,7 @@ function ui(v: V, u: unknown) {
     v.string(el.value, `${p}.value`);
     v.string(el.action, `${p}.action`);
     if (el.visible !== undefined && typeof el.visible !== "boolean" && typeof el.visible !== "string") v.error("type", `${p}.visible`, "visible must be a boolean or a state expression string.");
+    if (typeof el.visible === "string") lintStateExpr(v, el.visible, `${p}.visible`);
     if (el.type === "bar" && el.value === undefined) v.error("required", `${p}.value`, 'A "bar" needs "value": the state key holding 0..1.', 'Add "value": "health" and set api.state.health in a script.');
     if (el.type === "button" && el.action === undefined) v.error("required", `${p}.action`, 'A "button" needs "action": the event name sent to scripts.', 'Add "action": "start" and handle it with api.on("start", …).');
     if ((el.type === "text" || el.type === "button") && el.text === undefined) v.warn("required", `${p}.text`, `A "${String(el.type)}" element without text shows nothing.`, 'Add "text", e.g. "Score: {score}".');

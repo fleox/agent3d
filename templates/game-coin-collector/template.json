@@ -1,7 +1,7 @@
 {
   "id": "game-coin-collector",
   "title": "Coin collector arena",
-  "description": "Playable 3D platformer arena: run and jump across floating platforms to collect every coin before the timer ends \u2014 physics, follow camera, best time, keyboard + touch, attract mode.",
+  "description": "Playable 3D platformer arena (16:9): run and jump across a floating grass island and stepped platforms above a sea of clouds to collect 12 coins before the 45 s timer ends \u2014 physics, follow camera, best time, keyboard + touch, self-playing attract mode.",
   "kind": "game",
   "tags": [
     "game",
@@ -12,7 +12,8 @@
     "arcade",
     "touch",
     "keyboard",
-    "kenney"
+    "floating-island",
+    "clouds"
   ],
   "aspect": "16:9"
 }

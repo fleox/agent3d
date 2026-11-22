@@ -1,0 +1,658 @@
+{
+  "version": 1,
+  "id": "hero-floating-island",
+  "title": "Floating island hero",
+  "ariaLabel": "A dreamy floating island with trees, a pond and a waterfall drifting among soft clouds at golden hour",
+  "seed": 7,
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "reducedMotion": "static",
+    "posterTime": 8,
+    "maxDpr": 2,
+    "quality": "auto"
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 32,
+    "position": [
+      11,
+      3.5,
+      15.5
+    ],
+    "target": [
+      0,
+      -0.3,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.35,
+      "smoothing": 0.94
+    },
+    "autoRotate": 2
+  },
+  "environment": {
+    "background": {
+      "gradient": [
+        "#f0a090",
+        "#ffcfae",
+        "#ffe6c8",
+        "#b9c4ea",
+        "#6a83c8"
+      ],
+      "angle": 0
+    },
+    "lighting": "sunset",
+    "lightingIntensity": 0.8,
+    "fog": {
+      "color": "#ffd7b8",
+      "near": 20,
+      "far": 62
+    }
+  },
+  "lights": [
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#ffe7d0",
+      "groundColor": "#6d6a9c",
+      "intensity": 0.7
+    },
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [
+        -10,
+        6,
+        -3
+      ],
+      "color": "#ffcf9a",
+      "intensity": 2.6,
+      "castShadow": true
+    },
+    {
+      "id": "front",
+      "type": "directional",
+      "position": [
+        8,
+        4,
+        10
+      ],
+      "color": "#c9d6ff",
+      "intensity": 0.5
+    }
+  ],
+  "objects": [
+    {
+      "id": "island",
+      "kind": "generator",
+      "generator": "floatingIsland",
+      "params": {
+        "radius": 3,
+        "depth": 3.8,
+        "hills": 1.2,
+        "trees": 7,
+        "treeStyle": "round",
+        "rocks": 6,
+        "flowers": 90,
+        "grass": 2200,
+        "waterfall": true,
+        "debris": 8,
+        "float": 0.15
+      },
+      "seed": 4,
+      "castShadow": true,
+      "receiveShadow": true,
+      "rotation": [
+        0,
+        110,
+        0
+      ]
+    },
+    {
+      "id": "cloudSea",
+      "kind": "generator",
+      "generator": "clouds",
+      "params": {
+        "count": 18,
+        "area": [
+          44,
+          1.5,
+          44
+        ],
+        "height": -6,
+        "size": 0.8,
+        "speed": 0.12,
+        "color": "#ffeee2",
+        "shadowColor": "#c3a3c4"
+      },
+      "seed": 3
+    },
+    {
+      "id": "islet",
+      "kind": "generator",
+      "generator": "floatingIsland",
+      "params": {
+        "radius": 1.1,
+        "depth": 1.6,
+        "hills": 0.6,
+        "trees": 2,
+        "rocks": 1,
+        "flowers": 12,
+        "grass": 300,
+        "waterfall": false,
+        "debris": 2,
+        "float": 0.2
+      },
+      "seed": 9,
+      "position": [
+        -9,
+        1.2,
+        -5
+      ],
+      "castShadow": true
+    },
+    {
+      "id": "islet2",
+      "kind": "generator",
+      "generator": "floatingIsland",
+      "params": {
+        "radius": 0.8,
+        "depth": 1.2,
+        "hills": 0.4,
+        "trees": 1,
+        "rocks": 1,
+        "flowers": 6,
+        "grass": 150,
+        "waterfall": false,
+        "debris": 0,
+        "float": 0.25
+      },
+      "seed": 13,
+      "position": [
+        5.2,
+        2.7,
+        -9
+      ],
+      "castShadow": true
+    },
+    {
+      "id": "bird1",
+      "kind": "group",
+      "position": [
+        0,
+        3.4,
+        0
+      ],
+      "scale": 1.28,
+      "behaviours": [
+        {
+          "type": "orbit",
+          "radius": 8.5,
+          "speed": -11,
+          "faceDirection": true,
+          "phase": 20
+        },
+        {
+          "type": "noise",
+          "amplitude": [
+            0,
+            0.25,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            10
+          ],
+          "speed": 0.4,
+          "seed": 1
+        }
+      ],
+      "children": [
+        {
+          "id": "bird1b",
+          "kind": "mesh",
+          "geometry": {
+            "type": "capsule",
+            "radius": 0.05,
+            "length": 0.22
+          },
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "material": {
+            "color": "#3b3448",
+            "roughness": 0.9
+          }
+        },
+        {
+          "id": "bird1L",
+          "kind": "group",
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "sway",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "angle": 28,
+              "speed": 1.8
+            }
+          ],
+          "children": [
+            {
+              "id": "bird1Lw",
+              "kind": "mesh",
+              "geometry": {
+                "type": "box",
+                "width": 0.42,
+                "height": 0.02,
+                "depth": 0.12
+              },
+              "position": [
+                -0.22,
+                0,
+                0
+              ],
+              "rotation": [
+                0,
+                -12,
+                0
+              ],
+              "material": {
+                "color": "#3b3448",
+                "roughness": 0.9
+              }
+            }
+          ]
+        },
+        {
+          "id": "bird1R",
+          "kind": "group",
+          "rotation": [
+            0,
+            180,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "sway",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "angle": 28,
+              "speed": 1.8
+            }
+          ],
+          "children": [
+            {
+              "id": "bird1Rw",
+              "kind": "mesh",
+              "geometry": {
+                "type": "box",
+                "width": 0.42,
+                "height": 0.02,
+                "depth": 0.12
+              },
+              "position": [
+                -0.22,
+                0,
+                0
+              ],
+              "rotation": [
+                0,
+                -12,
+                0
+              ],
+              "material": {
+                "color": "#3b3448",
+                "roughness": 0.9
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bird2",
+      "kind": "group",
+      "position": [
+        0,
+        4.0,
+        0
+      ],
+      "scale": 1.16,
+      "behaviours": [
+        {
+          "type": "orbit",
+          "radius": 9.2,
+          "speed": -11,
+          "faceDirection": true,
+          "phase": 32
+        },
+        {
+          "type": "noise",
+          "amplitude": [
+            0,
+            0.25,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            10
+          ],
+          "speed": 0.4,
+          "seed": 2
+        }
+      ],
+      "children": [
+        {
+          "id": "bird2b",
+          "kind": "mesh",
+          "geometry": {
+            "type": "capsule",
+            "radius": 0.05,
+            "length": 0.22
+          },
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "material": {
+            "color": "#3b3448",
+            "roughness": 0.9
+          }
+        },
+        {
+          "id": "bird2L",
+          "kind": "group",
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "sway",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "angle": 28,
+              "speed": 2.0
+            }
+          ],
+          "children": [
+            {
+              "id": "bird2Lw",
+              "kind": "mesh",
+              "geometry": {
+                "type": "box",
+                "width": 0.42,
+                "height": 0.02,
+                "depth": 0.12
+              },
+              "position": [
+                -0.22,
+                0,
+                0
+              ],
+              "rotation": [
+                0,
+                -12,
+                0
+              ],
+              "material": {
+                "color": "#3b3448",
+                "roughness": 0.9
+              }
+            }
+          ]
+        },
+        {
+          "id": "bird2R",
+          "kind": "group",
+          "rotation": [
+            0,
+            180,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "sway",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "angle": 28,
+              "speed": 2.0
+            }
+          ],
+          "children": [
+            {
+              "id": "bird2Rw",
+              "kind": "mesh",
+              "geometry": {
+                "type": "box",
+                "width": 0.42,
+                "height": 0.02,
+                "depth": 0.12
+              },
+              "position": [
+                -0.22,
+                0,
+                0
+              ],
+              "rotation": [
+                0,
+                -12,
+                0
+              ],
+              "material": {
+                "color": "#3b3448",
+                "roughness": 0.9
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bird3",
+      "kind": "group",
+      "position": [
+        0,
+        2.9,
+        0
+      ],
+      "scale": 1.08,
+      "behaviours": [
+        {
+          "type": "orbit",
+          "radius": 8.9,
+          "speed": -11,
+          "faceDirection": true,
+          "phase": 40
+        },
+        {
+          "type": "noise",
+          "amplitude": [
+            0,
+            0.25,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            10
+          ],
+          "speed": 0.4,
+          "seed": 3
+        }
+      ],
+      "children": [
+        {
+          "id": "bird3b",
+          "kind": "mesh",
+          "geometry": {
+            "type": "capsule",
+            "radius": 0.05,
+            "length": 0.22
+          },
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "material": {
+            "color": "#3b3448",
+            "roughness": 0.9
+          }
+        },
+        {
+          "id": "bird3L",
+          "kind": "group",
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "sway",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "angle": 28,
+              "speed": 2.2
+            }
+          ],
+          "children": [
+            {
+              "id": "bird3Lw",
+              "kind": "mesh",
+              "geometry": {
+                "type": "box",
+                "width": 0.42,
+                "height": 0.02,
+                "depth": 0.12
+              },
+              "position": [
+                -0.22,
+                0,
+                0
+              ],
+              "rotation": [
+                0,
+                -12,
+                0
+              ],
+              "material": {
+                "color": "#3b3448",
+                "roughness": 0.9
+              }
+            }
+          ]
+        },
+        {
+          "id": "bird3R",
+          "kind": "group",
+          "rotation": [
+            0,
+            180,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "sway",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "angle": 28,
+              "speed": 2.2
+            }
+          ],
+          "children": [
+            {
+              "id": "bird3Rw",
+              "kind": "mesh",
+              "geometry": {
+                "type": "box",
+                "width": 0.42,
+                "height": 0.02,
+                "depth": 0.12
+              },
+              "position": [
+                -0.22,
+                0,
+                0
+              ],
+              "rotation": [
+                0,
+                -12,
+                0
+              ],
+              "material": {
+                "color": "#3b3448",
+                "roughness": 0.9
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "glints",
+      "kind": "particles",
+      "preset": "magic",
+      "count": 40,
+      "area": [
+        7,
+        3,
+        7
+      ],
+      "size": 0.12,
+      "color": [
+        "#fff4c2",
+        "#ffd9a0"
+      ],
+      "position": [
+        0,
+        1.2,
+        0
+      ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "dreamy",
+      "intensity": 0.6
+    },
+    {
+      "type": "grading",
+      "look": "warm",
+      "intensity": 0.5
+    }
+  ]
+}

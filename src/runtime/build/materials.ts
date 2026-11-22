@@ -370,19 +370,8 @@ export async function createMaterial(input: MaterialDef | undefined, ctx: Runtim
 
   // three ignores material.envMapIntensity when the IBL comes from scene.environment:
   // scale the image-based radiance / irradiance in the shader instead.
-  if (def.envMapIntensity !== undefined && mat instanceof THREE.MeshStandardMaterial && def.envMapIntensity !== 1) {
-    const uEnv = { value: def.envMapIntensity };
-    mat.userData.envScale = uEnv;
-    addShaderPatch(mat, "env-scale", (shader) => {
-      shader.uniforms.uA3dEnvScale = uEnv;
-      shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", "#include <common>\nuniform float uA3dEnvScale;")
-        .replace(
-          "#include <lights_fragment_maps>",
-          "#include <lights_fragment_maps>\n#if defined( RE_IndirectSpecular ) && defined( RE_IndirectDiffuse )\n\tradiance *= uA3dEnvScale;\n\tclearcoatRadiance *= uA3dEnvScale;\n\tiblIrradiance *= uA3dEnvScale;\n#endif",
-        );
-    });
-  }
+  if (def.envMapIntensity !== undefined && mat instanceof THREE.MeshStandardMaterial && def.envMapIntensity !== 1) envScaleUniform(mat).value = def.envMapIntensity;
+  if (mat instanceof THREE.MeshPhysicalMaterial && isGemLike(def)) applyGemSparkle(mat, def);
   if (def.triplanar && mat instanceof THREE.MeshStandardMaterial) applyTriplanar(mat, typeof def.triplanar === "number" ? def.triplanar : 1, def.repeat);
   applyTextures(mat, def, ctx);
   return mat;
@@ -397,5 +386,117 @@ export async function overrideMaterials(root: THREE.Object3D, def: MaterialDef, 
       m.material = mat;
       fitGradient(mat, m.geometry);
     }
+  });
+}
+
+/**
+ * The per-material environment (IBL) strength uniform — installs the shader
+ * patch on first use. three ignores material.envMapIntensity when the IBL
+ * comes from scene.environment, so the image-based radiance / irradiance is
+ * scaled in the shader instead (also what timeline tracks
+ * `<id>.material.envMapIntensity` drive).
+ */
+export function envScaleUniform(mat: THREE.MeshStandardMaterial): { value: number } {
+  const existing = mat.userData.envScale as { value: number } | undefined;
+  if (existing) return existing;
+  const uEnv = { value: 1 };
+  mat.userData.envScale = uEnv;
+  addShaderPatch(mat, "env-scale", (shader) => {
+    shader.uniforms.uA3dEnvScale = uEnv;
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform float uA3dEnvScale;")
+      .replace(
+        "#include <lights_fragment_maps>",
+        "#include <lights_fragment_maps>\n#if defined( RE_IndirectSpecular ) && defined( RE_IndirectDiffuse )\n\tradiance *= uA3dEnvScale;\n\tclearcoatRadiance *= uA3dEnvScale;\n\tiblIrradiance *= uA3dEnvScale;\n#endif",
+      );
+  });
+  return uEnv;
+}
+
+// ─── Gem sparkle (diamond / gem presets and any clear high-IOR solid) ────
+//
+// A real gem sparkles because light bounces inside it and exits through other
+// facets, each one seeing a different (often dark) part of the surroundings.
+// Three's transmission only refracts once, so on a soft, light environment
+// (softbox HDRI, white page) gems read as flat frosted glass. This patch adds
+// a cheap fake: per-facet hashed inner-facet normals (object space, so the
+// pattern is stable while the gem turns), the refracted ray reflected off
+// three of them, the environment sampled along the exit rays per colour
+// channel (dispersion = "fire"), contrast-stretched (dark and bright facets)
+// and mixed over the plain transmission, tinted by the attenuation colour.
+
+export function isGemLike(def: MaterialDef): boolean {
+  return (def.transmission ?? 0) >= 0.5 && (def.ior ?? 1.5) >= 1.7 && (def.roughness ?? 0.5) <= 0.15;
+}
+
+export function applyGemSparkle(mat: THREE.MeshPhysicalMaterial, def: MaterialDef): void {
+  const u = {
+    uA3dGemIor: { value: def.ior ?? 2 },
+    uA3dGemDisp: { value: Math.min(0.12, (def.dispersion ?? 0) * 0.012) },
+    uA3dGemTint: { value: def.attenuationColor ? toColor(def.attenuationColor) : new THREE.Color(1, 1, 1) },
+    uA3dGemEnv: envScaleUniform(mat), // shared with the env-scale patch (and its timeline tracks)
+    // Diamond-like IORs (≥ 2) get more of it than coloured stones.
+    uA3dGemAmount: { value: Math.min(0.85, 0.45 + Math.max(0, (def.ior ?? 2) - 1.5) * 0.45) },
+  };
+  mat.userData.gemSparkle = u;
+  addShaderPatch(mat, "gem-sparkle", (shader) => {
+    Object.assign(shader.uniforms, u);
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+varying vec3 vA3dJ0; varying vec3 vA3dJ1; varying vec3 vA3dJ2;
+vec3 a3dGemHash(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }`,
+      )
+      .replace(
+        "#include <beginnormal_vertex>",
+        `#include <beginnormal_vertex>
+vec3 a3dOn = floor(objectNormal * 64.0 + 0.5);
+vA3dJ0 = normalMatrix * (a3dGemHash(a3dOn + 1.7) - 0.5);
+vA3dJ1 = normalMatrix * (a3dGemHash(a3dOn + 9.3) - 0.5);
+vA3dJ2 = normalMatrix * (a3dGemHash(a3dOn + 23.1) - 0.5);`,
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+varying vec3 vA3dJ0; varying vec3 vA3dJ1; varying vec3 vA3dJ2;
+uniform float uA3dGemIor; uniform float uA3dGemDisp; uniform vec3 uA3dGemTint; uniform float uA3dGemEnv; uniform float uA3dGemAmount;`,
+      )
+      .replace(
+        "#include <opaque_fragment>",
+        `#if defined( USE_ENVMAP ) && defined( ENVMAP_TYPE_PMREM )
+{
+  vec3 gV = normalize(geometryViewDir);
+  vec3 gN = normalize(normal);
+  vec3 sp = vec3(0.0);
+  vec3 iors = vec3(uA3dGemIor - uA3dGemDisp, uA3dGemIor, uA3dGemIor + uA3dGemDisp);
+  for (int k = 0; k < 3; k++) {
+    vec3 J = k == 0 ? vA3dJ0 : (k == 1 ? vA3dJ1 : vA3dJ2);
+    vec3 fn = normalize(-gN + J * 1.6);
+    for (int c = 0; c < 3; c++) {
+      vec3 rd = refract(-gV, gN, 1.0 / iors[c]);
+      vec3 d = normalize(reflect(rd, fn));
+      // A second inner bounce off the next fake facet: the exit ray swings a
+      // lot with the view angle, so faces break into light / dark areas.
+      vec3 J2 = k == 0 ? vA3dJ1 : (k == 1 ? vA3dJ2 : vA3dJ0);
+      d = normalize(reflect(d, normalize(d * -0.5 + J2 * 2.0 + gN * 0.3)));
+      sp[c] += getIBLRadiance(d, d, 0.0)[c];
+    }
+  }
+  sp *= uA3dGemEnv / 3.0;
+  // Contrast: facets catching bright light flash, the others go dark.
+  // Relative to the environment's average brightness (its irradiance), so it
+  // works on a uniformly light softbox as well as on a dark studio.
+  vec3 avgEnv = (getIBLIrradiance(gN) + getIBLIrradiance(-gN)) / (2.0 * PI) * uA3dGemEnv / max(envMapIntensity, 1e-3);
+  float la = max(dot(avgEnv, vec3(0.2126, 0.7152, 0.0722)), 1e-3);
+  float l = dot(sp, vec3(0.2126, 0.7152, 0.0722));
+  sp *= smoothstep(0.7 * la, 1.6 * la, l) * 1.6;
+  float F = pow(1.0 - saturate(dot(gN, gV)), 5.0);
+  outgoingLight = mix(outgoingLight, sp * uA3dGemTint + outgoingLight * 0.25, uA3dGemAmount * (1.0 - F));
+}
+#endif
+#include <opaque_fragment>`,
+      );
   });
 }

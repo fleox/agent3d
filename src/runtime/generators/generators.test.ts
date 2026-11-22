@@ -146,6 +146,27 @@ describe("generators", () => {
     expect(box.max.y).toBeLessThan(2.3);
   });
 
+  it("waveGrid ripples under the pointer (exact local hit)", async () => {
+    const make = () => GENERATOR_IMPLS.waveGrid!({ columns: 21, rows: 11, spacing: 0.5, amplitude: 1, speed: 0, pointerRipple: true }, makeCtx(1));
+    const heightNear = (g: Awaited<ReturnType<typeof make>>, x: number, z: number) => {
+      const pos = (g.object.children[0] as THREE.Points).geometry.getAttribute("position") as THREE.BufferAttribute;
+      let best = Infinity, h = 0;
+      for (let i = 0; i < pos.count; i++) {
+        const d = Math.hypot(pos.getX(i) - x, pos.getZ(i) - z);
+        if (d < best) (best = d), (h = pos.getY(i));
+      }
+      return h;
+    };
+    const still = await make(), hit = await make();
+    (hit.object.userData.setPointerLocal as (x: number, z: number) => void)(3, 1);
+    still.update!(0.3, 0.016);
+    hit.update!(0.3, 0.016);
+    const near = Math.abs(heightNear(hit, 3, 1) - heightNear(still, 3, 1));
+    const far = Math.abs(heightNear(hit, -4.5, -2.5) - heightNear(still, -4.5, -2.5));
+    expect(near).toBeGreaterThan(0.2);
+    expect(far).toBeLessThan(near);
+  });
+
   it("maze is a perfect solvable maze with physics bodies", async () => {
     for (const seed of [1, 2, 3, 99]) {
       const cols = 12, rows = 9;
@@ -185,5 +206,33 @@ describe("generators", () => {
     r.update!(1.3, 0.016);
     expect(r.object.children[0]!.position.z).toBeCloseTo(z1, 6);
     expect(r.object.userData.distance).toBeCloseTo(13, 6);
+  });
+});
+
+describe("findGround (onTerrain scatter)", () => {
+  it("maps scatter-local points onto a terrain when both have a position", async () => {
+    const { findGround } = await import("./geom");
+    const terrainObj = new THREE.Group();
+    terrainObj.position.set(0, 1, -20);
+    const terrain = { object: terrainObj, heightAt: (x: number, z: number) => x * 0.5 + z * 0.1 };
+    const ctx = { ...makeCtx(1), siblings: new Map([["valley", terrain]]), placement: { position: [0, 0, -20] as [number, number, number], scale: [1, 1, 1] as [number, number, number] } };
+    const g = findGround(ctx)!;
+    // Same x / z frame (both at z = -20): terrain local (2, 3) → 1 + 0.3 + 1 (terrain y) - 0 (scatter y).
+    expect(g.height(2, 3)).toBeCloseTo(2 * 0.5 + 3 * 0.1 + 1);
+    // A scatter lifted by 2 gets heights 2 lower in its own frame.
+    const lifted = findGround({ ...ctx, placement: { position: [0, 2, -20], scale: [1, 1, 1] } })!;
+    expect(lifted.height(2, 3)).toBeCloseTo(2 * 0.5 + 3 * 0.1 + 1 - 2);
+    // A scatter at the origin samples the terrain 20 units further along z.
+    const origin = findGround({ ...ctx, placement: { position: [0, 0, 0], scale: [1, 1, 1] } })!;
+    expect(origin.height(2, -17)).toBeCloseTo(2 * 0.5 + 3 * 0.1 + 1);
+  });
+});
+
+describe("liquidChrome shader", () => {
+  it("antialiases its horizon line (fwidth, no 0.02-wide hard hairline)", () => {
+    const made = SHADER_IMPLS.liquidChrome!.create({}, makeCtx(1) as never);
+    const frag = (made.material as THREE.ShaderMaterial).fragmentShader;
+    expect(frag).toContain("fwidth(r.y)");
+    expect(frag).not.toContain("smoothstep(0.02, 0.0, abs(r.y + 0.05))");
   });
 });

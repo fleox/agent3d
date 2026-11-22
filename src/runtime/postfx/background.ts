@@ -75,7 +75,13 @@ export class BackgroundPass extends Pass {
           vec4 bg = texture(tBackground, vUv);
           if (uToneBg > 0.5) bg.rgb = tm(bg.rgb);
           float a = fg.a;
-          fragColor = vec4(tm(fg.rgb) + bg.rgb * (1.0 - a), a + bg.a * (1.0 - a));
+          vec3 rgb = tm(fg.rgb) + bg.rgb * (1.0 - a);
+          // Light added over empty pixels (bloom, flares, god rays) on a
+          // transparent background: its brightest channel becomes coverage, so
+          // the glow survives compositing / PNG export (rgb stays ≤ alpha).
+          float outA = a + bg.a * (1.0 - a);
+          outA = max(outA, min(1.0, max(rgb.r, max(rgb.g, rgb.b))));
+          fragColor = vec4(rgb, outA);
         }`,
     });
     this.quad = new FullScreenQuad(this.mat);

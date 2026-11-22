@@ -79,6 +79,36 @@ describe("track binding", () => {
     set("camera.fov", 30);
     expect(cam.fov).toBe(30);
   });
+  it("animates physical material params (clearcoat, transmission, sheen, env strength, anisotropy rotation…)", async () => {
+    const { validateScene } = await import("../../core/validate");
+    const gem = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshPhysicalMaterial());
+    const h = { ...host, object: (id: string) => (id === "gem" ? gem : null) };
+    const m = gem.material;
+    const v0 = m.version;
+    set("gem.material.clearcoat", 0.8, h);
+    set("gem.material.transmission", 1, h);
+    set("gem.material.iridescence", 0.5, h);
+    set("gem.material.sheenColor", new THREE.Color(1, 0, 0), h);
+    set("gem.material.dispersion", 3, h);
+    set("gem.material.anisotropyRotation", 90, h);
+    set("gem.material.envMapIntensity", 2.5, h);
+    expect(m.clearcoat).toBe(0.8);
+    expect(m.transmission).toBe(1);
+    expect(m.iridescence).toBe(0.5);
+    expect(m.sheenColor.r).toBe(1);
+    expect(m.dispersion).toBe(3);
+    expect(m.anisotropyRotation).toBeCloseTo(Math.PI / 2);
+    expect(m.version).toBeGreaterThan(v0); // features switched on → recompiled
+    // envMapIntensity drives the shader env scale (three ignores it under scene.environment).
+    expect((m.userData.envScale as { value: number }).value).toBe(2.5);
+    // …and validation accepts them on tracks.
+    const scene = {
+      version: 1, id: "s", title: "s", target: { kind: "hero", aspect: "16:9" }, camera: { type: "perspective", position: [0, 0, 5] }, environment: { background: "#000" }, lights: [],
+      objects: [{ id: "gem", kind: "mesh", geometry: { type: "box" }, material: { type: "physical" } }],
+      timeline: { duration: 2, tracks: ["clearcoat", "transmission", "iridescence", "iridescenceIOR", "sheen", "sheenColor", "dispersion", "envMapIntensity", "anisotropy", "anisotropyRotation", "specularColor", "attenuationColor"].map((p) => ({ target: `gem.material.${p}`, keys: [[0, p.endsWith("Color") ? "#ffffff" : 0], [2, p.endsWith("Color") ? "#ff0000" : 1]] })) },
+    };
+    expect(validateScene(scene).filter((i) => i.severity === "error")).toEqual([]);
+  });
   it("reports unknown targets", () => {
     const issues: string[] = [];
     expect(bindTrack({ target: "ghost.position", keys: [] }, { ...host, issue: (_c, m) => issues.push(m) })).toEqual([]);

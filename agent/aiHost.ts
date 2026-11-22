@@ -52,11 +52,19 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
             const render = await import("./render/render");
             const log = (m: string) => void process.stderr.write(`${m}\n`);
             if (opts.format === "poster") {
-              const r = await render.renderPoster({ projectDir: fs.root, format: opts.image ?? "webp", size: opts.size, scale: opts.size ? 1 : 2, time: opts.time, log });
+              const r = await render.renderPoster({ projectDir: fs.root, format: opts.image ?? "webp", size: opts.size, scale: opts.size ? 1 : 2, time: opts.time, quality: opts.quality, transparent: opts.transparent, log });
               return { bytes: r.bytes, t: r.t, size: { width: r.size.width, height: r.size.height } };
             }
-            const r = await render.renderVideo({ projectDir: fs.root, size: opts.size, duration: opts.duration, fps: opts.fps, log });
-            return { bytes: r.bytes, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height } };
+            if (opts.format === "og") {
+              const r = await render.renderExportImages({ projectDir: fs.root, og: true, time: opts.time, log });
+              return { bytes: r.og!, t: r.t, size: { width: 1200, height: 630 } };
+            }
+            if (opts.format === "gif" || opts.format === "webp") {
+              const r = await render.renderMedia({ projectDir: fs.root, out: `animation.${opts.format}`, format: opts.format, size: opts.size, duration: opts.duration, fps: opts.fps, quality: opts.quality, transparent: opts.transparent, write: false, log });
+              return { bytes: r.data, codec: r.codec, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height } };
+            }
+            const r = await render.renderVideo({ projectDir: fs.root, size: opts.size, duration: opts.duration, fps: opts.fps, format: opts.video, quality: opts.quality, log });
+            return { bytes: r.bytes, codec: r.codec, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height } };
           },
         }
       : {}),

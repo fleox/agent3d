@@ -238,18 +238,100 @@ export function outlineSpec(def: Pick<TextObjectDef, "outline" | "size">, m: Tex
   return { width, frontZ, backZ: frontZ - thickness, material: cfg.material, color: cfg.color ?? "#111111" };
 }
 
+// ─── Outline offset polygon (round joins, clamped miters) ───────────────
+
+type P2 = { x: number; y: number };
+
+function signedArea(pts: P2[]): number {
+  let a = 0;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j].x - pts[i].x) * (pts[j].y + pts[i].y);
+  return a / 2; // > 0 = counter-clockwise
+}
+
+/**
+ * Offsets a closed ring by `width` to its right-hand side (outwards for a
+ * counter-clockwise outer contour, into the hole for a clockwise hole). Convex
+ * corners get a round join (no spikes however sharp the corner, unlike a
+ * miter / three's bevelOffset); reflex corners use a miter clamped to
+ * `miterLimit` × width.
+ */
+export function offsetRing(ring: P2[], width: number, miterLimit = 2): THREE.Vector2[] {
+  const pts = ring.filter((p, i) => {
+    const q = ring[(i + 1) % ring.length];
+    return Math.hypot(q.x - p.x, q.y - p.y) > 1e-9;
+  });
+  const n = pts.length;
+  const out: THREE.Vector2[] = [];
+  if (n < 3) return pts.map((p) => new THREE.Vector2(p.x, p.y));
+  const normal = (a: P2, b: P2) => {
+    const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+    return { x: dy / l, y: -dx / l };
+  };
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n], p = pts[i], next = pts[(i + 1) % n];
+    const n1 = normal(prev, p), n2 = normal(p, next);
+    const cross = (p.x - prev.x) * (next.y - p.y) - (p.y - prev.y) * (next.x - p.x);
+    const dot = n1.x * n2.x + n1.y * n2.y;
+    if (cross > 0 && dot < 0.995) {
+      // The offset edges open a gap on this side: round join (arc n1 → n2).
+      const a1 = Math.atan2(n1.y, n1.x);
+      let a2 = Math.atan2(n2.y, n2.x);
+      // A left turn (cross > 0) rotates the normals counter-clockwise: sweep a1 → a2 upwards.
+      while (a2 < a1) a2 += Math.PI * 2;
+      while (a2 > a1 + Math.PI * 2) a2 -= Math.PI * 2;
+      const steps = Math.max(1, Math.ceil(Math.abs(a2 - a1) / (Math.PI / 8)));
+      for (let k = 0; k <= steps; k++) {
+        const a = a1 + ((a2 - a1) * k) / steps;
+        out.push(new THREE.Vector2(p.x + Math.cos(a) * width, p.y + Math.sin(a) * width));
+      }
+    } else {
+      // Overlap side (or straight): miter, clamped.
+      let mx = n1.x + n2.x, my = n1.y + n2.y;
+      const ml = Math.hypot(mx, my) || 1;
+      mx /= ml;
+      my /= ml;
+      const cosHalf = Math.max(mx * n1.x + my * n1.y, 1 / miterLimit);
+      out.push(new THREE.Vector2(p.x + (mx * width) / cosHalf, p.y + (my * width) / cosHalf));
+    }
+  }
+  return out;
+}
+
+/** Glyph shapes grown by `width` (outer contours outwards, holes shrunk; holes that vanish are dropped). */
+export function offsetShapes(shapes: THREE.Shape[], width: number): THREE.Shape[] {
+  const res: THREE.Shape[] = [];
+  for (const sh of shapes) {
+    const { shape, holes } = sh.extractPoints(1);
+    let outer = shape.slice();
+    if (signedArea(outer) < 0) outer = outer.reverse();
+    const o = new THREE.Shape(offsetRing(outer, width));
+    for (const h of holes) {
+      let hole = h.slice();
+      const area0 = Math.abs(signedArea(hole));
+      if (signedArea(hole) > 0) hole = hole.reverse();
+      // A hole narrower than the outline on either axis closes up (its offset
+      // would turn inside out).
+      const xs = hole.map((p) => p.x), ys = hole.map((p) => p.y);
+      if (Math.max(...xs) - Math.min(...xs) <= 2 * width || Math.max(...ys) - Math.min(...ys) <= 2 * width) continue;
+      const off = offsetRing(hole, width);
+      // Still a clockwise hole of a sensible size after shrinking?
+      const a = signedArea(off);
+      if (a < 0 && -a > area0 * 0.02) o.holes.push(new THREE.Path(off));
+    }
+    res.push(o);
+  }
+  return res;
+}
+
 function outlineGeometry(font: Font, ch: string, m: TextMetrics, o: OutlineSpec, utils: Utils): THREE.BufferGeometry | null {
   const shapes = glyphShapes(font, ch, m);
   if (!shapes.length) return null;
-  // bevelOffset with a zero-size bevel = the glyph outline offset outwards by `width`.
-  const g = new THREE.ExtrudeGeometry(shapes, {
+  // The glyph outline offset outwards by `width` with round joins (three's
+  // bevelOffset is a raw miter: long spikes at sharp corners for wide outlines).
+  const g = new THREE.ExtrudeGeometry(offsetShapes(shapes, o.width), {
     depth: o.frontZ - o.backZ,
-    curveSegments: m.curveSegments,
-    bevelEnabled: true,
-    bevelThickness: 0,
-    bevelSize: 0,
-    bevelOffset: o.width,
-    bevelSegments: 1,
+    curveSegments: 1,
+    bevelEnabled: false,
   });
   g.translate(0, 0, o.backZ);
   g.clearGroups();
@@ -312,16 +394,24 @@ export function revealImpl(r: TextRevealDef, size: number): BehaviourImpl {
     const easeName = r.ease ?? (effect === "scale" || effect === "spin" ? "outBack" : "outCubic");
     const fades = effect !== "scale";
     const mats: THREE.Material[] = [];
+    // Depth twins: while a letter fades, an invisible (colour-masked) opaque
+    // copy of its body and outline writes depth first, so only the nearest
+    // surface of the half-transparent letter is drawn — no back faces, side
+    // walls or outline showing through it.
+    const twins: THREE.Mesh[] = [];
     if (fades) {
+      const meshes: THREE.Mesh[] = [];
       ctx.object.traverse((o) => {
         const mm = (o as THREE.Mesh).material;
-        if (!mm) return;
+        if (!mm || o.userData.depthTwin) return;
+        meshes.push(o as THREE.Mesh);
         for (const m of Array.isArray(mm) ? mm : [mm]) {
           if (m.userData.baseOpacity === undefined) m.userData.baseOpacity = m.opacity;
           if (m.userData.baseTransparent === undefined) m.userData.baseTransparent = m.transparent;
           mats.push(m);
         }
       });
+      for (const mesh of meshes) twins.push(depthTwin(mesh));
     }
     return {
       update(t) {
@@ -334,6 +424,7 @@ export function revealImpl(r: TextRevealDef, size: number): BehaviourImpl {
             m.opacity = (m.userData.baseOpacity as number) * a;
             m.transparent = a < 1 || (m.userData.baseTransparent as boolean);
           }
+          for (const tw of twins) tw.visible = a > 0 && a < 1;
         }
         if (k <= 0) o.visible = false;
         switch (effect) {
@@ -356,6 +447,22 @@ export function revealImpl(r: TextRevealDef, size: number): BehaviourImpl {
       },
     };
   };
+}
+
+let depthOnly: THREE.MeshBasicMaterial | null = null;
+/** An opaque depth-only copy of `mesh` (same geometry, child at identity), hidden by default. */
+export function depthTwin(mesh: THREE.Mesh): THREE.Mesh {
+  depthOnly ??= new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true });
+  const twin = new THREE.Mesh(mesh.geometry, depthOnly);
+  twin.name = `${mesh.name}#depth`;
+  twin.visible = false;
+  twin.castShadow = false;
+  twin.receiveShadow = false;
+  twin.renderOrder = -1;
+  twin.userData.helper = true; // never picked / outlined / in the G-buffer
+  twin.userData.depthTwin = true;
+  mesh.add(twin);
+  return twin;
 }
 
 // ─── Object builder ─────────────────────────────────────────────────────

@@ -4,18 +4,77 @@
   "title": "Marble maze",
   "ariaLabel": "Marble maze mini game: roll the ball to the glowing exit with the arrow keys or by holding a finger",
   "seed": 17,
-  "target": {"kind": "game", "aspect": "1:1", "budgetKb": 200, "reducedMotion": "ignore", "maxDpr": 2},
-  "camera": {"type": "perspective", "fov": 42, "position": [0, 30, 13], "target": [0, 0, 0.8]},
-  "environment": {"background": {"radial": ["#2d2a5a", "#14122b"]}, "lighting": "studio", "lightingIntensity": 0.3},
+  "target": {
+    "kind": "game",
+    "aspect": "1:1",
+    "budgetKb": 200,
+    "reducedMotion": "ignore",
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 42,
+    "position": [
+      0,
+      31,
+      12.5
+    ],
+    "target": [
+      0,
+      0,
+      1.5
+    ]
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#221d4f",
+        "#07061a"
+      ],
+      "center": [
+        0.5,
+        0.45
+      ]
+    },
+    "lighting": "night",
+    "lightingIntensity": 0.5,
+    "shadows": {
+      "type": "vsm",
+      "softness": 4
+    }
+  },
   "lights": [
     {
       "id": "fill",
       "type": "hemisphere",
-      "skyColor": "#e9e4ff",
-      "groundColor": "#3b2f63",
-      "intensity": 0.6
+      "skyColor": "#b8b0ff",
+      "groundColor": "#1a1540",
+      "intensity": 0.55
     },
-    {"id": "sun", "type": "directional", "position": [-6, 14, 8], "intensity": 1.6, "castShadow": true}
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [
+        -7,
+        16,
+        9
+      ],
+      "color": "#e8e2ff",
+      "intensity": 1.5,
+      "castShadow": true
+    },
+    {
+      "id": "glowExit",
+      "type": "point",
+      "position": [
+        9.6,
+        1.5,
+        8
+      ],
+      "color": "#4ade80",
+      "intensity": 25,
+      "distance": 8
+    }
   ],
   "objects": [
     {
@@ -27,8 +86,8 @@
         "rows": 9,
         "cellSize": 2,
         "wallHeight": 1,
-        "wallColor": "#6d5ce8",
-        "floorColor": "#d9cdf5",
+        "wallColor": "#8f7dff",
+        "floorColor": "#2a2460",
         "bodies": true
       },
       "receiveShadow": true,
@@ -37,50 +96,163 @@
     {
       "id": "floor",
       "kind": "mesh",
-      "geometry": {"type": "box", "width": 20, "height": 0.4, "depth": 20},
-      "position": [0, -0.2, 0],
-      "material": {"preset": "matte", "color": "#e6dcff"},
-      "body": {"type": "static"},
+      "geometry": {
+        "type": "box",
+        "width": 20,
+        "height": 0.4,
+        "depth": 20
+      },
+      "position": [
+        0,
+        -0.2,
+        0
+      ],
+      "material": {
+        "preset": "matte",
+        "color": "#e6dcff"
+      },
+      "body": {
+        "type": "static"
+      },
       "visible": false
     },
     {
       "id": "ball",
       "kind": "mesh",
-      "geometry": {"type": "sphere", "radius": 0.45, "segments": 40, "heightSegments": 28},
-      "position": [-8, 0.5, -8],
-      "material": {"type": "physical", "color": "#ff5d8f", "roughness": 0.15, "clearcoat": 1, "metalness": 0.1},
-      "body": {"type": "dynamic", "shape": "sphere", "radius": 0.45, "restitution": 0.2, "friction": 0.1},
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.45,
+        "segments": 40,
+        "heightSegments": 28
+      },
+      "position": [
+        -8,
+        0.5,
+        -8
+      ],
+      "material": {
+        "type": "physical",
+        "color": "#ff4f8b",
+        "emissive": "#ff2f74",
+        "emissiveIntensity": 1.4,
+        "roughness": 0.1,
+        "clearcoat": 1
+      },
+      "body": {
+        "type": "dynamic",
+        "shape": "sphere",
+        "radius": 0.45,
+        "restitution": 0.2,
+        "friction": 0.1
+      },
       "castShadow": true,
-      "tags": ["player"]
+      "tags": [
+        "player"
+      ]
     },
     {
       "id": "goal",
       "kind": "mesh",
-      "geometry": {"type": "torus", "radius": 0.6, "tube": 0.12, "radialSegments": 12, "tubularSegments": 48},
-      "position": [9.9, 0.8, 8.0],
-      "rotation": [0, 0, 0],
-      "material": {"preset": "neon", "color": "#4ade80", "emissive": "#4ade80", "emissiveIntensity": 2}
+      "geometry": {
+        "type": "torus",
+        "radius": 0.6,
+        "tube": 0.12,
+        "radialSegments": 12,
+        "tubularSegments": 48
+      },
+      "position": [
+        9.9,
+        0.8,
+        8.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "material": {
+        "preset": "neon",
+        "color": "#4ade80",
+        "emissive": "#4ade80",
+        "emissiveIntensity": 3
+      }
     },
     {
       "id": "goalGlow",
       "kind": "particles",
       "preset": "fireflies",
       "count": 30,
-      "area": [1.5, 1.5, 1.5],
-      "position": [9.9, 0.8, 8.0],
+      "area": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "position": [
+        9.9,
+        0.8,
+        8.0
+      ],
       "color": "#86efac",
       "size": 0.1
+    },
+    {
+      "id": "dust",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 120,
+      "area": [
+        22,
+        4,
+        22
+      ],
+      "position": [
+        0,
+        2,
+        0
+      ],
+      "color": [
+        "#b9a8ff",
+        "#ffb3d1"
+      ],
+      "size": 0.05,
+      "opacity": 0.6
     }
   ],
-  "physics": {"gravity": [0, -20, 0]},
-  "scripts": ["scripts/maze.js"],
-  "data": {"maze": {"accel": 16, "maxSpeed": 6, "damping": 2.2}},
+  "physics": {
+    "gravity": [
+      0,
+      -20,
+      0
+    ]
+  },
+  "scripts": [
+    "scripts/maze.js"
+  ],
+  "data": {
+    "maze": {
+      "accel": 16,
+      "maxSpeed": 6,
+      "damping": 2.2
+    }
+  },
   "ui": {
     "color": "#f5f3ff",
     "accent": "#ff5d8f",
     "elements": [
-      {"id": "timeHud", "type": "text", "text": "⏱ {time} s", "anchor": "top-left", "style": "pill"},
-      {"id": "bestHud", "type": "text", "text": "Best {best}", "anchor": "top-right", "style": "pill"},
+      {
+        "id": "timeHud",
+        "type": "text",
+        "text": "\u23f1 {time} s",
+        "anchor": "top-left",
+        "style": "pill"
+      },
+      {
+        "id": "bestHud",
+        "type": "text",
+        "text": "Best {best}",
+        "anchor": "top-right",
+        "style": "pill"
+      },
       {
         "id": "title",
         "type": "text",
@@ -92,7 +264,7 @@
       {
         "id": "hint",
         "type": "text",
-        "text": "Arrows / WASD — or hold a finger to roll",
+        "text": "Arrows / WASD \u2014 or hold a finger to roll",
         "anchor": "bottom",
         "style": "subtitle",
         "visible": "phase == 'attract'"
@@ -115,6 +287,29 @@
       }
     ]
   },
-  "audio": {"sounds": {"win": {"preset": "win"}, "click": {"preset": "click"}}},
-  "postfx": [{"type": "bloom", "strength": 0.6, "radius": 0.4, "threshold": 1.5}]
+  "audio": {
+    "sounds": {
+      "win": {
+        "preset": "win"
+      },
+      "click": {
+        "preset": "click"
+      }
+    }
+  },
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.9,
+      "radius": 0.5,
+      "threshold": 0.9
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.8
+    },
+    {
+      "type": "fxaa"
+    }
+  ]
 }

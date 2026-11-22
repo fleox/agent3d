@@ -167,8 +167,11 @@ const props = defineProps<{
   aspect?: string;
   alt?: string;
   data?: Record<string, string | number | boolean>;
+  autoplay?: boolean;
   paused?: boolean;
+  loop?: boolean | "pingpong";
   quality?: "low" | "medium" | "high" | "auto";
+  interactive?: boolean;
   runtimeSrc?: string;
 }>();
 const emit = defineEmits<{ ready: [el: HTMLElement]; error: [issue: unknown]; sceneEvent: [e: { name: string; payload?: unknown }]; sceneClick: [e: { id: string | null }] }>();
@@ -192,8 +195,11 @@ watch(() => JSON.stringify(props.data ?? {}), () => props.data && el.value?.setD
     :poster="poster"
     :aspect="aspect"
     :alt="alt"
+    :autoplay="autoplay === false ? 'false' : undefined"
     :paused="paused ? '' : undefined"
+    :loop="loop === undefined ? undefined : String(loop)"
     :quality="quality"
+    :interactive="interactive === false ? 'false' : undefined"
     v-bind="Object.fromEntries(Object.entries(data ?? {}).map(([k, v]) => ['data-' + k.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase()), String(v)]))"
     @agent3d:ready="emit('ready', $event.target)"
     @agent3d:error="emit('error', $event.detail)"
@@ -219,8 +225,11 @@ export function svelteWrapper(d: EmbedDocInput): string {
   export let aspect = ${JSON.stringify(d.aspect)};
   export let alt = undefined;
   export let data = undefined;
+  export let autoplay = undefined;
   export let paused = false;
+  export let loop = undefined;
   export let quality = undefined;
+  export let interactive = undefined;
   export let runtimeSrc = ${JSON.stringify(d.runtimeSrc)};
   const dispatch = createEventDispatcher();
   let el;
@@ -238,7 +247,7 @@ export function svelteWrapper(d: EmbedDocInput): string {
   $: if (el && data && el.setData) el.setData(data);
 </script>
 
-<agent3d-scene bind:this={el} {src} {poster} {aspect} {alt} {quality} paused={paused ? "" : undefined}></agent3d-scene>
+<agent3d-scene bind:this={el} {src} {poster} {aspect} {alt} {quality} autoplay={autoplay === false ? "false" : undefined} paused={paused ? "" : undefined} loop={loop === undefined ? undefined : String(loop)} interactive={interactive === false ? "false" : undefined}></agent3d-scene>
 `;
 }
 

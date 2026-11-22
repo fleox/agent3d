@@ -1,0 +1,24 @@
+{
+  "id": "hero-saas-globe",
+  "title": "SaaS globe hero",
+  "description": "Dark premium SaaS / network hero: a dotted-continent globe with a blue atmosphere slowly turning on the right, glowing arcs with light pulses travelling between world cities, faint orbit ring and stars; the left half stays empty for your HTML headline.",
+  "kind": "hero",
+  "tags": [
+    "hero",
+    "saas",
+    "globe",
+    "network",
+    "world",
+    "global",
+    "arcs",
+    "cities",
+    "data",
+    "tech",
+    "startup",
+    "dark",
+    "bloom",
+    "parallax",
+    "html-headline"
+  ],
+  "aspect": "16:9"
+}

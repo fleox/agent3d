@@ -99,8 +99,10 @@ Bodies are real rigid bodies (cannon-es): they rotate, tumble, stack and fall as
 **Platformer hero** — a capsule character controller (no tipping, no wall sticking, coyote-time jumps):
 
 ```json
-{ "id": "hero", "kind": "model", "src": "library:models/characters/robot.glb", "position": [0, 1, 0], "body": { "type": "dynamic", "shape": "capsule", "radius": 0.35, "height": 1.4, "character": true } }
+{ "id": "hero", "kind": "model", "src": "library:models/characters/robot.glb", "scale": 0.3, "position": [0, 1, 0], "body": { "type": "dynamic", "shape": "capsule", "radius": 0.35, "height": 1.4, "character": true } }
 ```
+
+Size the model first: `render --isolate hero --json` returns `isolated.size` (the robot is ≈ 4.8 units tall unscaled, so `scale: 0.3` makes a 1.45-unit hero), then fit the capsule `height` / `radius` (world units) to it.
 
 ```js
 update() {
@@ -108,6 +110,21 @@ update() {
   api.physics.moveCharacter(hero, { x, z: 0 }, { speed: 6, acceleration: 40, airControl: 0.35 });
   if (api.input.pressed("Space") && api.physics.jump(hero, 7)) api.audio.play("jump");
   // api.physics.grounded(hero) picks the animation clip (jump / run / idle)
+}
+```
+
+**Velocity-driven player** (roller, hover ship) — a `dynamic` body with `"fixedRotation": true` (without it, friction tips the player over as soon as it moves):
+
+```json
+{ "id": "hero", "kind": "mesh", "geometry": { "type": "box", "width": 0.8, "height": 0.8, "depth": 0.8 }, "material": { "preset": "plastic", "color": "#ff6b6b" }, "position": [-6, 1, 0], "body": { "type": "dynamic", "fixedRotation": true } }
+```
+
+```js
+update() {
+  const x = (api.input.isDown("ArrowRight") ? 1 : 0) - (api.input.isDown("ArrowLeft") ? 1 : 0);
+  const v = api.physics.getVelocity(hero);
+  api.physics.setVelocity(hero, [x * 5, v[1], 0]); // keep gravity's vertical speed
+  if (api.input.pressed("Space") && api.physics.grounded(hero)) api.physics.applyImpulse(hero, [0, 6, 0]);
 }
 ```
 
@@ -139,7 +156,7 @@ platform.position.x = Math.sin(api.time()) * 3; // every update
 ] }
 ```
 
-`api.physics.setMotorSpeed("wheel", 360)` changes a motor at run time.
+`api.physics.setMotorSpeed("wheel", 360)` changes a motor at run time. A flipper or a door that must stop: `"limits": [-30, 30]` (degrees from its start pose). Scaling a body from a script (`obj.scale.set(…)`) resizes its collider, unless a joint holds it.
 
 **Sensors** — `trigger` bodies: `api.physics.onTriggerEnter((zone, other) => …)` / `onTriggerExit`, or poll `api.physics.overlaps(player, coin)` (exact shapes, works between any body types).
 
@@ -148,6 +165,23 @@ platform.position.x = Math.sin(api.time()) * 3; // every update
 **Shapes** — boxes from the mesh bounds are the default (cheapest, stable stacks). Use `sphere` for balls (they roll), `capsule` for characters, `convex` for dynamic props of irregular shape (models), `trimesh` or `auto` for static level geometry (exact, e.g. a ramp model), `heightfield` / `auto` for a terrain generator, `compound` to assemble a few primitives (a table: top box + 4 leg boxes).
 
 **Debugging** — `"physics": { "debug": true }` draws every collider (green dynamic, blue static, orange kinematic, magenta trigger, grey asleep) in renders: look at it whenever something falls through, floats or collides early. Remove it before export.
+
+## Timeline cues and interactions in a game
+
+A timeline can stage an intro (camera move, title drop) and hand over to the game with a marker:
+
+```json
+"timeline": { "duration": 3, "markers": { "go": 1.5 }, "tracks": [{ "target": "title.position.y", "keys": [[0, 6], [1.5, 3, "outBack"]] }] }
+```
+
+```js
+start() {
+  api.state.phase = "intro";
+  api.on("go", () => { api.state.phase = "play"; }); // fires when the timeline crosses 1.5 s
+},
+```
+
+`scene.interactions` work in games too: a key or a click can `emit` an event to the scripts (`{ "on": "key", "key": "KeyR", "do": [{ "emit": "retry" }] }` → `onEvent("retry")`), play a segment or open a URL (`{ "on": "click", "target": "cta", "do": [{ "openUrl": "https://…" }] }`). The reverse works too: an event a script `api.emit`s (or a HUD button `action`) fires `{ "on": "event", "event": "<name>" }` interactions — e.g. `api.emit("win")` → `{ "on": "event", "event": "win", "do": [{ "play": "celebrate" }] }`.
 
 ## Difficulty ramp
 
@@ -200,6 +234,7 @@ Set `target.posterTime` to a frame where obstacles are on screen (3 s in the lan
 - `render --frames 0,2,4,6 --sheet` and look: obstacles appear, the autopilot dodges, the HUD shows the right phase.
 - `data.issues` / `data.consoleErrors` show script errors (`script-error` with the script path).
 - `render --input '[{"t": 0.5, "key": "ArrowLeft", "hold": 1}]'` plays simulated input while seeking; `data.state` (the script's `api.state` after the last frame) tells whether it worked (score, phase, lives).
+- Timeline-driven phases: render a frame after the marker (`--frames 0,2`) and check `data.state.phase`; a blocked `openUrl` click shows up as an `openUrl` event (`api.on("openUrl", ({ url, blocked }) => …)`).
 - Test touch controls with the same render: `{"t": 0.5, "swipe": "left"}` (→ `api.input.swipe()`), `{"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.3}}` (press, pointer moves, release), `{"t": 1, "pointerDown": [0, -0.5]}` … `{"t": 2, "pointerUp": true}` (hold-to-charge, slingshots).
 - A phase that needs input (game over): put `"startPhase": "over"` in `scene.data`, call `reset(api.data.startPhase ?? "ready")` in `start`, render, then remove it.
 - Show values you want to verify in a temporary HUD text (`"text": "speed {speed}"`) and read them on the render.

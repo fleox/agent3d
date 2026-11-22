@@ -14,7 +14,7 @@
   },
   "camera": {
     "type": "orthographic",
-    "zoom": 34.5,
+    "zoom": 31,
     "position": [
       30,
       23.8,
@@ -22,7 +22,7 @@
     ],
     "target": [
       0,
-      -1.2,
+      0.2,
       0
     ],
     "near": 0.1,
@@ -38,31 +38,41 @@
   "environment": {
     "background": {
       "radial": [
-        "#fff4e6",
-        "#f3d9c4"
-      ]
+        "#ffe9d2",
+        "#f2c7a8"
+      ],
+      "center": [
+        0.5,
+        0.6
+      ],
+      "grain": 0.03
     },
     "lighting": "soft",
-    "lightingIntensity": 0.7
+    "lightingIntensity": 0.35,
+    "shadows": {
+      "type": "pcf",
+      "softness": 2.5,
+      "mapSize": 4096
+    }
   },
   "lights": [
     {
       "id": "fill",
       "type": "hemisphere",
-      "skyColor": "#fff7ef",
-      "groundColor": "#b9a4c9",
-      "intensity": 1
+      "skyColor": "#eef3ff",
+      "groundColor": "#a593c4",
+      "intensity": 0.5
     },
     {
       "id": "sun",
       "type": "directional",
       "position": [
+        -20,
         18,
-        30,
-        10
+        14
       ],
-      "color": "#fff1dc",
-      "intensity": 2.4,
+      "color": "#ffe0bd",
+      "intensity": 3.4,
       "castShadow": true
     }
   ],
@@ -399,6 +409,24 @@
           "faceDirection": true
         }
       ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "cinematic",
+      "intensity": 0.5
+    },
+    {
+      "type": "tiltshift",
+      "focus": 0.5,
+      "width": 0.24,
+      "blur": 0.7
+    },
+    {
+      "type": "grading",
+      "saturation": 1.05,
+      "vibrance": 0.15
     }
   ]
 }

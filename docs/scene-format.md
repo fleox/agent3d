@@ -1,20 +1,43 @@
 # The scene format (`scene.json`)
 
-A scene is one JSON document, `SceneDoc` in [`src/core/types.ts`](../src/core/types.ts). Every front door reads and writes it: the Studio, the CLI, the MCP server and the runtime that plays it on web pages. It is validated by `validateScene` (`src/core/validate.ts`) against the catalog (`src/core/catalog.ts`, documented in [catalog.md](catalog.md)): unknown ids, parameters, types and ranges come back as issues with JSON paths and "did you mean" hints.
+A scene is one JSON document, `SceneDoc` in [`src/core/types.ts`](../src/core/types.ts). Every front door reads and writes it: the Studio, the CLI, the MCP server and the runtime that plays it on web pages. It is validated by `validateScene` (`src/core/validate.ts`) against the catalog (`src/core/catalog.ts`, documented in [catalog.md](catalog.md)): unknown ids, fields, parameters, types and ranges come back as issues with JSON paths and "did you mean" hints.
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 scene validate --project my-scene --json
-npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
+npx -y @fleox/agent3d@0.2.0 scene validate --project my-scene --json
+npx -y @fleox/agent3d@0.2.0 scene validate --file candidate.json --json
 ```
+
+This page documents every field once, in the order a scene is usually built. Catalog parameters (geometry sizes, behaviour speeds, generator options, post-effect settings…) are not repeated here: `agent3d catalog <section> [id]` and [catalog.md](catalog.md) list them with types, ranges and defaults.
+
+## Contents
+
+1. [Conventions](#conventions) · [A complete minimal scene](#a-complete-minimal-scene) · [Top level](#top-level)
+2. [Target](#target) — placement on the page, budgets, accessibility, [quality tiers](#quality-tiers)
+3. [Camera](#camera) — controls, look-at, shake, [camera shots](#camera-shots)
+4. [Environment](#environment) — background, [sky](#sky), [HDRI](#hdri-backgrounds), image lighting, fog, ground, contact shadows, light rigs, shadow quality
+5. [Lights](#lights)
+6. [Objects](#objects) — common fields, kinds, [geometry](#geometry), [instances](#instances)
+7. [Materials and textures](#materials-and-textures)
+8. [Text and logos](#text-and-logos) — fonts, layout, outline, letters, reveal, SVG
+9. [Models](#models) — glTF files, library models, animation clips, morph targets
+10. [Generators and particles](#generators-and-particles)
+11. [Behaviours](#behaviours)
+12. [Timeline](#timeline) — tracks, eases, relative values, stagger, markers, segments, scroll scrubbing
+13. [Interactions](#interactions) — no-code triggers and `openUrl`
+14. [Post effects](#post-effects)
+15. [Physics](#physics) — world, bodies, joints
+16. [Scripts, HUD and audio](#scripts-hud-and-audio)
+17. [Data bindings](#data-bindings)
+18. [Issues](#issues) · [Project files around the scene](#project-files-around-the-scene)
 
 ## Conventions
 
 - **Units** ≈ metres, **Y is up**; the camera looks at `camera.target`.
-- **Angles are in degrees** everywhere (rotations, `fov`, spot `angle`, behaviour speeds in deg/s).
+- **Angles are in degrees** everywhere (rotations, `fov`, spot `angle`, behaviour speeds and angular velocities in deg/s).
 - **Colours** are CSS strings: `"#rrggbb"`, `"#rgb"`, `"rgb(…)"`, `"hsl(…)"` or a CSS name.
 - **Asset paths** are project-relative (`"assets/models/fox.glb"`) or built-in library references (`"library:models/nature/pine-tree.glb"`, see `agent3d assets library`).
 - **Time** is in seconds.
-- **Ids** match `[a-zA-Z][a-zA-Z0-9_-]*` and are unique in the scene (objects; lights have their own ids).
+- **Ids** match `[a-zA-Z][a-zA-Z0-9_-]*` and are unique across the whole scene: objects (children included) **and** lights share one namespace.
 
 ## A complete minimal scene
 
@@ -49,19 +72,19 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
 | `version` | `1` | Format version (`SCENE_VERSION`) |
 | `id`, `title` | string | `title` is also the default accessible label |
 | `description` | string? | Free text |
-| `target` | TargetDef | Where and how the scene is shown on a page |
-| `camera` | CameraDef | |
-| `environment` | EnvironmentDef | Background, image-based lighting, fog, ground |
-| `lights` | LightDef[] | |
-| `objects` | ObjectDef[] | The scene graph (objects can have `children`) |
-| `timeline` | TimelineDef? | Keyframe animation, markers, segments, scroll scrubbing |
-| `interactions` | InteractionDef[]? | No-code triggers: click / hover / scroll / key → play segments, set properties, open URLs |
-| `postfx` | PostFxDef[]? | Post effects in order |
-| `physics` | PhysicsWorldDef? | Rigid-body physics: gravity, fixed step, materials, layers, joints, debug (games) |
-| `scripts` | string[]? | Project paths of script modules (`"scripts/game.js"`) |
+| `target` | TargetDef | Where and how the scene is shown on a page — [Target](#target) |
+| `camera` | CameraDef | [Camera](#camera) |
+| `environment` | EnvironmentDef | Background, image-based lighting, fog, ground, rigs, shadows — [Environment](#environment) |
+| `lights` | LightDef[] | [Lights](#lights) |
+| `objects` | ObjectDef[] | The scene graph (objects can have `children`) — [Objects](#objects) |
+| `timeline` | TimelineDef? | Keyframes, markers, segments, scroll scrubbing — [Timeline](#timeline) |
+| `interactions` | InteractionDef[]? | Click / hover / scroll / key → play segments, set properties, open URLs — [Interactions](#interactions) |
+| `postfx` | PostFxDef[]? | Post effects and look presets — [Post effects](#post-effects) |
+| `physics` | PhysicsWorldDef? | Rigid-body world: gravity, step, materials, layers, joints, debug — [Physics](#physics) |
+| `scripts` | string[]? | Project paths of script modules (`"scripts/game.js"`) — [Scripts](#scripts-hud-and-audio) |
 | `ui` | UiDef? | HUD elements (games, interactive scenes) |
 | `audio` | AudioDef? | Named sounds and music |
-| `data` | object? | Free-form data scripts read as `api.data`; also the values of `{data.key}` placeholders (data bindings, below) |
+| `data` | object? | Free-form data: scripts read it as `api.data`; also the values of `{data.key}` placeholders — [Data bindings](#data-bindings) |
 | `ariaLabel` | string? | Accessible label of the element (defaults to `title`) |
 | `seed` | number? | Seed of every random process (generators, particles, `api.random`) |
 
@@ -73,19 +96,30 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
 
 | Field | Default | Meaning |
 |---|---|---|
-| `kind` | | `banner`, `hero`, `card`, `square`, `fullscreen`, `inline`, `game` (sets defaults, budgets and accessibility role) |
-| `aspect` | per kind: banner 4:1, hero / inline / fullscreen / game 16:9, card 4:5, square 1:1 | `"W:H"`; the embed keeps it responsively |
-| `height` | | Fixed CSS height (`"320px"`, `"60vh"`) instead of the aspect ratio |
-| `budgetKb` | banner 600, card 400, square / inline 600, hero 1500, fullscreen / game 4000 | Max export weight (runtime excluded); `check` warns above |
+| `kind` | (required) | `banner`, `hero`, `card`, `square`, `fullscreen`, `inline`, `game` — sets defaults, budgets and the accessibility role |
+| `aspect` | (required) | `"W:H"`; the embed keeps it responsively. `agent3d new` uses banner 4:1, hero / inline / fullscreen / game 16:9, card 4:5, square 1:1 |
+| `height` | | Fixed CSS height (`"320px"`, `"60vh"`, `"20rem"`) instead of the aspect ratio |
+| `budgetKb` | banner / square / inline 600, card 400, hero 1500, fullscreen / game 4000 | Max export weight (runtime excluded); `check` warns above |
 | `transparent` | false | Transparent canvas: the page shows through (background ignored) |
 | `lazy` / `pauseOffscreen` | true / true | Start when visible; pause when scrolled away |
 | `maxDpr` | 2 | Cap of the device pixel ratio |
-| `reducedMotion` | `static` (games: `ignore`) | For visitors who prefer reduced motion: `static` freezes on `posterTime` with entrance behaviours (`appear`) shown finished, `slow` halves speeds, `ignore` plays normally |
-| `posterTime` | 0 | Time of the poster frame and the reduced-motion still. Pick a time after every `appear` (delay + duration) — starters use 1.5 |
+| `reducedMotion` | `static` (games: `ignore`) | For visitors who prefer reduced motion: `static` freezes on `posterTime` with entrance effects (`appear`, text `reveal`) shown finished, `slow` halves speeds, `ignore` plays normally |
+| `posterTime` | 0 | Time of the poster frame and the reduced-motion still. Pick a time after every entrance (delay + duration) — starters use 1.5 |
 | `antialias` | true | |
-| `shadows` | true when a light casts shadows | |
+| `shadows` | true when a light casts shadows | Shadow maps on / off |
 | `toneMapping` / `exposure` | `aces` / 1 | `none`, `aces`, `agx`, `neutral`, `reinhard` |
-| `quality` | `auto` | Rendering tier: `auto`, `low`, `medium`, `high`, `ultra` — see [Quality tiers](#quality-tiers) |
+| `quality` | `auto` | Rendering tier: `auto`, `low`, `medium`, `high`, `ultra` (below) |
+
+### Quality tiers
+
+| Tier | DPR cap | MSAA | Post effects |
+|---|---|---|---|
+| `low` | 1 | off | `high`-cost effects (`ao`, `dof`) off, heavy effects at half resolution, ≤ 4 still samples |
+| `medium` | 1.5 | 4× | all effects, heavy ones at half resolution |
+| `high` | `maxDpr` (2) | 4× | all effects, heavy ones at half resolution, more samples |
+| `ultra` | `maxDpr` | 8× | full-resolution effects, most samples, ≤ 64 still samples |
+
+`auto` picks `high` on desktops, `medium` on phones / small GPUs and `low` on software GL, then adapts while playing: if the frame rate stays under 40 fps for 3 s it lowers the pixel ratio (down to 1), then the tier (never back up). Deterministic renders (`agent3d render`, posters, videos) use `high` unless the tier is explicit. `agent3d check` reports the post-processing GPU cost (`budget.gpu`) and warns about heavy effects on games. (The element's `quality` attribute is a separate, page-side pixel-ratio cap: see [export.md](export.md#the-agent3d-scene-element).)
 
 ## Camera
 
@@ -93,11 +127,52 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
 "camera": { "type": "perspective", "fov": 30, "position": [0, 0, 12], "target": [0, 0, 0], "controls": "parallax", "parallax": { "strength": 0.3, "smoothing": 0.92 } }
 ```
 
-- `type`: `perspective` (`fov`, default 45) or `orthographic` (`zoom`: world units visible vertically, default 10).
-- `position`, `target` (look-at point, default origin), `near`, `far`.
-- `controls`: `none` (fixed), `orbit` (drag; `orbitZoom`, `orbitLimits: { minDistance, maxDistance, minPolar, maxPolar }`), `parallax` (drifts with the pointer: `parallax.strength`, `smoothing`), `scroll` (follows `scrollPath: [{ position, target? }, …]` with the page scroll), `follow` (games: `follow: { target, offset, smoothing, lookAhead }`).
-- `lookAt`: an object id the camera keeps looking at (replaces `target`). `shake: { amount, rotation, speed, seed }`: handheld noise (position units, aim degrees). `shots`: cinematic moves — see [Camera shots](#camera-shots).
-- `autoRotate`: degrees per second around the target (with `none` or `orbit`).
+| Field | Meaning |
+|---|---|
+| `type` | `perspective` (`fov` in degrees, default 45) or `orthographic` (`zoom`: world units visible vertically, default 10) |
+| `position`, `target` | Camera position and look-at point (default origin) |
+| `near`, `far` | Clipping planes |
+| `controls` | `none` (fixed, default), `orbit` (drag), `parallax` (drifts with the pointer), `scroll` (follows `scrollPath` with the page scroll), `follow` (games: tracks `follow.target`) |
+| `orbitZoom`, `orbitLimits` | `orbit`: wheel / pinch zoom (default on); `{ minDistance, maxDistance, minPolar, maxPolar }` |
+| `parallax` | `{ strength, smoothing }` |
+| `scrollPath` | `[{ position, target? }, …]` for `controls: "scroll"` |
+| `follow` | `{ target: "<objectId>", offset, smoothing, lookAhead }` |
+| `autoRotate` | Degrees per second around the target (with `none` or `orbit`) |
+| `lookAt` | An object id the camera keeps looking at (its world position replaces `target`) |
+| `shake` | Handheld noise `{ amount (units, default 0.03), rotation (degrees, default 0.4), speed (default 0.5), seed }` |
+| `shots` | Cinematic moves on the timeline clock (below) |
+
+### Camera shots
+
+```json
+"camera": {
+  "type": "perspective", "fov": 40, "position": [0, 1, 10], "target": [0, 0.5, 0],
+  "shake": { "amount": 0.02, "rotation": 0.25, "speed": 0.4 },
+  "shots": [
+    { "type": "pushIn", "at": 0, "duration": 2, "distance": 2.5 },
+    { "type": "path", "at": 2, "duration": 2.5, "points": [[2.5, 1.6, -1.2], [2.8, 1.7, -2]], "lookAt": "knot" },
+    { "type": "focus", "at": 3, "duration": 1, "object": "knot" },
+    { "type": "crane", "at": 8, "duration": 2, "height": 2.5, "distance": -2 }
+  ]
+}
+```
+
+Shots run on the timeline clock (scroll-driven with `trigger: "scroll"`; scene time without a timeline), in `at` order, each from the pose the previous ones left (overlaps blend). Every shot has `type`, `at` (start, s), `duration` and `ease` (default `inOutCubic`, any [timeline ease](#eases)).
+
+| `type` | Fields |
+|---|---|
+| `dolly` / `pushIn` / `pullOut` | Along the view axis by `distance` (pushIn default: 25 % closer) |
+| `truck` | Sideways by `distance` |
+| `pedestal` | Up / down by `distance` (the target follows) |
+| `crane` | Rises by `height` while the target stays; `distance` moves toward it |
+| `orbit` | Around the target: `angle` (yaw, degrees), `elevation` (degrees), `distance` |
+| `zoom` | `fov` |
+| `move` | To `position` / `target` / `fov` |
+| `path` | Catmull-Rom through `points`, looking `lookAhead` ahead (0..0.5 of the path, default 0.05) or at `lookAt` (an object id or a point) |
+| `lookAt` | Pan to `object` (or `target`) |
+| `focus` | Rack focus: postfx `dof` focus → `focus` distance or the distance to `object` |
+
+Camera timeline tracks (`camera.position`, …) apply after the shots.
 
 ## Environment
 
@@ -111,19 +186,22 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
 }
 ```
 
-- `background`:
-  - a colour, or `"transparent"`;
-  - `{ "gradient": [colours], "angle": deg, "grain": 0..1 }` (0° = bottom → top; `grain` adds visible film grain);
-  - `{ "radial": [centre, edge], "center": [x, y], "radius": n, "grain": 0..1 }` (`center` in 0..1, default `[0.5, 0.5]`);
-  - `{ "meshGradient": [2–6 colours], "speed": 0.15, "scale": 1, "seed": 1, "grain": 0.035 }`: soft Stripe-like colour blobs filling the frame, drifting when `speed` > 0;
-  - `{ "sky": { … } }`: a colour-gradient sky (`top`, `horizon`, `bottom`, `sun: { direction | elevation + azimuth, color, size } | false`, `stars`), or a **physical sky** (Preetham atmosphere) when `preset` (`sunrise`, `morning`, `noon`, `afternoon`, `golden-hour`, `sunset`, `dusk`) or `physical: true` is set. The physical sky's sun (`sun.elevation` degrees above the horizon, `sun.azimuth` degrees, 0 = towards the default camera at +Z, 90 = +X) also adds a matching directional **sun light** (warmer and dimmer near the horizon; `sun.light: false` to skip it, `sun.intensity`, `sun.color`, `sun.castShadow` — default true) and lights the scene through `lighting: "sky"` (the default with a physical sky). Tuning: `turbidity` (haze), `rayleigh` (blue scattering), `mieCoefficient`, `mieDirectionalG`, `exposure`, `clouds` (0..1), `stars`.
-  - `{ "hdri": path, "blur": 0..1, "intensity": n, "rotation": deg, "groundProjection": true | { "height": 2, "radius": 60 } }`: an equirect photo (`.hdr`, `.exr` or `.jpg`). `rotation` turns it (and the IBL derived from it); `groundProjection` projects its lower half on a ground disc (`height` = camera height of the photo in scene units) so objects stand inside the photo.
-- `lighting` (image-based lighting for reflections and fill): `studio`, `soft`, `sunset`, `night`, `neutral`, `sky` (from the background sky or mesh gradient), `none`, or `{ "hdri": path, "intensity": n, "rotation": deg }`. Without `lighting`, an HDRI background lights the scene, a physical sky uses `sky`, anything else `soft`. `lightingIntensity` scales it. Bundled HDRIs: `library:hdri/softbox.hdr` (product studio), `studio`, `warehouse`, `forest`, `city` (overcast street), `beach` (sunny), `sky`, `sunset`, `night`, `night-city` — each `.hdr` (lighting, blurred backgrounds) with a `.jpg` preview.
-- `fog`: linear `{ color, near, far }`, exponential `{ color, density }`, or **height fog** `{ color, density, height, falloff }` (exponential fog thick below `height`, thinning above it with `falloff` — valleys and ground haze while hills and sky stay clear). Without `color`, fog takes the physical sky's horizon haze, the gradient sky's `horizon`, or the background colour, and the physical sky blends its horizon into that colour so fogged ground meets the sky seamlessly.
-- `ground`: a plane at `y` (`size`, `color`, `roughness`, `grid`, `opacity`, `shadowOnly` to only catch shadows so objects sit on the page — those shadows fade out toward the plane's edges and the last ~15 % before the canvas edges, so they never end in a hard cut; a smaller `size` keeps them closer to the object; `opacity` sets the shadow darkness, default 0.28).
-- `contactShadows`: `true` or `{ "opacity": 0.6, "blur": 2.5, "far": n, "y": n, "size": n, "resolution": 512, "color": "#000", "frames": 0 }` — soft blurred shadows right under the objects (product shots), no shadow-casting light needed. The plane is fitted to the objects automatically and fades out radially; `far` = how high above the plane objects still darken it; `frames: 1` renders it once (static scenes, cheaper).
-- `rig`: a light rig from the catalog (`agent3d catalog lightRigs`): `"studio-3point"`, `"softbox"`, `"product-top"`, `"rim"`, `"dramatic"`, `"golden-hour"`, `"noon"`, `"overcast"`, `"neon"`, `"moonlight"`, or `{ "preset": "softbox", "intensity": 1, "rotation": deg, "scale": 1, "castShadow": true, "color": tint }`. Its lights are added to `lights` (positions assume a subject ~1–3 units around the origin; `scale` for bigger scenes).
-- `shadows`: shadow-map quality for every shadow-casting light: `{ "type": "pcf" | "vsm", "softness": 4, "mapSize": 2048, "intensity": 1 }` (`vsm` = smooth blurred shadows). Directional shadow cameras are fitted to the scene automatically.
+### Background
+
+| Form | Meaning |
+|---|---|
+| `"#14102a"`, `"transparent"` | A colour, or no background (see also `target.transparent`) |
+| `{ "gradient": [colours], "angle": deg, "grain": 0..1 }` | Linear gradient (0° = bottom → top); `grain` adds visible film grain |
+| `{ "radial": [centre, edge], "center": [x, y], "radius": n, "grain": 0..1 }` | Radial gradient (`center` in 0..1, default `[0.5, 0.5]`) |
+| `{ "meshGradient": [2–6 colours], "speed": 0.15, "scale": 1, "seed": 1, "grain": 0.035 }` | Soft Stripe-like colour blobs filling the frame, drifting when `speed` > 0 |
+| `{ "sky": { … } }` | Gradient or physical sky (below) |
+| `{ "hdri": path, … }` | Equirect photo (below) |
+
+### Sky
+
+A **colour-gradient sky**: `top`, `horizon`, `bottom`, `sun: { direction | elevation + azimuth, color, size } | false`, `stars` (count).
+
+A **physical sky** (Preetham atmosphere) when `preset` (`sunrise`, `morning`, `noon`, `afternoon`, `golden-hour`, `sunset`, `dusk`) or `physical: true` is set. Its sun (`sun.elevation` degrees above the horizon, `sun.azimuth` degrees, 0 = towards the default camera at +Z, 90 = +X) also adds a matching directional **sun light** (warmer and dimmer near the horizon; `sun.light: false` skips it; `sun.intensity`, `sun.color`, `sun.castShadow` — default true) and lights the scene through `lighting: "sky"` (the default with a physical sky). Tuning: `turbidity` (haze, 1..20), `rayleigh` (blue scattering, 0..4), `mieCoefficient`, `mieDirectionalG`, `exposure` (default 1), `clouds` (0..1), `stars`.
 
 ```json
 "environment": {
@@ -131,6 +209,29 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
   "fog": { "density": 0.025, "height": 1, "falloff": 0.25 }
 }
 ```
+
+### HDRI backgrounds
+
+`{ "hdri": path, "blur": 0..1, "intensity": n, "rotation": deg, "groundProjection": true | { "height": 2, "radius": 60 } }`: an equirect photo (`.hdr`, `.exr` or `.jpg`). `rotation` turns it around Y (and the image lighting derived from it); `groundProjection` projects its lower half on a ground disc (`height` = camera height of the photo in scene units) so objects stand inside the photo.
+
+Bundled HDRIs (`library:hdri/<name>.hdr` for lighting and blurred backgrounds, `.jpg` previews): `softbox` (product studio), `studio`, `warehouse`, `forest`, `city` (overcast street), `beach` (sunny), `sky`, `sunset`, `night`, `night-city`.
+
+### Lighting, fog, ground
+
+| Field | Meaning |
+|---|---|
+| `lighting` | Image-based lighting (reflections and fill): `studio`, `soft`, `sunset`, `night`, `neutral`, `sky` (from the background sky or mesh gradient), `none`, or `{ "hdri": path, "intensity": n, "rotation": deg }`. Without it, an HDRI background lights the scene, a physical sky uses `sky`, anything else `soft` |
+| `lightingIntensity` | Scales the image lighting |
+| `fog` | Linear `{ color, near, far }`, exponential `{ color, density }`, or **height fog** `{ color, density, height, falloff }` (thick below `height`, thinning above with `falloff` — valleys and ground haze while hills and sky stay clear). Without `color`, fog takes the physical sky's horizon haze, the gradient sky's `horizon` or the background colour, and the physical sky blends its horizon into it so fogged ground meets the sky seamlessly |
+| `ground` | A plane at `y`: `size`, `color`, `roughness`, `grid`, `opacity`, `shadowOnly` (only catches shadows so objects sit on the page; those shadows fade toward the plane's edges and the last ~15 % before the canvas edges; `opacity` = shadow darkness, default 0.28; a smaller `size` keeps them closer to the object) |
+
+### Contact shadows, light rigs, shadow quality
+
+| Field | Meaning |
+|---|---|
+| `contactShadows` | `true` or `{ "opacity": 0.6, "blur": 2.5, "far": 1.5, "y": n, "size": n, "center": [x, z], "resolution": 512, "color": "#000", "frames": 0 }` — soft blurred shadows right under the objects (product shots), no shadow-casting light needed. The plane is fitted to the solid objects (particles / points ignored) and fades out radially; it is centred on them (also with an explicit `size`) unless `center` places it; `far` = how high above the plane objects still darken it; `frames` = re-render every frame (0, default) or only the first N (`1` for static scenes, cheaper) |
+| `rig` | A light rig from the catalog (`agent3d catalog lightRigs`): `studio-3point`, `softbox`, `product-top`, `rim`, `dramatic`, `golden-hour`, `noon`, `overcast`, `neon`, `moonlight` — or `{ "preset": "softbox", "intensity": 1, "rotation": deg, "scale": 1, "castShadow": true, "color": tint }`. Its lights are added to `lights` (positions assume a subject ~1–3 units around the origin; `scale` for bigger scenes) |
+| `shadows` | Shadow-map quality for every shadow-casting light: `{ "type": "pcf" \| "vsm", "softness": 3, "mapSize": 2048, "intensity": 1 }` (`vsm` = smooth blurred shadows; `softness` 0 = hard). Directional shadow cameras are fitted to the scene automatically |
 
 ```json
 "environment": {
@@ -147,66 +248,110 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
 "lights": [
   { "id": "fill", "type": "hemisphere", "skyColor": "#fff1dc", "groundColor": "#3a1d0b", "intensity": 0.8 },
   { "id": "key", "type": "directional", "position": [4, 6, 6], "intensity": 2.4, "castShadow": true },
-  { "id": "rim", "type": "point", "position": [-5, 2, -3], "color": "#ffb366", "intensity": 30, "distance": 20 }
+  { "id": "rim", "type": "point", "position": [-5, 2, -3], "color": "#ffb366", "intensity": 30, "distance": 20 },
+  { "id": "beam", "type": "spot", "position": [0, 6, 2], "target": [0, 0, 0], "angle": 25, "penumbra": 0.4, "volumetric": true },
+  { "id": "strip", "type": "rect", "position": [0, 3, -2], "width": 4, "height": 0.3, "color": "#ff3d8b", "intensity": 8, "panel": true }
 ]
 ```
 
-`type`: `ambient`, `directional`, `point` (`distance`, `decay`), `spot` (`angle` in degrees, `penumbra`, `target`, `volumetric`), `hemisphere` (`skyColor`, `groundColor`), `rect` (area light: `width`, `height`, `panel`; lights standard / physical materials only). Common: `id`, `color`, `intensity`, `position`, `target`, `castShadow`, `shadow`, `behaviours` (e.g. `flicker`).
+| Field | Lights | Meaning |
+|---|---|---|
+| `id` | all | Optional; unique with the object ids (timeline targets, gizmos) |
+| `type` | all | `ambient`, `directional`, `point`, `spot`, `hemisphere`, `rect` |
+| `color`, `intensity`, `position`, `target` | all | `target` = aim point of directional / spot / rect lights |
+| `castShadow`, `shadow` | directional, point, spot | `shadow`: `{ softness, mapSize, bias, normalBias, intensity }`, overriding `environment.shadows` |
+| `skyColor`, `groundColor` | hemisphere | |
+| `distance`, `decay` | point, spot | |
+| `angle` (degrees), `penumbra`, `volumetric` | spot | `volumetric`: `true` or `{ intensity, length, color }` — a cheap glowing cone from the light to its target (beams in fog, stages) |
+| `width`, `height`, `panel` | rect | Area light (lights standard / physical materials only); `panel: true` draws the glowing rectangle itself, visible in the frame and in reflections |
+| `behaviours` | all | e.g. `flicker` |
 
-- `volumetric` (spot): `true` or `{ "intensity": 1, "length": n, "color": c }` — a cheap glowing light cone from the light to its target (beams in fog, stages, neon scenes).
-- `panel` (rect): `true` draws the glowing rectangle itself, so the light source is visible in the frame (neon strips, softboxes).
-- `shadow`: per-light shadow tuning `{ "softness", "mapSize", "bias", "normalBias", "intensity" }`, overriding `environment.shadows`. A scene with lit materials and neither lights nor environment lighting renders black: `scene validate` warns.
+A scene with lit materials and neither lights nor environment lighting renders black: `scene validate` warns.
 
 ## Objects
 
-Common fields (all kinds): `id`, `name`, `position`, `rotation` (degrees, XYZ order), `scale` (number or `[x, y, z]`), `visible`, `castShadow`, `receiveShadow`, `behaviours`, `children`, `tags` (scripts: `api.findByTag`), `body` (physics), `href` (clicking opens the URL; pointer cursor), `userData`.
+Common fields (every kind):
 
-| `kind` | Specific fields |
+| Field | Meaning |
 |---|---|
-| `mesh` | `geometry: { type, …params }` (catalog geometries), `material` |
-| `text` | `text`, `font` (catalog id, `sans-bold` default — see [Text and logos](#text-and-logos)), `size` (cap height, default 1), `depth` (0.2; 0 = flat), `bevel`, `align` (`center` default; the text is centred on its position), `letterSpacing`, `lineHeight`, `kerning`, `maxWidth`, `curveSegments`, `outline`, `splitLetters`, `reveal`, `material` |
-| `model` | `src` (`.glb` / `.gltf` path or `library:<id>`), `fit` (largest dimension in units), `center` (bottom centre at the origin, default true), `animation: { clip, loop, speed, crossfade, offset, blend: { clip: weight } }`, `morph: { targetName: 0..1 }` (morph targets, animatable as `<id>.morph.<name>`), `material` (override for every mesh) |
-| `group` | Only `children` |
-| `generator` | `generator` (catalog id: terrain, trees, rocks, grass, flowers, water, clouds, city, character, planet, starfield, blob, waveGrid, maze, road, floatingIsland, globe, crystals, galaxy, bars3d, abstractShapes — `agent3d catalog generators <id>` lists the params), `params`, `seed`, `material` (override of the main surface for `blob`, `rocks`, `terrain`, `planet`, `floatingIsland`, `globe`, `crystals`, `bars3d`, `abstractShapes` — e.g. `{ "type": "shader", "shader": "gradientFlow" }` on a blob keeps its morph; without colour / preset / map, lit materials keep the generator's vertex colours) |
-| `particles` | `preset` (stars, snow, rain, fireflies, confetti, sparks, dust, bubbles, embers, hearts, magic, smoke, fire, petals, leaves, galaxyDust, bokeh) and overrides: `count`, `area`, `size`, `color` (one or a list), `speed`, `direction`, `spread`, `lifetime`, `opacity`, `blending` (`normal` / `additive`), `shape` (`soft` (default), `point`, `square`, `circle`, `star`, `spark`, `streak` (velocity-stretched), `heart`, `bubble`, `smoke`, `petal`, `leaf`, `ring` (bokeh)), `seed`. All motion is a pure function of time (deterministic). |
-| `instances` | One `geometry` + `material` drawn many times: `layout` = `{ type: "grid", count: [x, y, z], spacing: [x, y, z] }`, `{ type: "scatter", count, area, minScale, maxScale, randomRotation, seed }`, `{ type: "circle", count, radius }` or `{ type: "list", items: [transforms] }`; `colors` cycled per instance |
-| `svg` | `src` (inline SVG markup or a project path), `size` (width by default, 2), `fit`, `depth` (0.2), `bevel`, `keepColors`, `strokes`, `curveSegments`, `layerGap`, `material`: a logo or icon extruded into 3D — see [Text and logos](#text-and-logos) |
+| `id` | Unique id (see [Conventions](#conventions)) |
+| `kind` | `mesh`, `text`, `svg`, `model`, `group`, `generator`, `particles`, `instances` |
+| `name` | Display name (Studio outliner) |
+| `position`, `rotation`, `scale` | Transform; `rotation` in degrees (XYZ order); `scale` a number or `[x, y, z]` |
+| `visible`, `castShadow`, `receiveShadow` | |
+| `children` | Nested objects (transforms are relative to the parent) |
+| `behaviours` | [Behaviours](#behaviours) |
+| `tags` | Labels for scripts (`api.findByTag`) and timeline selectors (`tag:<tag>`) |
+| `body` | Physics body — [Physics](#physics) |
+| `href` | Clicking the object (or a child) opens this URL, pointer cursor; never in headless renders. `javascript:` URLs are refused; cross-origin URLs open in a new tab. For http(s)-only links with `newTab` control use an `openUrl` [interaction](#interactions) |
+| `userData` | Free data scripts read and write (`obj.userData`) |
+
+| `kind` | Specific fields | See |
+|---|---|---|
+| `mesh` | `geometry`, `material` | [Geometry](#geometry), [Materials](#materials-and-textures) |
+| `text` | `text`, `font`, `size`, `depth`, `bevel`, `align`, `letterSpacing`, `lineHeight`, `kerning`, `maxWidth`, `curveSegments`, `outline`, `splitLetters`, `reveal`, `material` | [Text and logos](#text-and-logos) |
+| `svg` | `src`, `size`, `fit`, `depth`, `bevel`, `keepColors`, `strokes`, `curveSegments`, `layerGap`, `material` | [Text and logos](#svg-logos-and-icons) |
+| `model` | `src`, `fit`, `center`, `animation`, `morph`, `material` | [Models](#models) |
+| `group` | only `children` | |
+| `generator` | `generator`, `params`, `seed`, `material` | [Generators](#generators-and-particles) |
+| `particles` | `preset` + overrides | [Particles](#particles) |
+| `instances` | `geometry`, `material`, `layout`, `colors` | [Instances](#instances) |
 
 ### Geometry
 
-`{ "type": "<id>", …params }` with the catalog's parameters (sizes in units): `box`, `roundedBox`, `sphere`, `cylinder` (`radiusTop`, `radiusBottom`, `height`), `cone`, `capsule`, `torus`, `torusKnot`, `plane` (faces +Z: rotate `[-90, 0, 0]` for a floor), `circle`, `ring`, `icosahedron`, `dodecahedron`, `octahedron`, `tetrahedron`, `lathe` (`points` profile), `extrude` (`shape` polygon), `tube` (`points` curve). Each has a triangle cost formula used by `check`.
+`"geometry": { "type": "<id>", …params }` with the catalog's parameters (sizes in units): `box`, `roundedBox`, `sphere`, `cylinder` (`radiusTop`, `radiusBottom`, `height`), `cone`, `capsule`, `torus`, `torusKnot`, `plane` (faces +Z: rotate `[-90, 0, 0]` for a floor), `circle`, `ring`, `icosahedron`, `dodecahedron`, `octahedron`, `tetrahedron`, `lathe` (`points` profile), `extrude` (`shape` polygon), `tube` (`points` curve). Each has a triangle cost formula used by `check`.
 
-### Material
+```json
+{ "id": "pedestal", "kind": "mesh", "geometry": { "type": "cylinder", "radiusTop": 1.2, "radiusBottom": 1.3, "height": 0.4 }, "material": { "preset": "marble" }, "position": [0, -0.2, 0] }
+```
+
+### Instances
+
+One `geometry` + `material` drawn many times in a single draw call:
+
+| `layout.type` | Fields |
+|---|---|
+| `grid` | `count: [x, y, z]`, `spacing: [x, y, z]` |
+| `scatter` | `count`, `area: [x, y, z]`, `minScale`, `maxScale`, `randomRotation`, `seed` |
+| `circle` | `count`, `radius` |
+| `list` | `items: [{ position?, rotation?, scale? }, …]` |
+
+`colors` (list) is cycled per instance.
+
+```json
+{ "id": "dots", "kind": "instances", "geometry": { "type": "sphere", "radius": 0.08 }, "material": { "preset": "neon" },
+  "layout": { "type": "scatter", "count": 120, "area": [12, 3, 4], "seed": 3 }, "colors": ["#ff3d8b", "#4dd2ff"] }
+```
+
+## Materials and textures
 
 ```json
 "material": { "preset": "gold", "roughness": 0.25 }
 ```
 
-- `preset`: plastic, matte, clay, chrome, brushedMetal, gold, copper, glass, frostedGlass, rubber, pearl, holographic, neon, toon, flat, lowpoly, velvet, wireframe, normal, and the photoreal set carPaint, ceramic, marble, terrazzo, wood, carbonFiber, leather, satin, silk, brushedAluminium, ice, water, diamond, gem, jelly, chromeGradient, soapBubble, mattePastel, emissiveGradient (`agent3d catalog materialPresets`). Explicit fields override it.
-- `type`: `standard`, `physical`, `basic`, `lambert`, `toon`, `normal`, `matcap`, `gradient` (`gradient: [colours]` vertical ramp), `shader` (`shader: <catalog id>`, `uniforms`).
-- Fields: `color`, `metalness`, `roughness`, `emissive`, `emissiveIntensity`, `opacity`, `transparent`, `wireframe`, `flatShading`, `side` (`front`, `back`, `double`), `envMapIntensity` (reflection strength of the environment lighting).
-- Physical (`type: "physical"`): `transmission`, `thickness`, `ior`, `clearcoat`, `clearcoatRoughness`, `iridescence`, `iridescenceIOR`, `iridescenceThicknessRange: [nm, nm]`, `sheen`, `sheenColor`, `sheenRoughness`, `anisotropy` (stretched highlights) + `anisotropyRotation` (degrees), `attenuationColor` + `attenuationDistance` (colour picked up through transmissive volumes: jelly, liquids, gems), `specularIntensity`, `specularColor`, `dispersion` (rainbow fire in transmissive gems, 0..10).
-- Textures: `map`, `normalMap`, `roughnessMap`, `metalnessMap`, `aoMap`, `emissiveMap`, `bumpMap`, `displacementMap`, `alphaMap` — a path / library id, or a **procedural texture** `{ "procedural": "<id>", …params }` (`agent3d catalog textures`: marble, wood, terrazzo, carbon, noise, voronoi, flakes, brushed, grid, checker, stripes, dots), generated at load time, seamless, zero bytes. Colour slots use its `colors`; data slots use the pattern's height; `normalMap` derives normals from it. Scales: `normalScale`, `bumpScale`, `aoMapIntensity`, `displacementScale`; `repeat: [u, v]`.
-- `triplanar`: `true` or a scale (repeats per unit) — projects `map`, `roughnessMap`, `metalnessMap`, `emissiveMap` and `normalMap` along the object's axes instead of its UVs (generators, terrain, stretched cylinders). The marble and terrazzo presets use it.
-- `gradientEmissive` (gradient type): the colour ramp drives the emissive glow too.
+| Field | Meaning |
+|---|---|
+| `preset` | `agent3d catalog materialPresets`: plastic, matte, clay, chrome, brushedMetal, gold, copper, glass, frostedGlass, rubber, pearl, holographic, neon, toon, flat, lowpoly, velvet, wireframe, normal, and the photoreal set carPaint, ceramic, marble, terrazzo, wood, carbonFiber, leather, satin, silk, brushedAluminium, ice, water, diamond, gem, jelly, chromeGradient, soapBubble, mattePastel, emissiveGradient. Explicit fields override it |
+| `type` | `standard`, `physical`, `basic`, `lambert`, `toon`, `normal`, `matcap`, `gradient` (`gradient: [colours]`: vertical ramp in object space; `gradientEmissive: true` makes the ramp drive the glow too), `shader` (`shader: <catalog id>`, `uniforms`) |
+| `color`, `metalness`, `roughness`, `emissive`, `emissiveIntensity`, `opacity`, `transparent`, `wireframe`, `flatShading`, `side` (`front`, `back`, `double`) | Common |
+| `envMapIntensity` | Reflection strength of the environment lighting |
+| `transmission`, `thickness`, `ior`, `dispersion` (0..10, rainbow fire in gems), `attenuationColor`, `attenuationDistance` | Physical: glass, liquids, gems, jelly |
+| `clearcoat`, `clearcoatRoughness`, `sheen`, `sheenColor`, `sheenRoughness`, `iridescence`, `iridescenceIOR`, `iridescenceThicknessRange` (`[nm, nm]`), `anisotropy` + `anisotropyRotation` (degrees), `specularIntensity`, `specularColor` | Physical surface layers |
+| `map`, `normalMap`, `roughnessMap`, `metalnessMap`, `aoMap`, `emissiveMap`, `bumpMap`, `displacementMap`, `alphaMap` | Textures: a path / library id, or a procedural texture (below) |
+| `normalScale`, `bumpScale`, `aoMapIntensity`, `displacementScale`, `repeat: [u, v]` | Texture scales |
+| `triplanar` | `true` or a scale (repeats per unit): projects `map`, `roughnessMap`, `metalnessMap`, `emissiveMap` and `normalMap` along the object's axes instead of its UVs (generators, terrain, stretched cylinders). The marble and terrazzo presets use it |
+
+Physical fields need `"type": "physical"` (or a preset that is physical: glass, carPaint, gem…); `scene validate` warns when one is set on another type.
+
+**Procedural textures**: `{ "procedural": "<id>", …params }` in any texture slot (`agent3d catalog textures`: marble, wood, terrazzo, carbon, noise, voronoi, flakes, brushed, grid, checker, stripes, dots) — generated at load time, seamless, zero bytes. Colour slots use its `colors`; data slots use the pattern's height; `normalMap` derives normals from it.
 
 ```json
 "material": { "type": "physical", "color": "#ffffff", "roughness": 0.3, "map": { "procedural": "wood", "rings": 14 }, "bumpMap": { "procedural": "wood", "rings": 14 }, "bumpScale": 0.3, "clearcoat": 0.6 }
 ```
 
-### Text and logos
+**Shaders**: `{ "type": "shader", "shader": "aurora", "uniforms": { "speed": 0.5 } }` — `agent3d catalog shaders` lists the shaders (plasma, waves, noise, hologram, gradientFlow, toonRim, dissolve, gradientMesh, aurora, liquidChrome, nebula, caustics, fresnelGlow, iridescentFoil, lavaLamp, grainGradient, matrixRain) and their uniforms; timeline tracks animate them as `material.uniforms.<name>`.
 
-**Fonts** (`agent3d catalog fonts`): `sans-bold` (Inter Bold, default), `sans` (Inter), `inter-black`, `montserrat-extrabold`, `space-grotesk-bold`, `bebas-neue`, `anton` (condensed display), `serif-bold` / `serif` (Playfair Display-based elegant serif), `mono` (JetBrains Mono Bold), `display` (Fredoka SemiBold, rounded), `pacifico`, `lobster` (scripts). All OFL, subset to Latin-1 (accents work), shipped in the library and copied into exports only when used. `font` may also be a project path to a three.js typeface JSON (`assets/fonts/brand.typeface.json`, made with `scripts/convert-font.mjs`).
-
-**Layout.** The font's kerning pairs apply by default (`"kerning": false` to disable — accented letters are kerned like their base letter). `letterSpacing` adds units between characters (negative tightens), `lineHeight` is a multiple of the font size (1.25), `"\n"` breaks lines and `maxWidth` (units) wraps on spaces; `align` places every line.
-
-**Finish.** The bevel defaults to `min(depth × 0.3, size × 0.035)` and keeps the letter silhouette (half inset, half outset) with smooth normals; curve smoothness grows with `size` (`curveSegments` overrides it, max points per curve). `depth: 0` gives crisp flat (double-sided) lettering.
-
-**Outline.** `"outline": true` or `{ "width": 0.06, "color": "#1a1033", "depth": 0.12, "material": {…} }` adds a recessed back layer: the glyphs offset outwards by `width` (units, default `size × 0.06`), behind the face — the sticker / comic-title look.
-
-**Letters.** `"splitLetters": true` makes each glyph a child object `"<id>/<n>"` (n = 0, 1, … counting non-space characters, line after line), pivoting on its own centre, with its own material: timeline tracks can target `"title/0.position.y"`, `"title/3.rotation"`, `"title/2.material.color"`.
-
-**Reveal.** A per-letter staggered entrance (implies `splitLetters`), driven by the scene clock (deterministic, settled under reduced motion like `appear`):
+## Text and logos
 
 ```json
 { "id": "title", "kind": "text", "text": "Launch day", "font": "inter-black", "size": 1, "depth": 0.25,
@@ -214,21 +359,97 @@ Common fields (all kinds): `id`, `name`, `position`, `rotation` (degrees, XYZ or
   "reveal": { "effect": "rise", "stagger": 0.05, "duration": 0.7, "delay": 0.2, "order": "forward" } }
 ```
 
-`effect`: `rise` (default), `fade`, `scale`, `spin`, `drop`; `stagger` (0.04 s between letters), `duration` (0.6 s per letter), `delay` (0), `ease` (any timeline easing; default `outCubic`, `outBack` for scale / spin), `order` (`forward`, `reverse`, `center`, `random` — deterministic).
+| Field | Default | Meaning |
+|---|---|---|
+| `text` | (required) | `"\n"` breaks lines; may hold `{data.key}` placeholders |
+| `font` | `sans-bold` | Catalog font id, or a project path to a three.js typeface JSON (below) |
+| `size` | 1 | Cap height in units |
+| `depth` | 0.2 | Extrusion; `0` = crisp flat (double-sided) lettering |
+| `bevel` | `min(depth × 0.3, size × 0.035)` | Keeps the letter silhouette (half inset, half outset) with smooth normals |
+| `align` | `center` | `left`, `center`, `right` — the text block is centred on its position, `align` places every line |
+| `letterSpacing` | 0 | Units added between characters (negative tightens), on top of kerning |
+| `lineHeight` | 1.25 | Multiple of the font size |
+| `kerning` | true | The font's kerning pairs (accented letters are kerned like their base letter) |
+| `maxWidth` | | Wrap lines on spaces at this width (units) |
+| `curveSegments` | grows with `size` | Max points per glyph curve |
+| `outline` | | `true` or `{ "width", "color" (default #111111), "depth", "material" }`: a recessed back layer — the glyphs offset outwards by `width` (default `size × 0.06`), behind the face (sticker / comic-title look) |
+| `splitLetters` | false | Each glyph becomes a child object `"<id>/<n>"` (n = 0, 1, … counting non-space characters, line after line), pivoting on its own centre, with its own material: timeline tracks can target `"title/0.position.y"`, `"title/3.rotation"`, `"title/2.material.color"`, or all letters with `children:title` |
+| `reveal` | | Per-letter staggered entrance (implies `splitLetters`), on the scene clock (deterministic; shown finished under reduced motion like `appear`) |
+| `material` | | Face material |
 
-**SVG logos and icons.** Paths, `rect`, `circle`, `ellipse`, `polygon`, `polyline`, `line`, `use`, nested transforms and `<style>` classes are read; `fill-rule` (`nonzero` / `evenodd`) and holes are honoured; curves are sampled by length (large circles stay round). Fills are extruded with an optional `bevel`; strokes (`stroke-width`, `stroke-linejoin`, `stroke-linecap`, `stroke-miterlimit`) become solid stroke outlines — line-icon sets (`fill="none" stroke="currentColor"`) work, `currentColor` taking the material colour. Each path keeps its SVG colour (`keepColors`, default `true` without `material`, `false` with one; `true` + a material = that material's finish with the SVG colours); gradient paints use the mix of their end stops. `size` sets the width (`fit: "height"` / `"max"` to fit the other / larger side), the logo is centred on its position, later paths sit `layerGap` units in front (default `depth × 0.02`). `"strokes": false` ignores strokes. `<text>` is not supported: convert text to outlines in the design tool.
+`reveal`: `effect` (`rise` default, `fade`, `scale`, `spin`, `drop`), `stagger` (0.04 s between letters), `duration` (0.6 s per letter), `delay` (0), `ease` (any [timeline ease](#eases); default `outCubic`, `outBack` for scale / spin), `order` (`forward`, `reverse`, `center`, `random` — deterministic).
+
+**Fonts** (`agent3d catalog fonts`): `sans-bold` (Inter Bold, default), `sans` (Inter), `inter-black`, `montserrat-extrabold`, `space-grotesk-bold`, `bebas-neue`, `anton` (condensed display), `serif-bold` / `serif` (Playfair Display), `mono` (JetBrains Mono Bold), `display` (Fredoka SemiBold, rounded), `pacifico`, `lobster` (scripts). All OFL-1.1 (credited in exports), subset to Latin-1 (accents work), shipped in the library and copied into exports only when used. A brand font: convert it with `scripts/convert-font.mjs` and set `"font": "assets/fonts/brand.typeface.json"`.
+
+### SVG logos and icons
+
+```json
+{ "id": "logo", "kind": "svg", "src": "assets/svg/logo.svg", "size": 3, "depth": 0.15, "bevel": 0.01 }
+```
+
+| Field | Default | Meaning |
+|---|---|---|
+| `src` | (required) | Inline SVG markup or a project path to an `.svg` |
+| `size`, `fit` | 2, `width` | `size` sets the width; `fit: "height"` / `"max"` sets the height / larger side instead. The logo is centred on its position |
+| `depth`, `bevel` | 0.2 | Extrusion (0 = flat) and bevel of the fills |
+| `keepColors` | `true` without `material`, `false` with one | Each path keeps its SVG colour; `true` + a material = that material's finish with the SVG colours. Gradient paints use the mix of their end stops |
+| `strokes` | true | Strokes (`stroke-width`, `stroke-linejoin`, `stroke-linecap`, `stroke-miterlimit`) become solid outlines — line-icon sets (`fill="none" stroke="currentColor"`) work, `currentColor` taking the material colour |
+| `curveSegments` | 12 | Points per curve (curves are sampled by length: large circles stay round) |
+| `layerGap` | `depth × 0.02` | Later paths sit this far in front (painter's order) |
+
+Paths, `rect`, `circle`, `ellipse`, `polygon`, `polyline`, `line`, `use`, nested transforms and `<style>` classes are read; `fill-rule` (`nonzero` / `evenodd`) and holes are honoured. `<text>` is not supported: convert text to outlines in the design tool.
+
+## Models
+
+```json
+{ "id": "robot", "kind": "model", "src": "library:models/characters/robot.glb", "fit": 2,
+  "animation": { "clip": "Idle", "loop": true, "crossfade": 0.3 }, "position": [0, 0, 0], "rotation": [0, 20, 0] }
+```
+
+| Field | Default | Meaning |
+|---|---|---|
+| `src` | (required) | `.glb` / `.gltf` project path or `library:<id>` (`agent3d assets library --kind model` lists ids, sizes, triangle counts and clip names) |
+| `fit` | | Scale the model so its largest dimension equals this size (units) — library and downloaded models come in arbitrary units |
+| `center` | true | Move the model so its bounding-box bottom centre sits at the object's origin |
+| `animation` | | `{ clip (name or index), loop, speed, crossfade (s), offset (start time in the clip, s), blend: { "<clip>": weight } }` — `blend` plays extra clips at once with weights 0..1, animatable as `<id>.animation.<clip>.weight` |
+| `morph` | | Morph-target influences by name `{ "Smile": 0.6 }`, animatable as `<id>.morph.<name>` |
+| `material` | | Overrides every material of the model (a colour, a preset…) |
+
+Interactions switch clips with `playClip`, scripts with `obj.playAnimation(clip)`. Check a new model's orientation and size with `agent3d render --isolate <id>`. Library models are CC0 except a few CC-BY-4.0 ones (`models/products/sneaker.glb`, `iridescent-lamp.glb`, `velvet-sofa.glb`, the animated fox) whose credit `check` reports and exports write to `CREDITS.txt` — see [assets.md](assets.md).
+
+Compressed models: `.glb` files with `EXT_meshopt_compression` (made by `assets optimize`) and `EXT_texture_webp` load as is; Draco-compressed models are not supported.
+
+## Generators and particles
+
+### Generators
+
+```json
+{ "id": "land", "kind": "generator", "generator": "terrain", "seed": 7, "params": { "size": 40, "height": 6 } }
+```
+
+Procedural content built at load time, deterministic with `seed` (default: derived from `scene.seed` and the object id), zero bytes: `terrain`, `trees`, `rocks`, `grass`, `flowers`, `water`, `clouds`, `city`, `character`, `planet`, `starfield`, `blob`, `waveGrid`, `maze`, `road`, `floatingIsland`, `globe`, `crystals`, `galaxy`, `bars3d`, `abstractShapes`. `agent3d catalog generators <id>` lists each one's `params`.
+
+`material` overrides the main surface of the generators that support it (`blob`, `rocks`, `terrain`, `planet`, `floatingIsland`, `globe`, `crystals`, `bars3d`, `abstractShapes`; the catalog entry says which part) — e.g. `{ "type": "shader", "shader": "gradientFlow" }` on a blob keeps its morph. Without a colour / preset / map, lit materials keep the generator's own vertex colours. Generators that publish collision boxes (the maze with `bodies: true`) get a static compound body.
+
+### Particles
+
+```json
+{ "id": "sparkles", "kind": "particles", "preset": "magic", "count": 120, "area": [8, 3, 2], "color": ["#ffd166", "#ff7ab6"] }
+```
+
+`preset` (`agent3d catalog particlePresets`: stars, snow, rain, fireflies, confetti, sparks, dust, bubbles, embers, hearts, magic, smoke, fire, petals, leaves, galaxyDust, bokeh) and overrides: `count`, `area` (emission box), `size`, `color` (one or a list), `speed`, `direction`, `spread` (0..1), `lifetime`, `opacity`, `blending` (`normal` / `additive`), `shape` (`soft` default, `point`, `square`, `circle`, `star`, `spark`, `streak` (velocity-stretched), `heart`, `bubble`, `smoke`, `petal`, `leaf`, `ring`), `seed`. All motion is a pure function of time (deterministic).
 
 ## Behaviours
 
 ```json
 "behaviours": [
   { "type": "float", "amplitude": 0.1, "speed": 0.3 },
-  { "type": "hoverScale", "scale": 1.1, "when": "always" },
+  { "type": "hoverScale", "scale": 1.1 },
   { "type": "appear", "effect": "rise", "duration": 1, "delay": 0.2 }
 ]
 ```
 
-Procedural animation and interaction on objects and lights: `type` (catalog id), `when` (`always` default, `hover`, `click`, `visible`, `scroll`), `delay` (s), and the behaviour's parameters. The behaviours (rotate, float, bob, pulse, wobble, sway, orbit, path, followPointer, lookAtPointer, hoverScale, hoverLift, clickBounce, spinOnClick, scrollRotate, scrollMove, drift, blink, colorCycle, flicker, billboard, appear, magnet, spring, parallax, tilt, breathe, noise, lookAt…) and their parameters are in [catalog.md](catalog.md#behaviours). Pro motion: `spring` (pointer follow with overshoot), `parallax` (depth layers with pointer + scroll), `tilt` (card tilt on hover), `breathe` (organic idle), `noise` (organic wander), `lookAt` (face an object / the camera).
+Procedural animation and interaction on objects and lights: `type` (catalog id), `when` (`always` default, `hover`, `click`, `visible`, `scroll`), `delay` (s), and the behaviour's parameters ([catalog.md](catalog.md#behaviours)): rotate, float, bob, pulse, wobble, sway, orbit, path, followPointer, lookAtPointer, hoverScale, hoverLift, clickBounce, spinOnClick, scrollRotate, scrollMove, drift, blink, colorCycle, flicker, billboard, appear, magnet, spring (pointer follow with overshoot), parallax (depth layers with pointer + scroll), tilt (card tilt on hover), breathe (organic idle), noise (organic wander), lookAt (face an object / the camera). Behaviours stack with timeline tracks.
 
 ## Timeline
 
@@ -249,37 +470,33 @@ Procedural animation and interaction on objects and lights: `type` (catalog id),
 }
 ```
 
-- `duration` (s), `loop` (`true`, `false` or `"pingpong"`), `speed` (playback rate, default 1).
-- `trigger` — what drives the clock: `load`, `visible` (default), `hover` (scrubs forward while hovered, back on leave), `click`, `scroll` (time = scroll progress, see `scroll`), `manual` (only interactions / `player.playSegment()` move it).
-- `autoplay`: `true` (default), `false` (wait for an interaction), or a segment name — the trigger then plays only that segment (an intro that stops before the hover states).
-- `markers: { name: seconds }` — crossing one emits an event with its name (payload `{ marker, time }`): scripts `api.on(name)`, interactions `{ "on": "event", "event": name }`, `player.on(name, fn)`, and the element's `agent3d:event`.
-- `segments: { name: { from, to, loop?, speed? } | [from, to] }` — `from` / `to` in seconds or marker names; `to < from` plays backwards. `"timeline"` is the whole timeline.
-- `scroll` (with `trigger: "scroll"`): `{ start, end, smoothing }` — ScrollTrigger-like positions `"<element edge> <viewport edge>"` with edges `top | center | bottom | N% | Npx`; default `"top bottom"` → `"bottom top"`; `smoothing` 0..0.99 (default 0.8). In deterministic renders the progress is `t / duration`, so `agent3d render --count 8` shows the scroll states.
-- Track `target`: `<selector>.<property>`.
-  - Selector: an object / light id, `camera`, `environment`, `postfx`, a comma list `a,b,c`, `tag:<tag>` (objects with that tag, scene order), `children:<id>` (direct children — text letters with `splitLetters` too), or a letter `<textId>/<n>`.
-  - Object properties: `position`, `rotation` (degrees), `scale` (number = uniform) and their `.x/.y/.z`, `visible`, `material.<prop>` (`opacity`, `color`, `emissive`, `emissiveIntensity`, `metalness`, `roughness`, `transmission`, `iridescence`, `clearcoat`, `sheen`, …), `material.uniforms.<name>`; models: `morph.<name>`, `animation.<clip>.weight | speed | time` (blend clips, scrub a clip by scroll).
-  - Lights: `intensity`, `color`, `position`, `target`, `angle` (degrees), `penumbra`, `distance`, `decay`. Camera: `position`, `target`, `fov`, `zoom` (orthographic), `focus` (depth-of-field distance → postfx `dof`). Environment: `fog.color | near | far | density`, `lightingIntensity`, `exposure`, `background` (solid colours). Post effects: `postfx.<type>.<param>` (numeric / colour params of an effect present in `postfx`).
-- `keys`: `[time, value]` or `[time, value, ease]` sorted by time — the key's ease shapes the segment that ends at it. Values: numbers, `[x, y, z]`, colours, booleans, or relative strings `"+=1"`, `"-=0.5"`, `"*=1.2"` (from the property's rest value; vec3 keys may mix numbers and relative strings).
-- `stagger` (s) offsets each target of a multi-target selector; `staggerFrom`: `start` (default), `end`, `center`, `edges`, `random` (seeded).
-- `ease` (track default, `linear` when omitted): `linear`, `step`, `in` / `out` / `inOut` × `Quad`, `Cubic`, `Quart`, `Quint`, `Sine`, `Expo`, `Circ`, `Back`, `Elastic`, `Bounce` (e.g. `outCubic`, `inOutBack`), or parametric `"cubicBezier(x1, y1, x2, y2)"` (CSS), `"spring(stiffness, damping[, mass])"` (lower damping = more bounce; settles at the key), `"steps(n)"` / `"steps(n, start)"`.
-- Reversed segments play the curve backwards (an `outBack` entrance becomes an `inBack` exit). For interruptible hover states prefer interaction `set` tweens or `toggle` (which resumes from where it is).
+| Field | Default | Meaning |
+|---|---|---|
+| `duration` | (required) | Seconds |
+| `loop` | false | `true`, `false` or `"pingpong"` |
+| `speed` | 1 | Playback rate |
+| `trigger` | `visible` | What drives the clock: `load`, `visible`, `hover` (scrubs forward while hovered, back on leave), `click`, `scroll` (time = scroll progress, see `scroll`), `manual` (only interactions, scripts and `player.playSegment()` move it) |
+| `autoplay` | true | `false` waits for an interaction; a segment name makes the trigger play only that segment (an intro that stops before the hover states) |
+| `markers` | | `{ name: seconds }` — crossing one emits an event with its name (payload `{ marker, time }`): scripts `api.on(name)`, interactions `{ "on": "event" }`, `player.on(name, fn)`, the element's `agent3d:event` |
+| `segments` | | `{ name: { from, to, loop?, speed? } \| [from, to] }` — `from` / `to` in seconds or marker names; `to < from` plays backwards. `"timeline"` names the whole timeline |
+| `scroll` | | With `trigger: "scroll"`: `{ start, end, smoothing }` — ScrollTrigger-like `"<element edge> <viewport edge>"` with edges `top`, `center`, `bottom`, `N%`, `Npx`; default `"top bottom"` → `"bottom top"`; `smoothing` 0..0.99 (default 0.8). In deterministic renders the progress is `t / duration` (`agent3d render --count 8` shows the scroll states; `--scroll 0.5` one position) |
+| `tracks` | (required) | Keyframe tracks (below) |
 
-### Camera shots
+### Tracks
 
-```json
-"camera": {
-  "type": "perspective", "fov": 40, "position": [0, 1, 10], "target": [0, 0.5, 0],
-  "shake": { "amount": 0.02, "rotation": 0.25, "speed": 0.4 },
-  "shots": [
-    { "type": "pushIn", "at": 0, "duration": 2, "distance": 2.5 },
-    { "type": "path", "at": 2, "duration": 2.5, "points": [[2.5, 1.6, -1.2], [2.8, 1.7, -2]], "lookAt": "knot" },
-    { "type": "crane", "at": 8, "duration": 2, "height": 2.5, "distance": -2 },
-    { "type": "focus", "at": 3, "duration": 1, "object": "knot" }
-  ]
-}
-```
+`{ "target": "<selector>.<property>", "keys": [...], "ease"?, "stagger"?, "staggerFrom"? }`
 
-Shots run on the timeline clock (scroll-driven with `trigger: "scroll"`; scene time without a timeline), in `at` order, each from the pose the previous ones left (overlaps blend). `ease` defaults to `inOutCubic`. Types: `dolly` / `pushIn` / `pullOut` (along the view axis by `distance`; pushIn default 25 % closer), `truck` (sideways), `pedestal` (up / down, target follows), `crane` (rises by `height` while the target stays; `distance` moves toward it), `orbit` (`angle` yaw, `elevation`, `distance` degrees / units), `zoom` (`fov`), `move` (to `position` / `target` / `fov`), `path` (Catmull-Rom through `points`, looking `lookAhead` ahead — default 0.05 of the path — or at `lookAt`: an object id or a point), `lookAt` (pan to `object` or `target`), `focus` (rack focus: postfx `dof` focus → `focus` distance or the distance to `object`). Camera tracks (`camera.position`…) apply after the shots.
+- **Selector**: an object / light id, `camera`, `environment`, `postfx`, a comma list `a,b,c`, `tag:<tag>` (objects with that tag, scene order), `children:<id>` (direct children — text letters with `splitLetters` too), or a letter `<textId>/<n>`.
+- **Object properties**: `position`, `rotation` (degrees), `scale` (number = uniform) and their `.x` / `.y` / `.z`, `visible`, `material.<prop>` (`opacity`, `color`, `emissive`, `emissiveIntensity`, `metalness`, `roughness`, `transmission`, `iridescence`, `clearcoat`, `sheen`, …), `material.uniforms.<name>`; models: `morph.<name>`, `animation.<clip>.weight | speed | time` (blend clips, scrub a clip by scroll).
+- **Lights**: `intensity`, `color`, `position`, `target`, `angle` (degrees), `penumbra`, `distance`, `decay`. **Camera**: `position`, `target`, `fov`, `zoom` (orthographic), `focus` (depth-of-field distance → postfx `dof`). **Environment**: `fog.color | near | far | density`, `lightingIntensity`, `exposure`, `background` (solid colours). **Post effects**: `postfx.<type>.<param>` (numeric / colour params of an effect present in `postfx`).
+- **Keys**: `[time, value]` or `[time, value, ease]`, sorted by time — a key's ease shapes the segment that *ends* at it (overriding the track ease). Values: numbers, `[x, y, z]`, colours, booleans, or relative strings `"+=1"`, `"-=0.5"`, `"*=1.2"` (from the property's rest value; vec3 keys may mix numbers and relative strings).
+- **Stagger**: `stagger` (s) offsets each target of a multi-target selector; `staggerFrom`: `start` (default), `end`, `center`, `edges`, `random` (seeded).
+
+### Eases
+
+`linear` (track default), `step`, `in` / `out` / `inOut` × `Quad`, `Cubic`, `Quart`, `Quint`, `Sine`, `Expo`, `Circ`, `Back`, `Elastic`, `Bounce` (e.g. `outCubic`, `inOutBack`), or parametric `"cubicBezier(x1, y1, x2, y2)"` (CSS), `"spring"` / `"spring(stiffness, damping[, mass])"` (lower damping = more bounce; settles at the key), `"steps(n)"` / `"steps(n, start)"`. The same names work in camera shots, text reveals and interaction `set` tweens.
+
+Reversed segments play the curve backwards (an `outBack` entrance becomes an `inBack` exit). For interruptible hover states prefer interaction `set` tweens or `toggle` (which resumes from where it is).
 
 ## Interactions
 
@@ -296,10 +513,25 @@ Shots run on the timeline clock (scroll-driven with `trigger: "scroll"`; scene t
 ]
 ```
 
-- `on`: `click`, `hover`, `hoverEnd` (on `target`, or the whole canvas without one), `visible` (once, when the embed starts), `scroll` (progress crosses `at` downward), `key` (`key`: a `KeyboardEvent.code`), `event` (`event`: a marker or emitted name). `once: true` fires a single time.
-- Actions (`do`, in order): `{ "play": "<segment>" | "timeline", "reverse"? }`, `{ "toggle": "<segment>" }` (forward, then backward from where it is), `{ "seek": seconds | "<marker>" }`, `{ "set": { "path", "value" }, "duration"?, "ease"? }` (any track target; tweened from the shown value, then held), `{ "emit": "<name>", "payload"? }`, `{ "openUrl": "https://…" | "/path", "newTab"? }`, `{ "playClip": "<clip>", "target": "<modelId>", "loop"?, "speed"?, "crossfade"? }`.
-- `openUrl` is the only way a scene navigates: http(s) or page-relative URLs only, on `click` / `key` interactions only (a user gesture), never in headless renders (an `openUrl` event is emitted instead). Cross-origin URLs open in a new tab (`noopener,noreferrer`) unless `newTab: false`.
-- Click / hover targets are pickable and get a pointer cursor.
+| Field | Meaning |
+|---|---|
+| `on` | `click`, `hover`, `hoverEnd` (on `target`, or the whole canvas without one), `visible` (once, when the embed starts), `scroll` (progress crosses `at` downward), `key` (`key`: a `KeyboardEvent.code`), `event` (`event`: a marker or emitted name) |
+| `target`, `key`, `event`, `at` | The trigger's subject (see `on`) |
+| `once` | Fire a single time |
+| `do` | Actions, run in order (below) |
+
+| Action | Effect |
+|---|---|
+| `{ "play": "<segment>" \| "timeline", "reverse"? }` | Play a segment (or the whole timeline from 0) |
+| `{ "toggle": "<segment>" }` | Forward, then backward from where it is on the next trigger (open / close) |
+| `{ "seek": seconds \| "<marker>" }` | Jump the timeline |
+| `{ "set": { "path", "value" }, "duration"?, "ease"? }` | Any [track target](#tracks), tweened from the shown value, then held |
+| `{ "emit": "<name>", "payload"? }` | Event for scripts, interactions, `player.on` and the page (`agent3d:event`) |
+| `{ "openUrl": "https://…" \| "/path", "newTab"? }` | Navigate (below) |
+| `{ "playClip": "<clip>", "target": "<modelId>", "loop"?, "speed"?, "crossfade"? }` | Switch a model's animation clip |
+
+- `openUrl` (with object `href`) is the only way a scene navigates. `openUrl` accepts http(s) or page-relative URLs only, on `click` / `key` interactions only (a user gesture), never in headless renders (an `openUrl` event is emitted instead). Cross-origin URLs open in a new tab (`noopener,noreferrer`) unless `newTab: false`.
+- Click / hover targets become pickable and get a pointer cursor.
 - Headless: `agent3d render --input '[{"t": 0.5, "pointer": [0, 0]}, {"t": 2, "click": [0.7, 0.1]}]'` fires hover / click interactions at those times. Page scripts: `player.playSegment(name)`, `player.trigger("click", id)`, `player.emit(name)`, `player.on(name, fn)`, `player.setScrollProgress(p)`.
 
 ## Post effects
@@ -312,55 +544,20 @@ Shots run on the timeline clock (scroll-driven with `trigger: "scroll"`; scene t
 ]
 ```
 
-Each entry is a catalog effect (`{ "type": "<id>", …params }`, parameters and GPU cost in [catalog.md](catalog.md#post-effects)) or a **look preset** `{ "type": "look", "preset": "cinematic" | "product" | "dreamy" | "neon" | "retro" | "clean", "intensity"?: 0…1 }` that expands into a tuned stack (exact expansions in [catalog.md → Look presets](catalog.md#look-presets)). An effect listed next to a look overrides the matching expanded entry param by param (above: the look's vignette with `darkness` 0.5).
+Each entry is a catalog effect (`{ "type": "<id>", …params }`, parameters and GPU cost in [catalog.md](catalog.md#post-effects)) or a **look preset** `{ "type": "look", "preset": "cinematic" | "product" | "dreamy" | "neon" | "retro" | "clean", "intensity"?: 0..1 }` that expands into a tuned stack (exact expansions in [catalog.md → Look presets](catalog.md#look-presets)). An effect listed next to a look overrides the matching expanded entry param by param (above: the look's vignette with `darkness` 0.5). Each effect appears once.
 
 | Group | Effects |
 |---|---|
-| Realism (HDR, before tone mapping) | `ao` (GTAO contact shading — on a `shadowOnly` ground it becomes a contact shadow), `outline`, `godrays` (from the sky sun, a light id or the first directional light), `dof` (bokeh, `focusOn: "<objectId>"` autofocus), `bloom`, `lensflare` (anamorphic streaks + ghosts + halo) |
-| Antialiasing | `fxaa`, `smaa`, `taa` (supersampled stills: deterministic renders, reduced-motion still and paused frames accumulate `samples` jittered frames; free while playing) |
+| Realism (HDR, before tone mapping) | `ao` (GTAO contact shading — on a `shadowOnly` ground it becomes a contact shadow), `outline`, `godrays` (from the sky sun, a light id or the first directional light), `dof` (bokeh; `focusOn: "<objectId>"` autofocus), `bloom`, `lensflare` (anamorphic streaks + ghosts + halo) |
+| Antialiasing | `fxaa`, `smaa` (keep one), `taa` (supersampled stills: deterministic renders, the reduced-motion still and paused frames accumulate `samples` jittered frames; free while playing) |
 | Stylised (declared order) | `tiltshift`, `pixelate`, `halftone`, `ascii`, `glitch` |
 | Finish (merged into one pass) | `chromatic`, `sharpen`, `grading` (procedural looks `cinematic`, `teal-orange`, `warm`, `cool`, `bleach`, `noir`, `vintage`, `pastel` + exposure, white balance, contrast, lift / gamma / gain, split toning, saturation), `vignette`, `film` |
 
-The pipeline order is fixed (the declared order only matters among the stylised effects): scene in half-float HDR (MSAA per quality tier) → realism effects (`ao` → `outline` → `godrays` → `dof` → `bloom` → `lensflare`) → tone mapping + background (the background keeps its exact colour) → `fxaa` / `smaa` → stylised → finish (sRGB + dithering, no banding). `ao`, `dof`, `godrays` and `outline` share one normal / depth pre-pass. Timeline tracks can animate `postfx.<type>.<param>` (e.g. `postfx.dof.focus` for a rack focus, `postfx.bloom.strength`).
+The pipeline order is fixed (the declared order only matters among the stylised effects): scene in half-float HDR (MSAA per [quality tier](#quality-tiers)) → realism (`ao` → `outline` → `godrays` → `dof` → `bloom` → `lensflare`) → tone mapping + background (the background keeps its exact colour) → `fxaa` / `smaa` → stylised → finish (sRGB + dithering, no banding). `ao`, `dof`, `godrays` and `outline` share one normal / depth pre-pass. Timeline tracks animate `postfx.<type>.<param>` (e.g. `postfx.dof.focus` for a rack focus, `postfx.bloom.strength`).
 
-### Quality tiers
+## Physics
 
-`target.quality` (default `auto`):
-
-| Tier | DPR cap | MSAA | Effects |
-|---|---|---|---|
-| `low` | 1 | off | `high`-cost effects (`ao`, `dof`) off, heavy effects at half resolution, ≤ 4 still samples |
-| `medium` | 1.5 | 4× | all effects, heavy ones at half resolution |
-| `high` | `maxDpr` (2) | 4× | all effects, heavy ones at half resolution, more samples |
-| `ultra` | `maxDpr` | 8× | full-resolution effects, most samples, ≤ 64 still samples |
-
-`auto` picks `high` on desktops, `medium` on phones / small GPUs and `low` on software GL, then adapts while playing: if the frame rate stays under 40 fps for 3 s it lowers the pixel ratio (down to 1), then the tier (never back up). Deterministic renders (`agent3d render`, posters, video) always use `high` unless the tier is explicit. `agent3d check` reports the post-processing GPU cost (`budget.gpu`) and warns about heavy effects on games.
-
-## Physics, scripts, HUD and audio (games)
-
-```json
-"physics": { "gravity": [0, -9.81, 0], "step": 0.016666 },
-"scripts": ["scripts/game.js"],
-"ui": {
-  "elements": [
-    { "id": "score", "type": "text", "text": "Score {score}", "anchor": "top-left", "style": "pill" },
-    { "id": "start", "type": "button", "text": "Play", "anchor": "bottom", "action": "start", "visible": "phase == 'ready'" },
-    { "id": "energy", "type": "bar", "value": "energy", "anchor": "top" }
-  ],
-  "color": "#ffffff",
-  "accent": "#ef476f"
-},
-"audio": { "sounds": { "coin": { "preset": "coin" }, "jingle": { "src": "assets/audio/jingle.mp3", "volume": 0.5 } }, "music": { "preset": "chiptune-loop", "volume": 0.3 } }
-```
-
-- `body` on an object: see [Rigid-body physics](#rigid-body-physics) below.
-- UI elements: `id`, `type` (`text`, `button`, `bar`), `text` with `{state key}` placeholders, `anchor` (top-left, top, top-right, left, center, right, bottom-left, bottom, bottom-right), `style` (`plain`, `pill`, `title`, `subtitle`), `value` (bar: state key holding 0..1), `action` (button: event sent to scripts), `visible` (boolean, state key or expression such as `"phase == 'over'"`). `ui.font` takes system font stacks only (no web font is fetched).
-- Audio: synthesised presets (zero bytes; catalog `sounds`) or project files. Audio never starts before a user gesture; `muted` sets the initial state of the mute button.
-- Scripts: see [scripting.md](scripting.md).
-
-### Rigid-body physics
-
-Objects with a `body` are simulated as real rigid bodies (position **and rotation**; [cannon-es](https://github.com/pmndrs/cannon-es), MIT, bundled in a lazy runtime chunk that only loads when the scene has bodies or joints). The simulation runs at the fixed `physics.step` and is deterministic: `seek(t)` always gives the same transforms, whatever the seek order (renders and posters are reproducible).
+Objects with a `body` are simulated as real rigid bodies (position **and rotation**) by [cannon-es](https://github.com/pmndrs/cannon-es) (MIT), bundled in a lazy runtime chunk that only loads when the scene has bodies or joints. The simulation runs at the fixed `physics.step` and is deterministic: `seek(t)` always gives the same transforms, whatever the seek order (renders and posters are reproducible). Scripts drive bodies with `api.physics` ([scripting.md](scripting.md#physics)).
 
 ```json
 "physics": {
@@ -381,54 +578,100 @@ Objects with a `body` are simulated as real rigid bodies (position **and rotatio
 }
 ```
 
-| `physics` field | Meaning |
-|---|---|
-| `gravity` | World gravity, default `[0, -9.81, 0]` (m/s²) |
-| `step` | Fixed simulation step (s), default 1/60 |
-| `substeps` | Solver sub-steps per step (1–8, default 1): stabler tall stacks, less tunnelling |
-| `iterations` | Constraint solver iterations (default 10) |
-| `sleep` | Resting bodies fall asleep (cheap, stable stacks); default `true` |
-| `debug` | Draws collider wireframes on top of the scene (green dynamic, blue static, orange kinematic, magenta trigger, grey sleeping) — use it in `agent3d render` to check colliders |
-| `materials` | Named surfaces `{ friction?, restitution? }` referenced by `body.material` |
-| `contacts` | Per-pair overrides `{ a, b, friction?, restitution? }` between two named materials (otherwise friction = √(f₁·f₂), restitution = max) |
-| `layers` | Collision layer names (bit order, max 16 with `"default"`); layers used by bodies are added automatically |
-| `joints` | Constraints, see below |
+### World
 
-**Body** (`objects#…body`):
+| `physics` field | Default | Meaning |
+|---|---|---|
+| `gravity` | `[0, -9.81, 0]` | m/s² |
+| `step` | 1/60 | Fixed simulation step (s); scripts' `update` runs at the same step |
+| `substeps` | 1 | Solver sub-steps per step (1–8): stabler tall stacks, less tunnelling |
+| `iterations` | 10 | Constraint solver iterations |
+| `sleep` | true | Resting bodies fall asleep (cheap, stable stacks) |
+| `debug` | false | Draws collider wireframes on top of the scene (green dynamic, blue static, orange kinematic, magenta trigger, grey sleeping) — use it with `agent3d render` to check colliders |
+| `materials` | | Named surfaces `{ friction?, restitution? }` referenced by `body.material` |
+| `contacts` | | Per-pair overrides `{ a, b, friction?, restitution? }` between two named materials (otherwise friction = √(f₁·f₂), restitution = max) |
+| `layers` | | Collision layer names in bit order (max 16 with `"default"`, always first); layers used by bodies but not listed are appended |
+| `joints` | | Constraints (below) |
 
-| Field | Meaning |
-|---|---|
-| `type` | `dynamic` (simulated), `static` (immovable), `kinematic` (moved by scripts / velocity, pushes dynamic bodies, ignores gravity), `trigger` (detects overlaps, never pushes) |
-| `shape` | `box` (default: the object's bounding box, in the object's rotated frame), `sphere`, `cylinder`, `capsule` (Y-up), `convex` (hull of the mesh / model, good for dynamic models), `trimesh` (exact triangles; static / kinematic only — level geometry, models), `heightfield` (terrain generators), `compound` (`shapes`), `auto` (primitive geometry → matching shape, terrain → heightfield, static models / meshes → trimesh, dynamic → convex) |
-| `size`, `radius`, `height` | Override the measured box size / sphere, cylinder, capsule radius / cylinder, capsule height (world units) |
-| `offset` | Collider centre relative to the object origin (default: bounding-box centre) |
-| `shapes` | `compound`: `[{ "shape": "box" \| "sphere" \| "cylinder" \| "capsule", "size"?, "radius"?, "height"?, "offset"?, "rotation"? }]` (offsets from the object origin) |
-| `mass` | kg, default 1 (dynamic only) |
-| `friction`, `restitution`, `material` | Surface: friction (default 0.5), bounciness 0..1 (default 0.2), or a `physics.materials` name |
-| `velocity`, `angularVelocity` | Initial velocity (m/s) and spin (degrees / s) |
-| `linearDamping`, `angularDamping` | 0..1, default 0.01 (air drag) |
-| `gravityScale` | Gravity multiplier (0 = floats) |
-| `fixedRotation` | Never rotates (players driven by velocity) |
-| `character` | Character controller body: fixed rotation, no friction (no wall sticking), never sleeps — drive it with `api.physics.moveCharacter` / `jump` |
-| `sleep` | `false` keeps it always awake |
-| `ccd` | Fast object (bullets, thrown balls): extra sub-steps against tunnelling |
-| `layer`, `collidesWith` | Collision layer name and the layers it collides with (default: all) |
+### Bodies
 
-Generators that publish collision boxes (the maze generator with `bodies: true`) get a static compound body with the generator's id.
+```json
+{ "id": "ball", "kind": "mesh", "geometry": { "type": "sphere", "radius": 0.5 }, "position": [0, 4, 0],
+  "body": { "type": "dynamic", "shape": "sphere", "mass": 1, "restitution": 0.6, "material": "rubber" } }
+```
 
-**Joints** (`physics.joints[]`, pivots and axes in world space at scene start; omit `b` to attach `a` to the world):
+| `body` field | Default | Meaning |
+|---|---|---|
+| `type` | (required) | `dynamic` (simulated), `static` (immovable), `kinematic` (moved by scripts / velocity, pushes dynamic bodies, ignores gravity), `trigger` (detects overlaps, never pushes) |
+| `shape` | `box` | `box` (the object's bounding box, in its rotated frame), `sphere`, `cylinder`, `capsule` (Y-up), `convex` (hull of the mesh / model — good for dynamic models), `trimesh` (exact triangles; static / kinematic only — level geometry), `heightfield` (terrain generators; static / kinematic only), `compound` (`shapes`), `auto` (sphere / capsule / cylinder / box geometry → that shape; terrain → heightfield; other meshes, models, SVGs → trimesh when static / kinematic, convex when dynamic; generators → trimesh when static; else box) |
+| `size`, `radius`, `height` | measured | Override the box size / the sphere, cylinder, capsule radius / the cylinder, capsule height (world units) |
+| `offset` | bounding-box centre | Collider centre relative to the object origin |
+| `shapes` | | `compound`: `[{ "shape": "box" \| "sphere" \| "cylinder" \| "capsule", "size"?, "radius"?, "height"?, "offset"?, "rotation"? }]` (offsets from the object origin) |
+| `mass` | 1 | kg (dynamic only) |
+| `friction`, `restitution`, `material` | 0.5, 0.2 | Surface friction, bounciness 0..1, or a `physics.materials` name |
+| `velocity`, `angularVelocity` | | Initial velocity (m/s) and spin (degrees / s) |
+| `linearDamping`, `angularDamping` | 0.01 | 0..1 (air drag) |
+| `gravityScale` | 1 | Gravity multiplier (0 = floats) |
+| `fixedRotation` | false | Never rotates |
+| `character` | false | Character-controller body: fixed rotation, no friction (no wall sticking), never sleeps — drive it with `api.physics.moveCharacter` / `jump` |
+| `sleep` | true | `false` keeps it always awake |
+| `ccd` | false | Fast object (bullets, thrown balls): extra sub-steps against tunnelling |
+| `layer`, `collidesWith` | `"default"`, all | Collision layer name and the layers it collides with |
+
+**Scaling a body from a script** (`obj.scale.set(…)`) rebuilds its collider at the new size (velocity kept). A body held by a joint keeps its start-size collider (a `physics` warning says so); timeline / behaviour scale animations never resize colliders.
+
+**Dynamic bodies rotate.** A player or a vehicle you steer by setting its velocity tumbles under friction unless it has `"character": true` (platformers, top-down heroes) or `"fixedRotation": true`.
+
+### Joints
+
+`physics.joints[]`: pivots and axes in world space at scene start; `a` (and `b`) are object ids with a body; omit `b` to attach `a` to the world. Every joint takes `id` (for `api.physics.setMotorSpeed`), `maxForce` (default 1e6) and `collideConnected` (default `false`).
 
 | `type` | Fields |
 |---|---|
-| `hinge` | `pivot`, `axis` (default `[0, 1, 0]`), `motor: { speed (degrees / s), maxForce? }` — doors, wheels, flippers |
-| `point` | `pivot` — ball-and-socket: pendulums, chains, ragdoll joints |
-| `distance` | `distance` (default: current distance between the centres) — rigid rods |
-| `lock` | — welds two bodies together (breakable with `maxForce`) |
-| `spring` | `restLength` (default: current distance), `stiffness` (default 50), `damping` (default 1), `pivot` = world anchor on `b` (or the world point when `b` is omitted) |
+| `hinge` | `pivot`, `axis` (default `[0, 1, 0]`), `motor: { speed (degrees / s), maxForce? }`, `limits: [minDeg, maxDeg]` (angle range relative to the start pose, e.g. `[0, 110]` for a door, `[-30, 30]` for a flipper) — doors, wheels, flippers |
+| `point` | `pivot` — ball-and-socket: pendulums, chains, ragdolls |
+| `distance` | `distance` (default: the current distance between the centres) — rigid rods |
+| `lock` | Welds two bodies (breakable with `maxForce`) |
+| `spring` | `restLength` (default: the current distance), `stiffness` (50), `damping` (1); `pivot` = world anchor on `b` (or the world point when `b` is omitted) |
 
-All joints take `maxForce` (default 1e6) and `collideConnected` (default `false`). Scripts drive bodies with `api.physics` (impulses, forces, torques, velocities, raycasts on the real shapes, contacts with point / normal / impulse, trigger enter / exit, character controller): see [scripting.md](scripting.md).
+## Scripts, HUD and audio
 
-**Checking colliders**: set `"debug": true` and run `agent3d render` — the wireframes show exactly what collides.
+```json
+"scripts": ["scripts/game.js"],
+"ui": {
+  "elements": [
+    { "id": "score", "type": "text", "text": "Score {score}", "anchor": "top-left", "style": "pill" },
+    { "id": "start", "type": "button", "text": "Play", "anchor": "bottom", "action": "start", "visible": "phase == 'ready'" },
+    { "id": "energy", "type": "bar", "value": "energy", "anchor": "top" }
+  ],
+  "color": "#ffffff",
+  "accent": "#ef476f"
+},
+"audio": {
+  "sounds": { "coin": { "preset": "coin" }, "jingle": { "src": "assets/audio/jingle.mp3", "volume": 0.5 } },
+  "music": { "preset": "chiptune-loop", "volume": 0.3, "loop": true },
+  "muted": false
+}
+```
+
+- **`scripts`**: project paths of ES modules whose default export receives the `ScriptApi`. The contract, the sandbox rules and headless testing are in [scripting.md](scripting.md).
+- **`ui.elements[]`**: `id`, `type` (`text`, `button`, `bar`), `text` with `{key}` placeholders from `api.state` (`{score}`, `{state.lives}`, or an expression), `anchor` (`top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right`), `style` (`plain`, `pill`, `title`, `subtitle`), `value` (bar: state key holding 0..1), `action` (button: event sent to scripts), `visible` (boolean, state key or expression such as `"phase == 'over'"`). `ui.font` takes CSS system font stacks only (no web font is fetched); `ui.color`, `ui.accent` theme it.
+- **`audio`**: `sounds` are named sounds scripts play with `api.audio.play(name)` — synthesised presets (`agent3d catalog sounds`: coin, jump, hit, explosion, click, powerup, laser, win, lose, whoosh, ambient-pad, chiptune-loop; zero bytes) or project files, each with `volume`; `music` (`src` or `preset`, `volume`, `loop`) starts with `api.audio.music(true)`; `muted` sets the initial state of the HUD's mute button. Audio never starts before a user gesture.
+
+## Data bindings
+
+```json
+{ "data": { "title": "Spring sale", "cta": "Shop now" },
+  "objects": [{ "id": "headline", "kind": "text", "text": "{data.title}", "href": "/sale?ref={data.cta}" }] }
+```
+
+Text objects' `text`, every object's `href`, the scene's `title` / `ariaLabel`, HUD element texts, interaction links (`interactions[].do[].openUrl`) and string values inside generator `params` may contain `{data.key}` placeholders: `{data.title}`, `{data.product.name}` (nested), `{data.cta|Shop now}` (fallback when the value is missing or empty). They are replaced on a copy of the scene before it is built, from `scene.data` — which the page overrides per embed with `data-*` attributes (`<agent3d-scene data-title="Summer sale">`, `data-cta-label` → `ctaLabel`, `data-json='{"price": 9}'`) or `element.setData({...})` ([export.md](export.md#data-bindings)). A missing value without a fallback becomes an empty string, so give every key a default in `scene.data`. Scripts read the merged values as `api.data`.
+
+In generator `params`, a placeholder that is the **whole** value binds the raw data value — arrays, numbers, objects: `"params": { "data": "{data.values}", "maxHeight": "{data.height|3}" }` with `"data": { "values": [3, 5, 8] }` gives bars3d the array (a fallback is read as JSON when it is one). Inside a longer string it is text, like everywhere else. Validation skips the type check of a bound param, so keep `scene.data` defaults of the right type. `agent3d export` resolves `title` / `ariaLabel` placeholders (with `scene.data` and fallbacks) in the snippet's `aria-label` / poster `alt`, the demo page's `<title>` / `og:title` and EMBED.md.
+
+## Issues
+
+Validation and `check` return `Issue` objects: `{ severity: "error" | "warning" | "info", code, path, message, hint? }`. Paths use ids where possible (`objects#logo.material.roughness`) and indices otherwise (`lights[0].intensity`). Errors block saving; warnings (unknown parameters, missing lights…) are saved but should be fixed; infos are advice (attribution, clipped objects, optimisable assets).
 
 ## Project files around the scene
 
@@ -440,17 +683,4 @@ my-banner/
   scripts/            script modules
   renders/            PNGs from `agent3d render`
   dist/               exports from `agent3d export`
-```
-
-## Issues
-
-Validation and `check` return `Issue` objects: `{ severity: "error" | "warning" | "info", code, path, message, hint? }`. Paths use ids where possible (`objects#logo.material.roughness`) and indices otherwise (`lights[0].intensity`). Errors block saving; warnings (unknown parameters, missing lights…) are saved but should be fixed; infos are advice (attribution, clipped objects).
-
-## Data bindings
-
-Text objects' `text`, any object's `href`, `title`, `ariaLabel` and HUD element texts may contain `{data.key}` placeholders: `{data.title}`, `{data.product.name}` (nested), `{data.cta|Shop now}` (fallback when the value is missing or empty). They are replaced on a copy of the scene before it is built, from `scene.data` — which the page can override per embed with `data-*` attributes (`<agent3d-scene data-title="Summer sale">`, `data-cta-label` → `ctaLabel`, `data-json='{"price": 9}'`) or `element.setData({...})` (see `docs/export.md`). A missing value without a fallback becomes an empty string, so give every key a default in `scene.data`.
-
-```json
-{ "data": { "title": "Spring sale", "cta": "Shop now" },
-  "objects": [{ "id": "headline", "kind": "text", "text": "{data.title}", "href": "/sale?ref={data.cta}" }] }
 ```

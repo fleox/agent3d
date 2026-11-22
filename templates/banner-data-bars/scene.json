@@ -1,0 +1,222 @@
+{
+  "version": 1,
+  "id": "banner-data-bars",
+  "title": "Data bars banner",
+  "ariaLabel": "Animated banner: a 3D bar chart growing bar by bar next to the headline {data.headline|Revenue up 42%}",
+  "seed": 2,
+  "data": {
+    "headline": "Revenue up 42%",
+    "caption": "Q1 – Q4 2026 · all regions"
+  },
+  "target": {
+    "kind": "banner",
+    "aspect": "4:1",
+    "budgetKb": 300,
+    "reducedMotion": "static",
+    "posterTime": 3,
+    "maxDpr": 2,
+    "toneMapping": "neutral",
+    "exposure": 1
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 22,
+    "position": [
+      0,
+      2.6,
+      13
+    ],
+    "target": [
+      0,
+      1.15,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.3,
+      "smoothing": 0.93
+    }
+  },
+  "environment": {
+    "background": {
+      "gradient": [
+        "#eef2fb",
+        "#f8faff"
+      ],
+      "angle": 0
+    },
+    "lighting": "soft",
+    "lightingIntensity": 0.9,
+    "rig": {
+      "preset": "studio-3point",
+      "intensity": 0.9,
+      "rotation": 15,
+      "scale": 2
+    },
+    "contactShadows": {
+      "opacity": 0.35,
+      "blur": 2.8,
+      "color": "#1e2a5a"
+    }
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "chart",
+      "kind": "generator",
+      "generator": "bars3d",
+      "position": [
+        4.2,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        -24,
+        0
+      ],
+      "params": {
+        "data": [
+          [
+            3,
+            4,
+            3.6,
+            5,
+            4.4,
+            6,
+            5.6,
+            7,
+            6.6,
+            8.2,
+            7.8,
+            9.6
+          ],
+          [
+            2.2,
+            2.8,
+            2.6,
+            3.4,
+            3.1,
+            4,
+            3.8,
+            4.6,
+            4.3,
+            5.4,
+            5.1,
+            6.2
+          ]
+        ],
+        "barWidth": 0.48,
+        "gap": 0.16,
+        "maxHeight": 2.8,
+        "colors": [
+          "#4f46e5",
+          "#a5b4fc"
+        ],
+        "colorBy": "row",
+        "shape": "rounded",
+        "animation": "grow",
+        "duration": 2.2,
+        "base": true,
+        "baseColor": "#ffffff"
+      }
+    },
+    {
+      "id": "headline",
+      "kind": "text",
+      "text": "{data.headline|Revenue up 42%}",
+      "font": "sans-bold",
+      "size": 0.75,
+      "depth": 0.0,
+      "letterSpacing": -0.02,
+      "align": "left",
+      "position": [
+        -9.2,
+        1.55,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#0f172a"
+      },
+      "reveal": {
+        "effect": "rise",
+        "stagger": 0.03,
+        "duration": 0.6,
+        "delay": 0.2
+      }
+    },
+    {
+      "id": "caption",
+      "kind": "text",
+      "text": "{data.caption|Q1 – Q4 2026 · all regions}",
+      "font": "sans",
+      "size": 0.26,
+      "depth": 0,
+      "align": "left",
+      "position": [
+        -9.17,
+        0.75,
+        0
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#64748b"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "fade",
+          "duration": 0.8,
+          "delay": 0.9,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "accent",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 0.9,
+        "height": 0.08,
+        "depth": 0.02,
+        "radius": 0.03
+      },
+      "position": [
+        -8.7,
+        0.25,
+        0
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#4f46e5"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "scale",
+          "duration": 0.7,
+          "delay": 1.1,
+          "ease": "outCubic"
+        }
+      ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "clean"
+    },
+    {
+      "type": "ao",
+      "intensity": 0.8,
+      "radius": 0.4
+    }
+  ]
+}

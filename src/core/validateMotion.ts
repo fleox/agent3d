@@ -7,7 +7,8 @@ import { CATALOG } from "./catalog";
 import { isValidColor } from "./color";
 import { EASE_EXAMPLES, EASE_NAMES, parseEase } from "./ease";
 import { closest, didYouMean, listOptions } from "./suggest";
-import type { Issue } from "./types";
+import { expandPostFx } from "./postfx";
+import type { Issue, PostFxDef } from "./types";
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.isArray(v);
@@ -39,17 +40,20 @@ const MATERIAL_TRACK_PROPS: Record<string, "number" | "color" | "boolean"> = {
   thickness: "number",
   ior: "number",
   iridescence: "number",
+  iridescenceIOR: "number",
   clearcoat: "number",
   clearcoatRoughness: "number",
   sheen: "number",
   sheenColor: "color",
   sheenRoughness: "number",
   specularIntensity: "number",
+  specularColor: "color",
   envMapIntensity: "number",
   attenuationColor: "color",
   attenuationDistance: "number",
   dispersion: "number",
   anisotropy: "number",
+  anisotropyRotation: "number",
   wireframe: "boolean",
 };
 const CAMERA_TRACK_PROPS: Record<string, "vec3" | "number"> = { position: "vec3", target: "vec3", fov: "number", zoom: "number", focus: "number" };
@@ -88,13 +92,14 @@ export interface MotionIds {
   parents?: Set<string>; // ids with children
   postfx?: Set<string>; // post effect types present in scene.postfx
   letters?: Set<string>; // text ids split into letters ("<id>/<n>" targets)
+  letterCounts?: Map<string, number>; // letters of those texts (non-space characters; absent when the text has {data.*} placeholders)
 }
 
 const REL = /^\s*[+\-*]=\s*-?\d*\.?\d+(?:e[+-]?\d+)?\s*$/i;
 const isRel = (v: unknown) => typeof v === "string" && REL.test(v);
 
 // Resolves a track target to the kind of value its keys must hold.
-export function trackValueKind(target: string, ids: MotionIds): { kind?: ValueKind; error?: { message: string; hint: string } } {
+export function trackValueKind(target: string, ids: MotionIds): { kind?: ValueKind; error?: { message: string; hint: string }; warning?: { message: string; hint: string } } {
   const dot = target.indexOf(".");
   if (dot < 1) return { error: { message: `Track target "${target}" must be "<id>.<property>".`, hint: 'Examples: "logo.position", "logo.rotation.y", "logo.material.opacity", "camera.position", "key.intensity", "tag:letter.position.y".' } };
   const head = target.slice(0, dot);
@@ -114,7 +119,7 @@ export function trackValueKind(target: string, ids: MotionIds): { kind?: ValueKi
     const [type, param, ...more] = prop.split(".");
     const entry = CATALOG.postfx.find((p) => p.id === type);
     if (!entry || !param || more.length) return { error: { message: `Post effect track "${target}" must be "postfx.<type>.<param>".`, hint: `${type ? didYouMean(type, CATALOG.postfx.map((p) => p.id)) : ""}Example: "postfx.bloom.strength", "postfx.dof.focus".` } };
-    if (ids.postfx && !ids.postfx.has(type)) return { error: { message: `"${target}" animates post effect "${type}", which is not in scene.postfx.`, hint: `Add { "type": "${type}" } to postfx first.` } };
+    if (ids.postfx && !ids.postfx.has(type)) return { error: { message: `"${target}" animates post effect "${type}", which is not in scene.postfx (nor brought by a look preset).`, hint: `Add { "type": "${type}" } to postfx first (or a look that includes it — see agent3d catalog postfx look).` } };
     const spec = entry.params.find((p) => p.name === param);
     if (!spec || (spec.type !== "number" && spec.type !== "integer" && spec.type !== "color")) {
       const ok = entry.params.filter((p) => p.type === "number" || p.type === "integer" || p.type === "color").map((p) => p.name);
@@ -134,14 +139,17 @@ export function trackValueKind(target: string, ids: MotionIds): { kind?: ValueKi
     if (ids.parents && !ids.parents.has(id)) return { error: { message: `"${id}" has no children (selector "${head}").`, hint: "Use children:<id> on a group with children (text letters count too)." } };
     heads = [];
   } else heads = head.split(",").map((h) => h.trim());
+  let warning: { message: string; hint: string } | undefined;
   for (const h of heads) {
     const r = singleKind(h, prop, ids, target);
     if (r.error) return r;
+    warning ??= r.warning;
   }
-  return heads.length ? singleKind(heads[0], prop, ids, target) : objectKind(prop, true);
+  if (!heads.length) return objectKind(prop, true);
+  return { kind: singleKind(heads[0], prop, ids, target).kind, ...(warning ? { warning } : {}) };
 }
 
-function singleKind(head: string, prop: string, ids: MotionIds, target: string): { kind?: ValueKind; error?: { message: string; hint: string } } {
+function singleKind(head: string, prop: string, ids: MotionIds, target: string): { kind?: ValueKind; error?: { message: string; hint: string }; warning?: { message: string; hint: string } } {
   if (ids.lights.has(head) && !ids.objects.has(head)) {
     const k = LIGHT_TRACK_PROPS[prop];
     if (/^(position|target)\.[xyz]$/.test(prop)) return { kind: "number" };
@@ -155,6 +163,12 @@ function singleKind(head: string, prop: string, ids: MotionIds, target: string):
     if (!ids.objects.has(letter[1])) return { error: { message: `Track target "${target}" refers to letter ${letter[2]} of "${letter[1]}", which is not an object id.`, hint: `${didYouMean(letter[1], ids.objects)}Letters are addressed "<textId>/<n>" (n = 0, 1, … over non-space characters).` } };
     if (ids.letters && !ids.letters.has(letter[1])) return { error: { message: `"${letter[1]}" is not split into letters, so "${head}" does not exist.`, hint: `Set "splitLetters": true (or a "reveal") on the text object "${letter[1]}".` } };
     base = letter[1];
+    const count = ids.letterCounts?.get(letter[1]);
+    if (count !== undefined && Number(letter[2]) >= count) {
+      const r = trackValueKind(`${letter[1]}.${prop}`, ids);
+      if (r.error) return r;
+      return { kind: r.kind, warning: { message: `"${head}" is out of range: "${letter[1]}" has ${count} letter${count === 1 ? "" : "s"} (${letter[1]}/0 … ${letter[1]}/${Math.max(0, count - 1)}), so this target animates nothing.`, hint: `Letters are numbered from 0 over non-space characters. Use ${letter[1]}/${Math.max(0, count - 1)} for the last one, or "children:${letter[1]}.${prop}" for all of them.` } };
+    }
   }
   if (!ids.objects.has(base)) {
     const all = [...ids.objects, ...ids.lights, "camera", "environment", "postfx"];
@@ -265,7 +279,8 @@ function collect(scene: Obj, ids: MotionIds): MotionIds {
   };
   walk(scene.objects);
   const postfx = new Set<string>();
-  if (Array.isArray(scene.postfx)) for (const f of scene.postfx) if (isObj(f) && typeof f.type === "string") postfx.add(f.type);
+  // Look presets expanded: { type: "look", preset: "product" } brings bloom, ao, grading… (tracks may animate them).
+  if (Array.isArray(scene.postfx)) for (const f of expandPostFx(scene.postfx.filter((x): x is PostFxDef => isObj(x) && typeof x.type === "string"))) postfx.add(f.type);
   return { ...ids, tags, models, parents, postfx };
 }
 
@@ -356,6 +371,7 @@ function track(c: C, tr: unknown, path: string, duration: number, seen: Set<stri
     seen.add(target);
     const r = trackValueKind(target, ids);
     if (r.error) c.error("track-target", `${path}.target`, r.error.message, r.error.hint);
+    if (r.warning) c.warn("track-target", `${path}.target`, r.warning.message, r.warning.hint);
     kind = r.kind;
     const head = target.slice(0, Math.max(target.indexOf("."), 0));
     const multi = head.includes(",") || head.startsWith("tag:") || head.startsWith("children:");
@@ -449,6 +465,7 @@ function action(c: C, a: unknown, p: string, on: string, segments: string[], mar
       c.unknownKeys(s, ["path", "value"], `${p}.set`, "set");
       const r = trackValueKind(s.path, ids);
       if (r.error) c.error("track-target", `${p}.set.path`, r.error.message, r.error.hint);
+      if (r.warning) c.warn("track-target", `${p}.set.path`, r.warning.message, r.warning.hint);
       else if (r.kind && !keyValueOk(r.kind, s.value)) c.error("track-value", `${p}.set.value`, `Value ${show(s.value)} does not match "${s.path}" (expects ${r.kind}).`, `Use a value like ${KIND_EXAMPLE[r.kind]}.`);
       c.number(a.duration, `${p}.duration`, { min: 0 });
       c.ease(a.ease, `${p}.ease`);

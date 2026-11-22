@@ -1,8 +1,25 @@
 {
   "id": "banner-neon-title",
   "title": "Neon title banner",
-  "description": "Glowing neon 3D headline over a scrolling synthwave grid with flickering neon tubes, bloom and rising sparks.",
+  "description": "Synthwave 4:1 banner: a tall condensed sunset-gradient 3D headline that drops in letter by letter from the centre, a flickering neon script tagline, neon tubes, a scrolling neon grid floor, a gradient sun, sparks and bloom (data-bound texts).",
   "kind": "banner",
-  "tags": ["banner", "text", "neon", "bloom", "synthwave", "sparks", "night"],
+  "tags": [
+    "banner",
+    "text",
+    "neon",
+    "synthwave",
+    "retro",
+    "80s",
+    "bloom",
+    "night",
+    "club",
+    "music",
+    "event",
+    "gaming",
+    "title",
+    "reveal",
+    "script",
+    "data-bindings"
+  ],
   "aspect": "4:1"
 }

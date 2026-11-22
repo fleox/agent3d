@@ -1,6 +1,6 @@
 # Scroll story hero
 
-A 16:9 scroll-driven story. The timeline uses `trigger: "scroll"`: its time follows the scroll progress of the embed through the viewport (0 when it enters at the bottom, 1 when it leaves at the top). The camera glides across three chapters laid out along X:
+A 16:9 scroll-driven story. The timeline uses `trigger: "scroll"`: its time follows the scroll progress of the embed through the viewport (0 when it enters at the bottom, 1 when it leaves at the top). The camera glides across three chapters laid out along X; each chapter title (Inter Black, `splitLetters`) pops in letter by letter with a staggered `children:<id>.scale` track as its chapter arrives, the knot turns with the scroll, and markers `design` / `build` / `launch` emit events (`agent3d:event` on the element) your page can listen to. Scroll smoothing 0.85, pastel / jelly / chrome-gradient finishes, soft contact shadows, `clean` look + light AO.
 
 | Scroll | Chapter | Objects |
 |---|---|---|
@@ -16,8 +16,9 @@ To let the visitor scroll through the whole story while the scene stays on scree
 
 | Change | Where |
 |---|---|
-| Chapter titles | `objects#t1/t2/t3.text`, subtitles `objects#s1/s2/s3.text`, colours in `.material.color` |
+| Chapter titles | `objects#t1/t2/t3.text` (entrances: tracks `children:t2.scale`, `children:t3.scale`), subtitles `objects#s1/s2/s3.text`, colours in `.material.color` |
 | Chapter objects | replace `design`, `build`, `rocket` (keep their x ≈ chapter x + 1.6) |
+| Page hooks | `timeline.markers` (seconds → event names) |
 | Pacing | `timeline.tracks` `camera.position` / `camera.target` keys (hold = two keys with the same value) |
 | Add a chapter | add objects at x = 42, extend `timeline.duration` and the camera keys |
 | Colours | `environment.background`, `environment.fog.color`, `objects#floor.material.color` |

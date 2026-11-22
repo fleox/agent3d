@@ -4,26 +4,26 @@ Scenes reference assets by **project path** (`assets/models/bottle.glb`) or by *
 
 ## The built-in library
 
-`library/` ships in the npm package and works offline: ~114 low-poly glTF models (rigged characters with animation clips, animals, nature, buildings, city, food and bakery (croissant, baguette, bread loaf, donut, cupcake, cookie, pain au chocolat), products, props, vehicles, space…), 6 PBR texture sets (colour, normal, roughness), 4 HDRIs (studio, sky, sunset, night; `.hdr` for lighting, `.jpg` for backgrounds) and 5 fonts. `library/index.json` lists each item with its licence, author, tags, size and (models) bounding box and triangle count.
+`library/` ships in the npm package and works offline: about 130 glTF models (rigged characters with animation clips, animals, nature, buildings, city, food and bakery (croissant, baguette, bread loaf, donut, cupcake, cookie, pain au chocolat), photoreal products (sneaker, sofa, lamp, boombox…), props, platformer kit, vehicles, space…), 6 PBR texture sets (brick, concrete, fabric, grass ground, rusty metal, wood planks: colour, normal, roughness), 10 HDRIs (softbox, studio, warehouse, forest, city, beach, sky, sunset, night, night-city; `.hdr` for lighting, `.jpg` for backgrounds) and the 13 text fonts. `library/index.json` lists each item with its licence, author, tags, size and (models) bounding box and triangle count.
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 assets library --query tree --json
-npx -y @fleox/agent3d@0.1.0 assets library --kind hdri --json
-npx -y @fleox/agent3d@0.1.0 assets library --kind model --all --json
+npx -y @fleox/agent3d@0.2.0 assets library --query tree --json
+npx -y @fleox/agent3d@0.2.0 assets library --kind hdri --json
+npx -y @fleox/agent3d@0.2.0 assets library --kind model --all --json
 ```
 
-Hits carry `ref`, `kind`, `kb`, `license`, `tags`, `description` and, for models, `triangles` and `animations` (clip names). 50 results per page: `--limit`, `--offset` (when `more` is true) or `--all` (the `library_list` tool takes `limit` — 0 for all — and `offset`).
+Hits carry `ref`, `kind`, `kb`, `license`, `tags`, `description` and, for models, `triangles`, `animations` (clip names) and `size` (bounding box w × h × d, Y-up) — use it to pick `fit`. 50 results per page: `--limit`, `--offset` (when `more` is true) or `--all` (the `library_list` tool takes `limit` — 0 for all — and `offset`).
 
-Everything is CC0 except the fonts (Apache-2.0 / OFL-1.1) and the Khronos fox (CC-BY 4.0 parts). Sources and per-file provenance: [`library/LICENSES.md`](../library/LICENSES.md) and `library/sources.json`.
+Everything is CC0 except the fonts (OFL-1.1) and four Khronos glTF samples under CC-BY-4.0: `models/products/sneaker.glb` (Shopify), `iridescent-lamp.glb` and `velvet-sofa.glb` (Wayfair), and the animated fox (CC-BY parts). Using them is fine; `check` reports their credit and exports write it to `CREDITS.txt` and the demo page. Sources and per-file provenance: [`library/LICENSES.md`](../library/LICENSES.md) and `library/sources.json`.
 
 ## Project assets
 
 `assets/` + `assets/manifest.json` (`AssetEntry`: path, kind, bytes, source, sourceUrl, license, author, attribution, addedAt).
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 assets add ./logo.svg --license proprietary --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 assets list --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 assets remove assets/svg/logo.svg --yes --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 assets add ./logo.svg --license proprietary --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 assets list --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 assets remove assets/svg/logo.svg --yes --project my-banner --json
 ```
 
 `--license` is required for local files. Files go to `assets/models|textures|hdri|audio|fonts|svg|other/` by kind unless `--path` is given. `assets list` reports `exists`, `usedBy` and the size on disk for each entry (read-only: `stale` lists entries whose recorded size differs from the file). Models (`assets add <file>.glb` or a downloaded hit) return `bounds` — `size` (w × h × d, node transforms applied), `center`, `min`, `max` and an `upAxis` guess (`"y"`, or `"z?"` for models that may have been exported Z-up) — and `agent3d render --isolate <objectId>` shows one object alone, auto-framed, to check its orientation.
@@ -31,10 +31,10 @@ npx -y @fleox/agent3d@0.1.0 assets remove assets/svg/logo.svg --yes --project my
 ### Optimising textures and models
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 assets optimize --all --project my-hero --json            # plan: size per file + why
-npx -y @fleox/agent3d@0.1.0 assets optimize --all --dry-run --project my-hero --json  # real savings, nothing written
-npx -y @fleox/agent3d@0.1.0 assets optimize --all --yes --project my-hero --json
-npx -y @fleox/agent3d@0.1.0 assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
+npx -y @fleox/agent3d@0.2.0 assets optimize --all --project my-hero --json            # plan: size per file + why
+npx -y @fleox/agent3d@0.2.0 assets optimize --all --dry-run --project my-hero --json  # real savings, nothing written
+npx -y @fleox/agent3d@0.2.0 assets optimize --all --yes --project my-hero --json
+npx -y @fleox/agent3d@0.2.0 assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
 ```
 
 `assets optimize [<path>…] [--all] [--max-size <px>] [--format auto|webp|jpeg|png|keep] [--quality 80] [--compress meshopt|none] [--simplify <ratio>] [--simplify-error 0.01] [--dry-run] [--yes]` (`src/ops/optimize.ts`, MCP `assets_optimize`):
@@ -76,9 +76,9 @@ Searched live, downloaded once into the project with their licence (`src/ops/sou
 | Quaternius | model packs | CC0 | manual zip, then import |
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 assets search "wood planks" --kind texture --project my-scene --json
-npx -y @fleox/agent3d@0.1.0 assets add --hit @hit.json --resolution 1k --project my-scene --json
-npx -y @fleox/agent3d@0.1.0 assets add /path/kenney_pack.zip --source kenney --license CC0-1.0 --filter tree --project my-scene --json
+npx -y @fleox/agent3d@0.2.0 assets search "wood planks" --kind texture --project my-scene --json
+npx -y @fleox/agent3d@0.2.0 assets add --hit @hit.json --resolution 1k --project my-scene --json
+npx -y @fleox/agent3d@0.2.0 assets add /path/kenney_pack.zip --source kenney --license CC0-1.0 --filter tree --project my-scene --json
 ```
 
 Pack zips (Kenney, Quaternius): `assets add <file.zip> --source kenney|quaternius|local --license CC0-1.0 [--filter <word>]… [--name <pack>]` extracts only `.glb` / `.gltf` + textures into `assets/models/<name>/`. Texture downloads return a `suggestion.material` using the set (map, normalMap, roughnessMap). Per-source failures are reported in `errors` without failing the search. Tests never touch the network (sources take an injected `fetch`).
@@ -89,4 +89,4 @@ Pack zips (Kenney, Quaternius): `assets add <file.zip> --source kenney|quaterniu
 
 ## Procedural content
 
-Generators (terrain, trees, rocks, grass, flowers, water, clouds, city, character, planet, starfield, blob, waveGrid, maze, road), particle presets, shaders and synth sounds cost zero bytes and are deterministic with `seed`. See [catalog.md](catalog.md).
+Generators (terrain, trees, rocks, grass, flowers, water, clouds, city, character, planet, starfield, blob, waveGrid, maze, road, floatingIsland, globe, crystals, galaxy, bars3d, abstractShapes), particle presets, shaders, procedural textures (`{ "procedural": "wood" }` in a material slot) and synth sounds cost zero bytes and are deterministic with `seed`. See [catalog.md](catalog.md) and [scene-format.md](scene-format.md#generators-and-particles).

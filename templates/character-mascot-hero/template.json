@@ -1,0 +1,8 @@
+{
+  "id": "character-mascot-hero",
+  "title": "Mascot hero",
+  "description": "Friendly brand-mascot hero (16:9): a procedural fox waving on a pastel pedestal with a 3D speech bubble (text from scene.data), its head and eyes following the pointer; click or tap it and it jumps into a celebration with confetti and a new line, then settles back. Left half free for an HTML headline. Swap the style for an astronaut, robot, cat, bird, blob or ghost.",
+  "kind": "hero",
+  "tags": ["hero", "mascot", "character", "fox", "brand", "cute", "speech-bubble", "interactive", "click", "pointer", "celebrate", "confetti", "pastel", "landing", "onboarding"],
+  "aspect": "16:9"
+}

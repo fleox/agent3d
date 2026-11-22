@@ -4,13 +4,50 @@
   "title": "Tap the targets",
   "ariaLabel": "Reflex mini game: tap or click the targets popping out of the holes; keys 1 to 9 also work",
   "seed": 5,
-  "target": {"kind": "game", "aspect": "16:9", "budgetKb": 200, "reducedMotion": "ignore", "maxDpr": 2},
-  "camera": {"type": "perspective", "fov": 40, "position": [0, 7.4, 8.2], "target": [0, 0.3, 0.5]},
+  "target": {
+    "kind": "game",
+    "aspect": "16:9",
+    "budgetKb": 200,
+    "reducedMotion": "ignore",
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 40,
+    "position": [
+      0,
+      7.4,
+      8.2
+    ],
+    "target": [
+      0,
+      0.3,
+      0.5
+    ]
+  },
   "environment": {
-    "background": {"radial": ["#ffe8f0", "#ffc4d6"]},
-    "lighting": "soft",
-    "lightingIntensity": 0.6,
-    "ground": {"y": -0.6, "size": 40, "shadowOnly": true, "color": "#7a2848"}
+    "background": {
+      "meshGradient": [
+        "#ffd6e5",
+        "#ffc1a8",
+        "#e3c8ff",
+        "#ffe9c7"
+      ],
+      "speed": 0.1,
+      "grain": 0.03
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.55,
+    "ground": {
+      "y": -0.6,
+      "size": 40,
+      "shadowOnly": true,
+      "opacity": 0.25
+    },
+    "shadows": {
+      "type": "vsm",
+      "softness": 5
+    }
   },
   "lights": [
     {
@@ -18,179 +55,476 @@
       "type": "hemisphere",
       "skyColor": "#ffffff",
       "groundColor": "#ffb3c6",
-      "intensity": 1
+      "intensity": 0.8
     },
-    {"id": "sun", "type": "directional", "position": [4, 10, 6], "intensity": 2, "castShadow": true}
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [
+        4,
+        10,
+        6
+      ],
+      "color": "#fff4e8",
+      "intensity": 2.2,
+      "castShadow": true
+    },
+    {
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        -5,
+        4,
+        -6
+      ],
+      "color": "#ffd1e6",
+      "intensity": 1.2
+    }
   ],
   "objects": [
     {
       "id": "board",
       "kind": "mesh",
-      "geometry": {"type": "roundedBox", "width": 10.5, "height": 0.6, "depth": 7.4, "radius": 0.25, "segments": 4},
-      "position": [0, -0.3, 0],
-      "material": {"preset": "plastic", "color": "#3a86ff", "roughness": 0.4},
+      "geometry": {
+        "type": "roundedBox",
+        "width": 10.5,
+        "height": 0.6,
+        "depth": 7.4,
+        "radius": 0.25,
+        "segments": 4
+      },
+      "position": [
+        0,
+        -0.3,
+        0
+      ],
+      "material": {
+        "preset": "carPaint",
+        "color": "#2a9d8f"
+      },
       "receiveShadow": true
     },
     {
       "id": "hole0",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [-3.2, 0.02, -2.2],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        -3.2,
+        0.02,
+        -2.2
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target0",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [-3.2, 0.0, -2.2],
-      "rotation": [0, 0, 0],
+      "position": [
+        -3.2,
+        0.0,
+        -2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole1",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [0.0, 0.02, -2.2],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        0.0,
+        0.02,
+        -2.2
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target1",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [0.0, 0.0, -2.2],
-      "rotation": [0, 0, 0],
+      "position": [
+        0.0,
+        0.0,
+        -2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole2",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [3.2, 0.02, -2.2],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        3.2,
+        0.02,
+        -2.2
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target2",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [3.2, 0.0, -2.2],
-      "rotation": [0, 0, 0],
+      "position": [
+        3.2,
+        0.0,
+        -2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole3",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [-3.2, 0.02, 0.0],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        -3.2,
+        0.02,
+        0.0
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target3",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [-3.2, 0.0, 0.0],
-      "rotation": [0, 0, 0],
+      "position": [
+        -3.2,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole4",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [0.0, 0.02, 0.0],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        0.0,
+        0.02,
+        0.0
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target4",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [0.0, 0.0, 0.0],
-      "rotation": [0, 0, 0],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole5",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [3.2, 0.02, 0.0],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        3.2,
+        0.02,
+        0.0
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target5",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [3.2, 0.0, 0.0],
-      "rotation": [0, 0, 0],
+      "position": [
+        3.2,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole6",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [-3.2, 0.02, 2.2],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        -3.2,
+        0.02,
+        2.2
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target6",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [-3.2, 0.0, 2.2],
-      "rotation": [0, 0, 0],
+      "position": [
+        -3.2,
+        0.0,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole7",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [0.0, 0.02, 2.2],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        0.0,
+        0.02,
+        2.2
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target7",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [0.0, 0.0, 2.2],
-      "rotation": [0, 0, 0],
+      "position": [
+        0.0,
+        0.0,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
       "id": "hole8",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 0.85, "radiusBottom": 0.85, "height": 0.04, "segments": 40},
-      "position": [3.2, 0.02, 2.2],
-      "material": {"type": "standard", "color": "#1d3557", "roughness": 0.9}
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.85,
+        "radiusBottom": 0.85,
+        "height": 0.04,
+        "segments": 40
+      },
+      "position": [
+        3.2,
+        0.02,
+        2.2
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#123d38",
+        "roughness": 0.95
+      }
     },
     {
       "id": "target8",
       "kind": "model",
       "src": "library:models/platformer/target.glb",
       "fit": 1.6,
-      "position": [3.2, 0.0, 2.2],
-      "rotation": [0, 0, 0],
+      "position": [
+        3.2,
+        0.0,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "visible": false,
-      "body": {"type": "trigger", "size": [1.6, 1.6, 0.6]},
+      "body": {
+        "type": "trigger",
+        "size": [
+          1.6,
+          1.6,
+          0.6
+        ]
+      },
       "castShadow": true
     },
     {
@@ -198,13 +532,278 @@
       "kind": "particles",
       "preset": "confetti",
       "count": 60,
-      "area": [14, 6, 4],
-      "position": [0, 5, -3],
+      "area": [
+        14,
+        6,
+        4
+      ],
+      "position": [
+        0,
+        5,
+        -3
+      ],
       "size": 0.08,
       "opacity": 0.8
+    },
+    {
+      "id": "hole0Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        -3.2,
+        0.03,
+        -2.2
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole1Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        0.0,
+        0.03,
+        -2.2
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole2Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        3.2,
+        0.03,
+        -2.2
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole3Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        -3.2,
+        0.03,
+        0.0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole4Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        0.0,
+        0.03,
+        0.0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole5Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        3.2,
+        0.03,
+        0.0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole6Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        -3.2,
+        0.03,
+        2.2
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole7Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        0.0,
+        0.03,
+        2.2
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "hole8Rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.86,
+        "tube": 0.07,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        3.2,
+        0.03,
+        2.2
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#fff3e0",
+        "roughness": 0.3
+      }
+    },
+    {
+      "id": "sparkles",
+      "kind": "particles",
+      "preset": "magic",
+      "count": 40,
+      "area": [
+        11,
+        2,
+        7
+      ],
+      "position": [
+        0,
+        1.2,
+        0
+      ],
+      "color": [
+        "#fff3b0",
+        "#ffd1e8"
+      ],
+      "size": 0.1
     }
   ],
-  "scripts": ["scripts/targets.js"],
+  "scripts": [
+    "scripts/targets.js"
+  ],
   "data": {
     "targets": {
       "round": 30,
@@ -235,8 +834,20 @@
         "style": "pill",
         "visible": "phase == 'play'"
       },
-      {"id": "bar", "type": "bar", "value": "timeBar", "anchor": "top", "visible": "phase == 'play'"},
-      {"id": "bestHud", "type": "text", "text": "Best {best}", "anchor": "top-right", "style": "pill"},
+      {
+        "id": "bar",
+        "type": "bar",
+        "value": "timeBar",
+        "anchor": "top",
+        "visible": "phase == 'play'"
+      },
+      {
+        "id": "bestHud",
+        "type": "text",
+        "text": "Best {best}",
+        "anchor": "top-right",
+        "style": "pill"
+      },
       {
         "id": "title",
         "type": "text",
@@ -248,7 +859,7 @@
       {
         "id": "hint",
         "type": "text",
-        "text": "Tap or click to start — keys 1–9 work too",
+        "text": "Tap or click to start \u2014 keys 1\u20139 work too",
         "anchor": "bottom",
         "style": "subtitle",
         "visible": "phase == 'attract'"
@@ -256,7 +867,7 @@
       {
         "id": "over",
         "type": "text",
-        "text": "Time! {score} pts — {hits} hits",
+        "text": "Time! {score} pts \u2014 {hits} hits",
         "anchor": "center",
         "style": "title",
         "visible": "phase == 'over'"
@@ -273,10 +884,41 @@
   },
   "audio": {
     "sounds": {
-      "coin": {"preset": "coin", "volume": 0.45},
-      "powerup": {"preset": "powerup", "volume": 0.5},
-      "click": {"preset": "click", "volume": 0.4},
-      "win": {"preset": "win"}
+      "coin": {
+        "preset": "coin",
+        "volume": 0.45
+      },
+      "powerup": {
+        "preset": "powerup",
+        "volume": 0.5
+      },
+      "click": {
+        "preset": "click",
+        "volume": 0.4
+      },
+      "win": {
+        "preset": "win"
+      }
     }
-  }
+  },
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.35,
+      "threshold": 1.4,
+      "radius": 0.5
+    },
+    {
+      "type": "grading",
+      "saturation": 1.08,
+      "vibrance": 0.15
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.45
+    },
+    {
+      "type": "fxaa"
+    }
+  ]
 }

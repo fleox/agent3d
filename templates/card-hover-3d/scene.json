@@ -1,305 +1,359 @@
 {
- "version": 1,
- "id": "card-hover-3d",
- "title": "3D product card",
- "ariaLabel": "Reusable water bottle product, rotates gently and lifts when hovered",
- "seed": 1,
- "target": {
-  "kind": "card",
-  "aspect": "4:5",
-  "budgetKb": 800,
-  "reducedMotion": "static",
-  "posterTime": 0,
-  "maxDpr": 2,
-  "toneMapping": "neutral"
- },
- "camera": {
-  "type": "perspective",
-  "fov": 30,
-  "position": [
-   0,
-   1.6,
-   6.6
-  ],
-  "target": [
-   0,
-   0.95,
-   0
-  ]
- },
- "environment": {
-  "background": {
-   "radial": [
-    "#f8f5ee",
-    "#dfeae2"
-   ]
+  "version": 1,
+  "id": "card-hover-3d",
+  "title": "3D product card",
+  "ariaLabel": "{data.name|Trail Flask} reusable bottle, {data.price|$34}: rotates gently and lifts when hovered",
+  "seed": 1,
+  "target": {
+    "kind": "card",
+    "aspect": "4:5",
+    "budgetKb": 800,
+    "reducedMotion": "static",
+    "posterTime": 1,
+    "maxDpr": 2,
+    "toneMapping": "neutral"
   },
-  "lighting": {
-   "hdri": "library:hdri/studio.hdr",
-   "intensity": 0.9
-  },
-  "ground": {
-   "y": 0,
-   "size": 12,
-   "shadowOnly": true,
-   "color": "#2d4a3e"
-  }
- },
- "lights": [
-  {
-   "id": "key",
-   "type": "directional",
-   "position": [
-    2.5,
-    6,
-    4
-   ],
-   "intensity": 1.4,
-   "castShadow": true
-  },
-  {
-   "id": "fill",
-   "type": "hemisphere",
-   "skyColor": "#ffffff",
-   "groundColor": "#d5e4da",
-   "intensity": 0.5
-  },
-  {
-   "id": "rim",
-   "type": "directional",
-   "position": [
-    -3,
-    3.5,
-    -4
-   ],
-   "color": "#fff1dc",
-   "intensity": 1.8
-  }
- ],
- "objects": [
-  {
-   "id": "backdrop",
-   "kind": "mesh",
-   "geometry": {
-    "type": "circle",
-    "radius": 1.2,
-    "segments": 96
-   },
-   "position": [
-    0,
-    1.5,
-    -1.6
-   ],
-   "material": {
-    "type": "gradient",
-    "gradient": [
-     "#e4efe7",
-     "#c7ddcf"
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [
+      0,
+      1.35,
+      6.8
     ],
-    "roughness": 0.95
-   },
-   "receiveShadow": true,
-   "castShadow": false
-  },
-  {
-   "id": "halo",
-   "kind": "mesh",
-   "geometry": {
-    "type": "torus",
-    "radius": 1.3,
-    "tube": 0.012,
-    "tubularSegments": 160,
-    "radialSegments": 8
-   },
-   "position": [
-    0,
-    1.5,
-    -1.58
-   ],
-   "material": {
-    "type": "basic",
-    "color": "#ffffff",
-    "opacity": 0.85,
-    "transparent": true
-   },
-   "castShadow": false
-  },
-  {
-   "id": "disc",
-   "kind": "mesh",
-   "geometry": {
-    "type": "cylinder",
-    "radiusTop": 1.05,
-    "radiusBottom": 1.1,
-    "height": 0.12,
-    "segments": 96
-   },
-   "position": [
-    0,
-    0.06,
-    0
-   ],
-   "material": {
-    "type": "physical",
-    "color": "#cfe3d6",
-    "roughness": 0.35,
-    "clearcoat": 0.6
-   },
-   "receiveShadow": true,
-   "castShadow": true
-  },
-  {
-   "id": "baseRing",
-   "kind": "mesh",
-   "geometry": {
-    "type": "torus",
-    "radius": 1.115,
-    "tube": 0.018,
-    "tubularSegments": 160,
-    "radialSegments": 8
-   },
-   "position": [
-    0,
-    0.02,
-    0
-   ],
-   "rotation": [
-    90,
-    0,
-    0
-   ],
-   "material": {
-    "preset": "gold",
-    "color": "#d9b77a"
-   },
-   "castShadow": false
-  },
-  {
-   "id": "productRig",
-   "kind": "group",
-   "position": [
-    0,
-    0.3,
-    0
-   ],
-   "behaviours": [
-    {
-     "type": "hoverLift",
-     "height": 0.25,
-     "tilt": 12
-    },
-    {
-     "type": "hoverScale",
-     "scale": 1.06
-    },
-    {
-     "type": "float",
-     "amplitude": 0.05,
-     "speed": 0.4
-    }
-   ],
-   "children": [
-    {
-     "id": "product",
-     "kind": "model",
-     "src": "library:models/products/water-bottle.glb",
-     "fit": 1.55,
-     "rotation": [
+    "target": [
       0,
-      0,
+      0.75,
       0
-     ],
-     "castShadow": true,
-     "behaviours": [
-      {
-       "type": "rotate",
-       "speed": 18
-      }
-     ]
-    }
-   ]
+    ]
   },
-  {
-   "id": "pebbleA",
-   "kind": "mesh",
-   "geometry": {
-    "type": "sphere",
-    "radius": 0.13,
-    "segments": 32
-   },
-   "position": [
-    -0.95,
-    0.8,
-    0.45
-   ],
-   "material": {
-    "preset": "clay",
-    "color": "#f2c9a8"
-   },
-   "behaviours": [
-    {
-     "type": "float",
-     "amplitude": 0.08,
-     "speed": 0.5
+  "environment": {
+    "background": {
+      "radial": [
+        "#f8f5ee",
+        "#dfeae2"
+      ]
+    },
+    "lighting": {
+      "hdri": "library:hdri/studio.hdr",
+      "intensity": 0.9
+    },
+    "rig": {
+      "preset": "softbox",
+      "intensity": 0.8
+    },
+    "contactShadows": {
+      "opacity": 0.55,
+      "blur": 2.4,
+      "color": "#2d4a3e",
+      "y": 0.121,
+      "size": 2.4
     }
-   ],
-   "castShadow": false
   },
-  {
-   "id": "pebbleB",
-   "kind": "mesh",
-   "geometry": {
-    "type": "capsule",
-    "radius": 0.07,
-    "length": 0.22
-   },
-   "position": [
-    0.95,
-    1.75,
-    0.1
-   ],
-   "rotation": [
-    0,
-    0,
-    35
-   ],
-   "material": {
-    "preset": "clay",
-    "color": "#a9cdb8"
-   },
-   "behaviours": [
+  "lights": [
     {
-     "type": "float",
-     "amplitude": 0.1,
-     "speed": 0.35
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        -3,
+        3.5,
+        -4
+      ],
+      "color": "#fff1dc",
+      "intensity": 1.8
     }
-   ],
-   "castShadow": false
+  ],
+  "objects": [
+    {
+      "id": "backdrop",
+      "kind": "mesh",
+      "geometry": {
+        "type": "circle",
+        "radius": 1.2,
+        "segments": 96
+      },
+      "position": [
+        0,
+        1.5,
+        -1.6
+      ],
+      "material": {
+        "type": "gradient",
+        "gradient": [
+          "#e4efe7",
+          "#c7ddcf"
+        ],
+        "roughness": 0.95
+      },
+      "receiveShadow": true,
+      "castShadow": false
+    },
+    {
+      "id": "halo",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 1.3,
+        "tube": 0.012,
+        "tubularSegments": 160,
+        "radialSegments": 8
+      },
+      "position": [
+        0,
+        1.5,
+        -1.58
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#ffffff",
+        "opacity": 0.85,
+        "transparent": true
+      },
+      "castShadow": false
+    },
+    {
+      "id": "disc",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.05,
+        "radiusBottom": 1.1,
+        "height": 0.12,
+        "segments": 96
+      },
+      "position": [
+        0,
+        0.06,
+        0
+      ],
+      "material": {
+        "type": "physical",
+        "color": "#cfe3d6",
+        "roughness": 0.35,
+        "clearcoat": 0.6
+      },
+      "receiveShadow": true,
+      "castShadow": false
+    },
+    {
+      "id": "baseRing",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 1.115,
+        "tube": 0.018,
+        "tubularSegments": 160,
+        "radialSegments": 8
+      },
+      "position": [
+        0,
+        0.02,
+        0
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "material": {
+        "preset": "gold",
+        "color": "#d9b77a"
+      },
+      "castShadow": false
+    },
+    {
+      "id": "productRig",
+      "kind": "group",
+      "position": [
+        0,
+        0.3,
+        0
+      ],
+      "behaviours": [
+        {
+          "type": "hoverLift",
+          "height": 0.25,
+          "tilt": 12
+        },
+        {
+          "type": "hoverScale",
+          "scale": 1.06
+        },
+        {
+          "type": "float",
+          "amplitude": 0.05,
+          "speed": 0.4
+        }
+      ],
+      "children": [
+        {
+          "id": "product",
+          "kind": "model",
+          "src": "library:models/products/water-bottle.glb",
+          "fit": 1.55,
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "castShadow": true,
+          "behaviours": [
+            {
+              "type": "rotate",
+              "speed": 18
+            }
+          ]
+        }
+      ],
+      "href": "{data.url|#product}"
+    },
+    {
+      "id": "pebbleA",
+      "kind": "mesh",
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.13,
+        "segments": 32
+      },
+      "position": [
+        -0.95,
+        0.8,
+        0.45
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#f2c9a8"
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.08,
+          "speed": 0.5
+        }
+      ],
+      "castShadow": false
+    },
+    {
+      "id": "pebbleB",
+      "kind": "mesh",
+      "geometry": {
+        "type": "capsule",
+        "radius": 0.07,
+        "length": 0.22
+      },
+      "position": [
+        0.95,
+        1.75,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        35
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#a9cdb8"
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.1,
+          "speed": 0.35
+        }
+      ],
+      "castShadow": false
+    },
+    {
+      "id": "pebbleC",
+      "kind": "mesh",
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.07,
+        "segments": 24
+      },
+      "position": [
+        0.9,
+        0.5,
+        0.7
+      ],
+      "material": {
+        "preset": "pearl"
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.06,
+          "speed": 0.6
+        }
+      ],
+      "castShadow": false
+    },
+    {
+      "id": "name",
+      "kind": "text",
+      "text": "{data.name|Trail Flask}",
+      "font": "sans-bold",
+      "size": 0.14,
+      "depth": 0,
+      "align": "left",
+      "position": [
+        -1.05,
+        -0.55,
+        0.9
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#1f3a30"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 0.2,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "price",
+      "kind": "text",
+      "text": "{data.price|$34}",
+      "font": "sans-bold",
+      "size": 0.14,
+      "depth": 0,
+      "align": "right",
+      "position": [
+        1.05,
+        -0.55,
+        0.9
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#b8893e"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 0.35,
+          "ease": "outCubic"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "Trail Flask",
+    "price": "$34",
+    "url": "#product"
   },
-  {
-   "id": "pebbleC",
-   "kind": "mesh",
-   "geometry": {
-    "type": "sphere",
-    "radius": 0.07,
-    "segments": 24
-   },
-   "position": [
-    0.9,
-    0.5,
-    0.7
-   ],
-   "material": {
-    "preset": "pearl"
-   },
-   "behaviours": [
+  "postfx": [
     {
-     "type": "float",
-     "amplitude": 0.06,
-     "speed": 0.6
+      "type": "look",
+      "preset": "product",
+      "intensity": 0.8
     }
-   ],
-   "castShadow": false
-  }
- ]
+  ]
 }

@@ -1,0 +1,27 @@
+{
+  "id": "hero-perfume-luxury",
+  "title": "Luxury perfume hero",
+  "description": "Dark luxury product hero: an amber glass perfume bottle (refractive lathe glass with liquid colour) and faceted gold cap on a black-and-gold marble pedestal, diamonds and a ruby catching the light, a slow push-in with a rack focus from a diamond to the bottle, and a gold serif name (data-bound).",
+  "kind": "hero",
+  "tags": [
+    "hero",
+    "luxury",
+    "perfume",
+    "fragrance",
+    "cosmetics",
+    "beauty",
+    "bottle",
+    "glass",
+    "gold",
+    "marble",
+    "diamond",
+    "jewellery",
+    "dark",
+    "elegant",
+    "serif",
+    "depth-of-field",
+    "rack-focus",
+    "data-bindings"
+  ],
+  "aspect": "16:9"
+}

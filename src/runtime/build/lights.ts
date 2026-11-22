@@ -77,6 +77,8 @@ const CONE_VERT = /* glsl */ `
 varying float vAlong;
 varying vec3 vN;
 varying vec3 vV;
+varying float vWorldY;
+varying float vViewZ;
 #include <common>
 #include <fog_pars_vertex>
 void main() {
@@ -84,24 +86,54 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   vN = normalize(normalMatrix * normal);
   vV = normalize(-mv.xyz);
+  vWorldY = (modelMatrix * vec4(position, 1.0)).y;
+  vViewZ = -mv.z;
   gl_Position = projectionMatrix * mv;
   #include <fog_vertex>
 }`;
 
+// Soft intersections: with the post-effect depth pre-pass (uUseDepth) the
+// cone fades as it nears ANY surface behind it (soft particles); without it,
+// it fades towards the scene ground plane (uUseGround) — no hard ellipse where
+// the beam meets the floor. Camera-facing fresnel softens the silhouette.
 const CONE_FRAG = /* glsl */ `
 uniform vec3 uColor;
 uniform float uIntensity;
+uniform sampler2D uDepth;
+uniform float uUseDepth;
+uniform vec2 uViewport;
+uniform float uNear;
+uniform float uFar;
+uniform float uOrtho;
+uniform float uGroundY;
+uniform float uUseGround;
+uniform float uSoft;
 varying float vAlong;
 varying vec3 vN;
 varying vec3 vV;
+varying float vWorldY;
+varying float vViewZ;
 #include <common>
 #include <fog_pars_fragment>
+float a3dSceneViewZ(float d) {
+  if (uOrtho > 0.5) return uNear + d * (uFar - uNear);
+  return uNear * uFar / max(uFar - d * (uFar - uNear), 1e-6);
+}
 void main() {
   float facing = abs(dot(normalize(vN), normalize(vV)));
   float edge = pow(facing, 2.2);
   float fall = pow(1.0 - clamp(vAlong, 0.0, 1.0), 1.6) * smoothstep(0.0, 0.06, vAlong);
-  float a = edge * fall * uIntensity * 0.22;
-  gl_FragColor = vec4(uColor * a, 1.0);
+  float soft = 1.0;
+  if (uUseDepth > 0.5) {
+    float sceneZ = a3dSceneViewZ(texture2D(uDepth, gl_FragCoord.xy / uViewport).x);
+    soft *= smoothstep(0.0, uSoft, sceneZ - vViewZ);
+  }
+  if (uUseGround > 0.5) soft *= smoothstep(0.0, uSoft, vWorldY - uGroundY);
+  float a = edge * fall * soft * uIntensity * 0.22;
+  // Pure added light: alpha 0 (premultiplied additive) so the cone never
+  // writes coverage — in the post-effect pipeline that hid the background
+  // behind the cone (dark rims along its silhouette).
+  gl_FragColor = vec4(uColor * a, 0.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
   #ifdef USE_FOG
@@ -110,6 +142,17 @@ void main() {
   #endif
 }`;
 
+/**
+ * Scene-wide depth of the current frame, published by the post-effect
+ * pipeline (its normal / depth pre-pass, which never contains the cones) on
+ * `scene.userData.a3dDepth` before the scene renders. Absent without postfx.
+ */
+export interface SceneDepthInfo {
+  texture: THREE.Texture;
+  width: number;
+  height: number;
+}
+
 function volumetricCone(light: THREE.SpotLight, def: LightDef): THREE.Mesh {
   const opts = typeof def.volumetric === "object" ? def.volumetric : {};
   // Unit cone: tip at the origin, base (radius 1) at z = 1, open ended.
@@ -117,12 +160,26 @@ function volumetricCone(light: THREE.SpotLight, def: LightDef): THREE.Mesh {
   geo.translate(0, 0.5, 0);
   geo.rotateX(Math.PI / 2);
   const mat = new THREE.ShaderMaterial({
-    uniforms: { ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog), uColor: { value: toColor(opts.color ?? def.color ?? "#ffffff") }, uIntensity: { value: num(opts.intensity, 1) } },
+    uniforms: {
+      ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
+      uColor: { value: toColor(opts.color ?? def.color ?? "#ffffff") },
+      uIntensity: { value: num(opts.intensity, 1) },
+      uDepth: { value: null },
+      uUseDepth: { value: 0 },
+      uViewport: { value: new THREE.Vector2(1, 1) },
+      uNear: { value: 0.1 },
+      uFar: { value: 1000 },
+      uOrtho: { value: 0 },
+      uGroundY: { value: 0 },
+      uUseGround: { value: 0 },
+      uSoft: { value: 0.5 },
+    },
     vertexShader: CONE_VERT,
     fragmentShader: CONE_FRAG,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
+    premultipliedAlpha: true,
     side: THREE.DoubleSide,
     fog: false,
   });
@@ -136,10 +193,45 @@ function volumetricCone(light: THREE.SpotLight, def: LightDef): THREE.Mesh {
   const base = new THREE.Vector3(), tgt = new THREE.Vector3();
   const baseIntensity = num(opts.intensity, 1);
   const lightIntensity0 = Math.max(light.intensity, 1e-3);
-  cone.onBeforeRender = () => {
+  let ground: THREE.Object3D | null | undefined;
+  const groundPos = new THREE.Vector3();
+  cone.onBeforeRender = (renderer, scene, camera) => {
     light.getWorldPosition(base);
     light.target.getWorldPosition(tgt);
     const len = fixedLen ?? Math.max(0.5, base.distanceTo(tgt) * 1.25);
+    const u = mat.uniforms;
+    // Soft fade distance: a fraction of the beam length.
+    u.uSoft!.value = Math.max(0.05, len * 0.12);
+    const depth = scene.userData.a3dDepth as SceneDepthInfo | undefined;
+    const cam = camera as THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    if (depth && renderer.getRenderTarget()) {
+      u.uDepth!.value = depth.texture;
+      u.uUseDepth!.value = 1;
+      u.uViewport!.value.set(depth.width, depth.height);
+      u.uNear!.value = cam.near;
+      u.uFar!.value = cam.far;
+      u.uOrtho!.value = (cam as THREE.OrthographicCamera).isOrthographicCamera ? 1 : 0;
+    } else {
+      u.uDepth!.value = null;
+      u.uUseDepth!.value = 0;
+    }
+    // Ground plane fallback (also kept with depth: the plane is exact).
+    if (ground === undefined || (ground && !ground.parent)) {
+      ground = null;
+      scene.traverse((o) => {
+        if (!ground && o.userData.ground) ground = o;
+      });
+    }
+    if (ground && ground.visible) {
+      ground.getWorldPosition(groundPos);
+      u.uGroundY!.value = groundPos.y;
+      u.uUseGround!.value = 1;
+    } else {
+      // No scene ground: a beam aimed down fades near its target's height
+      // (usually a floor object).
+      u.uGroundY!.value = tgt.y;
+      u.uUseGround!.value = !fixedLen && tgt.y < base.y - 0.1 ? 1 : 0;
+    }
     const r = Math.tan(Math.min(light.angle, 1.5)) * len;
     // Orient in world space, then express in the light's local space.
     const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), tgt.clone().sub(base).normalize());

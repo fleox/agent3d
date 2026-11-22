@@ -3,6 +3,7 @@
 // timeline. `frame(t, dt, …)` evaluates everything for a scene time.
 
 import * as THREE from "three";
+import { expandPostFx } from "../../core/postfx";
 import { GENERATORS } from "../../core/catalog";
 import type { LightDef, MaterialDef, ObjectDef, SceneDoc } from "../../core/types";
 import { BEHAVIOUR_IMPLS } from "../behaviours/index";
@@ -152,7 +153,8 @@ export class World {
         postfx: {
           set: (type, param, value) => this.postfxParam?.(type, param, value),
           base: (type, param) => {
-            const fx = def.postfx?.find((f) => f.type === type);
+            // Looks expanded: a track may animate an effect a `look` preset brings.
+            const fx = expandPostFx(def.postfx).find((f) => f.type === type);
             const v = fx?.[param];
             return typeof v === "number" || typeof v === "string" ? v : undefined;
           },
@@ -329,7 +331,9 @@ export class World {
           }
           const entry = GENERATORS.find((g) => g.id === def.generator);
           const params = withDefaults(entry, def.params ?? {});
-          const bctx = { ...ctx, siblings, rng: this.rngFor(def.id, def.seed) };
+          const sc = def.scale;
+          const placement = { position: [...(def.position ?? [0, 0, 0])] as [number, number, number], scale: (typeof sc === "number" ? [sc, sc, sc] : sc ? [...sc] : [1, 1, 1]) as [number, number, number] };
+          const bctx = { ...ctx, siblings, rng: this.rngFor(def.id, def.seed), placement };
           built = await ctx.track(Promise.resolve(impl(params, bctx)));
           object = built.object;
           if (built.update) {
@@ -527,14 +531,36 @@ export class World {
     for (const e of this.entries.values()) for (const r of e.runners) r.step(t, dt);
     // 4. Time-driven content (+ pointer-aware generators: character eyes, waveGrid ripple).
     for (const e of this.entries.values()) {
-      const hook = (e.object.userData.setPointer ?? e.object.children[0]?.userData.setPointer) as ((x: number, y: number) => void) | undefined;
-      if (hook) hook(input.pointer.x, input.pointer.y);
+      const holder = e.object.userData.setPointer ? e.object : e.object.children[0];
+      const hook = holder?.userData.setPointer as ((x: number, y: number) => void) | undefined;
+      if (!hook) continue;
+      hook(input.pointer.x, input.pointer.y);
+      // Surfaces (waveGrid) want the point under the cursor: ray ∩ their local y = 0 plane.
+      const local = holder.userData.setPointerLocal as ((x: number, z: number) => void) | undefined;
+      if (local && this.camera) {
+        const hit = this.pointerOnPlane(holder, input.pointer.x, input.pointer.y);
+        if (hit) local(hit.x, hit.z);
+      }
     }
     for (const u of this.updaters) u(t, dt);
     for (const e of this.entries.values()) e.animator?.mixer.update(dt);
     // 5. Camera.
     const lookAtId = this.def.camera?.lookAt;
     this.rig.update(t, dt, { pointer: input.pointer, scroll: input.scroll, followTarget, lookAt: lookAtId ? this.objectPosition(lookAtId) : null });
+  }
+
+  private pointerRay = new THREE.Raycaster();
+  // Pointer (NDC, y up) ray hit on `obj`'s local y = 0 plane, in its local frame.
+  private pointerOnPlane(obj: THREE.Object3D, x: number, y: number): THREE.Vector3 | null {
+    obj.updateWorldMatrix(true, false);
+    this.camera.updateMatrixWorld();
+    this.pointerRay.setFromCamera(new THREE.Vector2(x, y), this.camera);
+    const inv = obj.matrixWorld.clone().invert();
+    const ray = this.pointerRay.ray.clone().applyMatrix4(inv);
+    if (Math.abs(ray.direction.y) < 1e-6) return null;
+    const k = -ray.origin.y / ray.direction.y;
+    if (k < 0) return null;
+    return ray.origin.addScaledVector(ray.direction, k);
   }
 
   dispose(): void {

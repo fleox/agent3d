@@ -11,7 +11,7 @@ import { MESH_GRADIENT_GLSL } from "../shaders/meshGradient.glsl";
 import { DEG, num, toColor, vec3 } from "../util";
 import type { RuntimeContext } from "./context";
 import { createContactShadows } from "./contactShadows";
-import { applyHeightFog, type HeightFogUniforms } from "./heightFog";
+import { installHeightFog, type HeightFogUniforms } from "./heightFog";
 import { buildLight, configureShadow } from "./lights";
 import { expandRig } from "./rigs";
 import { createPhysicalSky, isPhysicalSky, sunLight, type PhysicalSky } from "./sky";
@@ -289,6 +289,9 @@ function fadingShadowMaterial(color: THREE.Color, opacity: number): THREE.Materi
 }
 
 // Default fog colour: explicit > physical-sky haze > gradient-sky horizon > background colour.
+/** IBL strength under a light rig when environment.lightingIntensity is not set. */
+export const RIG_IBL_SCALE = 0.45;
+
 export function defaultFogColor(env: EnvironmentDef, skyHaze?: string): string {
   const bg = env.background;
   if (env.fog?.color) return env.fog.color;
@@ -377,14 +380,19 @@ export async function buildEnvironment(env: EnvironmentDef, scene: THREE.Scene, 
 
   // Fog (before the IBL so the sky's horizon haze is baked into reflections too).
   scene.fog = null;
+  installHeightFog(scene, null);
   let fogColor: THREE.Color | null = null;
   if (env.fog) {
     fogColor = toColor(defaultFogColor(env, physicalSky?.values.haze));
+    // The sky haze as fog colour is an in-scatter colour: slightly dimmed so a
+    // thick (height) fog in front of a low sun doesn't wash the frame to white
+    // (the sky's horizon blends to the same colour: setHaze below).
+    if (!env.fog.color && physicalSky) fogColor.multiplyScalar(0.82);
     if ("density" in env.fog) {
       scene.fog = new THREE.FogExp2(fogColor, env.fog.density);
       if (env.fog.height !== undefined) {
         const uniforms: HeightFogUniforms = { uA3dFogHeight: { value: env.fog.height }, uA3dFogFalloff: { value: num(env.fog.falloff, 0.25) } };
-        ctx.onUpdate(() => applyHeightFog(scene, uniforms));
+        installHeightFog(scene, uniforms);
       }
     } else scene.fog = new THREE.Fog(fogColor, num(env.fog.near, 10), num(env.fog.far, 60));
     physicalSky?.setHaze(fogColor, 0.85);
@@ -456,6 +464,11 @@ export async function buildEnvironment(env: EnvironmentDef, scene: THREE.Scene, 
       }
     }
     pmrem.dispose();
+    // A light rig already provides key / fill / rim: the IBL then only needs to
+    // give reflections and soft ambient. At full strength the two stacked
+    // washed light colours (pastels) out to white under ACES.
+    const explicitIbl = env.lightingIntensity !== undefined || (typeof lighting === "object" && lighting.intensity !== undefined);
+    if (env.rig && !explicitIbl) scene.environmentIntensity *= RIG_IBL_SCALE;
   }
 
   const lightsToAdd: THREE.Light[] = [];

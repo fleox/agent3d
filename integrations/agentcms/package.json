@@ -1,7 +1,7 @@
 {
   "name": "agent3d-scene",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Embed 3D scenes made with Agent3D in AgentCMS posts and pages.",
   "type": "module",
   "scripts": {

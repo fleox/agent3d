@@ -194,6 +194,7 @@ export interface SkyParams {
 export interface ContactShadowsDef {
   y?: number; // plane height (default: ground.y or 0)
   size?: number; // square side in units (default: fitted to the objects)
+  center?: [number, number]; // plane centre [x, z] (default: the centre of the objects it fits)
   opacity?: number; // 0..1 (default 0.6)
   blur?: number; // softness (default 2.5)
   far?: number; // how high above the plane objects still cast (default 1.5)
@@ -600,7 +601,7 @@ export interface TimelineDef {
   // Playback rate (default 1).
   speed?: number;
   // Named times (s). Crossing one emits an event with its name (scripts
-  // api.on(name), interactions { on: "event" }, DOM "agent3d-event").
+  // api.on(name), interactions { on: "event" }, DOM "agent3d:event").
   markers?: Record<string, number>;
   // Named ranges played by interactions ({ play: "hover-in" }) or player.playSegment().
   segments?: Record<string, SegmentDef | [number | string, number | string]>;
@@ -623,7 +624,7 @@ export type InteractionAction =
   | { seek: number | string }
   // Set an animatable property (track target syntax) — tweened when duration > 0.
   | { set: { path: string; value: KeyValue }; duration?: number; ease?: EaseSpec }
-  // Emit an event (scripts api.on, interactions { on: "event" }, DOM "agent3d-event").
+  // Emit an event (scripts api.on, interactions { on: "event" }, DOM "agent3d:event").
   | { emit: string; payload?: unknown }
   // Open a URL (http(s) or relative; only on click / key interactions — a user gesture).
   | { openUrl: string; newTab?: boolean }
@@ -699,6 +700,7 @@ export interface JointDef {
   stiffness?: number; // spring (default 50)
   damping?: number; // spring (default 1)
   motor?: { speed: number; maxForce?: number }; // hinge motor, degrees / s
+  limits?: [number, number]; // hinge angle limits in degrees [min, max], relative to the start pose (e.g. [0, 110] for a door)
   maxForce?: number; // constraint strength (default 1e6)
   collideConnected?: boolean; // default false
 }

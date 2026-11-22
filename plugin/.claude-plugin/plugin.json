@@ -1,6 +1,6 @@
 {
   "name": "agent3d",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Skills to create, edit, preview (headless screenshots the agent looks at) and publish 3D elements for web pages with Agent3D: animated banners, heroes, characters, landscapes, product showcases and mini games, exported as a self-contained Web Component for any site.",
   "author": {
     "name": "fleox"

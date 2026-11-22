@@ -1,14 +1,21 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { isAbsolute, join, resolve } from "node:path";
 import { readLibraryIndex, readRuntimeFiles } from "../host";
 import { printResult } from "../output";
 import { runtimeBuilt } from "../paths";
 import type { Command } from "./types";
-import { boolOpt, PROJECT_OPTION, projectFs } from "./util";
+import { boolOpt, PROJECT_OPTION, projectFs, strOpt } from "./util";
 
 export const checkCommand: Command = {
   name: "check",
-  usage: "check [--project <dir>] [--render]",
+  usage: "check [--project <dir>] [--render [--out <dir>]]",
   summary: "Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles, KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok.",
-  options: [PROJECT_OPTION, { name: "render", type: "boolean", description: "Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object)." }],
+  options: [
+    PROJECT_OPTION,
+    { name: "render", type: "boolean", description: "Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). The frame goes to a temporary folder (its absolute path is in `render`) unless --out is given." },
+    { name: "out", type: "string", description: "--render: folder for the frame, relative to the project folder (e.g. renders)." },
+  ],
   async run({ io, options }) {
     const fs = projectFs(options);
     const { checkProject } = await import("../../src/ops/check");
@@ -16,9 +23,13 @@ export const checkCommand: Command = {
     let renderNote: string | undefined;
     if (boolOpt(options, "render")) {
       const { renderProject } = await import("../render/render");
-      const r = await renderProject({ projectDir: fs.root, count: 1, outDir: `${fs.root}/renders` });
+      const out = strOpt(options, "out");
+      // A check must not leave files in the project: temp folder unless --out.
+      const outDir = out ? (isAbsolute(out) ? out : resolve(fs.root, out)) : mkdtempSync(join(tmpdir(), "agent3d-check-"));
+      const r = await renderProject({ projectDir: fs.root, count: 1, outDir });
       extra = { ...extra, ...(r.stats ? { runtimeStats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}) };
-      renderNote = r.frames[0]?.path;
+      const f = r.frames[0]?.path;
+      renderNote = f ? (out ? f : resolve(r.dir, f)) : undefined;
     }
     const report = await checkProject(fs, extra);
     printResult(io, { ...report, ...(renderNote ? { render: renderNote } : {}) }, () =>

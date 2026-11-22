@@ -101,7 +101,10 @@ void main() {
   vec3 r = reflect(vec3(0.0, 0.0, -1.0), n);
   float k = clamp(r.y * 0.55 + 0.5 + h * 0.18, 0.0, 1.0);
   vec3 col = palette(k);
-  float horizon = smoothstep(0.02, 0.0, abs(r.y + 0.05)) * 0.6;
+  // Studio horizon line: wider, softer and antialiased (its width never drops
+  // under ~1.5 px of r.y change, so steep normals don't alias into hairlines).
+  float hw = 0.035 + fwidth(r.y) * 1.5;
+  float horizon = (1.0 - smoothstep(0.0, hw, abs(r.y + 0.05))) * 0.45;
   float spec = pow(max(dot(r, normalize(vec3(0.35, 0.6, 0.7))), 0.0), 60.0) * 2.0;
   col += vec3(horizon + spec);
   gl_FragColor = vec4(col, 1.0);

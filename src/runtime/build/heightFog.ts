@@ -1,8 +1,9 @@
 // Height fog: exponential fog (scene.fog = FogExp2) whose density decays with
 // altitude above `height` (analytic integral along the view ray), so valleys
 // and the ground fill with haze while hills and the sky stay clear. Every lit
-// / basic material of the scene with `fog: true` gets its fog chunk patched
-// (materials created later — spawned objects — are patched on the next frame).
+// / basic material of the scene with `fog: true` gets its fog chunk patched,
+// right before every render of the scene (scene.onBeforeRender), so objects
+// spawned mid-frame are fogged from their very first frame.
 
 import * as THREE from "three";
 import { addShaderPatch } from "./materials";
@@ -74,4 +75,21 @@ export function applyHeightFog(root: THREE.Object3D, uniforms: HeightFogUniforms
       patchHeightFog(x, uniforms);
     }
   });
+}
+
+/**
+ * Height fog for every render of `scene` (null = off). Patches materials in
+ * scene.onBeforeRender — before three compiles any program of that render —
+ * so a material created by a script during a frame never renders unfogged.
+ */
+export function installHeightFog(scene: THREE.Scene, uniforms: HeightFogUniforms | null): void {
+  scene.userData.a3dHeightFog = uniforms;
+  if (!uniforms || scene.userData.a3dHeightFogHook) return;
+  scene.userData.a3dHeightFogHook = true;
+  const prev = scene.onBeforeRender;
+  scene.onBeforeRender = function (...args: Parameters<THREE.Scene["onBeforeRender"]>) {
+    const u = scene.userData.a3dHeightFog as HeightFogUniforms | null;
+    if (u) applyHeightFog(scene, u);
+    prev.apply(this, args);
+  };
 }

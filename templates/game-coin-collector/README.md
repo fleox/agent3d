@@ -1,6 +1,6 @@
 # Coin collector arena
 
-A playable 16:9 3D platformer ("Coin Rush"): the Kenney platformer hero (`library:models/characters/platformer-hero.glb`, clips idle / walk / jump) runs and jumps across a floating grass island and three platforms to grab 12 coins before the 45 s timer ends. Light physics (dynamic hero, static platforms, trigger coins, gravity), a follow camera, fall → respawn, best time saved with `api.storage`, win / time's-up screens with **Play again**, synth sounds and a self-playing **attract mode** (the hero collects coins on its own until a key or tap).
+A playable 16:9 3D platformer ("Coin Rush"): the Kenney platformer hero (`library:models/characters/platformer-hero.glb`, clips idle / walk / jump) runs and jumps across a floating grass island (a grass cylinder over a dirt band and a rocky cone, flowers on top) and three grass-and-dirt platforms, high above a sea of clouds under a blue gradient sky, to grab 12 coins before the 45 s timer ends. Light physics (dynamic hero, static platforms, trigger coins, gravity), a follow camera, fall → respawn, best time saved with `api.storage`, win / time's-up screens with **Play again**, synth sounds and a self-playing **attract mode** (the hero collects coins on its own until a key or tap).
 
 ## Controls
 
@@ -21,7 +21,7 @@ A playable 16:9 3D platformer ("Coin Rush"): the Kenney platformer hero (`librar
 | Change | Where |
 |---|---|
 | Time limit, run speed, jump strength | `data.collector`: `time`, `speed`, `jump` (gravity: `physics.gravity`) |
-| Level layout | platforms `arena`, `stepA`, `stepB`, `tower` (keep tag `ground` + a static `body`); coins in `objects#coins` (add / move children, keep tag `coin`) |
+| Level layout | platforms `arena`, `stepA`, `stepB`, `tower` (keep tag `ground` + a static `body`; their colliders have an explicit `size` / `offset` because the dirt children would otherwise enlarge the measured box); coins in `objects#coins` (add / move children, keep tag `coin`) |
 | Hero | `objects#hero.src` — another animated library character; the script plays clips `idle`, `walk`, `jump` (rename them in `play(...)` calls for other models, e.g. robot: `Idle`, `Walking`, `Jump`) |
 | Texts / colours | `ui.elements`, `ui.accent`, `environment.background` |
 

@@ -18,7 +18,7 @@ Embed 3D scenes made with [Agent3D](https://github.com/fleox/agent3d) (animated 
 
 ## Use
 
-1. Make a scene with Agent3D and export it: `npx -y @fleox/agent3d@0.1.0 export --project my-banner --json` → `my-banner/dist/embed/`.
+1. Make a scene with Agent3D and export it: `npx -y @fleox/agent3d@0.2.0 export --project my-banner --json` → `my-banner/dist/embed/`.
 2. **Settings → Agent3D scenes** → pick that `embed` folder. Every file except the demo page is uploaded to `agent3d/` (the runtime once, then one folder per scene).
 3. In a post or page, insert **Agent3D scene**, choose the scene in the Block tab, write the accessible label, publish.
 
@@ -29,12 +29,16 @@ Already uploaded the export some other way (git, bucket)? Paste its `scene.json`
 ```html
 <figure class="agent3d-scene-block">
   <script type="module" src="/agent3d/agent3d-runtime/agent3d-runtime.js"></script>
-  <agent3d-scene src="/agent3d/my-banner/scene.json" poster="/agent3d/my-banner/poster.webp" aria-label="…"></agent3d-scene>
+  <agent3d-scene src="/agent3d/my-banner/scene.json" aspect="4:1" role="img" aria-label="…" style="display:block;width:100%;aspect-ratio:4 / 1">
+    <img slot="poster" src="/agent3d/my-banner/poster.webp" alt="…" decoding="async">
+  </agent3d-scene>
   <figcaption>…</figcaption>
 </figure>
 ```
 
-Several blocks on a page share the runtime (browsers run a module URL once). Content-Security-Policy, if the site sets one: `script-src 'self'`, `connect-src 'self'`, `img-src 'self' blob:` (+ `style-src 'unsafe-inline'` for scenes with a HUD).
+The poster is real markup (visible before the runtime loads, indexable) and the aspect ratio is reserved up front, so the page does not jump when the scene starts. Uploaded scenes get their aspect from `target.aspect` in their `scene.json`; for a pasted URL, set it in the block's **Aspect ratio** field. Exports made with `--cache-bust` (`agent3d-runtime-<hash>/`) are detected too; `EMBED.md`, `head.html` and the `frameworks/` wrappers stay local.
+
+Several blocks on a page share the runtime (browsers run a module URL once). Content-Security-Policy, if the site sets one: `script-src 'self'`, `connect-src 'self'`, `img-src 'self' blob:` (+ `style-src 'unsafe-inline'` for scenes with a HUD, and `script-src 'wasm-unsafe-eval'` only for scenes exported with meshopt-compressed models, `export --optimize`).
 
 ## Develop
 

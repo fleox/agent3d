@@ -1,0 +1,8 @@
+{
+  "id": "game-basket",
+  "title": "Hoop shot",
+  "description": "Playable 45-second basketball shooting game (16:9) on real rigid-body physics: swipe or drag up to shoot (length = power, drift = aim) or hold Space to charge and release, the ball bounces off a trimesh rim and the backboard, swishes count only when falling through the net, a new spot after every shot, x2 / x3 streaks, best score saved, impact sounds, confetti, spotlit night arena, self-playing attract mode.",
+  "kind": "game",
+  "tags": ["game", "basketball", "sports", "physics", "rigid-body", "throw", "swipe", "drag", "touch", "keyboard", "score", "timer", "arcade", "casual"],
+  "aspect": "16:9"
+}

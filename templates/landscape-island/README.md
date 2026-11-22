@@ -1,6 +1,6 @@
-# Low-poly island
+# Tropical low-poly island
 
-A 16:9 procedural diorama, zero downloads: an island `terrain` (beach band, grass, rocky summit) in an animated turquoise `water` sea, a mixed forest + palms (`trees`, swaying in the wind, never placed under water), `rocks`, `flowers` and drifting `clouds` under a soft sky. The camera orbits slowly; visitors can drag to orbit and scroll/pinch to zoom (limited).
+A 16:9 procedural diorama, zero downloads: an island `terrain` (beach band, grass, rocky summit) in an animated turquoise `water` sea, a mixed forest + palms (`trees`, swaying in the wind, never placed under water), `rocks`, `flowers` and drifting `clouds` under a blue gradient sky with a soft sun, a key `sun` light casting soft shadows, three seabirds circling (small groups with `sway` wings on an `orbit` behaviour) and a light `cinematic` look (contact AO, grade, vignette, supersampled stills). The camera orbits slowly; visitors can drag to orbit and scroll/pinch to zoom (limited).
 
 ## What to tweak
 
@@ -11,7 +11,8 @@ A 16:9 procedural diorama, zero downloads: an island `terrain` (beach band, gras
 | Sea colours | `objects#sea.params.color` / `.shallowColor`, waves `.waveHeight` |
 | Forest density / style | `objects#forest.params.count`, `.style` (`pine`, `round`, `birch`, `mixed`…), `.leafColors` |
 | Autumn | `objects#forest.params.leafColors: ["#d9822b", "#c0392b", "#f1c40f"]` |
-| Sky | `environment.background.sky` (`top`, `horizon`, `sun.direction`), keep `environment.fog.color` close to the horizon |
+| Sky | `environment.background.sky` (`top`, `horizon`, `sun.direction`), keep `environment.fog.color` equal to `horizon`; move `lights#sun` with the sky sun |
+| Birds | `objects#bird1..3` (remove them for a static poster) |
 | Turn speed | `camera.autoRotate` (0 = still) |
 | Room for a headline | the orbit sweeps the island across the whole frame: set `camera.autoRotate` to `0` (and `camera.controls` to `"none"` if the hero sits behind clickable HTML), then move `camera.target` sideways, e.g. `[-8, 1, 0]`, so the island sits on the right and the left half stays calm for the text |
 

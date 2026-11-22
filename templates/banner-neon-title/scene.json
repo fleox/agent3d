@@ -2,7 +2,7 @@
   "version": 1,
   "id": "banner-neon-title",
   "title": "Neon title banner",
-  "ariaLabel": "Animated banner: the words AFTER DARK in chrome letters with glowing neon lines",
+  "ariaLabel": "Animated banner: the words {data.title|AFTER DARK} in chrome letters with a pink neon script, over a glowing synthwave grid and sun",
   "seed": 7,
   "target": {
     "kind": "banner",
@@ -66,7 +66,7 @@
         1.5,
         3
       ],
-      "intensity": 40,
+      "intensity": 16,
       "distance": 18,
       "behaviours": [
         {
@@ -85,7 +85,7 @@
         1.5,
         3
       ],
-      "intensity": 40,
+      "intensity": 16,
       "distance": 18
     },
     {
@@ -196,36 +196,85 @@
     {
       "id": "title",
       "kind": "text",
-      "text": "AFTER DARK",
-      "font": "sans-bold",
-      "size": 1.05,
-      "depth": 0.25,
+      "text": "{data.title|AFTER DARK}",
+      "font": "bebas-neue",
+      "size": 1.5,
+      "depth": 0.3,
       "bevel": 0.035,
-      "letterSpacing": 0.08,
+      "letterSpacing": 0.04,
       "position": [
         0,
-        0.35,
+        0.5,
         0
       ],
       "material": {
-        "type": "standard",
-        "color": "#8a1068",
-        "emissive": "#ff1493",
-        "emissiveIntensity": 0.6,
-        "roughness": 0.45,
-        "metalness": 0.2
+        "type": "gradient",
+        "gradient": [
+          "#7a1cff",
+          "#ff3fa4",
+          "#ffd2a0"
+        ],
+        "emissive": "#ffffff",
+        "emissiveIntensity": 0.55,
+        "gradientEmissive": true,
+        "roughness": 0.3,
+        "metalness": 0.4
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.04,
+          "speed": 0.35
+        }
+      ],
+      "outline": {
+        "width": 0.045,
+        "color": "#1a0630",
+        "depth": 0.14
+      },
+      "reveal": {
+        "effect": "drop",
+        "stagger": 0.06,
+        "duration": 0.8,
+        "delay": 0.2,
+        "order": "center",
+        "ease": "outBack"
+      }
+    },
+    {
+      "id": "script",
+      "kind": "text",
+      "text": "{data.script|tonight}",
+      "font": "pacifico",
+      "size": 0.85,
+      "depth": 0.05,
+      "position": [
+        2.9,
+        -0.45,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        8
+      ],
+      "material": {
+        "preset": "neon",
+        "color": "#7ff7ff",
+        "emissive": "#2ff3ff",
+        "emissiveIntensity": 1.2
       },
       "behaviours": [
         {
           "type": "appear",
-          "effect": "rise",
-          "duration": 1.2,
-          "ease": "outCubic"
+          "effect": "scale",
+          "duration": 0.6,
+          "delay": 1.3
         },
         {
-          "type": "float",
-          "amplitude": 0.05,
-          "speed": 0.35
+          "type": "flicker",
+          "amount": 0.3,
+          "speed": 5
         }
       ]
     },
@@ -310,35 +359,6 @@
         "emissive": "#ff2fd6",
         "emissiveIntensity": 3
       }
-    },
-    {
-      "id": "underline",
-      "kind": "mesh",
-      "geometry": {
-        "type": "box",
-        "width": 7.4,
-        "height": 0.04,
-        "depth": 0.04
-      },
-      "position": [
-        0,
-        -0.55,
-        0.2
-      ],
-      "material": {
-        "preset": "neon",
-        "color": "#2ff3ff",
-        "emissive": "#2ff3ff",
-        "emissiveIntensity": 2.5
-      },
-      "behaviours": [
-        {
-          "type": "appear",
-          "effect": "scale",
-          "duration": 1.4,
-          "ease": "outCubic"
-        }
-      ]
     },
     {
       "id": "sun",
@@ -443,9 +463,15 @@
   "postfx": [
     {
       "type": "bloom",
-      "strength": 0.75,
-      "radius": 0.45,
-      "threshold": 0.9
+      "strength": 0.8,
+      "radius": 0.5,
+      "threshold": 0.95,
+      "smoothing": 0.2
+    },
+    {
+      "type": "grading",
+      "contrast": 1.12,
+      "saturation": 1.15
     },
     {
       "type": "chromatic",
@@ -454,7 +480,15 @@
     {
       "type": "vignette",
       "offset": 1,
-      "darkness": 1.05
+      "darkness": 1.0
+    },
+    {
+      "type": "taa",
+      "samples": 8
     }
-  ]
+  ],
+  "data": {
+    "title": "AFTER DARK",
+    "script": "tonight"
+  }
 }

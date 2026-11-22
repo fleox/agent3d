@@ -3,7 +3,7 @@
 `agent3d mcp` turns a project folder into a [Model Context Protocol](https://modelcontextprotocol.io) server on stdio, so Claude Code, Claude Desktop, Hermes, Cursor or any MCP client can create, edit, check, preview and export 3D scenes.
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 mcp --project /path/to/my-banner [--read-only]
+npx -y @fleox/agent3d@0.2.0 mcp --project /path/to/my-banner [--read-only]
 ```
 
 - `--project` is the folder the tools work on (it may be empty: the `project_create` tool creates the project there).
@@ -15,7 +15,7 @@ npx -y @fleox/agent3d@0.1.0 mcp --project /path/to/my-banner [--read-only]
 **Claude Code**
 
 ```bash
-claude mcp add agent3d -- npx -y @fleox/agent3d@0.1.0 mcp --project /path/to/my-banner
+claude mcp add agent3d -- npx -y @fleox/agent3d@0.2.0 mcp --project /path/to/my-banner
 ```
 
 Add `--scope project` to share it with the repository (`.mcp.json`). The skills (`/plugin marketplace add fleox/agent3d`, then `/plugin install agent3d@agent3d`) work with or without the MCP server: they drive the CLI.
@@ -27,7 +27,7 @@ Add `--scope project` to share it with the repository (`.mcp.json`). The skills 
   "mcpServers": {
     "agent3d": {
       "command": "npx",
-      "args": ["-y", "@fleox/agent3d@0.1.0", "mcp", "--project", "/Users/me/agent3d/my-banner"]
+      "args": ["-y", "@fleox/agent3d@0.2.0", "mcp", "--project", "/Users/me/agent3d/my-banner"]
     }
   }
 }
@@ -41,7 +41,7 @@ Desktop apps may not see your shell's `PATH`: use the absolute path of `npx` (`w
 mcp_servers:
   agent3d:
     command: npx
-    args: ["-y", "@fleox/agent3d@0.1.0", "mcp", "--project", "/home/me/agent3d/my-banner"]
+    args: ["-y", "@fleox/agent3d@0.2.0", "mcp", "--project", "/home/me/agent3d/my-banner"]
 ```
 
 Or use the Hermes skills in [`hermes/`](../hermes) (Python wrapper of the CLI, no MCP needed).
@@ -56,22 +56,31 @@ Exactly the AI tool catalog of `src/ai/tools.ts` (`agent3d tools list` prints th
 
 | Tool | Writes | Does |
 |---|---|---|
-| `project_info` | | Manifest, target, scene summary, assets, renders |
-| `project_create` | yes | Create the project (starter per target, or a template) |
-| `scene_get`, `scene_summary`, `scene_validate` | | Read / outline / validate the scene |
-| `scene_apply` | yes | Replace the whole scene (plan first) |
-| `scene_patch` | yes | Patch ops (set, merge, remove, addObject, updateObject, removeObject, moveObject, addBehaviour, addTrack, removeTrack) |
-| `object_add`, `object_update`, `object_remove`, `object_list` | some | Object shortcuts |
-| `timeline_set` | yes | Replace or edit the timeline (tracks, markers, segments, scroll) |
-| `interactions_set` | yes | Replace or append no-code interactions (click / hover / scroll / key → play segments, set properties, open URLs) |
-| `catalog_get` | | Geometries, materials, shaders, behaviours, generators, particles, post effects, fonts, sounds with parameters |
-| `templates_list` | | Starter templates |
-| `check` | | Validation, sandbox lint, budgets, framing, licences, web settings |
-| `assets_list`, `assets_search`, `library_list` | | Project assets, free CC0 sources (network), built-in library |
-| `assets_add` | yes | Download a search hit (`resolution` below 1k / `maxSize` downscales; models return `bounds`), or import a local file / Kenney / Quaternius zip |
-| `assets_optimize` | yes | Downscale / re-encode textures in place (also inside `.glb`) when the KB budget is exceeded — needs headless Chrome |
-| `export` | yes | Embed or single-HTML export into the project; `poster` (still image) and `video` (WebM) into `dist/` when the host can render |
-| `render_preview` | | Headless render (frames + contact sheet) |
+| `project_info` | | Manifest, target, compact scene outline, asset count, validation summary |
+| `project_create` | yes | Create the project in the folder (an attractive starter per target kind, or a template) |
+| `scene_get` | | The scene, or one part of it (`path`: `"camera"`, `"objects#logo.material"`…) |
+| `scene_summary` | | Compact outline: objects tree, lights, camera, background, timeline, post effects |
+| `scene_validate` | | Validate a candidate scene (or the current one) against the format and the catalog |
+| `scene_apply` | yes | Replace the whole scene (`dryRun` shows the plan first) |
+| `scene_patch` | yes | Atomic patch ops: `set`, `merge`, `remove`, `addObject`, `updateObject`, `removeObject`, `moveObject`, `addBehaviour`, `addTrack`, `removeTrack` |
+| `object_add` | yes | Add an object (at the root or under `parent`) |
+| `object_update` | yes | Deep-merge fields into an object |
+| `object_remove` | yes | Remove an object, its children and its timeline tracks |
+| `object_list` | | Flat list of every object (id, kind, detail, parent, depth, position, behaviours) |
+| `timeline_set` | yes | Replace or edit the timeline: tracks, settings, markers, segments, scroll |
+| `interactions_set` | yes | Replace or append no-code interactions (click / hover / scroll / key / event → play segments, set properties, emit, open URLs, play clips) |
+| `catalog_get` | | Catalog sections (geometries, materialPresets, shaders, textures, lightRigs, behaviours, generators, particlePresets, postfx, fonts, sounds), entries and parameters |
+| `templates_list` | | Starter templates (filter by kind / query) |
+| `check` | | Pre-publish report: validation, missing files, sandbox lint, budgets, licences, accessibility; with the last `render_preview` also framing and runtime performance |
+| `assets_list` | | Project assets with licence, size and which scene paths use them |
+| `assets_search` | | Free CC0 / CC-BY sources (Poly Haven, ambientCG, Khronos, Kenney, Quaternius) — network |
+| `assets_add` | yes | Download a search hit (`resolution`; below 1k or `maxSize` downscales; models return `bounds`), or import a local file / Kenney / Quaternius zip |
+| `assets_optimize` | yes | Lighter textures and models: smart per-usage texture sizes, WebP re-encoding (scene references rewritten), meshopt `.glb` geometry, optional `simplify`; `dryRun: true` reports the savings first. Textures need a host with headless Chrome; geometry does not |
+| `library_list` | | The built-in offline library (models with sizes, triangles and clip names, textures, HDRIs) as `library:<id>` refs |
+| `export` | yes | `embed` (default), `zip` or `single-html` into `dist/<format>/` (`baseUrl`, `cacheBust`, `integrity`, `extras`, `optimize`, `og`); `poster` (still), `video` (WebM / MP4 `codec`), `gif` and `animated-webp` into `dist/` or `renders/` when the host can render (`quality` draft…ultra, `transparent`, `fps`, `duration`, `size`) |
+| `render_preview` | | Headless render: frames + contact sheet, stats, inspect, game `state` (CLI / MCP host only — needs Chrome) |
+
+The CLI's `export` command has the same formats and options (animated WebP is `agent3d render --webp`; the CLI also renders the poster itself, the tool takes a `poster` image path): see [export.md](export.md).
 
 Tool annotations carry `readOnlyHint` from `mutating`. Errors come back as tool results with `isError: true` and the engine's code, message, hint and details (validation issues). Refusals are errors too: a mutating tool that wrote nothing because of validation errors (`status: "refused"`, `applied: false` with `counts.errors > 0`) returns its normal result (plan, issues with hints) with `isError: true`. Reports such as `scene_validate` and `check` are not refusals (`isError: false`, read `ok` / `counts`).
 

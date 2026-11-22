@@ -4,10 +4,10 @@ All examples assume the embed export was uploaded to `/agent3d/` at the root of 
 
 ```
 /agent3d/agent3d-runtime/agent3d-runtime.js   (+ chunks/)
-/agent3d/spring-banner/scene.json             (+ assets/, scripts/, poster.webp, CREDITS.txt)
+/agent3d/spring-banner/scene.json             (+ assets/, scripts/, poster.webp, og-image.png, CREDITS.txt)
 ```
 
-Export straight into that layout with `npx -y @fleox/agent3d@0.1.0 export --project spring-banner --out ./public/agent3d --base-url /agent3d/ --json` (the `<name>` folder defaults to the project name; `--name` changes it; `--base-url` writes root-absolute URLs in the snippet, the wrappers and EMBED.md). Paste the `snippet` of the result: the examples below shorten the integrity hashes and the poster markup.
+Export straight into that layout with `npx -y @fleox/agent3d@0.2.0 export --project spring-banner --out ./public/agent3d --base-url /agent3d/ --json` (the `<name>` folder defaults to the project name; `--name` changes it; `--base-url` writes root-absolute URLs in the snippet, the wrappers and EMBED.md). Paste the `snippet` of the result: the examples below shorten the integrity hashes and the poster markup.
 
 ## Plain HTML
 
@@ -27,7 +27,7 @@ Export straight into that layout with `npx -y @fleox/agent3d@0.1.0 export --proj
 - One `<script type="module">` per page is enough for any number of scenes; browsers run a module URL once.
 - Overlaying HTML text on the scene: put both in a `position: relative` container and the text in an absolutely positioned layer; the scene keeps its aspect ratio underneath.
 - Transparent scenes (`target.transparent: true`) let the page background show through.
-- Caching: the runtime's chunk files have content hashes; `agent3d-runtime.js` and `scene.json` don't. Export with `--cache-bust` (runtime in `agent3d-runtime-<hash>/`, `scene.json?v=<hash>`) to cache everything for a year; otherwise long cache headers are safe for `chunks/` only.
+- Caching: the runtime's chunk files have content hashes; `agent3d-runtime.js` and `scene.json` don't. Export with `--cache-bust` (runtime in `agent3d-runtime-<hash>/`, `scene.json?v=<hash>`) to cache the runtime and the scene for a year; otherwise long cache headers are safe for `chunks/` only. The poster and the files under `<name>/assets/` keep their names in both cases: give them a short cache, or re-export under a new `--name` when they change.
 - Personalise per page with `data-*` attributes (`data-title="Summer sale"` fills `{data.title}` in the scene) or `document.querySelector("agent3d-scene").setData({ title: "…" })`.
 - `head.html` lists `<link rel="modulepreload">` for every module the runtime needs up front: put it in the `<head>` of pages with scenes for the fastest start (the snippet already preloads three.js).
 
@@ -79,7 +79,8 @@ import { Agent3DScene } from "./Agent3DScene";
 />
 ```
 
-- It loads the runtime once with a module script (never bundled), forwards `agent3d:*` events to typed callbacks, applies `data` live (`setData`), and works with React 17–19.
+- Props: `src`, `poster`, `aspect`, `alt`, `ariaLabel`, `data` (applied live with `setData`), `autoplay`, `paused`, `loop` (`true | false | "pingpong"`), `quality`, `interactive`, `runtimeSrc`, `className`, `style`; callbacks `onReady(el)`, `onError({ code, message, path })`, `onSceneEvent({ name, payload })`, `onSceneClick({ id, x, y })`.
+- It loads the runtime once with a module script (never bundled; with its integrity hash when `runtimeSrc` is the exported one) and works with React 17–19.
 - Without the wrapper: `<agent3d-scene src=… aspect=…>` as a plain custom element; `frameworks/agent3d-scene.d.ts` types the element and its events.
 
 ## Next.js
@@ -108,11 +109,17 @@ vue({ template: { compilerOptions: { isCustomElement: (tag) => tag.startsWith("a
 export default defineNuxtConfig({ vue: { compilerOptions: { isCustomElement: (tag) => tag.startsWith("agent3d-") } } });
 ```
 
-Then use `frameworks/vue/Agent3DScene.vue` from the export (`<Agent3DScene src=… aspect=… :data="{ title: '…' }" @scene-event=… />`), or the element directly with a module script in `index.html` / `app.head`. In Nuxt, wrap it in `<ClientOnly>`.
+Then use `frameworks/vue/Agent3DScene.vue` from the export — props `src`, `poster`, `aspect`, `alt`, `data` (live), `paused`, `quality`, `runtimeSrc`; events `@ready`, `@error`, `@scene-event`, `@scene-click`:
+
+```vue
+<Agent3DScene src="/agent3d/spring-banner/scene.json" aspect="4:1" :data="{ title: 'Summer sale' }" @scene-event="(e) => console.log(e.name)" />
+```
+
+Or use the element directly with a module script in `index.html` / `app.head`. In Nuxt, wrap it in `<ClientOnly>`.
 
 ## Svelte / SvelteKit
 
-`frameworks/svelte/Agent3DScene.svelte` from the export, or `<agent3d-scene src=… aspect=… aria-label=…></agent3d-scene>` as is with the runtime loaded in `onMount` (or `<svelte:head><script type="module" src=…></script></svelte:head>`).
+`frameworks/svelte/Agent3DScene.svelte` from the export (props `src`, `poster`, `aspect`, `alt`, `data`, `paused`, `quality`, `runtimeSrc`; events `on:ready`, `on:error`, `on:sceneevent`, `on:sceneclick`; the runtime loads in `onMount`, so SvelteKit SSR is fine), or `<agent3d-scene src=… aspect=… aria-label=…></agent3d-scene>` as is with the runtime loaded in `onMount` (or `<svelte:head><script type="module" src=…></script></svelte:head>`).
 
 ## Angular
 
@@ -122,16 +129,30 @@ Add `CUSTOM_ELEMENTS_SCHEMA` to the component's `schemas`, load the runtime with
 
 ```js
 const el = document.querySelector("agent3d-scene");
-await el.ready;                                   // first frame drawn
+const player = await el.ready;                    // resolves after the first frame
 el.pause(); el.play(); await el.seek(2);
-await el.setData({ title: "Winter sale" });
-el.trigger("start");                              // api.on("start") in scene scripts
-el.addEventListener("agent3d:click", (e) => analytics.track("3d-click", e.detail.id));
+await el.setData({ title: "Winter sale" });       // rebinds {data.*} placeholders
+console.log(el.data);                             // scene.data + data-* + setData
+el.trigger("start", { level: 2 });                // scene scripts' api.on("start"), { "on": "event" } interactions
+await el.reload();                                // re-fetch scene.json
+el.addEventListener("agent3d:click", (e) => console.log("3d-click", e.detail.id, e.detail.x, e.detail.y));
 el.addEventListener("agent3d:event", (e) => console.log(e.detail.name, e.detail.payload));
 el.addEventListener("agent3d:error", (e) => console.warn(e.detail.code, e.detail.message));
+el.addEventListener("agent3d:progress", (e) => console.log(e.detail.loaded, "/", e.detail.total));
 ```
 
-Attributes: `autoplay="false"`, `paused`, `loop="false|true|pingpong"`, `quality="low|medium|high|auto"`, `interactive="false"`, `alt`, `aspect`. Styling: `::part(poster)`, `::part(loading)`, `::part(loading-bar)`, `::part(fallback)`, `--agent3d-loading-color`, `--agent3d-background`; `status="loading|ready|error|unsupported"` on the element.
+`agent3d:event` carries everything the scene announces: scripts' `api.emit(name, payload)` (a game's score: `api.emit("score", { score })`), HUD button actions, timeline markers (`{ marker, time }`), interaction `emit` actions and `openUrl` (`{ url, blocked }`). That is how a page hooks its own analytics — the scene itself never calls the network.
+
+Attributes: `src`, `poster`, `aspect`, `alt`, `autoplay="false"`, `paused`, `loop="false|true|pingpong"`, `quality="low|medium|high|auto"`, `interactive="false"`, `library-base`, `aria-label`, `data-*` / `data-json`. Styling: `::part(poster)`, `::part(poster-image)`, `::part(loading)`, `::part(loading-bar)`, `::part(fallback)`, `--agent3d-background`, `--agent3d-loading-color`, `--agent3d-poster-fit`, `--agent3d-fade`; a `slot="fallback"` child replaces the no-WebGL fallback; `status="loading|ready|error|unsupported"` on the element for CSS hooks.
+
+## Social preview
+
+The export renders `<name>/og-image.png` (1200×630, skip with `--no-og`). Add it to the page head with an absolute URL — crawlers ignore relative ones:
+
+```html
+<meta property="og:image" content="https://www.example.com/agent3d/spring-banner/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+```
 
 ## Content-Security-Policy in detail
 
@@ -147,10 +168,10 @@ What the runtime does, and the directive it needs:
 | Textures and the poster as images; glTF embedded textures as `blob:` URLs | `img-src 'self' blob:` (`data:` for single-html) |
 | HUD (`ui`): one injected `<style>` element | `style-src 'unsafe-inline'` |
 | The element's own styles | nothing (constructable stylesheets) |
-| meshopt-compressed models (`export --optimize`): WebAssembly decoder | `script-src 'wasm-unsafe-eval'` |
+| meshopt-compressed models (`export --optimize`, `assets optimize`): WebAssembly decoder | `script-src 'wasm-unsafe-eval'` (never `'unsafe-eval'`: the runtime has no `eval` / `new Function`) |
 | WebGL, WebAudio | nothing |
 
-Example for an embed with a HUD: `Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'`.
+Example for an embed with a HUD: `Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'`. The same with `--optimize` models: `script-src 'self' 'wasm-unsafe-eval'`. Subresource Integrity (`integrity="sha384-…"` on the runtime script and preloads) works with policies that require it; the lazy chunks are same-origin files of the same folder.
 
 ## Troubleshooting
 
@@ -163,3 +184,5 @@ Example for an embed with a HUD: `Content-Security-Policy: default-src 'self'; s
 | Works locally, not on the site | CSP | Allow the directives above |
 | Nothing at all from `file://` | Browsers block module scripts on `file://` | Use a local server (`serve`, or any static server) |
 | Poster forever on some devices | WebGL unavailable (`webgl-unavailable`) | Expected fallback; keep a good poster |
+| Models missing only on the live site, console mentions WebAssembly / CSP | meshopt models (`--optimize`) blocked by the CSP | Add `'wasm-unsafe-eval'` to `script-src`, or export without `--optimize` |
+| Screen readers announce `{data.title}` | Placeholder in the scene `title` / `ariaLabel`, copied as is into the snippet | Write a literal `aria-label` / `alt` in the snippet (and a literal `title` / `ariaLabel` in the scene) |

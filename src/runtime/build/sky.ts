@@ -123,6 +123,13 @@ export async function createPhysicalSky(p: SkyParams): Promise<PhysicalSky> {
   const dir = new THREE.Vector3(...sunDirection(v.elevation, v.azimuth));
   const frag = shader.fragmentShader
     .replace("uniform float mieDirectionalG;", "uniform float mieDirectionalG;\n" + STARS_GLSL)
+    // Tame the sun disc: three's Preetham disc is ~10⁴× the sky, so a low sun
+    // in frame drove bloom / god rays / exposure into a washed-out frame. Soft
+    // compression keeps a bright, crisp disc (≤ ~12 before exposure).
+    .replace(
+      "vec3 sundiscColor = ( 760.0 * sundisc ) * min( vSunE * Fex, 80.0 );",
+      "vec3 sundiscColor = ( 760.0 * sundisc ) * min( vSunE * Fex, 80.0 );\n\t\t\tsundiscColor = sundiscColor / ( 1.0 + dot( sundiscColor, vec3( 0.2126, 0.7152, 0.0722 ) ) / 12.0 );",
+    )
     .replace(
       "gl_FragColor = vec4( texColor, 1.0 );",
       `texColor *= uExposure;
@@ -168,6 +175,10 @@ export async function createPhysicalSky(p: SkyParams): Promise<PhysicalSky> {
   mesh.renderOrder = -1000;
   mesh.name = "__sky";
   mesh.userData.helper = true;
+  // Read by post effects (godrays source): direction towards the sun + its colour.
+  mesh.userData.sunDir = dir.clone();
+  mesh.userData.sunColor = sunLight(v.elevation).color;
+  mesh.userData.sunUp = v.elevation > -3;
   // Follow the camera so the dome never clips.
   mesh.onBeforeRender = (_r, _s, camera) => {
     mesh.position.setFromMatrixPosition(camera.matrixWorld);

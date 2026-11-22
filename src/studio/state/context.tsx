@@ -6,7 +6,7 @@ import type { EditorSnapshot, EditorStore } from "./editorStore";
 import type { PlayerController } from "./playerController";
 import { useStore, type TinyStore } from "./tinyStore";
 
-export type BottomTab = "timeline" | "json" | "check";
+export type BottomTab = "timeline" | "interactions" | "json" | "check";
 export type Device = "desktop" | "tablet" | "phone";
 export type GizmoMode = "translate" | "rotate" | "scale";
 export type ViewMode = "editor" | "camera";

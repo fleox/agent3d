@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { libraryProvider, readRuntimeFiles } from "../host";
 import { CliError, printResult } from "../output";
 import type { Command } from "./types";
@@ -33,13 +33,13 @@ export const renderCommand: Command = {
     { name: "input", type: "string", description: 'Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2], "down": true}, {"t": 4, "pointerUp": true}, {"t": 1, "pointerDown": [0, 0]}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 2, "swipe": "left"}] (key = KeyboardEvent.code, coordinates -1..1, y up; unknown fields are rejected). Frames render in time order.' },
     { name: "isolate", type: "string", description: "Render only this object (behaviours, scripts, UI dropped), at the origin, auto-framed from the front (+Z) three-quarter view on a neutral background (default 800x800, 1 frame) — to check a model's orientation and size. Returns isolated { size, center }." },
     { name: "bg", type: "string", description: 'Background drawn under the frames: "checker", a CSS colour ("#fff", "rgb(…)", "white") or "none". Default: a checkerboard under the contact sheet of transparent scenes (frames keep their alpha).' },
-    { name: "out", type: "string", description: "Output folder (default <project>/renders)." },
+    { name: "out", type: "string", description: "Output folder, relative to the project folder (default <project>/renders)." },
     { name: "quality", type: "string", description: "Supersampling: draft / standard (1×, default), high (2×), ultra (3×) — rendered larger and downscaled for smoother edges and detail (clamped to 4096 px)." },
     { name: "transparent", type: "boolean", description: "Render with a transparent canvas (alpha PNG / GIF / WebP) even if the scene has a background." },
-    { name: "scroll", type: "string", description: "Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page)." },
-    { name: "video", type: "string", description: "Render a video file instead of PNGs: .mp4 (H.264, needs Google Chrome) or .webm (VP9). Frame-exact; see --fps, --duration, --start, --size, --quality." },
-    { name: "gif", type: "string", description: "Render an animated GIF (looping, global palette, frame differencing; default 640 px wide, 15 fps)." },
-    { name: "webp", type: "string", description: "Render an animated WebP (smaller than GIF, alpha; default 800 px wide, 20 fps)." },
+    { name: "scroll", type: "string", description: "Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page). Renders one frame unless --frames / --count are given." },
+    { name: "video", type: "string", description: "Render a video file instead of PNGs (default 1280 px wide): .mp4 (H.264, needs Google Chrome) or .webm (VP9), path relative to the project folder. Frame-exact; see --fps, --duration, --start, --size, --quality." },
+    { name: "gif", type: "string", description: "Render an animated GIF, path relative to the project folder (looping, global palette, frame differencing; default 640 px wide, 15 fps)." },
+    { name: "webp", type: "string", description: "Render an animated WebP, path relative to the project folder (smaller than GIF, alpha; default 800 px wide, 20 fps)." },
     { name: "fps", type: "string", description: "Video / GIF / WebP frames per second (default 30 / 15 / 20, max 60)." },
     { name: "duration", type: "string", description: "Video / GIF / WebP length in seconds (default the timeline duration, else 5)." },
     { name: "start", type: "string", description: "Video / GIF / WebP start time in seconds (default 0)." },
@@ -56,7 +56,7 @@ export const renderCommand: Command = {
     if (mediaOpts.length > 1) usage("Use only one of --video, --gif, --webp per render.");
     if (mediaOpts.length) {
       const kind = mediaOpts[0];
-      const out = resolve(strOpt(options, kind)!);
+      const out = projectPath(fs.root, strOpt(options, kind)!);
       const { renderMedia, mediaFormatFromPath } = await import("../render/render");
       const format = kind === "video" ? mediaFormatFromPath(out) : kind;
       if (kind === "video" && format !== "mp4" && format !== "webm") usage(`--video needs a .mp4 or .webm file name, got "${strOpt(options, kind)}".`, "e.g. --video renders/banner.mp4");
@@ -87,9 +87,11 @@ export const renderCommand: Command = {
     const { renderProject, parseInputScript } = await import("../render/render");
     const rawInput = strOpt(options, "input") !== undefined ? jsonOpt(options, "input", `--input '[{"t": 0.5, "key": "ArrowRight", "hold": 1}]' or --input @inputs.json`) : undefined;
     const input = rawInput === undefined ? undefined : parseInputScript(rawInput);
+    // A scroll position is one state: one frame unless --frames / --count ask for more.
+    const frames = renderFrames(strOpt(options, "frames"), numOpt(options, "count"), scroll);
     const r = await renderProject({
       projectDir: fs.root,
-      frames: strOpt(options, "frames"),
+      frames,
       count: numOpt(options, "count"),
       size: strOpt(options, "size"),
       width: numOpt(options, "width"),
@@ -103,7 +105,7 @@ export const renderCommand: Command = {
       quality,
       transparent: boolOpt(options, "transparent"),
       scroll,
-      outDir: strOpt(options, "out") ? resolve(strOpt(options, "out")!) : undefined,
+      outDir: strOpt(options, "out") ? projectPath(fs.root, strOpt(options, "out")!) : undefined,
       timeoutMs: timeoutMs(options),
       log,
     });
@@ -127,6 +129,16 @@ export const renderCommand: Command = {
   },
 };
 
+/** --frames to render: a --scroll position alone is one frame (t = 0). */
+export function renderFrames(frames: string | undefined, count: number | undefined, scroll: number | undefined): string | undefined {
+  return frames ?? (scroll !== undefined && count === undefined ? "0" : undefined);
+}
+
+/** A relative render output path is relative to the project folder (absolute paths are kept). */
+export function projectPath(root: string, p: string): string {
+  return isAbsolute(p) ? p : resolve(root, p);
+}
+
 function dirNonEmpty(dir: string): string[] {
   if (!existsSync(dir)) return [];
   if (!statSync(dir).isDirectory()) return [dir];
@@ -142,7 +154,7 @@ export const exportCommand: Command = {
   options: [
     PROJECT_OPTION,
     { name: "format", type: "string", description: "embed (default), zip, single-html, poster, video or gif." },
-    { name: "out", type: "string", description: "Output folder (embed / zip / single-html: default <project>/dist/<format>) or file (poster / video / gif: default <project>/dist/poster.webp, video.webm, animation.gif; a .mp4 --out renders H.264)." },
+    { name: "out", type: "string", description: "Output folder, relative to the project folder (embed / zip / single-html: default <project>/dist/<format>) or file (poster / video / gif: default <project>/dist/poster.webp, video.webm, animation.gif; a .mp4 --out renders H.264)." },
     { name: "name", type: "string", description: "Scene folder / file name in the export (default: the project name)." },
     { name: "base-url", type: "string", description: 'embed / zip: URL of the export folder as seen from the pages (default "./"), e.g. /wp-content/uploads/agent3d/ or https://cdn.example.com/3d/ — the snippet then works from any page.' },
     { name: "cache-bust", type: "boolean", description: "embed / zip: versioned runtime folder (agent3d-runtime-<hash>/) and ?v=<hash> on the scene URL, so both can be cached for a year." },
@@ -157,7 +169,7 @@ export const exportCommand: Command = {
     { name: "fps", type: "string", description: "video / gif: frames per second (default 30 / 15)." },
     { name: "quality", type: "string", description: "poster / video / gif: draft, standard (default), high (2× supersampling) or ultra (3×)." },
     { name: "transparent", type: "boolean", description: "poster (png / webp) / gif: transparent background." },
-    SIZE_OPTION,
+    { ...SIZE_OPTION, description: "poster / video / gif: WIDTHxHEIGHT in CSS pixels (default: at the target aspect, width 1200 for a poster, 960 for a video, 640 for a gif)." },
     { name: "scale", type: "string", description: "poster: device pixel ratio (default 2)." },
     TIMEOUT_OPTION,
     YES_OPTION,
@@ -175,7 +187,7 @@ export const exportCommand: Command = {
       const quality = parseQuality(strOpt(options, "quality"));
       const image = (strOpt(options, "image") ?? (outOpt?.endsWith(".png") ? "png" : /\.jpe?g$/i.test(outOpt ?? "") ? "jpeg" : "webp")) as "webp" | "png" | "jpeg";
       if (!["webp", "png", "jpeg"].includes(image)) usage("--image must be webp, png or jpeg.");
-      const out = resolve(outOpt ?? join(fs.root, "dist", format === "poster" ? `poster.${image === "jpeg" ? "jpg" : image}` : format === "gif" ? "animation.gif" : "video.webm"));
+      const out = projectPath(fs.root, outOpt ?? join(fs.root, "dist", format === "poster" ? `poster.${image === "jpeg" ? "jpg" : image}` : format === "gif" ? "animation.gif" : "video.webm"));
       if (existsSync(out) && !confirmOrPlan(io, options, { overwrite: [out] }, () => `Overwrite ${out}`)) return;
       const r = await render();
       if (format === "poster") {
@@ -188,7 +200,7 @@ export const exportCommand: Command = {
       return printResult(io, { format, path: out, codec: m.codec, frames: m.frames, fps: m.fps, duration: m.duration, size: m.size, bytes: m.bytes, ms: m.ms }, () => `${media.toUpperCase()} ${m.duration}s @ ${m.fps} fps (${m.frames} frames, ${m.codec}, ${Math.round(m.bytes / 1024)} KB) → ${out}`);
     }
 
-    const out = resolve(outOpt ?? join(fs.root, "dist", format));
+    const out = projectPath(fs.root, outOpt ?? join(fs.root, "dist", format));
     const existing = dirNonEmpty(out);
     if (existing.length && !confirmOrPlan(io, options, { out, overwrite: true, existingEntries: existing.slice(0, 50) }, () => `${out} is not empty (${existing.length} entries): files with the same names are overwritten.`)) return;
     const warnings: string[] = [];

@@ -31,7 +31,7 @@ function initialUi(): UiState {
   const dialog = urlParam("dialog");
   const device = urlParam("device");
   return {
-    bottom: panel === "timeline" || panel === "json" || panel === "check" ? (panel as BottomTab) : null,
+    bottom: panel === "timeline" || panel === "interactions" || panel === "json" || panel === "check" ? (panel as BottomTab) : null,
     bottomHeight: 248,
     assistant: urlParam("assistant") === "1",
     device: device === "tablet" || device === "phone" ? (device as Device) : "desktop",

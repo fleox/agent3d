@@ -60,8 +60,8 @@ export class RemoteBackend implements Backend {
     return this.info.project?.dir ?? null;
   }
 
-  // Poster = a render_preview frame; video has no tool yet (CLI: agent3d export --format video).
-  readonly capabilities: Capabilities = { render: true, exportFormats: ["embed", "single-html", "poster"], exportHint: "video" };
+  // Every export format goes through the `export` tool (media formats render with the CLI host's Chrome).
+  readonly capabilities: Capabilities = { render: true, exportFormats: ["embed", "zip", "single-html", "poster", "video", "gif"] };
 
   hasProject(): boolean {
     return !!this.info.project?.exists;

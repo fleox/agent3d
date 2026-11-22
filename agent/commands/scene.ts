@@ -240,7 +240,7 @@ export const timelineCommand: Command = {
   summary: "Keyframe timeline: read it, replace it, add or remove a track (target \"<objectId>.<property>\", keys [[t, value], …]).",
   subcommands: [
     { name: "get", usage: "timeline get", summary: "The timeline (duration, loop, trigger, tracks)." },
-    { name: "set", usage: "timeline set --file <timeline.json|-> | [--duration <s>] [--loop true|false|pingpong] [--trigger load|visible|hover|click|scroll]", summary: "Replace the timeline, or change its settings.", writes: true },
+    { name: "set", usage: "timeline set --file <timeline.json|-> | [--duration <s>] [--loop true|false|pingpong] [--trigger load|visible|hover|click|scroll|manual]", summary: "Replace the timeline, or change its settings.", writes: true },
     { name: "add-track", usage: "timeline add-track --target <obj.prop> --keys <json> [--ease <name>] | --json-def <track>", summary: 'Add a track, e.g. --target logo.rotation.y --keys "[[0,0],[4,360]]".', writes: true },
     { name: "remove-track", usage: "timeline remove-track --target <obj.prop> [--yes]", summary: "Remove the track(s) of a target.", writes: true, destructive: true },
   ],
@@ -249,7 +249,7 @@ export const timelineCommand: Command = {
     FILE_OPTION,
     { name: "duration", type: "string", description: "set: duration in seconds." },
     { name: "loop", type: "string", description: "set: true, false or pingpong." },
-    { name: "trigger", type: "string", description: "set: load, visible, hover, click or scroll." },
+    { name: "trigger", type: "string", description: "set: load, visible, hover, click, scroll or manual (started by an interaction or a script)." },
     { name: "target", type: "string", description: 'add-track / remove-track: "<objectId>.<property path>" (e.g. logo.position.y, camera.position).' },
     { name: "keys", type: "string", description: "add-track: [[time, value], …] as JSON." },
     { name: "ease", type: "string", description: "add-track: easing (linear, inOutCubic, outBack, outElastic, …)." },

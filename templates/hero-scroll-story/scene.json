@@ -12,11 +12,39 @@
     "posterTime": 0,
     "maxDpr": 2
   },
-  "camera": {"type": "perspective", "fov": 38, "position": [0, 1.2, 8], "target": [0, 0.4, 0]},
+  "camera": {
+    "type": "perspective",
+    "fov": 38,
+    "position": [
+      0,
+      1.2,
+      8
+    ],
+    "target": [
+      0,
+      0.4,
+      0
+    ]
+  },
   "environment": {
-    "background": {"gradient": ["#f8fafc", "#eef2ff"], "angle": 0},
+    "background": {
+      "gradient": [
+        "#f8fafc",
+        "#eef2ff"
+      ],
+      "angle": 0
+    },
     "lighting": "soft",
-    "fog": {"color": "#f1f4ff", "near": 12, "far": 30}
+    "fog": {
+      "color": "#f1f4ff",
+      "near": 12,
+      "far": 30
+    },
+    "contactShadows": {
+      "opacity": 0.35,
+      "blur": 3,
+      "y": -1.24
+    }
   },
   "lights": [
     {
@@ -26,46 +54,135 @@
       "groundColor": "#c7d2fe",
       "intensity": 0.9
     },
-    {"id": "key", "type": "directional", "position": [6, 8, 6], "intensity": 2, "castShadow": true}
+    {
+      "id": "key",
+      "type": "directional",
+      "position": [
+        6,
+        8,
+        6
+      ],
+      "intensity": 2,
+      "castShadow": true
+    }
   ],
   "objects": [
     {
       "id": "design",
       "kind": "group",
-      "position": [1.6, -0.6, 0],
-      "behaviours": [{"type": "float", "amplitude": 0.08, "speed": 0.3}],
+      "position": [
+        1.6,
+        -0.6,
+        0
+      ],
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.08,
+          "speed": 0.3
+        }
+      ],
       "children": [
         {
           "id": "block1",
           "kind": "mesh",
-          "geometry": {"type": "roundedBox", "width": 1.6, "height": 0.5, "depth": 1.6, "radius": 0.12},
-          "position": [0, 0, 0],
-          "rotation": [0, 20, 0],
-          "material": {"preset": "plastic", "color": "#a5b4fc"}
+          "geometry": {
+            "type": "roundedBox",
+            "width": 1.6,
+            "height": 0.5,
+            "depth": 1.6,
+            "radius": 0.12
+          },
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            20,
+            0
+          ],
+          "material": {
+            "preset": "mattePastel",
+            "color": "#a5b4fc"
+          }
         },
         {
           "id": "block2",
           "kind": "mesh",
-          "geometry": {"type": "roundedBox", "width": 1.2, "height": 0.5, "depth": 1.2, "radius": 0.12},
-          "position": [0, 0.55, 0],
-          "rotation": [0, 40, 0],
-          "material": {"preset": "plastic", "color": "#f9a8d4"}
+          "geometry": {
+            "type": "roundedBox",
+            "width": 1.2,
+            "height": 0.5,
+            "depth": 1.2,
+            "radius": 0.12
+          },
+          "position": [
+            0,
+            0.55,
+            0
+          ],
+          "rotation": [
+            0,
+            40,
+            0
+          ],
+          "material": {
+            "preset": "mattePastel",
+            "color": "#f9a8d4"
+          }
         },
         {
           "id": "block3",
           "kind": "mesh",
-          "geometry": {"type": "roundedBox", "width": 0.8, "height": 0.5, "depth": 0.8, "radius": 0.12},
-          "position": [0, 1.1, 0],
-          "rotation": [0, 60, 0],
-          "material": {"preset": "plastic", "color": "#fde68a"}
+          "geometry": {
+            "type": "roundedBox",
+            "width": 0.8,
+            "height": 0.5,
+            "depth": 0.8,
+            "radius": 0.12
+          },
+          "position": [
+            0,
+            1.1,
+            0
+          ],
+          "rotation": [
+            0,
+            60,
+            0
+          ],
+          "material": {
+            "preset": "mattePastel",
+            "color": "#fde68a"
+          }
         },
         {
           "id": "pencil",
           "kind": "mesh",
-          "geometry": {"type": "icosahedron", "radius": 0.3, "detail": 0},
-          "position": [0, 1.8, 0],
-          "material": {"preset": "plastic", "color": "#6ee7b7"},
-          "behaviours": [{"type": "rotate", "speed": 40}]
+          "geometry": {
+            "type": "icosahedron",
+            "radius": 0.3,
+            "detail": 0
+          },
+          "position": [
+            0,
+            1.8,
+            0
+          ],
+          "material": {
+            "preset": "jelly",
+            "color": "#b9f5d8",
+            "attenuationColor": "#34d399",
+            "attenuationDistance": 1.5
+          },
+          "behaviours": [
+            {
+              "type": "rotate",
+              "speed": 40
+            }
+          ]
         }
       ]
     },
@@ -73,13 +190,23 @@
       "id": "t1",
       "kind": "text",
       "text": "Design",
-      "font": "sans-bold",
+      "font": "inter-black",
       "size": 0.7,
-      "depth": 0.15,
+      "depth": 0.18,
       "bevel": 0.015,
       "align": "left",
-      "position": [-4.2, 0.9, 0.5],
-      "material": {"preset": "plastic", "color": "#4338ca", "roughness": 0.35}
+      "position": [
+        -4.2,
+        0.9,
+        0.5
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#4338ca",
+        "roughness": 0.35
+      },
+      "letterSpacing": -0.02,
+      "splitLetters": true
     },
     {
       "id": "s1",
@@ -90,28 +217,74 @@
       "depth": 0.01,
       "bevel": 0,
       "align": "left",
-      "position": [-4.15, 0.15, 0.5],
-      "material": {"type": "standard", "color": "#475569", "roughness": 0.8}
+      "position": [
+        -4.15,
+        0.15,
+        0.5
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#475569",
+        "roughness": 0.8
+      }
     },
     {
       "id": "build",
       "kind": "mesh",
-      "geometry": {"type": "torusKnot", "radius": 0.9, "tube": 0.28, "tubularSegments": 200, "radialSegments": 24},
-      "position": [15.6, 0.4, 0],
-      "material": {"preset": "brushedMetal", "color": "#cbd5e1"},
-      "behaviours": [{"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 20}]
+      "geometry": {
+        "type": "torusKnot",
+        "radius": 0.9,
+        "tube": 0.28,
+        "tubularSegments": 200,
+        "radialSegments": 24
+      },
+      "position": [
+        15.6,
+        0.4,
+        0
+      ],
+      "material": {
+        "preset": "chromeGradient",
+        "gradient": [
+          "#4f46e5",
+          "#14b8a6",
+          "#a7f3d0"
+        ],
+        "roughness": 0.12
+      },
+      "behaviours": [
+        {
+          "type": "rotate",
+          "axis": [
+            0.3,
+            1,
+            0.2
+          ],
+          "speed": 20
+        }
+      ]
     },
     {
       "id": "t2",
       "kind": "text",
       "text": "Build",
-      "font": "sans-bold",
+      "font": "inter-black",
       "size": 0.7,
-      "depth": 0.15,
+      "depth": 0.18,
       "bevel": 0.015,
       "align": "left",
-      "position": [9.8, 0.9, 0.5],
-      "material": {"preset": "plastic", "color": "#0f766e", "roughness": 0.35}
+      "position": [
+        9.8,
+        0.9,
+        0.5
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#0f766e",
+        "roughness": 0.35
+      },
+      "letterSpacing": -0.02,
+      "splitLetters": true
     },
     {
       "id": "s2",
@@ -122,45 +295,88 @@
       "depth": 0.01,
       "bevel": 0,
       "align": "left",
-      "position": [9.85, 0.15, 0.5],
-      "material": {"type": "standard", "color": "#475569", "roughness": 0.8}
+      "position": [
+        9.85,
+        0.15,
+        0.5
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#475569",
+        "roughness": 0.8
+      }
     },
     {
       "id": "launchPad",
       "kind": "model",
       "src": "library:models/space/landing-pad.glb",
       "fit": 2.4,
-      "position": [29.6, -1.2, 0]
+      "position": [
+        29.6,
+        -1.2,
+        0
+      ]
     },
     {
       "id": "rocket",
       "kind": "model",
       "src": "library:models/space/lander.glb",
       "fit": 1.6,
-      "position": [29.6, -0.75, 0],
-      "behaviours": [{"type": "float", "amplitude": 0.1, "speed": 0.5}]
+      "position": [
+        29.6,
+        -0.75,
+        0
+      ],
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.1,
+          "speed": 0.5
+        }
+      ]
     },
     {
       "id": "exhaust",
       "kind": "particles",
       "preset": "embers",
       "count": 80,
-      "area": [0.6, 0.3, 0.6],
-      "position": [29.6, -0.7, 0],
-      "color": ["#fb923c", "#fde047"],
+      "area": [
+        0.6,
+        0.3,
+        0.6
+      ],
+      "position": [
+        29.6,
+        -0.7,
+        0
+      ],
+      "color": [
+        "#fb923c",
+        "#fde047"
+      ],
       "size": 0.08
     },
     {
       "id": "t3",
       "kind": "text",
       "text": "Launch",
-      "font": "sans-bold",
+      "font": "inter-black",
       "size": 0.7,
-      "depth": 0.15,
+      "depth": 0.18,
       "bevel": 0.015,
       "align": "left",
-      "position": [23.8, 0.9, 0.5],
-      "material": {"preset": "plastic", "color": "#c2410c", "roughness": 0.35}
+      "position": [
+        24.4,
+        0.9,
+        0.5
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#c2410c",
+        "roughness": 0.35
+      },
+      "letterSpacing": -0.02,
+      "splitLetters": true
     },
     {
       "id": "s3",
@@ -171,16 +387,40 @@
       "depth": 0.01,
       "bevel": 0,
       "align": "left",
-      "position": [23.85, 0.15, 0.5],
-      "material": {"type": "standard", "color": "#475569", "roughness": 0.8}
+      "position": [
+        24.45,
+        0.15,
+        0.5
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#475569",
+        "roughness": 0.8
+      }
     },
     {
       "id": "floor",
       "kind": "mesh",
-      "geometry": {"type": "plane", "width": 60, "height": 14},
-      "rotation": [-90, 0, 0],
-      "position": [14, -1.25, -1],
-      "material": {"type": "standard", "color": "#eef2ff", "roughness": 1},
+      "geometry": {
+        "type": "plane",
+        "width": 60,
+        "height": 14
+      },
+      "rotation": [
+        -90,
+        0,
+        0
+      ],
+      "position": [
+        14,
+        -1.25,
+        -1
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#eef2ff",
+        "roughness": 1
+      },
       "receiveShadow": true
     },
     {
@@ -188,8 +428,16 @@
       "kind": "particles",
       "preset": "dust",
       "count": 200,
-      "area": [46, 6, 8],
-      "position": [14, 1, 0],
+      "area": [
+        46,
+        6,
+        8
+      ],
+      "position": [
+        14,
+        1,
+        0
+      ],
       "color": "#94a3b8",
       "size": 0.035,
       "opacity": 0.5
@@ -203,28 +451,192 @@
       {
         "target": "camera.position",
         "keys": [
-          [0, [0, 1.2, 8]],
-          [2, [0, 1.2, 8]],
-          [4, [14, 1.6, 8]],
-          [6, [14, 1.6, 8]],
-          [8, [28, 1.0, 8]],
-          [10, [28, 1.4, 7.4]]
+          [
+            0,
+            [
+              0,
+              1.2,
+              8
+            ]
+          ],
+          [
+            2,
+            [
+              0,
+              1.2,
+              8
+            ]
+          ],
+          [
+            4,
+            [
+              14,
+              1.6,
+              8
+            ]
+          ],
+          [
+            6,
+            [
+              14,
+              1.6,
+              8
+            ]
+          ],
+          [
+            8,
+            [
+              28,
+              1.0,
+              8
+            ]
+          ],
+          [
+            10,
+            [
+              28,
+              1.4,
+              7.4
+            ]
+          ]
         ],
         "ease": "inOutCubic"
       },
       {
         "target": "camera.target",
         "keys": [
-          [0, [0, 0.4, 0]],
-          [2, [0, 0.4, 0]],
-          [4, [14, 0.4, 0]],
-          [6, [14, 0.4, 0]],
-          [8, [28, 0.2, 0]],
-          [10, [28, 0.4, 0]]
+          [
+            0,
+            [
+              0,
+              0.4,
+              0
+            ]
+          ],
+          [
+            2,
+            [
+              0,
+              0.4,
+              0
+            ]
+          ],
+          [
+            4,
+            [
+              14,
+              0.4,
+              0
+            ]
+          ],
+          [
+            6,
+            [
+              14,
+              0.4,
+              0
+            ]
+          ],
+          [
+            8,
+            [
+              28,
+              0.2,
+              0
+            ]
+          ],
+          [
+            10,
+            [
+              28,
+              0.4,
+              0
+            ]
+          ]
         ],
         "ease": "inOutCubic"
       },
-      {"target": "rocket.position.y", "keys": [[0, -0.75], [8.5, -0.75], [10, 1.2]], "ease": "inCubic"}
-    ]
-  }
+      {
+        "target": "rocket.position.y",
+        "keys": [
+          [
+            0,
+            -0.75
+          ],
+          [
+            8.5,
+            -0.75
+          ],
+          [
+            10,
+            1.2
+          ]
+        ],
+        "ease": "inCubic"
+      },
+      {
+        "target": "children:t2.scale",
+        "keys": [
+          [
+            2.4,
+            0.001
+          ],
+          [
+            3.6,
+            1,
+            "outBack"
+          ]
+        ],
+        "stagger": 0.05
+      },
+      {
+        "target": "children:t3.scale",
+        "keys": [
+          [
+            6.4,
+            0.001
+          ],
+          [
+            7.6,
+            1,
+            "outBack"
+          ]
+        ],
+        "stagger": 0.05
+      },
+      {
+        "target": "build.rotation.y",
+        "keys": [
+          [
+            2,
+            0
+          ],
+          [
+            6,
+            180
+          ]
+        ],
+        "ease": "inOutSine"
+      }
+    ],
+    "markers": {
+      "design": 1,
+      "build": 5,
+      "launch": 9
+    },
+    "scroll": {
+      "smoothing": 0.85
+    }
+  },
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "clean"
+    },
+    {
+      "type": "ao",
+      "intensity": 0.7,
+      "radius": 0.5
+    }
+  ]
 }

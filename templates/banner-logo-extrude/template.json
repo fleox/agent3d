@@ -1,16 +1,22 @@
 {
   "id": "banner-logo-extrude",
   "title": "Extruded logo banner",
-  "description": "Your SVG logo extruded into glossy 3D next to a wordmark: it tilts toward the pointer, spins when hovered and bounces on click.",
+  "description": "Brand 4:1 banner: your SVG logo extruded into clear-coated 3D (keeping its colours) inside a neon halo, a wordmark revealed letter by letter and a tagline (both data-bound), a light sweep across the logo; it tilts toward the pointer, spins on hover and bounces on click.",
   "kind": "banner",
   "tags": [
     "banner",
     "logo",
-    "svg",
     "brand",
+    "svg",
     "extrude",
-    "hover",
-    "interactive"
+    "wordmark",
+    "company",
+    "startup",
+    "dark",
+    "neon",
+    "reveal",
+    "light-sweep",
+    "data-bindings"
   ],
   "aspect": "4:1"
 }

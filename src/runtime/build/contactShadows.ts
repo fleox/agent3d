@@ -109,7 +109,7 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
     scene.updateMatrixWorld(true);
     for (const child of scene.children) {
       if (child.userData.helper || child === group || (child as THREE.Light).isLight) continue;
-      tmp.setFromObject(child);
+      meshBox(child, tmp);
       if (tmp.isEmpty() || tmp.getSize(new THREE.Vector3()).length() > 200) continue;
       box.union(tmp);
     }
@@ -119,7 +119,9 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
     const y = o.y ?? defaultY ?? box.min.y;
     const side = o.size ?? Math.max(size.x, size.z, 0.5) * 2.2 + 0.5;
     const far = o.far ?? Math.max(0.5, Math.min(size.y, side) * 0.9);
-    group.position.set(o.size !== undefined ? 0 : center.x, y + 0.001, o.size !== undefined ? 0 : center.z);
+    // Centred on the subject (also with an explicit size), or on `center`.
+    const c = Array.isArray(o.center) ? o.center : [center.x, center.z];
+    group.position.set(c[0], y + 0.001, c[1]);
     plane.scale.set(side, side, 1);
     cam.left = -side / 2;
     cam.right = side / 2;
@@ -193,4 +195,31 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
       blurQuad.geometry.dispose();
     },
   };
+}
+
+/**
+ * World box of the solid meshes under `root` — particles, points, sprites,
+ * lines and helpers don't count (a snow / dust system would blow the fit up).
+ */
+export function meshBox(root: THREE.Object3D, out = new THREE.Box3()): THREE.Box3 {
+  out.makeEmpty();
+  const tmp = new THREE.Box3();
+  root.updateWorldMatrix(true, true);
+  const visit = (o: THREE.Object3D) => {
+    if (!o.visible || o.userData.helper || (o as THREE.Points).isPoints || (o as THREE.Sprite).isSprite || (o as THREE.Line).isLine) return;
+    const m = o as THREE.Mesh;
+    if (m.isMesh && m.geometry) {
+      // This mesh's geometry only (children are visited on their own).
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      if ((m as THREE.InstancedMesh).isInstancedMesh) {
+        const im = m as THREE.InstancedMesh;
+        if (!im.boundingBox) im.computeBoundingBox();
+        tmp.copy(im.boundingBox!).applyMatrix4(im.matrixWorld);
+      } else tmp.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld);
+      out.union(tmp);
+    }
+    for (const c of o.children) visit(c);
+  };
+  visit(root);
+  return out;
 }

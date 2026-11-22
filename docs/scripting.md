@@ -66,7 +66,7 @@ Real rigid-body physics (cannon-es, fixed step, deterministic): bodies rotate, t
 "body": { "type": "dynamic", "shape": "sphere", "restitution": 0.7, "friction": 0.3, "mass": 1 }
 ```
 
-`type`: `static` (walls, ground), `dynamic` (simulated), `kinematic` (moved by your script — set its position every step or give it a velocity — and pushes dynamic bodies), `trigger` (detects overlaps, no response). Shapes (`box`, `sphere`, `cylinder`, `capsule`, `convex`, `trimesh`, `heightfield`, `compound`, `auto`), materials, collision layers, joints (hinge, point, distance, lock, spring) and `physics.debug` wireframes are described in [scene-format.md](scene-format.md#rigid-body-physics). Angles and angular velocities are in degrees (/ s), like rotations everywhere.
+`type`: `static` (walls, ground), `dynamic` (simulated), `kinematic` (moved by your script — set its position every step or give it a velocity — and pushes dynamic bodies), `trigger` (detects overlaps, no response). Shapes (`box`, `sphere`, `cylinder`, `capsule`, `convex`, `trimesh`, `heightfield`, `compound`, `auto`), materials, collision layers, joints (hinge, point, distance, lock, spring) and `physics.debug` wireframes are described in [scene-format.md](scene-format.md#physics). Angles and angular velocities are in degrees (/ s), like rotations everywhere.
 
 Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports it (dynamic bodies keep their velocity; kinematic bodies sweep to the new pose so they push what they touch). A player whose velocity you set every step should have `"fixedRotation": true` (or `"character": true`), otherwise friction makes it tumble.
 
@@ -123,7 +123,7 @@ Layout and phones: the HUD is a 3 × 3 grid (top / middle / bottom rows × left 
 | `api.audio.music(on)` | Start / stop `scene.audio.music` |
 | `api.on(event, handler)`, `api.emit(event, payload?)` | Custom events between scripts (HUD buttons emit their `action`). Every emitted event also reaches the page as an `agent3d:event` DOM event (`detail: { name, payload }`) on `<agent3d-scene>`, and the page can send events in with `element.trigger(name, payload)` — e.g. report a game's score to analytics, or start a level from a button outside the canvas |
 | `api.storage.get(key)`, `api.storage.set(key, value)` | Small persistent values (best score), namespaced per scene, never throws |
-| `api.data` | `scene.data` (read it for tuning and levels) |
+| `api.data` | `scene.data`, merged with the page's `data-*` attributes and `element.setData()` values ([data bindings](scene-format.md#data-bindings)) — tuning, levels, personalisation |
 | `api.restart()` | Rebuild the scene from its definition |
 | `api.log(...args)` | Debug output (browser console) |
 
@@ -159,8 +159,8 @@ The lint is a contract checked before export, not a runtime isolation boundary: 
 ## Testing scripts
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 check --project my-game --json
-npx -y @fleox/agent3d@0.1.0 render --project my-game --sheet --frames 0,2,4,6 --json
+npx -y @fleox/agent3d@0.2.0 check --project my-game --json
+npx -y @fleox/agent3d@0.2.0 render --project my-game --sheet --frames 0,2,4,6 --json
 ```
 
 Plain renders have no input: give the game an attract mode (an autopilot during the `ready` phase) so frames show action, and read `issues` / `consoleErrors` of the render for script errors. The render result also carries `state` (the script's `api.state` after the last frame).
@@ -168,7 +168,7 @@ Plain renders have no input: give the game an attract mode (an autopilot during 
 To play the game headlessly, pass a script of simulated input with `--input` (JSON array, `@file` or `-`); events are applied while seeking, in time order, and the frames are rendered in time order:
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 render --project my-game --frames 0,1,2 --input '[{"t": 0.2, "key": "ArrowRight", "hold": 0.8}, {"t": 1.2, "click": [0, 0]}]' --json
+npx -y @fleox/agent3d@0.2.0 render --project my-game --frames 0,1,2 --input '[{"t": 0.2, "key": "ArrowRight", "hold": 0.8}, {"t": 1.2, "click": [0, 0]}]' --json
 ```
 
 | Event | Meaning |

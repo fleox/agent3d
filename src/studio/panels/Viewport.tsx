@@ -171,6 +171,7 @@ export function Viewport() {
   // Interact mode looks through the scene camera, like the website.
   useEffect(() => se?.setView(interact ? "camera" : view), [se, view, interact]);
   useEffect(() => se?.setEnabled(!interact), [se, interact]);
+  useEffect(() => player.setInteract(interact), [player, interact]);
 
   // Frame size: the target aspect inside the stage (and the device width).
   const aspect = parseAspect(scene.target?.aspect) ?? { width: 16, height: 9 };

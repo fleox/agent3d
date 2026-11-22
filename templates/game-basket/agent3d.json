@@ -1,0 +1,8 @@
+{
+  "name": "game-basket",
+  "title": "Hoop shot",
+  "createdAt": "2026-11-22T00:00:00.000Z",
+  "updatedAt": "2026-11-22T00:00:00.000Z",
+  "template": "game-basket",
+  "agent3d": "0.1.0"
+}

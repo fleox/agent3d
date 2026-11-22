@@ -113,6 +113,7 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
       if (!counted.has(ref.path)) {
         counted.add(ref.path);
         assetBytes += asset.bytes;
+        fileBytes.set(ref.path, asset.bytes);
       }
       if (!isCc0(asset.license)) addLicence({ path: ref.path, license: asset.license, author: asset.author, attribution: attributionText({ ...asset, title: asset.id }) });
       continue;
@@ -177,13 +178,28 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
   const totalKb = KB(assetBytes + scriptBytes + sceneBytes);
   if (totalKb > budgetKb) {
     const heaviest = [...fileBytes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
-    issues.push({
+    budgetIssue: {
+      // HDRIs are never optimised (`assets optimize` skips .hdr / .exr): say what actually helps.
+      const hdris = heaviest.filter(([p]) => /\.(hdr|exr)$/i.test(p)).map(([p]) => p);
+      if (hdris.length) {
+        const others = heaviest.filter(([p]) => !hdris.includes(p));
+        issues.push({
+          severity: "warning",
+          code: "budget",
+          path: "target.budgetKb",
+          message: `The bundle weighs ~${totalKb} KB (runtime excluded), above the ${budgetKb} KB budget for a ${kind}.`,
+          hint: `Heaviest files: ${heaviest.map(([p, n]) => `${p} (${KB(n)} KB)`).join(", ")}. ${hdris.join(", ")} ${hdris.length > 1 ? "are HDRIs" : "is an HDRI"}: \`assets optimize\` never shrinks .hdr files. Use a lighter HDRI (a smaller download: \`assets add --hit … --resolution 1k\`; library sizes: \`agent3d assets library --kind hdri\`), or light without one — \`environment.lighting: "studio"\` (or "soft" / "sunset" / "night", built in, 0 KB), \`"sky"\` with a sky background, or a light rig (\`environment.rig\`, see \`agent3d catalog lightRigs\`) — and drop the background HDRI (\`environment.background\`: a colour, gradient or sky).${others.length ? ` For ${others.map(([p]) => p).join(", ")}: \`agent3d assets optimize --all\` (plan, then --yes).` : ""} Raise target.budgetKb only if the page can afford it.`,
+        });
+        break budgetIssue;
+      }
+      issues.push({
       severity: "warning",
       code: "budget",
       path: "target.budgetKb",
       message: `The bundle weighs ~${totalKb} KB (runtime excluded), above the ${budgetKb} KB budget for a ${kind}.`,
       hint: `${heaviest.length ? `Heaviest files: ${heaviest.map(([p, n]) => `${p} (${KB(n)} KB)`).join(", ")}. ` : ""}Run \`agent3d assets optimize --all\` (shows the plan: a size per texture from how the scene uses it, WebP, meshopt geometry; then add --yes; --dry-run reports the real savings), download smaller resolutions (\`assets add --hit … --resolution 512\`), or replace heavy models with catalog geometries / generators (zero bytes). Raise target.budgetKb only if the page can afford it.`,
-    });
+      });
+    }
   }
   // Assets `assets optimize` would clearly shrink (under budget too).
   const optimizable = await optimizeSuggestions(fs, scene, { library: opts.library }).catch(() => null);
@@ -295,6 +311,35 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
     const def = o as { kind?: string; generator?: string };
     if (def.kind === "particles" || (def.kind === "generator" && def.generator && scatter.has(def.generator))) spread.add(o.id);
   });
+  // In a scroll-driven story, objects the timeline moves / scales / reveals
+  // (or everything, when the camera moves) can be out of view at the checked
+  // frame by design — they come in later in the scroll: info, not a warning.
+  const animated = new Set<string>();
+  let cameraMoves = (scene.camera?.shots?.length ?? 0) > 0;
+  const tagged = (tag: string) => {
+    walkObjects(scene.objects, (o) => {
+      if ((o as { tags?: string[] }).tags?.includes(tag)) animated.add(o.id);
+    });
+  };
+  for (const tr of scene.timeline?.tracks ?? []) {
+    const target = typeof tr?.target === "string" ? tr.target : "";
+    const dot = target.indexOf(".");
+    if (dot < 1) continue;
+    const head = target.slice(0, dot), prop = target.slice(dot + 1);
+    if (head === "camera") {
+      cameraMoves = true;
+      continue;
+    }
+    if (!/^(position|scale|rotation|visible|material\.opacity)/.test(prop)) continue;
+    if (head.startsWith("tag:")) tagged(head.slice(4));
+    else if (head.startsWith("children:")) {
+      const id = head.slice(9);
+      animated.add(id);
+      walkObjects(scene.objects, (o) => {
+        if (o.id === id) for (const c of o.children ?? []) animated.add(c.id);
+      });
+    } else for (const h of head.split(",")) animated.add(h.trim().replace(/\/\d+$/, ""));
+  }
   const objs = inspect.objects.filter((o) => !hidden.has(o.id) && declared.has(o.id));
   const cam = `camera position ${JSON.stringify(inspect.camera.position)} looking at ${JSON.stringify(inspect.camera.target)}`;
   if (inspect.camera.insideObject) {
@@ -305,7 +350,9 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
     const centre = o.max.map((v, i) => Math.round(((v + o.min[i]) / 2) * 100) / 100);
     // Background-sized things (terrain, starfield, particles areas) are often partially in view by design.
     const big = Math.max(...size) > 30;
-    if (o.inView === "none") {
+    if (o.inView === "none" && scene.timeline?.trigger === "scroll" && (cameraMoves || animated.has(o.id))) {
+      issues.push({ severity: "info", code: "out-of-view-at-start", path: `objects#${o.id}`, message: `"${o.id}" is outside the camera view at the checked frame (t = 0); the scroll-driven ${animated.has(o.id) ? "timeline animates it" : "camera moves"}, so it may come into view further down the page.`, hint: "Check the other scroll states with `agent3d render --count 8` (or --scroll 0.5)." });
+    } else if (o.inView === "none") {
       issues.push({ severity: "warning", code: "out-of-view", path: `objects#${o.id}`, message: `"${o.id}" is completely outside the camera view (centre ${JSON.stringify(centre)}, size ${JSON.stringify(size)}; ${cam}).`, hint: `Move it toward camera.target, widen camera.fov / move the camera back, or set "visible": false if it is meant to enter later.` });
     } else if (o.inView === "partial" && !big && !spread.has(o.id)) {
       issues.push({ severity: "info", code: "clipped", path: `objects#${o.id}`, message: `"${o.id}" is clipped by the frame edges (centre ${JSON.stringify(centre)}, size ${JSON.stringify(size)}).`, hint: "If unintended, move it inward, scale it down or move the camera back. For wide banners, keep content within the central ~80% of the width." });

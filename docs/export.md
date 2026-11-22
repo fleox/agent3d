@@ -7,7 +7,7 @@
 | `embed` (default) | `agent3d export` | Folder for any static site (+ `EMBED.md`, framework wrappers) |
 | `zip` | `agent3d export --format zip` | The same folder as one `<name>-embed.zip` (to upload or send) |
 | `single-html` | `agent3d export --format single-html` | One self-contained `.html` file |
-| `poster` | `agent3d export --format poster [--time 2] [--image png\|webp\|jpeg] [--quality high] [--transparent]` | A still (`dist/poster.webp`), 2× pixel ratio |
+| `poster` | `agent3d export --format poster [--time 2] [--image png\|webp\|jpeg] [--scale 2] [--quality high] [--transparent]` | A still (`dist/poster.webp`), 2× pixel ratio by default |
 | `video` | `agent3d export --format video [--out dist/promo.mp4] [--duration 8] [--fps 30]` | MP4 (H.264) when `--out` ends in `.mp4`, else WebM (VP9) |
 | `gif` | `agent3d export --format gif [--duration 4] [--fps 15]` | A looping animated GIF (`dist/animation.gif`) |
 
@@ -80,7 +80,7 @@ One `<name>.html`: the single-file runtime as an inline module, the scene in `<s
 | `autoplay="false"` | Load and show the first frame, play on `play()` |
 | `paused` | Paused while present; removing it resumes |
 | `loop="true\|false\|pingpong"` | Overrides `timeline.loop` |
-| `quality="low\|medium\|high\|auto"` | Pixel-ratio cap 1 / 1.5 / 2; `low` also drops antialiasing, shadows and post effects; `auto` picks from the device (cores, memory, Save-Data) |
+| `quality="low\|medium\|high\|auto"` | Page-side override: pixel-ratio cap 1 / 1.5 / 2; `low` also drops antialiasing, shadows and post effects; `auto` picks from the device (cores, memory, Save-Data). It caps what the scene's own `target.quality` tier ([scene-format.md](scene-format.md#quality-tiers)) allows; it does not select a tier |
 | `interactive="false"` | The canvas ignores the pointer (page scroll and clicks pass through) |
 | `data-*` | Data bindings (below) |
 | `library-base` | Base URL of `library:` assets (default `<scene dir>/assets/library/`) |
@@ -149,7 +149,7 @@ player.pause();
 | embed | `script-src 'self'`, `connect-src 'self'`, `img-src 'self' blob:`; `style-src 'unsafe-inline'` when the scene has a HUD; `script-src 'wasm-unsafe-eval'` when a model is meshopt-compressed (`assets optimize`, `export --optimize`) |
 | single-html | also `script-src 'unsafe-inline' blob:`, `connect-src data:`, `img-src data: blob:` |
 
-Why: the runtime is a module that imports its chunks; scene files (JSON, fonts, models, HDRIs, SVG, audio) are fetched; textures load as images and glTF embedded textures as blob: URLs; the HUD injects one `<style>`; single-html scene scripts are imported from blob: URLs. The element's own styles are constructable stylesheets (`adoptedStyleSheets`), not subject to `style-src`. No `eval` / `new Function` (verified on the built runtime), no workers, no third-party origin, no web fonts. Integrity: the snippet's `integrity` works with `require-sri-for`-style policies; chunks loaded later by `import()` are same-origin files of the same folder.
+Why: the runtime is a module that imports its chunks; scene files (JSON, fonts, models, HDRIs, SVG, audio) are fetched; textures load as images and glTF embedded textures as blob: URLs; the HUD injects one `<style>`; single-html scene scripts are imported from blob: URLs. The element's own styles are constructable stylesheets (`adoptedStyleSheets`), not subject to `style-src`. No `eval` / `new Function` (verified on the built runtime), no workers, no third-party origin, no web fonts. Integrity: the snippet's `integrity` works with `require-sri-for`-style policies; chunks loaded later by `import()` are same-origin files of the same folder. The policy printed in `EMBED.md` is a slightly wider, copy-paste-safe superset (it also allows `data:` / `blob:` in `img-src` / `connect-src` and `worker-src 'self' blob:`); the table above is the minimum.
 
 ## Media from `render` and `export`
 

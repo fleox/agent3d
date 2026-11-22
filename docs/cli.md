@@ -3,8 +3,8 @@
 `agent3d` is the command-line front door of the Agent3D engine: the same operations as the Studio, the MCP server and the AI tools (`src/ops/`), plus headless renders and exports. It is one bundled file (`dist/agent/agent3d.mjs`, no runtime dependency) published as the npm package `@fleox/agent3d`.
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 help
-npx -y @fleox/agent3d@0.1.0 help scene --json
+npx -y @fleox/agent3d@0.2.0 help
+npx -y @fleox/agent3d@0.2.0 help scene --json
 ```
 
 Requirements: Node.js 22+ (20 works for everything except renders, which drive Chrome through Node's global `WebSocket`); Google Chrome, Chromium, Edge or Brave for `render`, `check --render`, posters and videos (`agent3d doctor` checks both).
@@ -31,12 +31,12 @@ Requirements: Node.js 22+ (20 works for everything except renders, which drive C
 ## A typical session
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 new bakery --target banner --title "Golden Crust Bakery" --json
-npx -y @fleox/agent3d@0.1.0 catalog behaviours --json
-npx -y @fleox/agent3d@0.1.0 scene patch --project bakery --file ops.json --json
-npx -y @fleox/agent3d@0.1.0 render --project bakery --sheet --json      # look at data.sheet
-npx -y @fleox/agent3d@0.1.0 check --project bakery --render --json
-npx -y @fleox/agent3d@0.1.0 export --project bakery --json              # data.snippet, data.out
+npx -y @fleox/agent3d@0.2.0 new bakery --target banner --title "Golden Crust Bakery" --json
+npx -y @fleox/agent3d@0.2.0 catalog behaviours --json
+npx -y @fleox/agent3d@0.2.0 scene patch --project bakery --file ops.json --json
+npx -y @fleox/agent3d@0.2.0 render --project bakery --sheet --json      # look at data.sheet
+npx -y @fleox/agent3d@0.2.0 check --project bakery --render --json
+npx -y @fleox/agent3d@0.2.0 export --project bakery --json              # data.snippet, data.out
 ```
 
 ## Command reference
@@ -185,7 +185,7 @@ agent3d timeline <get|set|add-track|remove-track> [--project <dir>]
 | Action | Usage | What it does |
 |---|---|---|
 | `get` | `agent3d timeline get` | The timeline (duration, loop, trigger, tracks). |
-| `set` | `agent3d timeline set --file <timeline.json\|-> \| [--duration <s>] [--loop true\|false\|pingpong] [--trigger load\|visible\|hover\|click\|scroll]` | Replace the timeline, or change its settings. |
+| `set` | `agent3d timeline set --file <timeline.json\|-> \| [--duration <s>] [--loop true\|false\|pingpong] [--trigger load\|visible\|hover\|click\|scroll\|manual]` | Replace the timeline, or change its settings. |
 | `add-track` | `agent3d timeline add-track --target <obj.prop> --keys <json> [--ease <name>] \| --json-def <track>` | Add a track, e.g. --target logo.rotation.y --keys "[[0,0],[4,360]]". |
 | `remove-track` | `agent3d timeline remove-track --target <obj.prop> [--yes]` | Remove the track(s) of a target. **Plan + `--yes`.** |
 
@@ -195,7 +195,7 @@ agent3d timeline <get|set|add-track|remove-track> [--project <dir>]
 | `--file <value>` | Read the JSON input from this file (`-` = stdin). A positional @file / - / inline JSON works too. |
 | `--duration <value>` | set: duration in seconds. |
 | `--loop <value>` | set: true, false or pingpong. |
-| `--trigger <value>` | set: load, visible, hover, click or scroll. |
+| `--trigger <value>` | set: load, visible, hover, click, scroll or manual (started by an interaction or a script). |
 | `--target <value>` | add-track / remove-track: "<objectId>.<property path>" (e.g. logo.position.y, camera.position). |
 | `--keys <value>` | add-track: [[time, value], …] as JSON. |
 | `--ease <value>` | add-track: easing (linear, inOutCubic, outBack, outElastic, …). |
@@ -229,13 +229,14 @@ agent3d templates <list|show> [<id>]
 Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles, KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok.
 
 ```
-agent3d check [--project <dir>] [--render]
+agent3d check [--project <dir>] [--render [--out <dir>]]
 ```
 
 | Option | Description |
 |---|---|
 | `--project <value>` | Project folder (default: the current directory). |
-| `--render` | Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). |
+| `--render` | Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). The frame goes to a temporary folder (its absolute path is in `render`) unless --out is given. |
+| `--out <value>` | --render: folder for the frame, relative to the project folder (e.g. renders). |
 
 ### render
 
@@ -259,13 +260,13 @@ agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--q
 | `--input <value>` | Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2], "down": true}, {"t": 4, "pointerUp": true}, {"t": 1, "pointerDown": [0, 0]}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 2, "swipe": "left"}] (key = KeyboardEvent.code, coordinates -1..1, y up; unknown fields are rejected). Frames render in time order. |
 | `--isolate <value>` | Render only this object (behaviours, scripts, UI dropped), at the origin, auto-framed from the front (+Z) three-quarter view on a neutral background (default 800x800, 1 frame) — to check a model's orientation and size. Returns isolated { size, center }. |
 | `--bg <value>` | Background drawn under the frames: "checker", a CSS colour ("#fff", "rgb(…)", "white") or "none". Default: a checkerboard under the contact sheet of transparent scenes (frames keep their alpha). |
-| `--out <value>` | Output folder (default <project>/renders). |
+| `--out <value>` | Output folder, relative to the project folder (default <project>/renders). |
 | `--quality <value>` | Supersampling: draft / standard (1×, default), high (2×), ultra (3×) — rendered larger and downscaled for smoother edges and detail (clamped to 4096 px). |
 | `--transparent` | Render with a transparent canvas (alpha PNG / GIF / WebP) even if the scene has a background. |
-| `--scroll <value>` | Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page). |
-| `--video <value>` | Render a video file instead of PNGs: .mp4 (H.264, needs Google Chrome) or .webm (VP9). Frame-exact; see --fps, --duration, --start, --size, --quality. |
-| `--gif <value>` | Render an animated GIF (looping, global palette, frame differencing; default 640 px wide, 15 fps). |
-| `--webp <value>` | Render an animated WebP (smaller than GIF, alpha; default 800 px wide, 20 fps). |
+| `--scroll <value>` | Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page). Renders one frame unless --frames / --count are given. |
+| `--video <value>` | Render a video file instead of PNGs (default 1280 px wide): .mp4 (H.264, needs Google Chrome) or .webm (VP9), path relative to the project folder. Frame-exact; see --fps, --duration, --start, --size, --quality. |
+| `--gif <value>` | Render an animated GIF, path relative to the project folder (looping, global palette, frame differencing; default 640 px wide, 15 fps). |
+| `--webp <value>` | Render an animated WebP, path relative to the project folder (smaller than GIF, alpha; default 800 px wide, 20 fps). |
 | `--fps <value>` | Video / GIF / WebP frames per second (default 30 / 15 / 20, max 60). |
 | `--duration <value>` | Video / GIF / WebP length in seconds (default the timeline duration, else 5). |
 | `--start <value>` | Video / GIF / WebP start time in seconds (default 0). |
@@ -315,7 +316,7 @@ agent3d export [--format embed|zip|single-html|poster|video|gif] [--out <path>] 
 |---|---|
 | `--project <value>` | Project folder (default: the current directory). |
 | `--format <value>` | embed (default), zip, single-html, poster, video or gif. |
-| `--out <value>` | Output folder (embed / zip / single-html: default <project>/dist/<format>) or file (poster / video / gif: default <project>/dist/poster.webp, video.webm, animation.gif; a .mp4 --out renders H.264). |
+| `--out <value>` | Output folder, relative to the project folder (embed / zip / single-html: default <project>/dist/<format>) or file (poster / video / gif: default <project>/dist/poster.webp, video.webm, animation.gif; a .mp4 --out renders H.264). |
 | `--name <value>` | Scene folder / file name in the export (default: the project name). |
 | `--base-url <value>` | embed / zip: URL of the export folder as seen from the pages (default "./"), e.g. /wp-content/uploads/agent3d/ or https://cdn.example.com/3d/ — the snippet then works from any page. |
 | `--cache-bust` | embed / zip: versioned runtime folder (agent3d-runtime-<hash>/) and ?v=<hash> on the scene URL, so both can be cached for a year. |
@@ -330,7 +331,7 @@ agent3d export [--format embed|zip|single-html|poster|video|gif] [--out <path>] 
 | `--fps <value>` | video / gif: frames per second (default 30 / 15). |
 | `--quality <value>` | poster / video / gif: draft, standard (default), high (2× supersampling) or ultra (3×). |
 | `--transparent` | poster (png / webp) / gif: transparent background. |
-| `--size <value>` | Viewport WIDTHxHEIGHT in CSS pixels (default: width 1200 at the target aspect). |
+| `--size <value>` | poster / video / gif: WIDTHxHEIGHT in CSS pixels (default: at the target aspect, width 1200 for a poster, 960 for a video, 640 for a gif). |
 | `--scale <value>` | poster: device pixel ratio (default 2). |
 | `--timeout <value>` | Seconds to wait for the scene to load (default 60). |
 | `--yes` | Apply — only after the user confirmed the plan. |

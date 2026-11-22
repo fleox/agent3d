@@ -6,6 +6,7 @@
 import type { SceneDoc } from "../../core/types";
 import type { FrameStats, MountOptions, Player, RuntimeIssue } from "../../runtime/api";
 import type { MountConfig } from "../backend/types";
+import { editingScene, sceneTimeFor, segmentRange, timelineTime, type ClockRange } from "../lib/timelineClock";
 
 type RuntimeModule = { mountScene(container: HTMLElement, scene: SceneDoc, options?: MountOptions): Player };
 let runtimePromise: Promise<RuntimeModule> | null = null;
@@ -14,17 +15,8 @@ export function loadRuntime(): Promise<RuntimeModule> {
   return runtimePromise;
 }
 
-export function timelineTime(t: number, scene: SceneDoc | null): number {
-  const tl = scene?.timeline;
-  if (!tl || !(tl.duration > 0)) return t;
-  const d = tl.duration;
-  if (!tl.loop) return Math.min(t, d);
-  if (tl.loop === "pingpong") {
-    const c = t % (2 * d);
-    return c > d ? 2 * d - c : c;
-  }
-  return t % d;
-}
+// Timeline time for player time t (speed, loop, playing segment): src/studio/lib/timelineClock.ts.
+export { timelineTime } from "../lib/timelineClock";
 
 export class PlayerController {
   player: Player | null = null;
@@ -39,6 +31,10 @@ export class PlayerController {
   private stateListeners = new Set<() => void>();
   private scene: SceneDoc | null = null;
   private disposed = false;
+  // Interact mode plays the real triggers; editing plays the whole timeline from load.
+  private interact = false;
+  // The segment started from the Studio (segments list), with the scene time it started at.
+  segment: { name: string; range: ClockRange; start: number } | null = null;
   ready = false;
 
   async mount(container: HTMLElement, scene: SceneDoc, cfg: MountConfig, opts: { editor: boolean }): Promise<void> {
@@ -47,9 +43,10 @@ export class PlayerController {
     this.issues = [];
     this.ready = false;
     this.scene = scene;
+    this.segment = null;
     const rt = await loadRuntime();
     if (this.disposed) return;
-    this.player = rt.mountScene(container, scene, {
+    this.player = rt.mountScene(container, this.view(scene), {
       ...cfg,
       editor: opts.editor,
       reducedMotion: false,
@@ -77,14 +74,27 @@ export class PlayerController {
       const raw = this.player.time();
       // Runtime clock can drift below 0 when its RAF loop restarts (first dt < 0): snap back.
       if (raw < 0 && !this.updating) void this.player.seek(0);
-      const t = timelineTime(Math.max(0, raw), this.scene);
+      const t = timelineTime(Math.max(0, raw), this.scene, this.segment);
       this.timeListeners.forEach((l) => l(t));
       this.raf = requestAnimationFrame(tick);
     };
     this.raf = requestAnimationFrame(tick);
   };
 
+  private view(scene: SceneDoc): SceneDoc {
+    return this.interact ? scene : editingScene(scene);
+  }
+
+  // Interact mode (I): real triggers (hover / click / scroll timelines, autoplay segments).
+  setInteract(on: boolean): void {
+    if (this.interact === on) return;
+    this.interact = on;
+    if (this.scene) this.update(this.scene);
+  }
+
   update(scene: SceneDoc): void {
+    // A rebuild resets the runtime's timeline controller (and its playing segment).
+    this.segment = null;
     this.scene = scene;
     this.latest = scene;
     if (this.updating || !this.player) return;
@@ -98,7 +108,7 @@ export class PlayerController {
       this.latest = null;
       const t = this.player.time();
       try {
-        await this.player.update(next);
+        await this.player.update(this.view(next));
         if (!this.playing) await this.player.seek(t);
       } catch {
         /* runtime reports through onError */
@@ -121,10 +131,28 @@ export class PlayerController {
     if (this.playing) this.pause();
     else this.play();
   }
+  // Seek to timeline time t (seconds on the timeline ruler).
   async seek(t: number): Promise<void> {
     if (this.playing) this.pause();
-    await this.player?.seek(t);
-    this.timeListeners.forEach((l) => l(timelineTime(t, this.scene)));
+    if (this.segment) {
+      // Drop the playing segment: rewinding resets the runtime's timeline controller.
+      this.segment = null;
+      await this.player?.seek(0);
+    }
+    const st = sceneTimeFor(t, this.scene);
+    await this.player?.seek(st);
+    this.timeListeners.forEach((l) => l(timelineTime(st, this.scene)));
+  }
+
+  // Plays a timeline segment (or "timeline") in the viewport, as an interaction would.
+  playSegment(name: string, opts: { reverse?: boolean } = {}): boolean {
+    const tl = this.scene?.timeline;
+    const range = tl ? segmentRange(tl, name) : null;
+    if (!range || !this.player?.playSegment) return false;
+    this.player.playSegment(name, opts);
+    this.segment = { name, range: opts.reverse ? { ...range, from: range.to, to: range.from } : range, start: this.player.time() };
+    this.play();
+    return true;
   }
   stats(): FrameStats | null {
     try {

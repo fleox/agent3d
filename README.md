@@ -33,14 +33,14 @@ The element starts when it scrolls into view, pauses off-screen, caps the pixel 
 ## 30-second demo
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 new bakery --target banner --title "Golden Crust" --json
-npx -y @fleox/agent3d@0.1.0 scene patch --project bakery --json '[{"op":"set","path":"objects#title.material","value":{"preset":"gold"}}]'
-npx -y @fleox/agent3d@0.1.0 render --project bakery --sheet --json     # → renders/…-sheet.png
-npx -y @fleox/agent3d@0.1.0 check --project bakery --json
-npx -y @fleox/agent3d@0.1.0 export --project bakery --json             # → dist/embed/ + the snippet
+npx -y @fleox/agent3d@0.2.0 new bakery --target banner --title "Golden Crust" --json
+npx -y @fleox/agent3d@0.2.0 scene patch --project bakery --json '[{"op":"set","path":"objects#title.material","value":{"preset":"gold"}}]'
+npx -y @fleox/agent3d@0.2.0 render --project bakery --sheet --json     # → renders/…-sheet.png
+npx -y @fleox/agent3d@0.2.0 check --project bakery --json
+npx -y @fleox/agent3d@0.2.0 export --project bakery --json             # → dist/embed/ + the snippet
 ```
 
-Requirements: **Node.js 22+** and **Google Chrome** (or Chromium / Edge) for previews. `npx -y @fleox/agent3d@0.1.0 doctor` checks your setup. Step by step: [docs/getting-started.md](docs/getting-started.md).
+Requirements: **Node.js 22+** and **Google Chrome** (or Chromium / Edge) for previews. `npx -y @fleox/agent3d@0.2.0 doctor` checks your setup. Step by step: [docs/getting-started.md](docs/getting-started.md).
 
 ## Use it from your agent
 
@@ -62,7 +62,7 @@ Requirements: **Node.js 22+** and **Google Chrome** (or Chromium / Edge) for pre
 **MCP** (Claude Desktop, Claude Code, Cursor, Hermes, any client) — the tools of the engine plus `render_preview`, which returns the contact sheet as an **image** so multimodal models see their work:
 
 ```bash
-claude mcp add agent3d -- npx -y @fleox/agent3d@0.1.0 mcp --project ~/agent3d/my-banner
+claude mcp add agent3d -- npx -y @fleox/agent3d@0.2.0 mcp --project ~/agent3d/my-banner
 ```
 
 Configuration for every client: [docs/mcp.md](docs/mcp.md).
@@ -74,7 +74,7 @@ Configuration for every client: [docs/mcp.md](docs/mcp.md).
 A visual editor for when you want to see and touch the scene yourself — viewport, outliner, inspector, timeline, catalog and library browser, templates, checks, render and export dialogs, and an optional assistant using your own Claude API key. Changes your agent makes in a terminal show up live.
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 studio --project bakery
+npx -y @fleox/agent3d@0.2.0 studio --project bakery
 ```
 
 Details: [docs/studio.md](docs/studio.md). Live preview without the editor: `agent3d serve --project bakery --open`.

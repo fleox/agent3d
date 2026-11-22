@@ -1,17 +1,21 @@
 {
   "id": "hero-space-planet",
   "title": "Space planet hero",
-  "description": "Cinematic 21:9 space hero: a ringed planet with glowing atmosphere, an orbiting moon, twinkling starfield, nebula dust and bloom, drifting with the pointer.",
+  "description": "Cinematic 21:9 space hero: a ringed low-poly planet side-lit into a crescent, an orbiting moon, a drifting purple-blue nebula backdrop, twinkling stars, nebula dust and a comet, bloom + lens flare + film grade, drifting with the pointer \u2014 left half free for a headline.",
   "kind": "hero",
   "tags": [
     "hero",
     "space",
     "planet",
     "rings",
+    "nebula",
     "stars",
     "bloom",
     "cinematic",
-    "dark"
+    "dark",
+    "sci-fi",
+    "astronomy",
+    "headline"
   ],
   "aspect": "21:9"
 }

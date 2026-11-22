@@ -1,0 +1,640 @@
+{
+  "version": 1,
+  "id": "game-basket",
+  "title": "Hoop shot",
+  "ariaLabel": "Basketball shooting game in a dark arena: swipe or drag up from the ball to throw it at a glowing hoop under a spotlight",
+  "seed": 9,
+  "target": {
+    "kind": "game",
+    "aspect": "16:9",
+    "reducedMotion": "ignore",
+    "posterTime": 3.2,
+    "maxDpr": 2,
+    "quality": "auto"
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 44,
+    "position": [
+      0,
+      1.9,
+      8.4
+    ],
+    "target": [
+      0,
+      2.5,
+      0
+    ],
+    "controls": "none"
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#232046",
+        "#07060f"
+      ],
+      "center": [
+        0.5,
+        0.7
+      ]
+    },
+    "lighting": "night",
+    "lightingIntensity": 0.6,
+    "fog": {
+      "color": "#0b0a18",
+      "near": 14,
+      "far": 30
+    }
+  },
+  "lights": [
+    {
+      "id": "spot",
+      "type": "spot",
+      "position": [
+        0,
+        9,
+        3
+      ],
+      "target": [
+        0,
+        2.4,
+        -0.2
+      ],
+      "angle": 26,
+      "penumbra": 0.7,
+      "intensity": 110,
+      "color": "#fff1dc",
+      "castShadow": true
+    },
+    {
+      "id": "courtSpot",
+      "type": "spot",
+      "position": [
+        0,
+        9,
+        12
+      ],
+      "target": [
+        0,
+        0,
+        3
+      ],
+      "angle": 38,
+      "penumbra": 0.9,
+      "intensity": 600,
+      "color": "#ffe2bf"
+    },
+    {
+      "id": "front",
+      "type": "directional",
+      "position": [
+        1,
+        3,
+        10
+      ],
+      "color": "#cfd8ff",
+      "intensity": 0.9
+    },
+    {
+      "id": "rimL",
+      "type": "point",
+      "position": [
+        -6,
+        3,
+        -3
+      ],
+      "color": "#4f7bff",
+      "intensity": 30,
+      "distance": 14
+    },
+    {
+      "id": "rimR",
+      "type": "point",
+      "position": [
+        6,
+        3,
+        -3
+      ],
+      "color": "#ff5aa8",
+      "intensity": 30,
+      "distance": 14
+    },
+    {
+      "id": "amb",
+      "type": "hemisphere",
+      "skyColor": "#5a5fa8",
+      "groundColor": "#2a1a20",
+      "intensity": 0.6
+    }
+  ],
+  "physics": {
+    "gravity": [
+      0,
+      -9.81,
+      0
+    ],
+    "step": 0.016666,
+    "substeps": 2
+  },
+  "objects": [
+    {
+      "id": "floor",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 16,
+        "height": 0.2,
+        "depth": 15
+      },
+      "position": [
+        0,
+        -0.1,
+        1
+      ],
+      "receiveShadow": true,
+      "material": {
+        "type": "physical",
+        "color": "#ffffff",
+        "roughness": 0.35,
+        "clearcoat": 0.6,
+        "clearcoatRoughness": 0.2,
+        "map": "library:textures/wood-planks-color.jpg",
+        "normalMap": "library:textures/wood-planks-normal.jpg",
+        "repeat": [
+          4,
+          4
+        ]
+      },
+      "body": {
+        "type": "static",
+        "shape": "box",
+        "restitution": 0.75,
+        "friction": 0.6
+      }
+    },
+    {
+      "id": "keyPaint",
+      "kind": "mesh",
+      "geometry": {
+        "type": "plane",
+        "width": 3.6,
+        "height": 5.2
+      },
+      "rotation": [
+        -90,
+        0,
+        0
+      ],
+      "position": [
+        0,
+        0.005,
+        2.2
+      ],
+      "material": {
+        "color": "#1d3f8f",
+        "roughness": 0.5,
+        "opacity": 0.55,
+        "transparent": true
+      }
+    },
+    {
+      "id": "pole",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.09,
+        "radiusBottom": 0.11,
+        "height": 3.6,
+        "segments": 16
+      },
+      "position": [
+        0,
+        1.8,
+        -1.55
+      ],
+      "material": {
+        "preset": "brushedMetal",
+        "color": "#30343f"
+      },
+      "castShadow": true
+    },
+    {
+      "id": "arm",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.9
+      },
+      "position": [
+        0,
+        3.45,
+        -1.1
+      ],
+      "material": {
+        "preset": "brushedMetal",
+        "color": "#30343f"
+      }
+    },
+    {
+      "id": "board",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.8,
+        "height": 1.05,
+        "depth": 0.05,
+        "radius": 0.02
+      },
+      "position": [
+        0,
+        3.4,
+        -0.62
+      ],
+      "castShadow": true,
+      "material": {
+        "type": "physical",
+        "color": "#dfe8f5",
+        "roughness": 0.25,
+        "opacity": 0.92,
+        "transparent": true,
+        "clearcoat": 1
+      },
+      "body": {
+        "type": "static",
+        "shape": "box",
+        "restitution": 0.55
+      }
+    },
+    {
+      "id": "boardFrame",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 0.6,
+        "height": 0.45,
+        "depth": 0.06
+      },
+      "position": [
+        0,
+        3.22,
+        -0.6
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#ff5a1f",
+        "wireframe": true
+      }
+    },
+    {
+      "id": "rim",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.42,
+        "tube": 0.025,
+        "radialSegments": 10,
+        "tubularSegments": 48
+      },
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "position": [
+        0,
+        3.05,
+        -0.13
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#ff5a1f",
+        "emissive": "#ff3d00",
+        "emissiveIntensity": 0.25
+      },
+      "castShadow": true,
+      "body": {
+        "type": "static",
+        "shape": "trimesh",
+        "restitution": 0.45
+      }
+    },
+    {
+      "id": "net",
+      "kind": "mesh",
+      "geometry": {
+        "type": "lathe",
+        "points": [
+          [
+            0.3,
+            -0.5
+          ],
+          [
+            0.36,
+            -0.25
+          ],
+          [
+            0.42,
+            0
+          ]
+        ],
+        "segments": 14
+      },
+      "position": [
+        0,
+        3.05,
+        -0.13
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#ffffff",
+        "wireframe": true,
+        "opacity": 0.8,
+        "transparent": true
+      }
+    },
+    {
+      "id": "scoreZone",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.3,
+        "radiusBottom": 0.3,
+        "height": 0.12,
+        "segments": 12
+      },
+      "position": [
+        0,
+        2.82,
+        -0.13
+      ],
+      "visible": false,
+      "body": {
+        "type": "trigger",
+        "shape": "cylinder"
+      }
+    },
+    {
+      "id": "ball",
+      "kind": "mesh",
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.2,
+        "segments": 40
+      },
+      "position": [
+        0,
+        1.3,
+        5.5
+      ],
+      "castShadow": true,
+      "material": {
+        "type": "physical",
+        "color": "#e8692a",
+        "roughness": 0.7,
+        "bumpMap": {
+          "procedural": "dots",
+          "cells": 48,
+          "radius": 0.35
+        },
+        "bumpScale": 0.4,
+        "sheen": 0.3
+      },
+      "children": [
+        {
+          "id": "seamA",
+          "kind": "mesh",
+          "geometry": {
+            "type": "torus",
+            "radius": 0.202,
+            "tube": 0.007,
+            "radialSegments": 6,
+            "tubularSegments": 48
+          },
+          "material": {
+            "color": "#1d1410"
+          }
+        },
+        {
+          "id": "seamB",
+          "kind": "mesh",
+          "geometry": {
+            "type": "torus",
+            "radius": 0.202,
+            "tube": 0.007,
+            "radialSegments": 6,
+            "tubularSegments": 48
+          },
+          "rotation": [
+            0,
+            90,
+            0
+          ],
+          "material": {
+            "color": "#1d1410"
+          }
+        },
+        {
+          "id": "seamC",
+          "kind": "mesh",
+          "geometry": {
+            "type": "torus",
+            "radius": 0.202,
+            "tube": 0.007,
+            "radialSegments": 6,
+            "tubularSegments": 48
+          },
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "material": {
+            "color": "#1d1410"
+          }
+        }
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "sphere",
+        "radius": 0.2,
+        "mass": 0.6,
+        "restitution": 0.7,
+        "friction": 0.6,
+        "ccd": true,
+        "linearDamping": 0,
+        "angularDamping": 0.1
+      }
+    },
+    {
+      "id": "confetti",
+      "kind": "particles",
+      "preset": "confetti",
+      "count": 140,
+      "area": [
+        4,
+        3,
+        2
+      ],
+      "position": [
+        0,
+        4.2,
+        -0.5
+      ],
+      "visible": false
+    },
+    {
+      "id": "crowdLights",
+      "kind": "particles",
+      "preset": "bokeh",
+      "count": 26,
+      "area": [
+        34,
+        5,
+        2
+      ],
+      "position": [
+        0,
+        7,
+        -10
+      ],
+      "color": [
+        "#ffd28a",
+        "#8fb4ff",
+        "#ff9ec7"
+      ],
+      "size": 0.35,
+      "opacity": 0.35
+    }
+  ],
+  "scripts": [
+    "scripts/basket.js"
+  ],
+  "data": {
+    "basket": {
+      "time": 45,
+      "flight": 1.25,
+      "respawn": 2.4
+    }
+  },
+  "ui": {
+    "color": "#ffffff",
+    "accent": "#ff7a1a",
+    "elements": [
+      {
+        "id": "scoreHud",
+        "type": "text",
+        "text": "Score {score}",
+        "anchor": "top-left",
+        "style": "pill"
+      },
+      {
+        "id": "timer",
+        "type": "text",
+        "text": "{time} s",
+        "anchor": "top",
+        "style": "pill",
+        "visible": "phase == 'play'"
+      },
+      {
+        "id": "bestHud",
+        "type": "text",
+        "text": "Best {best}",
+        "anchor": "top-right",
+        "style": "pill"
+      },
+      {
+        "id": "streak",
+        "type": "text",
+        "text": "\ud83d\udd25 x{mult}",
+        "anchor": "left",
+        "style": "pill",
+        "visible": "phase == 'play' && mult > 1"
+      },
+      {
+        "id": "title",
+        "type": "text",
+        "text": "Hoop Shot",
+        "anchor": "top",
+        "style": "title",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "hint",
+        "type": "text",
+        "text": "Swipe up from the ball to shoot \u00b7 or hold Space and release",
+        "anchor": "bottom",
+        "style": "subtitle",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "power",
+        "type": "bar",
+        "value": "power",
+        "anchor": "bottom",
+        "visible": "charging"
+      },
+      {
+        "id": "over",
+        "type": "text",
+        "text": "Time! {score} points",
+        "anchor": "center",
+        "style": "title",
+        "visible": "phase == 'over'"
+      },
+      {
+        "id": "retry",
+        "type": "button",
+        "text": "Play again",
+        "anchor": "bottom",
+        "action": "retry",
+        "visible": "phase == 'over'"
+      }
+    ]
+  },
+  "audio": {
+    "sounds": {
+      "swish": {
+        "preset": "powerup",
+        "volume": 0.5
+      },
+      "bounce": {
+        "preset": "hit",
+        "volume": 0.35
+      },
+      "throw": {
+        "preset": "whoosh",
+        "volume": 0.4
+      },
+      "buzzer": {
+        "preset": "lose",
+        "volume": 0.5
+      },
+      "click": {
+        "preset": "click"
+      }
+    }
+  },
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.6,
+      "threshold": 1.1,
+      "radius": 0.6
+    },
+    {
+      "type": "grading",
+      "contrast": 1.08,
+      "saturation": 1.1,
+      "vibrance": 0.15
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.9
+    },
+    {
+      "type": "fxaa"
+    }
+  ]
+}

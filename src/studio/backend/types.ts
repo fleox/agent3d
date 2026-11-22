@@ -33,7 +33,7 @@ export interface ProjectRef {
   kind?: string;
 }
 
-export type ExportFormatId = "embed" | "single-html" | "poster" | "video";
+export type ExportFormatId = "embed" | "zip" | "single-html" | "poster" | "video" | "gif";
 
 export interface Capabilities {
   render: boolean;

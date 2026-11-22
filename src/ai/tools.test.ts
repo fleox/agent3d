@@ -152,4 +152,41 @@ describe("AI tool catalog", () => {
     expect(rp).toMatchObject({ dir: "/p", state: { score: 2 } });
     expect(calls[2]).toMatchObject({ input: [{ t: 0.1, key: "Space", hold: 0.2 }] });
   });
+
+  it("export: zip, baseUrl, cacheBust, integrity, optimize, og and the animated media formats", async () => {
+    const enc = new TextEncoder();
+    const calls: { format: string; [k: string]: unknown }[] = [];
+    let codecUsed = false;
+    const host: ToolHost = {
+      runtimeFiles: async () => ({ "agent3d-runtime.js": enc.encode("export const v = 1;") }),
+      library: { index: { assets: [{ id: "fonts/sans-bold.typeface.json", path: "fonts/sans-bold.typeface.json", kind: "font", license: "Apache-2.0", tags: [], bytes: 100, description: "Font" }] }, read: async () => enc.encode("{}") },
+      media: async (o) => (calls.push(o as never), { bytes: new Uint8Array(1024), codec: o.format === "video" ? (o.video === "mp4" ? "h264" : "vp9") : undefined, size: o.format === "og" ? { width: 1200, height: 630 } : { width: 640, height: 160 }, ...(o.format === "og" ? {} : { frames: 15, fps: 15, duration: 1 }) }),
+      withImageCodec: async (fn) => ((codecUsed = true), fn(async (i) => ({ bytes: i.bytes, mimeType: i.mimeType, width: 1, height: 1 }) as never)),
+    };
+    const c = await ctx(host);
+    const zip = (await callAiTool(c, "export", { format: "zip", baseUrl: "/static/3d/", cacheBust: true, og: true, optimize: true })) as { entry: string; format: string; optimized?: unknown; ogImage?: boolean; runtimeDir?: string };
+    expect(zip.format).toBe("zip");
+    expect(zip.entry).toBe("dist/zip/tool-test-embed.zip");
+    expect(zip.ogImage).toBe(true);
+    expect(zip.optimized).toBeDefined();
+    expect(zip.runtimeDir).toMatch(/^agent3d-runtime-/);
+    expect(codecUsed).toBe(true);
+    expect(calls[0]).toMatchObject({ format: "og" });
+    const embed = (await callAiTool(c, "export", { integrity: false, baseUrl: "https://cdn.example.com/3d/", extras: false })) as { snippet: string };
+    expect(embed.snippet).toContain("https://cdn.example.com/3d/");
+    expect(embed.snippet).not.toContain("integrity=");
+    expect(await c.fs.exists("dist/embed/EMBED.md")).toBe(false);
+    const withSri = (await callAiTool(c, "export", { outDir: "dist/sri" })) as { snippet: string };
+    expect(withSri.snippet).toContain('integrity="sha384-');
+
+    expect(await callAiTool(c, "export", { format: "gif", quality: "high", transparent: true, fps: 15 })).toMatchObject({ format: "gif", path: "dist/animation.gif", frames: 15 });
+    expect(calls.at(-1)).toMatchObject({ format: "gif", quality: "high", transparent: true, fps: 15 });
+    expect(await callAiTool(c, "export", { format: "animated-webp", out: "renders/loop.webp" })).toMatchObject({ format: "animated-webp", path: "renders/loop.webp" });
+    expect(calls.at(-1)).toMatchObject({ format: "webp" });
+    expect(await callAiTool(c, "export", { format: "video", out: "renders/clip.mp4", quality: "ultra" })).toMatchObject({ format: "video", path: "renders/clip.mp4", codec: "h264" });
+    expect(calls.at(-1)).toMatchObject({ format: "video", video: "mp4", quality: "ultra" });
+    await expect(callAiTool(c, "export", { format: "gif", out: "dist/a.webp" })).rejects.toMatchObject({ code: "invalid" });
+    await expect(callAiTool(c, "export", { format: "gif", quality: "max" })).rejects.toMatchObject({ code: "invalid" });
+    await expect(callAiTool(await ctx({ runtimeFiles: host.runtimeFiles }), "export", { og: true })).rejects.toMatchObject({ code: "invalid" });
+  });
 });

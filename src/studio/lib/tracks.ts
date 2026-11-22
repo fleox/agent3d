@@ -67,8 +67,9 @@ const round = (t: number) => Math.round(t * 1000) / 1000;
 // Adds (or replaces, within 1 ms) a key at time t; keys stay sorted.
 export function upsertKey(track: TrackDef, t: number, value: KeyValue): TrackDef {
   const time = round(Math.max(0, t));
+  const prev = track.keys.find((k) => Math.abs(k[0] - time) <= EPS);
   const keys = track.keys.filter((k) => Math.abs(k[0] - time) > EPS);
-  keys.push([time, value]);
+  keys.push(prev?.length === 3 ? [time, value, prev[2]] : [time, value]);
   keys.sort((a, b) => a[0] - b[0]);
   return { ...track, keys };
 }
@@ -77,7 +78,7 @@ export function upsertKey(track: TrackDef, t: number, value: KeyValue): TrackDef
 export function moveKey(track: TrackDef, index: number, t: number): { track: TrackDef; index: number } {
   const key = track.keys[index];
   if (!key) return { track, index };
-  const moved: [number, KeyValue] = [round(Math.max(0, t)), key[1]];
+  const moved: TrackDef["keys"][number] = key.length === 3 ? [round(Math.max(0, t)), key[1], key[2]] : [round(Math.max(0, t)), key[1]];
   const rest = track.keys.filter((_, i) => i !== index);
   rest.push(moved);
   rest.sort((a, b) => a[0] - b[0]);

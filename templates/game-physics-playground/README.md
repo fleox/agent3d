@@ -24,7 +24,7 @@ A playable 16:9 rigid-body physics playground: a 9-level tower of 27 wooden bloc
 | Throw feel | `data.playground.throwSpeed` (higher = flatter, faster throws), `objects#ballProto.body.mass`, `objects#ballProto.geometry.radius` |
 | Autopilot pace | `data.playground.autoEvery` (seconds between throws) |
 | Bounciness / grip | `body.restitution` / `body.friction` on the blocks, the pedestal and the ground |
-| Colours | `objects#block….material.color`, `objects#pedestal.material`, `environment.background` / `fog` |
+| Colours | `objects#block….material.color` (a stain over a procedural `wood` map, 128 px so the 27 blocks stay light on GPU memory), `objects#pedestal.material`, `environment.background` / `fog` |
 | Texts | `ui.elements` |
 
 `api.state`: `phase` (`attract` | `play` | `cleared`), `down` / `total` (blocks off the pedestal), `throws`, `best`, `balls`.

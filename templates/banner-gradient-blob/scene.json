@@ -10,18 +10,40 @@
     "budgetKb": 250,
     "reducedMotion": "static",
     "posterTime": 2,
-    "maxDpr": 2
+    "maxDpr": 2,
+    "toneMapping": "neutral"
   },
   "camera": {
     "type": "perspective",
     "fov": 30,
-    "position": [0, 0, 12],
-    "target": [0, 0, 0],
+    "position": [
+      0,
+      0,
+      12
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ],
     "controls": "parallax",
-    "parallax": {"strength": 0.3, "smoothing": 0.95}
+    "parallax": {
+      "strength": 0.3,
+      "smoothing": 0.95
+    }
   },
   "environment": {
-    "background": {"gradient": ["#e4dcff", "#f4ecff", "#ffeef6"], "angle": 100},
+    "background": {
+      "meshGradient": [
+        "#efe9ff",
+        "#fbefff",
+        "#e3ecff",
+        "#ffeef5"
+      ],
+      "speed": 0.1,
+      "scale": 0.9,
+      "grain": 0.02
+    },
     "lighting": "studio",
     "lightingIntensity": 0.55
   },
@@ -33,11 +55,24 @@
       "groundColor": "#d9d2ff",
       "intensity": 0.9
     },
-    {"id": "key", "type": "directional", "position": [4, 5, 6], "intensity": 1.6},
+    {
+      "id": "key",
+      "type": "directional",
+      "position": [
+        4,
+        5,
+        6
+      ],
+      "intensity": 1.6
+    },
     {
       "id": "rim",
       "type": "point",
-      "position": [8, -2, -3],
+      "position": [
+        8,
+        -2,
+        -3
+      ],
       "color": "#ff8fd8",
       "intensity": 30,
       "distance": 20
@@ -50,52 +85,190 @@
       "generator": "blob",
       "params": {
         "radius": 1.85,
-        "noise": 0.3,
-        "speed": 0.35,
-        "detail": 96,
-        "colors": ["#5b3df5", "#a855f7", "#ff5fa2", "#3b82f6"]
+        "noise": 0.14,
+        "speed": 0.3,
+        "detail": 128,
+        "colors": [
+          "#5b3df5",
+          "#a855f7",
+          "#ff5fa2",
+          "#3b82f6"
+        ]
       },
-      "position": [5.6, 0, 0],
+      "position": [
+        5.6,
+        0,
+        0
+      ],
       "behaviours": [
-        {"type": "followPointer", "mode": "rotate", "strength": 0.4, "smoothing": 0.94},
-        {"type": "float", "amplitude": 0.12, "speed": 0.25}
+        {
+          "type": "followPointer",
+          "mode": "rotate",
+          "strength": 0.4,
+          "smoothing": 0.94
+        },
+        {
+          "type": "float",
+          "amplitude": 0.12,
+          "speed": 0.25
+        }
+      ],
+      "material": {
+        "type": "physical",
+        "roughness": 0.18,
+        "metalness": 0.05,
+        "clearcoat": 1,
+        "clearcoatRoughness": 0.05,
+        "iridescence": 0.7,
+        "iridescenceThicknessRange": [
+          200,
+          600
+        ]
+      }
+    },
+    {
+      "id": "bubble",
+      "kind": "generator",
+      "generator": "blob",
+      "position": [
+        2.9,
+        1.0,
+        -1.2
+      ],
+      "params": {
+        "radius": 0.55,
+        "noise": 0.05,
+        "speed": 0.5,
+        "detail": 64,
+        "colors": [
+          "#ff8fc8",
+          "#ffd0a8",
+          "#a78bfa"
+        ]
+      },
+      "material": {
+        "type": "physical",
+        "roughness": 0.15,
+        "clearcoat": 1,
+        "iridescence": 0.6
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.15,
+          "speed": 0.3
+        },
+        {
+          "type": "parallax",
+          "depth": 0.3,
+          "pointer": 0.3
+        }
       ]
     },
     {
       "id": "orbitRing",
       "kind": "mesh",
-      "geometry": {"type": "torus", "radius": 2.9, "tube": 0.012, "radialSegments": 8, "tubularSegments": 160},
-      "position": [5.6, 0, 0],
-      "rotation": [72, 0, -18],
-      "material": {"preset": "chrome", "color": "#c9c2ff"}
+      "geometry": {
+        "type": "torus",
+        "radius": 2.9,
+        "tube": 0.012,
+        "radialSegments": 8,
+        "tubularSegments": 160
+      },
+      "position": [
+        5.6,
+        0,
+        0
+      ],
+      "rotation": [
+        72,
+        0,
+        -18
+      ],
+      "material": {
+        "preset": "chrome",
+        "color": "#c9c2ff"
+      }
     },
     {
       "id": "beads",
       "kind": "group",
-      "position": [5.6, 0, 0],
-      "rotation": [72, 0, -18],
-      "behaviours": [{"type": "rotate", "axis": [0, 0, 1], "speed": 16}],
+      "position": [
+        5.6,
+        0,
+        0
+      ],
+      "rotation": [
+        72,
+        0,
+        -18
+      ],
+      "behaviours": [
+        {
+          "type": "rotate",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "speed": 16
+        }
+      ],
       "children": [
         {
           "id": "bead1",
           "kind": "mesh",
-          "geometry": {"type": "sphere", "radius": 0.2, "segments": 32, "heightSegments": 24},
-          "position": [2.55, 0, 0],
-          "material": {"preset": "glass", "color": "#ffffff", "thickness": 0.4}
+          "geometry": {
+            "type": "sphere",
+            "radius": 0.2,
+            "segments": 32,
+            "heightSegments": 24
+          },
+          "position": [
+            2.55,
+            0,
+            0
+          ],
+          "material": {
+            "preset": "soapBubble"
+          }
         },
         {
           "id": "bead2",
           "kind": "mesh",
-          "geometry": {"type": "sphere", "radius": 0.13, "segments": 32, "heightSegments": 24},
-          "position": [-2.21, 1.27, 0],
-          "material": {"preset": "pearl", "color": "#ffe1f3"}
+          "geometry": {
+            "type": "sphere",
+            "radius": 0.13,
+            "segments": 32,
+            "heightSegments": 24
+          },
+          "position": [
+            -2.21,
+            1.27,
+            0
+          ],
+          "material": {
+            "preset": "pearl",
+            "color": "#ffe1f3"
+          }
         },
         {
           "id": "bead3",
           "kind": "mesh",
-          "geometry": {"type": "sphere", "radius": 0.09, "segments": 24, "heightSegments": 16},
-          "position": [-0.6, -2.48, 0],
-          "material": {"preset": "gold"}
+          "geometry": {
+            "type": "sphere",
+            "radius": 0.09,
+            "segments": 24,
+            "heightSegments": 16
+          },
+          "position": [
+            -0.6,
+            -2.48,
+            0
+          ],
+          "material": {
+            "preset": "gold"
+          }
         }
       ]
     },
@@ -104,8 +277,16 @@
       "kind": "particles",
       "preset": "dust",
       "count": 60,
-      "area": [8, 5, 3],
-      "position": [4.5, 0, 0],
+      "area": [
+        8,
+        5,
+        3
+      ],
+      "position": [
+        4.5,
+        0,
+        0
+      ],
       "color": "#a78bfa",
       "size": 0.04,
       "opacity": 0.6
@@ -114,6 +295,36 @@
   "timeline": {
     "duration": 8,
     "loop": true,
-    "tracks": [{"target": "orbitRing.rotation.z", "keys": [[0, -18], [4, -10], [8, -18]], "ease": "inOutSine"}]
-  }
+    "tracks": [
+      {
+        "target": "orbitRing.rotation.z",
+        "keys": [
+          [
+            0,
+            -18
+          ],
+          [
+            4,
+            -10
+          ],
+          [
+            8,
+            -18
+          ]
+        ],
+        "ease": "inOutSine"
+      }
+    ]
+  },
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "dreamy",
+      "intensity": 0.6
+    },
+    {
+      "type": "taa",
+      "samples": 8
+    }
+  ]
 }

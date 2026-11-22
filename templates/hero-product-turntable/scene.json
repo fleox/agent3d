@@ -17,70 +17,209 @@
   "camera": {
     "type": "perspective",
     "fov": 32,
-    "position": [0, 1.6, 6.2],
-    "target": [0, 0.75, 0],
+    "position": [
+      0,
+      1.6,
+      6.2
+    ],
+    "target": [
+      0,
+      0.75,
+      0
+    ],
     "controls": "orbit",
     "autoRotate": 12,
     "orbitZoom": false,
-    "orbitLimits": {"minPolar": 55, "maxPolar": 88}
+    "orbitLimits": {
+      "minPolar": 55,
+      "maxPolar": 88
+    }
   },
   "environment": {
-    "background": {"radial": ["#f4efe9", "#d9d0c7"]},
-    "lighting": {"hdri": "library:hdri/studio.hdr", "intensity": 1},
-    "ground": {"y": 0, "size": 20, "shadowOnly": true, "color": "#3b2f25"}
+    "background": {
+      "radial": [
+        "#f6e7d8",
+        "#cdb6a3"
+      ],
+      "center": [
+        0.5,
+        0.62
+      ],
+      "radius": 0.9,
+      "grain": 0.02
+    },
+    "lighting": {
+      "hdri": "library:hdri/studio.hdr",
+      "intensity": 1
+    },
+    "rig": {
+      "preset": "softbox",
+      "intensity": 1.0
+    },
+    "contactShadows": {
+      "opacity": 0.65,
+      "blur": 2.2,
+      "y": 0.411,
+      "size": 3.2,
+      "color": "#3b2416"
+    }
   },
   "lights": [
     {
-      "id": "key",
+      "id": "rim",
       "type": "directional",
-      "position": [3, 6, 4],
-      "intensity": 2.2,
-      "castShadow": true,
-      "color": "#fff6ec"
-    },
-    {
-      "id": "fill",
-      "type": "hemisphere",
-      "skyColor": "#ffffff",
-      "groundColor": "#c9b8a6",
-      "intensity": 0.5
+      "position": [
+        -3,
+        4,
+        -5
+      ],
+      "color": "#ffd9b0",
+      "intensity": 1.6
     }
   ],
   "objects": [
     {
+      "id": "plinth",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.75,
+        "radiusBottom": 1.8,
+        "height": 0.06,
+        "segments": 96
+      },
+      "position": [
+        0,
+        0.03,
+        0
+      ],
+      "material": {
+        "type": "physical",
+        "color": "#b9876a",
+        "roughness": 0.75,
+        "clearcoat": 0
+      },
+      "receiveShadow": true
+    },
+    {
       "id": "pedestal",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 1.45, "radiusBottom": 1.5, "height": 0.35, "segments": 96},
-      "position": [0, 0.175, 0],
-      "material": {"preset": "clay", "color": "#efe6dc", "roughness": 0.65},
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.45,
+        "radiusBottom": 1.5,
+        "height": 0.35,
+        "segments": 96
+      },
+      "position": [
+        0,
+        0.235,
+        0
+      ],
+      "material": {
+        "preset": "terrazzo",
+        "color": "#fff7ef",
+        "map": {
+          "procedural": "terrazzo",
+          "colors": [
+            "#f1e8de",
+            "#c9694d",
+            "#3f6f63",
+            "#d9a441",
+            "#8a8079"
+          ],
+          "chipSize": 0.45,
+          "density": 0.55,
+          "scale": 2,
+          "resolution": 1024
+        }
+      },
       "castShadow": true,
       "receiveShadow": true
     },
     {
       "id": "pedestalRim",
       "kind": "mesh",
-      "geometry": {"type": "torus", "radius": 1.47, "tube": 0.018, "radialSegments": 8, "tubularSegments": 160},
-      "position": [0, 0.35, 0],
-      "rotation": [90, 0, 0],
-      "material": {"preset": "gold", "roughness": 0.25}
+      "geometry": {
+        "type": "torus",
+        "radius": 1.47,
+        "tube": 0.018,
+        "radialSegments": 8,
+        "tubularSegments": 160
+      },
+      "position": [
+        0,
+        0.41,
+        0
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "material": {
+        "preset": "gold",
+        "roughness": 0.25
+      }
     },
     {
       "id": "product",
       "kind": "model",
       "src": "library:models/products/boombox.glb",
       "fit": 1.9,
-      "position": [0, 0.35, 0],
-      "rotation": [0, -20, 0],
+      "position": [
+        0,
+        0.41,
+        0
+      ],
+      "rotation": [
+        0,
+        -20,
+        0
+      ],
       "castShadow": true,
       "receiveShadow": true,
-      "behaviours": [{"type": "hoverLift", "height": 0.08, "tilt": 4}]
+      "behaviours": [
+        {
+          "type": "hoverLift",
+          "height": 0.08,
+          "tilt": 4
+        }
+      ]
     }
   ],
   "timeline": {
     "duration": 15,
     "loop": true,
     "tracks": [
-      {"target": "product.position.y", "keys": [[0, 0.35], [7.5, 0.42], [15, 0.35]], "ease": "inOutSine"}
+      {
+        "target": "product.position.y",
+        "keys": [
+          [
+            0,
+            0.41
+          ],
+          [
+            7.5,
+            0.48
+          ],
+          [
+            15,
+            0.41
+          ]
+        ],
+        "ease": "inOutSine"
+      }
     ]
-  }
+  },
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "product"
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.6
+    }
+  ]
 }

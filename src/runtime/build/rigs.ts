@@ -15,10 +15,12 @@ const RIGS: Record<string, RigLight[]> = {
     { id: "sky", type: "hemisphere", skyColor: "#ffffff", groundColor: "#3a3f4a", intensity: 0.35 },
   ],
   softbox: [
-    { id: "top", type: "rect", position: [0, 5, 1.5], width: 5, height: 5, color: "#ffffff", intensity: 3.2 },
-    { id: "left", type: "rect", position: [-4.5, 2, 2.5], width: 2, height: 4.5, color: "#fff6ee", intensity: 4 },
-    { id: "right", type: "rect", position: [4.5, 2, 2.5], width: 2, height: 4.5, color: "#eef4ff", intensity: 2.6 },
-    { id: "shadow", type: "directional", position: [1, 8, 2.5], color: "#ffffff", intensity: 0.9, castShadow: true, shadow: { softness: 10, intensity: 0.75 } },
+    // Tuned so light pastels (#9b8cff) stay coloured under ACES with the default
+    // IBL on top (the earlier 3.2 / 4 / 2.6 washed them out to white).
+    { id: "top", type: "rect", position: [0, 5, 1.5], width: 5, height: 5, color: "#ffffff", intensity: 2.1 },
+    { id: "left", type: "rect", position: [-4.5, 2, 2.5], width: 2, height: 4.5, color: "#fff6ee", intensity: 2.6 },
+    { id: "right", type: "rect", position: [4.5, 2, 2.5], width: 2, height: 4.5, color: "#eef4ff", intensity: 1.7 },
+    { id: "shadow", type: "directional", position: [1, 8, 2.5], color: "#ffffff", intensity: 0.7, castShadow: true, shadow: { softness: 10, intensity: 0.75 } },
     { id: "sky", type: "hemisphere", skyColor: "#ffffff", groundColor: "#50555f", intensity: 0.3 },
   ],
   "product-top": [

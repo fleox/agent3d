@@ -2,7 +2,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { i18n, useCmsData, type BlockManifest, type SettingsSchema } from "@agent-cms/runtime";
-import { BLOCK_ID, DEFAULT_ATTRS, DEFAULT_CONFIG, NODE_NAME, PLUGIN_ID, decodeAttrs, encodeAttrs, escapeHtml, withDefaults, type PluginConfig, type SceneAttrs } from "./render";
+import { BLOCK_ID, DEFAULT_ATTRS, DEFAULT_CONFIG, NODE_NAME, PLUGIN_ID, decodeAttrs, encodeAttrs, escapeHtml, safeAspect, withDefaults, type PluginConfig, type SceneAttrs } from "./render";
 
 // "Agent3D scene" editor block.
 //
@@ -36,6 +36,8 @@ function livePreview(dom: HTMLElement, a: SceneAttrs): void {
   const el = doc.createElement("agent3d-scene");
   el.setAttribute("src", d.src);
   if (d.poster) el.setAttribute("poster", d.poster);
+  const aspect = safeAspect(a.aspect);
+  if (aspect) el.setAttribute("aspect", aspect);
   el.setAttribute("aria-label", a.label || "3D scene");
   el.style.cssText = "display:block;width:100%;border-radius:8px;overflow:hidden";
   dom.replaceChildren(el);
@@ -123,7 +125,7 @@ function SceneInspector({ attrs, updateAttrs }: { attrs: Record<string, unknown>
   const config = useConfig();
   const a = { ...DEFAULT_ATTRS, ...((attrs.attrs as Partial<SceneAttrs>) ?? {}) };
   const [draft, setDraft] = useState(a);
-  useEffect(() => setDraft(a), [a.src, a.poster, a.runtime, a.label, a.caption]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setDraft(a), [a.src, a.poster, a.runtime, a.label, a.caption, a.aspect]); // eslint-disable-line react-hooks/exhaustive-deps
   const commit = (patch: Partial<SceneAttrs>) => updateAttrs({ attrs: { ...a, ...patch } });
   const field = (key: keyof SceneAttrs, placeholder?: string) => (
     <label className="block space-y-1" key={key}>
@@ -148,7 +150,7 @@ function SceneInspector({ attrs, updateAttrs }: { attrs: Record<string, unknown>
             value={config.scenes.find((s) => s.src === a.src)?.name ?? ""}
             onChange={(e) => {
               const s = config.scenes.find((x) => x.name === e.target.value);
-              if (s) commit({ src: s.src, poster: s.poster, runtime: s.runtime, label: a.label || s.label || s.name });
+              if (s) commit({ src: s.src, poster: s.poster, runtime: s.runtime, aspect: s.aspect ?? "", label: a.label || s.label || s.name });
             }}
           >
             <option value="">{tr("block.custom")}</option>
@@ -163,6 +165,7 @@ function SceneInspector({ attrs, updateAttrs }: { attrs: Record<string, unknown>
       {field("src", "/agent3d/my-scene/scene.json")}
       {field("label", tr("block.labelPlaceholder"))}
       {field("caption")}
+      {field("aspect", "16:9")}
       {field("poster", derived.poster)}
       {field("runtime", derived.runtime)}
       <p className="text-xs text-surface-500">{tr("block.help")}</p>
@@ -199,5 +202,6 @@ export const sceneBlock: BlockManifest = {
     runtime: { description: "URL of agent3d-runtime.js. Empty = ../agent3d-runtime/agent3d-runtime.js from the scene folder (the embed export layout).", format: "url" },
     label: { description: "Accessible label: one sentence describing the scene (read by screen readers)." },
     caption: { description: "Optional caption shown under the scene (plain text)." },
+    aspect: { description: "Aspect ratio \"W:H\" (e.g. 4:1, 16:9) reserved before the scene loads, so the page does not jump. Empty = the scene's target.aspect once loaded (set automatically for uploaded scenes)." },
   } satisfies SettingsSchema,
 };
