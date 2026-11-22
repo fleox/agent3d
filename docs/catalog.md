@@ -578,6 +578,7 @@ Small stylised planet with continents, optional rings and atmosphere. _Cost: ~20
 | `atmosphere` | boolean | `true` | Glow halo. |
 | `atmosphereColor` | color | `"#8ecae6"` | Halo colour. |
 | `detail` | integer (1…7) | `5` | Subdivision. |
+| `spin` | number | `0` | Globe rotation around its own (ring) axis in deg/s — use this rather than a rotate behaviour so the rings stay stable. |
 
 ### `starfield`
 

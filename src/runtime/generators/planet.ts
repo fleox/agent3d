@@ -99,7 +99,14 @@ export const planet: GeneratorImpl = (raw, ctx) => {
   body.name = "planet-body";
   body.castShadow = true;
   body.receiveShadow = true;
-  group.add(body);
+  // The globe spins around the rings' axis (tilted like the rings) so a
+  // spinning planet never makes its rings wobble.
+  const tilt = new THREE.Group();
+  tilt.name = "planet-axis";
+  tilt.rotation.set(0.42, 0, 0.18);
+  group.add(tilt);
+  tilt.add(body);
+  const spin = p.num("spin");
 
   if (p.bool("rings")) {
     const ringColor = p.color("ringColor");
@@ -160,5 +167,6 @@ void main() {
     atmo.name = "planet-atmosphere";
     group.add(atmo);
   }
-  return built(group);
+  if (!spin) return built(group);
+  return built(group, { update: (t) => void (body.rotation.y = t * spin * (Math.PI / 180)) });
 };
