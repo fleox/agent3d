@@ -18,7 +18,7 @@ Every command is `npx -y @fleox/agent3d@0.1.0 <command> --json` with `--project 
 ## Pick the cheapest thing that looks right
 
 1. **Procedural first** (zero download, deterministic, recolourable): primitives (`catalog geometries`), generators (`catalog generators`: terrain, trees, rocks, grass, flowers, water, clouds, city, character, planet, starfield, blob, waveGrid, maze, road), particles (`catalog particlePresets`), shaders, synth sounds (`catalog sounds`: coin, jump, hit, explosion, click, powerup, laser, win, lose, whoosh, ambient-pad, chiptune-loop).
-2. **The built-in library** (ships with Agent3D, works offline, nothing to download, copied into the export automatically): ~100 low-poly models (characters, animals, nature, buildings, city, food, products, props, vehicles, space…), PBR texture sets (brick, concrete, fabric, grass ground, rusty metal, wood planks), 4 HDRIs (studio, sky, sunset, night), 5 fonts.
+2. **The built-in library** (ships with Agent3D, works offline, nothing to download, copied into the export automatically): ~110 low-poly models (characters, animals, nature, buildings, city, food and bakery, products, props, vehicles, space…), PBR texture sets (brick, concrete, fabric, grass ground, rusty metal, wood planks), 4 HDRIs (studio, sky, sunset, night), 5 fonts.
 3. **Free CC0 sources online**, downloaded **once** into `assets/` with their licence: Poly Haven (models, textures, HDRIs), ambientCG (textures, HDRIs), Khronos glTF samples (models; CC0 or CC-BY), Kenney and Quaternius (game packs; manual zip).
 4. **The user's own files** (logo SVG, product GLB, brand audio): `assets add <file> --license …`.
 

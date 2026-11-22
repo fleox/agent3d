@@ -28,6 +28,7 @@ Fonts are documented separately in `library/fonts/LICENSES.md`.
 | **Kenney** (www.kenney.nl) | CC0 1.0 | Platformer hero, mini soldier, platforms, blocks, coins, flag, clouds, grass, racing trucks, motorcycle, tracks, blaster, suburban house, forest tile, trophy, tree | Official Kenney starter kits on GitHub: `KenneyNL/Starter-Kit-3D-Platformer`, `-City-Builder`, `-Racing`, `-FPS`, `-Basic-Scene` (Mini Arena sample). The kit code is MIT, and the READMEs say: "Assets included in this package (2D sprites, 3D models and sound effects) are CC0 licensed". |
 | **three.js examples**: RobotExpressive | CC0 1.0 | `characters/robot.glb` | `mrdoob/three.js/examples/models/gltf/RobotExpressive`. Model by Tomás Laulhé (Quaternius), CC0 1.0. Don McCurdy added face morph targets and converted it to glTF. |
 | **Khronos glTF-Sample-Assets** | CC0 1.0 (Fox: CC0 + CC BY 4.0) | `animals/fox.glb`, `animals/fish.glb` (BarramundiFish, Microsoft), `food/avocado.glb` (Microsoft), `products/boombox.glb` (Microsoft), `products/water-bottle.glb` (Microsoft), `products/lantern.glb` (sbtron, Frank Galligan) | `KhronosGroup/glTF-Sample-Assets/Models/*`. Licences come from each model's `metadata.json`. |
+| **Agent3D** (own work) | CC0 1.0 | Bakery models: `food/croissant.glb`, `food/baguette.glb`, `food/bread-loaf.glb`, `food/donut.glb`, `food/cupcake.glb`, `food/cookie.glb`, `food/pain-au-chocolat.glb` | Generated procedurally by `scripts/make-bakery-models.mjs` (three.js geometry + GLTFExporter, deterministic). Dedicated to the public domain under CC0 1.0. |
 | **Poly Haven** (polyhaven.com) | CC0 1.0 | 6 PBR texture sets (`textures/*`) and 4 HDRIs (`hdri/*`) | Poly Haven public API and `dl.polyhaven.org`. Textures: Wood Floor Deck (Dimitrios Savva); Concrete Floor 02, Denim Fabric, Aerial Grass Rock, Rusty Metal 02, Red Brick 03 (Rob Tuytel). HDRIs: Studio Small 09 (Sergej Majboroda), Venice Sunset (Greg Zaal), Kloofendal 48d Partly Cloudy Pure Sky (Greg Zaal, Jarod Guest), Moonless Golf (Greg Zaal). |
 
 ## Attribution required (CC BY 4.0)
@@ -40,7 +41,7 @@ Fonts are documented separately in `library/fonts/LICENSES.md`.
 
 ## Modifications made by Agent3D
 
-All models were converted to single self-contained `.glb` files with glTF-Transform
+All third-party models were converted to single self-contained `.glb` files with glTF-Transform
 (dedup, prune, resample of animation keys), with every buffer and texture embedded.
 They use no Draco or meshopt compression, so the stock `GLTFLoader` loads them.
 Texture atlases and PBR maps larger than 512 px were resized to 512 px and re-encoded

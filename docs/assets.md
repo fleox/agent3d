@@ -4,7 +4,7 @@ Scenes reference assets by **project path** (`assets/models/bottle.glb`) or by *
 
 ## The built-in library
 
-`library/` ships in the npm package and works offline: ~107 low-poly glTF models (rigged characters with animation clips, animals, nature, buildings, city, food, products, props, vehicles, space…), 6 PBR texture sets (colour, normal, roughness), 4 HDRIs (studio, sky, sunset, night; `.hdr` for lighting, `.jpg` for backgrounds) and 5 fonts. `library/index.json` lists each item with its licence, author, tags, size and (models) bounding box and triangle count.
+`library/` ships in the npm package and works offline: ~114 low-poly glTF models (rigged characters with animation clips, animals, nature, buildings, city, food and bakery (croissant, baguette, bread loaf, donut, cupcake, cookie, pain au chocolat), products, props, vehicles, space…), 6 PBR texture sets (colour, normal, roughness), 4 HDRIs (studio, sky, sunset, night; `.hdr` for lighting, `.jpg` for backgrounds) and 5 fonts. `library/index.json` lists each item with its licence, author, tags, size and (models) bounding box and triangle count.
 
 ```bash
 npx -y @fleox/agent3d@0.1.0 assets library --query tree --json
