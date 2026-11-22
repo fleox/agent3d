@@ -26,7 +26,7 @@ npx -y @fleox/agent3d@0.1.0 assets list --project my-banner --json
 npx -y @fleox/agent3d@0.1.0 assets remove assets/svg/logo.svg --yes --project my-banner --json
 ```
 
-`--license` is required for local files. Files go to `assets/models|textures|hdri|audio|fonts|svg|other/` by kind unless `--path` is given. `assets list` reports `exists`, `usedBy` and the size on disk for each entry (stale manifest sizes are rewritten; `refreshed` lists them). Models (`assets add <file>.glb` or a downloaded hit) return `bounds` — `size` (w × h × d, node transforms applied), `center`, `min`, `max` and an `upAxis` guess (`"y"`, or `"z?"` for models that may have been exported Z-up) — and `agent3d render --isolate <objectId>` shows one object alone, auto-framed, to check its orientation.
+`--license` is required for local files. Files go to `assets/models|textures|hdri|audio|fonts|svg|other/` by kind unless `--path` is given. `assets list` reports `exists`, `usedBy` and the size on disk for each entry (read-only: `stale` lists entries whose recorded size differs from the file). Models (`assets add <file>.glb` or a downloaded hit) return `bounds` — `size` (w × h × d, node transforms applied), `center`, `min`, `max` and an `upAxis` guess (`"y"`, or `"z?"` for models that may have been exported Z-up) — and `agent3d render --isolate <objectId>` shows one object alone, auto-framed, to check its orientation.
 
 ### Shrinking textures
 

@@ -109,7 +109,7 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets remove assets/textures/old
 python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets remove assets/textures/old.jpg --yes --project my-scene --json
 ```
 
-`assets list` shows each file's size on disk, licence, whether it exists and which objects use it (`usedBy`); sizes that changed on disk are rewritten into `assets/manifest.json` (`refreshed`). `remove` prints a plan (with `usedBy`) unless `--yes`: fix the references first.
+`assets list` shows each file's size on disk, licence, whether it exists and which objects use it (`usedBy`); it is read-only: entries whose recorded size differs from the file on disk are listed in `stale` (`assets optimize` / `assets add` rewrite the manifest). `remove` prints a plan (with `usedBy`) unless `--yes`: fix the references first.
 
 ## Shrinking textures (over budget)
 

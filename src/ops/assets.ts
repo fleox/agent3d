@@ -48,23 +48,26 @@ export interface AssetListing extends AssetEntry {
 }
 
 // Manifest entries + files present under assets/ but unregistered (license "unknown").
-// Sizes are the files' sizes on disk; stale manifest sizes are rewritten (`refreshed`).
-export async function listAssets(fs: ProjectFs): Promise<{ assets: AssetListing[]; totalKb: number; refreshed?: string[] }> {
-  const refreshed = await refreshAssetManifest(fs);
+// Sizes are the files' sizes on disk. Read-only: entries whose manifest size
+// is stale are listed in `stale` (assets optimize / add rewrite the manifest).
+export async function listAssets(fs: ProjectFs): Promise<{ assets: AssetListing[]; totalKb: number; stale?: string[] }> {
   const manifest = await readAssetManifest(fs);
+  const stale: string[] = [];
   const refs = (await fs.exists(SCENE_FILE)) ? collectAssetRefs(await readSceneFile(fs)) : [];
   const files = new Set((await fs.list("assets/")).filter((f) => f !== ASSET_MANIFEST_FILE));
   const out: AssetListing[] = [];
   for (const a of manifest.assets) {
     const exists = files.has(a.path);
     // Report the size on disk (the manifest may be stale after an edit).
-    out.push({ ...a, ...(exists ? { bytes: await fs.size(a.path) } : {}), exists, usedBy: refs.filter((r) => r.path === a.path).map((r) => r.at) });
+    const bytes = exists ? await fs.size(a.path) : a.bytes;
+    if (exists && bytes !== a.bytes) stale.push(a.path);
+    out.push({ ...a, bytes, exists, usedBy: refs.filter((r) => r.path === a.path).map((r) => r.at) });
     files.delete(a.path);
   }
   for (const f of files) {
     out.push({ path: f, kind: kindFromPath(f), bytes: await fs.size(f), source: "local", license: "unknown", addedAt: "", exists: true, usedBy: refs.filter((r) => r.path === f).map((r) => r.at) });
   }
-  return { assets: out, totalKb: KB(out.reduce((a, b) => a + (b.exists ? b.bytes : 0), 0)), ...(refreshed.length ? { refreshed } : {}) };
+  return { assets: out, totalKb: KB(out.reduce((a, b) => a + (b.exists ? b.bytes : 0), 0)), ...(stale.length ? { stale } : {}) };
 }
 
 export interface AddAssetInput {

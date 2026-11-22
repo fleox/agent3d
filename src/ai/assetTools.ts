@@ -16,12 +16,12 @@ const KINDS: AssetEntry["kind"][] = ["model", "texture", "hdri", "audio", "font"
 export const ASSET_TOOLS: AiTool[] = [
   {
     name: "assets_list",
-    description: "List the project's assets (assets/manifest.json + unregistered files): path, kind, size on disk, source, licence, author, and which scene paths use each one (stale manifest sizes are refreshed).",
+    description: "List the project's assets (assets/manifest.json + unregistered files): path, kind, size on disk, source, licence, author, and which scene paths use each one (read-only; `stale` lists entries whose manifest size differs from the file — assets_optimize / assets_add rewrite it).",
     inputSchema: { type: "object", properties: {} },
     mutating: false,
     async handler(ctx) {
       const r = await listAssets(ctx.fs);
-      return { count: r.assets.length, totalKb: r.totalKb, ...(r.refreshed ? { refreshed: r.refreshed } : {}), assets: r.assets.map((a) => ({ path: a.path, kind: a.kind, kb: Math.round(a.bytes / 102.4) / 10, source: a.source, license: a.license, ...(a.author ? { author: a.author } : {}), ...(a.exists ? {} : { missing: true }), usedBy: a.usedBy })) };
+      return { count: r.assets.length, totalKb: r.totalKb, ...(r.stale ? { stale: r.stale } : {}), assets: r.assets.map((a) => ({ path: a.path, kind: a.kind, kb: Math.round(a.bytes / 102.4) / 10, source: a.source, license: a.license, ...(a.author ? { author: a.author } : {}), ...(a.exists ? {} : { missing: true }), usedBy: a.usedBy })) };
     },
   },
   {

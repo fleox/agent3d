@@ -99,16 +99,15 @@ describe("assets optimize", () => {
     await expect(optimizeAssets(fs, { paths: ["assets/nope.jpg"] }, fakeCodec)).rejects.toMatchObject({ code: "notFound" });
   });
 
-  it("assets list reports and refreshes sizes changed on disk; check points at assets optimize", async () => {
+  it("assets list reports sizes changed on disk without writing; check points at assets optimize", async () => {
     const fs = new MemoryFs();
     await createProject(fs, { name: "t", target: { kind: "banner", budgetKb: 10 } as never });
     await addAsset(fs, { path: "assets/textures/a.jpg", bytes: new Uint8Array(100), source: "local", license: "CC0-1.0" });
     await fs.writeBytes("assets/textures/a.jpg", new Uint8Array(50_000));
     const l = await listAssets(fs);
-    expect(l.refreshed).toEqual(["assets/textures/a.jpg"]);
+    expect(l.stale).toEqual(["assets/textures/a.jpg"]);
     expect(l.assets.find((a) => a.path === "assets/textures/a.jpg")!.bytes).toBe(50_000);
-    expect((await readAssetManifest(fs)).assets[0].bytes).toBe(50_000);
-    expect((await listAssets(fs)).refreshed).toBeUndefined();
+    expect((await readAssetManifest(fs)).assets[0].bytes).toBe(100);
     await patchScene(fs, [{ op: "addObject", object: { id: "p", kind: "mesh", geometry: { type: "plane" }, material: { map: "assets/textures/a.jpg" } } as never }]);
     const report = await checkProject(fs);
     const budget = report.issues.find((i) => i.code === "budget")!;
