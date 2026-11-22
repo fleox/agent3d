@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "id": "hero-product-turntable",
+  "title": "Product turntable hero",
+  "ariaLabel": "A retro boombox turning slowly on a studio pedestal",
+  "seed": 1,
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "budgetKb": 1200,
+    "reducedMotion": "static",
+    "posterTime": 0,
+    "maxDpr": 2,
+    "toneMapping": "neutral",
+    "exposure": 1
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 32,
+    "position": [0, 1.6, 6.2],
+    "target": [0, 0.75, 0],
+    "controls": "orbit",
+    "autoRotate": 12,
+    "orbitZoom": false,
+    "orbitLimits": {"minPolar": 55, "maxPolar": 88}
+  },
+  "environment": {
+    "background": {"radial": ["#f4efe9", "#d9d0c7"]},
+    "lighting": {"hdri": "library:hdri/studio.hdr", "intensity": 1},
+    "ground": {"y": 0, "size": 20, "shadowOnly": true, "color": "#3b2f25"}
+  },
+  "lights": [
+    {
+      "id": "key",
+      "type": "directional",
+      "position": [3, 6, 4],
+      "intensity": 2.2,
+      "castShadow": true,
+      "color": "#fff6ec"
+    },
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#ffffff",
+      "groundColor": "#c9b8a6",
+      "intensity": 0.5
+    }
+  ],
+  "objects": [
+    {
+      "id": "pedestal",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 1.45, "radiusBottom": 1.5, "height": 0.35, "segments": 96},
+      "position": [0, 0.175, 0],
+      "material": {"preset": "clay", "color": "#efe6dc", "roughness": 0.65},
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    {
+      "id": "pedestalRim",
+      "kind": "mesh",
+      "geometry": {"type": "torus", "radius": 1.47, "tube": 0.018, "radialSegments": 8, "tubularSegments": 160},
+      "position": [0, 0.35, 0],
+      "rotation": [90, 0, 0],
+      "material": {"preset": "gold", "roughness": 0.25}
+    },
+    {
+      "id": "product",
+      "kind": "model",
+      "src": "library:models/products/boombox.glb",
+      "fit": 1.9,
+      "position": [0, 0.35, 0],
+      "rotation": [0, -20, 0],
+      "castShadow": true,
+      "receiveShadow": true,
+      "behaviours": [{"type": "hoverLift", "height": 0.08, "tilt": 4}]
+    }
+  ],
+  "timeline": {
+    "duration": 15,
+    "loop": true,
+    "tracks": [
+      {"target": "product.position.y", "keys": [[0, 0.35], [7.5, 0.42], [15, 0.35]], "ease": "inOutSine"}
+    ]
+  }
+}
