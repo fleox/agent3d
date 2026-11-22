@@ -42,14 +42,19 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets library --kind hdri --json
 python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets library --query character --kind model --json
 ```
 
-Each hit has `ref` (use it as is in the scene), `description` (with the bounding box and, for animated characters, the clip names), `tags`, `license`, `kb`. Listings are capped at 50: narrow with `--query` and `--kind`.
+Each hit has `ref` (use it as is in the scene), `description` (with the bounding box), `tags`, `license`, `kb`, and for models `triangles` and `animations` (the clip names of animated models). Listings show 50 results per page: narrow with `--query` and `--kind`; when `more` is true, page with `--offset 50` (or `--limit 100`, `--all`).
+
+```bash
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets library --kind model --offset 50 --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets library --kind model --all --json
+```
 
 ```json
 { "op": "addObject", "object": { "id": "tree", "kind": "model", "src": "library:models/nature/pine-tree.glb", "fit": 2, "position": [-6, -1, 0] } }
 ```
 
 - Always set `fit` (the largest dimension in units): library models come in very different native sizes (the boombox is 2 cm, the lantern 26 units). `center: true` (default) puts the bottom centre at the object's position.
-- Animated models: `"animation": { "clip": "Wave", "loop": true, "speed": 1 }` (clip name or index). Clip names are not all in the descriptions: render once with a guess, and the `asset-load` issue lists the model's clips (knight / mage / skeleton: `Idle`, `Walking_A`, `Running_A`, `Cheer`, `Jump_Full_Short`, `Death_A`…; robot: `Idle`, `Walking`, `Running`, `Dance`, `Jump`, `Wave`…).
+- Animated models: `"animation": { "clip": "Wave", "loop": true, "speed": 1 }` (clip name or index). The hit's `animations` lists the exact clip names (knight / mage / skeleton: `Idle`, `Walking_A`, `Running_A`, `Cheer`, `Jump_Full_Short`, `Death_A`…; robot: `Idle`, `Walking`, `Running`, `Dance`, `Jump`, `Wave`…); `--query walk` also matches clip names.
 - Textures: `"material": { "map": "library:textures/brick-color.jpg", "normalMap": "library:textures/brick-normal.jpg", "roughnessMap": "library:textures/brick-roughness.jpg", "repeat": [3, 3] }`.
 - HDRIs: `"environment": { "lighting": { "hdri": "library:hdri/studio.hdr", "intensity": 1 } }` for reflections; `"background": { "hdri": "library:hdri/sunset.jpg", "blur": 0.2 }` to show it.
 - Recolour a model: `"material": { "color": "#ff8fab" }` on the model object overrides every mesh (or `"preset": "clay"` for a uniform stylised look).
@@ -74,13 +79,13 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets add --hit @hit.json --reso
 
 ## Kenney and Quaternius packs (manual zip)
 
-Their hits are `manual: true`: there is no direct download. Ask the user to download the pack zip from `pageUrl` (free, no account), then import it with the AI tool (the zip importer extracts only `.glb` / `.gltf` + textures; `filter` keeps models whose path contains one of the words):
+Their hits are `manual: true`: there is no direct download (the hit's `note` says so). Ask the user to download the pack zip from `pageUrl` (free, no account), then import it with `assets add <file.zip>` (the zip importer extracts only `.glb` / `.gltf` + textures; `--filter` keeps the models whose path contains the word, repeat it for several words; `--name` sets the folder under `assets/models/`):
 
 ```bash
-python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py tools call assets_add --input '{"file": "/Users/me/Downloads/kenney_platformer-kit.zip", "source": "kenney", "license": "CC0-1.0", "author": "Kenney", "filter": ["coin", "flag"]}' --project my-game --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets add ~/Downloads/kenney_platformer-kit.zip --source kenney --license CC0-1.0 --filter coin --filter flag --name platformer --project my-game --json
 ```
 
-The answer lists the imported model paths (`models`) to use as `src`. Importing a whole pack can add megabytes: always filter to what the scene uses.
+The answer lists the imported model paths (`models`) to use as `src`, plus `totalKb`. Importing a whole pack can add megabytes: always filter to what the scene uses. (MCP clients: the `assets_add` tool takes `{ "file", "source", "license", "filter": [...] }`.)
 
 ## The user's own files
 

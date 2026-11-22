@@ -74,7 +74,7 @@ Every `agent3d <command>` below runs through this skill's Python wrapper: `pytho
    ```bash
    python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project bakery-banner --sheet --count 4 --json
    ```
-   Then open `data.sheet` (a PNG contact sheet with time labels) with your vision / image tool and judge it like an art director:
+   Then open `data.sheet` (a PNG contact sheet with time labels; paths are relative to the project folder `data.dir`) with your vision / image tool and judge it like an art director:
    - **Framing at the aspect ratio**: nothing important cut at the edges; the subject reads at a glance; wide banners keep content in the central ~80% of the width.
    - **Composition**: a clear focal point, balanced weight, room left for HTML text if the page needs it.
    - **Text**: spelled right, readable (contrast with the background), not overlapped by props.
@@ -103,7 +103,7 @@ Short version below; details, palettes and numbers in [references/art-direction.
 - **Lighting recipe** (start here, then tune): a hemisphere fill (sky colour ≈ background top, ground colour ≈ a darker brand tone, 0.8–1), a directional key from top-right-front (2–2.5, `castShadow` only if a ground shows the shadow), a coloured rim from behind (point or directional, warm against a cool scene or the reverse). `environment.lighting` gives reflections: `studio` for products and chrome, `sunset` for warm outdoors, `night` for neon.
 - **Palette**: background in 2–3 close tones of the brand (dark → mid), subject in a lighter or more saturated tone, one accent. Check contrast in the render: a gold title on a gold background disappears.
 - **Camera**: perspective fov 30–40 for banners and products (less distortion), 45–55 for landscapes and games. Wide banner: fov 30, z 12. Hero 16:9: fov 35, z 9. Card 1:1: fov 32, z 5.5–7.
-- **Motion for web pages**: slow and loopable. Float amplitude 0.05–0.2 at 0.2–0.4 cycles/s, rotations 10–20 deg/s, timeline loops of 6–10 s that end where they start (`[[0,-5],[4,5],[8,-5]]`). Parallax strength 0.3–0.5. Keep `target.reducedMotion` at `static` (the default) for banners, and make `posterTime` a frame where everything is visible.
+- **Motion for web pages**: slow and loopable. Float amplitude 0.05–0.2 at 0.2–0.4 cycles/s, rotations 10–20 deg/s, timeline loops of 6–10 s that end where they start (`[[0,-5],[4,5],[8,-5]]`). Parallax strength 0.3–0.5. Keep `target.reducedMotion` at `static` (the default) for banners, and make `posterTime` a frame where everything is visible (after every `appear` delay + duration; reduced-motion visitors see `appear` finished anyway, but the exported poster does not).
 - **Post effects** sparingly: bloom only when there is something emissive (neon), strength 0.3–0.6, threshold ≥ 0.85; vignette 0.8–1 to focus a banner. No film grain or chromatic aberration on brand work unless asked.
 - **Budgets** (the `check` budget is per target): banners and cards stay under ~50 k triangles and a few hundred KB of assets; heroes ~150 k; games ~200 k. Prefer generators, primitives and the built-in library (zero download) over large models; textures at 1k.
 

@@ -74,9 +74,14 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
    ```bash
    python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project dodge --sheet --frames 0,2,4,6 --json
    ```
-   Renders have no player input, so the game must show something on its own: an **attract mode** (an autopilot plays during the `ready` phase, behind the title and Play button). The HUD is captured because the scene has a `ui` (`--capture page` forces it). Check `data.issues` and `data.consoleErrors` for `script-error`.
-6. To test a state the autopilot doesn't reach (game over screen, high score), temporarily set the starting phase in `api.data` (e.g. `"startPhase": "over"`), render, then restore it.
-7. `check`, then `export` (skill `agent3d-publish`). Games export like any scene; the embed gets keyboard focus on click (`tabindex`, `role="application"`).
+   Plain renders have no player input, so the game must show something on its own: an **attract mode** (an autopilot plays during the `ready` phase, behind the title and Play button). The HUD is captured because the scene has a `ui` (`--capture page` forces it). Check `data.issues` and `data.consoleErrors` for `script-error`. `data.state` is the script's `api.state` after the last frame (e.g. `{ "score": 0, "phase": "ready" }`); frame and sheet paths are relative to the project folder `data.dir`.
+6. **Play it headlessly** with `--input`: a JSON script of simulated keys / clicks applied while seeking (frames are rendered in time order), then check `data.state` and the frames:
+   ```bash
+   python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project dodge --sheet --frames 0,1,2,3 --input '[{"t": 0.2, "click": [0, -0.3]}, {"t": 0.5, "key": "ArrowLeft", "hold": 0.6}, {"t": 1.5, "key": "Space", "down": true}, {"t": 1.6, "key": "Space", "down": false}]' --json
+   ```
+   Events: `{ "t", "key", "down" }` (`key` is a `KeyboardEvent.code`: `ArrowLeft`, `KeyA`, `Space`…; `down: false` releases), `{ "t", "key", "hold": seconds }` (press and release), `{ "t", "click": [x, y] }`, `{ "t", "pointer": [x, y] }` (canvas coordinates −1..1, y up; a click on a HUD button does not trigger it — emit the action from a key instead while testing). Use `@inputs.json` for longer scripts. MCP: `render_preview` takes the same events as `input`.
+7. To test a state that is hard to reach with input (game over screen, high score), temporarily set the starting phase in `api.data` (e.g. `"startPhase": "over"`), render, then restore it.
+8. `check`, then `export` (skill `agent3d-publish`). Games export like any scene; the embed gets keyboard focus on click (`tabindex`, `role="application"`).
 
 ## Game patterns in one screen
 

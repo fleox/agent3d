@@ -39,7 +39,7 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py scene summary --project my-banner
 python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project my-banner --sheet --json
 ```
 
-Look at the sheet (open the `data.sheet` PNG with your vision / image tool), then tell the user in two or three sentences what the scene contains (target and aspect, the main objects, the motion) before proposing changes. Read details on demand:
+Look at the sheet (Read the `data.sheet` PNG, relative to the project folder `data.dir`), then tell the user in two or three sentences what the scene contains (target and aspect, the main objects, the motion) before proposing changes. Read details on demand:
 
 ```bash
 python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py object get title --project my-banner --json

@@ -79,6 +79,6 @@ Too bright? Lower `environment.lightingIntensity` first (IBL adds up with every 
 | game | 4000 | 2 M | ≤ 200 k, draw calls < 150 (`check` warns above 150) |
 
 - The shared runtime (`agent3d-runtime/`, ~1.6 MB uncompressed, loaded lazily in chunks: only what the scene uses is fetched) is not counted: it is downloaded once per site and cached.
-- `check` estimates triangles from the catalog cost formulas; `check --render` and `render` report the real counts (`stats.triangles`, `stats.drawCalls`, which include extra passes such as shadows and post effects).
+- `check` estimates the geometry triangles drawn once (`budget.estimatedTriangles`: catalog cost formulas, measured per-glyph costs for 3D text — a bevelled glyph costs ~1.3 k triangles —, model counts from the library index or the `.glb` itself); `check --render` and `render` report the real counts (`stats.triangles`, `stats.drawCalls`), which include every pass (shadow maps re-draw the casters, post effects add quads) and are typically 2–4× the estimate. After a render, `budget.triangles` is the measured number (`trianglesSource: "runtime"`).
 - Cheap: primitives, `instances`, generators, particles, library models (most are a few KB to tens of KB), `flat` / `basic` materials. Expensive: high `segments`, `detail` > 4 on icosahedrons, many shadow-casting lights, transmission (glass), `dof`, 4k textures.
 - `target.maxDpr` (default 2) caps the pixel ratio; lower to 1.5 for heavy fullscreen scenes.
