@@ -57,7 +57,7 @@ First run on a machine: `npx -y @fleox/agent3d@0.2.0 doctor --json` checks Node,
    ]
    ```
    (On the banner starter this swaps the title's `appear` for a per-letter `reveal`, adds a golden-hour light rig on top of the starter's lights and replaces its bloom with a graded film look.)
-   A patch is atomic and validated: on errors nothing is written and `issues` lists each problem with its JSON path and a "did you mean" hint. Removals (`removeObject`, `remove`) print a plan with `needsConfirmation: true`: re-run with `--yes` once that is what you want. Full ops reference and gotchas: references in `agent3d-edit` (`patch-ops.md`). For a brand new scene, write the whole file and use `scene apply --file scene.json` (always a plan first, then `--yes`).
+   A patch is atomic and validated: on errors nothing is written and `issues` lists each problem with its JSON path and a "did you mean" hint. Removals (`removeObject`, `remove`) and ops that replace a whole collection (`set` / `merge` on `postfx`, `lights`, `objects`, `timeline.tracks`, `ui.elements`, `interactions`, `behaviours`…) print a plan with `needsConfirmation: true` (`plan.replaces` lists each collection and its item count): re-run with `--yes` once that is what you want — the example above replaces the starter's `postfx`, so it needs `--yes`. Full ops reference and gotchas: references in `agent3d-edit` (`patch-ops.md`). For a brand new scene, write the whole file and use `scene apply --file scene.json` (always a plan first, then `--yes`).
    - **Gotcha:** `updateObject` and `merge` deep-merge. Switching `material.preset` with `updateObject` keeps the old `color` / `roughness` overrides (gold stays white). To change a look, **replace** the material: `{ "op": "set", "path": "objects#title.material", "value": { "preset": "gold" } }`.
 5. **Render and LOOK** (this is the step that makes it good):
    ```bash
@@ -70,8 +70,9 @@ First run on a machine: `npx -y @fleox/agent3d@0.2.0 doctor --json` checks Node,
    - **Colours**: match the brand; not washed out or blown out by bloom; the background separates from the subject.
    - **Motion**: frames differ (something moves), but nothing jumps; the first frame is not empty (an `appear` behaviour hides objects at t = 0, so set `target.posterTime` after it).
    - Also read `data.issues`, `data.consoleErrors` and `data.inspect.objects` (each top-level object's `inView`: full / partial / none, and `screenCoverage`).
-   - `--frames 0,2,4` picks exact times; `--size 390x700` simulates a phone-shaped container; `--scale 2` gives retina-sharp frames; `--quality high` supersamples 2x for a final look at fine edges and text.
+   - `--frames 0,2,4` picks exact times; `--scale 2` gives retina-sharp frames; `--quality high` supersamples 2x for a final look at fine edges and text.
    - Interactive and scroll scenes: `--input '[{"t": 1.9, "pointer": [0, -0.3]}]'` hovers (or `"click": [x, y]`, coordinates -1..1, y up) before the following frames; `--scroll 0.5` shows (one frame) a scroll-driven scene half-way down the page (with `timeline.trigger: "scroll"`, plain `--count 8` already walks through the scroll states).
+   - Phones: the embed keeps `target.aspect` at any width, so render the real phone size: `--size 390x98` for a 4:1 banner, `--size 390x219` for 16:9. A taller `--size` (390x700) only previews pages whose CSS (or `target.height`) gives the element a height: the camera then widens its view to keep the horizontal framing. Portrait designs use a portrait `target.aspect` (art direction → Framing per target).
    - To show the user the motion: `--gif renders/preview.gif --duration 4` (or `--video <file>.mp4`, `--webp <file>.webp`); the path is relative to the project folder.
    - `--isolate <objectId>` renders one object alone (no behaviours, scripts or UI), at the origin, auto-framed from the front three-quarter view (+Z front) on a neutral grey background, and returns `data.isolated.size`: the fastest way to check that a downloaded model faces +Z, stands upright and has a sensible size.
      ```bash
@@ -91,6 +92,17 @@ First run on a machine: `npx -y @fleox/agent3d@0.2.0 doctor --json` checks Node,
    npx -y @fleox/agent3d@0.2.0 export --project bakery-banner --json
    ```
    `data.snippet` is what goes in the page; `data.out` holds `agent3d-runtime/` (shared by every scene of the site), `<name>/` (scene, assets, poster, `CREDITS.txt`), `index.html` (a demo page), `snippet.html`, `head.html`, `EMBED.md` and `frameworks/` (React / Vue / Svelte wrappers). A second export into the same folder needs `--yes`. Give the user: the snippet, the folder to upload, the total size, the credits, and offer `serve` for a live look (`npx -y @fleox/agent3d@0.2.0 serve --project bakery-banner --open`). Other formats (zip, single HTML file, poster image, MP4 / WebM video, GIF) and site integration: skill `agent3d-publish`.
+
+## Other front doors: MCP and the Studio
+
+Everything above also works without the shell:
+
+- **MCP server** — `agent3d mcp` serves one project folder over stdio: the same tools as `tools list` (scene_patch, check, export…) plus `render_preview`, whose contact sheet comes back as an image the client can look at. Claude Code: `claude mcp add agent3d -- npx -y @fleox/agent3d@0.2.0 mcp --project /path/to/my-banner` (add `--scope project` to write `.mcp.json` for the repository). Claude Desktop / Cursor: in `claude_desktop_config.json` / `.cursor/mcp.json`:
+  ```json
+  { "mcpServers": { "agent3d": { "command": "npx", "args": ["-y", "@fleox/agent3d@0.2.0", "mcp", "--project", "/Users/me/agent3d/my-banner"] } } }
+  ```
+  `--read-only` exposes only the tools that don't write. Desktop apps may not see the shell's `PATH`: use the absolute path of `npx` as `command` if the server doesn't start.
+- **Studio** — `npx -y @fleox/agent3d@0.2.0 studio --project bakery-banner` opens a visual editor on the same folder (viewport with move / rotate / scale gizmos, outliner, inspector, timeline, catalog and library, templates, check, render and export dialogs; English or French). It prints its local URL and runs until stopped. Edits go through the same validated tools, and changes you make from the CLI appear live in it, so the user can watch and tweak your work. The viewport starts in edit mode (scripts don't run, the timeline is paused and scrubbed); interact mode (`I`) runs the scene as the website does: scripts, hover / click / scroll triggers.
 
 ## Art direction that looks professional
 

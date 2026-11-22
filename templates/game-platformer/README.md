@@ -3,8 +3,8 @@
 A playable side-scrolling platformer, a complete example of the **physics character controller**:
 
 - `hero` — the rigged KayKit knight (`library:models/characters/knight.glb`, clips `Idle`, `Running_A`, `Jump_Full_Short`, `Cheer`, `Death_A`) with a `capsule` body and `"character": true`; the script drives it with `api.physics.moveCharacter` (run, air control) and `api.physics.jump` (coyote time, no double jump), and faces it left / right.
-- `g0`…`g6` — static platforms (a grass rounded box with a dirt child; the `body` box is measured from the whole group).
-- `moverX` / `moverY` — **kinematic** lifts moved by the script every step (a sliding lift over the first big gap, an elevator up to the high ledge). The controller has no friction, so the script carries the hero with the lift it stands on (a short raycast down).
+- `g0`…`g6` — static platforms (a grass rounded box with a decorative dirt child; the `body` box is measured from the grass slab's own geometry, so the walkable top is the grass).
+- `moverX` / `moverY` — **kinematic** lifts moved by the script every step (a sliding lift over the first big gap, an elevator up to the high ledge). The physics engine carries the hero standing on a lift (its motion is added to the character every step), so the script only moves the lifts.
 - `coin0…12` (tag `coin`) — collected by distance; `flag` — the goal.
 - Background: four `floatingIsland` generators, a sea of `clouds` below, a gradient sky.
 

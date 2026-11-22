@@ -179,6 +179,8 @@ hero.position.set(hero.position.x, hero.position.y, 0); // after moveCharacter, 
 
 **Shapes** — boxes from the object's own mesh bounds are the default (cheapest, stable stacks; child objects are not included). Use `sphere` for balls (they roll), `capsule` for characters, `convex` for dynamic props of irregular shape (models), `trimesh` or `auto` for static level geometry (exact, e.g. a ramp model), `heightfield` / `auto` for a terrain generator, `compound` to assemble a few primitives (a table: top box + 4 leg boxes).
 
+**Scoring pitfalls** — `obj.rotation` is Euler XYZ in **degrees**, so one angle does not tell whether a can or a pin is down (on its side it may read x = 90 or z = 90; turned around Y after a fall, other combinations): score by height (`position.y` below the table top) or by leaving a zone (trigger `onTriggerExit`). Count only once bodies settle (velocity near 0, a short delay after the last impact), and when you restack, zero `setVelocity` / `setAngularVelocity`, reset `rotation` and remove the balls still in flight — they would knock the fresh stack over. The Physics toss recipe (skill `agent3d-create`) restacks this way.
+
 **Debugging** — `"physics": { "debug": true }` draws every collider (green dynamic, blue static, orange kinematic, magenta trigger, grey asleep) in renders: look at it whenever something falls through, floats or collides early. Remove it before export.
 
 ## Timeline cues and interactions in a game
@@ -242,7 +244,7 @@ function autopilot() {
 // in update: const move = phase === "play" ? readInput() : autopilot();
 ```
 
-Set `target.posterTime` to a frame where obstacles are on screen (3 s in the lane runner).
+Set `target.posterTime` to a frame where obstacles are on screen (4 s in the lane runner recipe).
 
 ## Testing
 

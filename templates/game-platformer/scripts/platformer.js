@@ -1,7 +1,8 @@
 // Sky Hop — a side-scrolling platformer on the physics character controller.
 // The hero is a dynamic capsule with `character: true`: api.physics.moveCharacter
 // steers it, api.physics.jump gives coyote-time jumps. Two kinematic lifts
-// (`mover` tag) are moved here every step and carry the hero. Coins are
+// (`mover` tag) are moved here every step; the engine carries the hero standing
+// on them (never move the hero with a lift yourself). Coins are
 // collected by distance, the flag ends the level. Falling costs a life.
 // Controls: ← → / A D run, Space / W / ↑ jump. Touch: hold the left or right
 // third of the screen to run, tap the middle (or swipe up) to jump.
@@ -28,7 +29,6 @@ export default function (api) {
   let anim = "";
   let endAt = 0;
   let heldSince = -1;
-  let lastMovers = { x: baseX, y: baseY };
   let result = "";
   let stuck = 0;
   let best = api.storage.get("bestTime");
@@ -139,14 +139,6 @@ export default function (api) {
     if (moverY) moverY.position.set(moverY.position.x, baseY + 1.5 - Math.cos(t * 0.8) * 1.5, 0);
   }
 
-  // Carry the hero with the lift it stands on (the controller has no friction).
-  function ride() {
-    const hit = api.physics.raycast([hero.position.x, hero.position.y + 0.3, 0], [0, -1, 0], 0.6, { ignore: [hero], triggers: false });
-    if (!hit) return;
-    if (hit.objectId === "moverX") hero.position.set(hero.position.x + (moverX.position.x - lastMovers.x), hero.position.y, 0);
-    if (hit.objectId === "moverY" && moverY.position.y > lastMovers.y) hero.position.set(hero.position.x, hero.position.y + (moverY.position.y - lastMovers.y), 0);
-  }
-
   return {
     start() {
       reset(api.data.startPhase || "attract");
@@ -160,8 +152,6 @@ export default function (api) {
     },
     update(dt, t) {
       if (!hero) return;
-      if (moverX) lastMovers.x = moverX.position.x;
-      if (moverY) lastMovers.y = moverY.position.y;
       moveLifts(t);
       for (let k = 0; k < coins.length; k++) {
         const c = coins[k];
@@ -182,7 +172,6 @@ export default function (api) {
       }
 
       const ctl = phase === "play" ? inp : autopilot();
-      ride();
       api.physics.moveCharacter(hero, { x: ctl.x, z: 0 }, { speed: cfg.speed, acceleration: 45, airControl: 0.6 });
       // keep the run on the z = 0 plane (steer back instead of teleporting every step)
       if (Math.abs(hero.position.z) > 0.005) hero.velocity.z = -hero.position.z * 8;

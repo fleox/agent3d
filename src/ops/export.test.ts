@@ -233,6 +233,15 @@ describe("export page weight (pageKb) and runtime chunks", () => {
     expect(Object.keys(p.files)).not.toContain("agent3d-runtime/chunks/postfx-BBBBBBBB.js");
     expect(Object.keys(p.files)).toContain("agent3d-runtime/chunks/GLTFLoader-EEEEEEEE.js");
   });
+  it("does not treat a dynamic import of an eagerly loaded file as an unknown chunk", async () => {
+    const fs = await project();
+    await patchScene(fs, [{ op: "set", path: "postfx", value: [] }]);
+    // The model chunk also does import("three") (already loaded by the entry).
+    const dyn = { files: { ...rt.files, "chunks/model-DDDDDDDD.js": enc.encode("const t=()=>import(`./three.module-AAAAAAAA.js`);const l=()=>import(`./GLTFLoader-EEEEEEEE.js`);") } };
+    const r = await buildExport(fs, { format: "embed", runtime: dyn, library, extras: false, pruneRuntime: true });
+    expect(r.page).toMatchObject({ pruned: true, unknownChunks: [] });
+    expect(Object.keys(r.files)).not.toContain("agent3d-runtime/chunks/postfx-BBBBBBBB.js");
+  });
   it("keeps every chunk when one has an unknown feature", async () => {
     const fs = await project();
     await patchScene(fs, [{ op: "set", path: "postfx", value: [] }]);

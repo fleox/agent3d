@@ -1,6 +1,6 @@
 # Patch ops cookbook
 
-Apply with `npx -y @fleox/agent3d@0.2.0 scene patch --project <dir> --file ops.json --json` (add `--dry-run` to preview, `--yes` when the plan removes something). Ops run in order on a copy; the result is validated; on any error nothing is written and the error names the failing op (`details.opIndex`).
+Apply with `npx -y @fleox/agent3d@0.2.0 scene patch --project <dir> --file ops.json --json` (add `--dry-run` to preview, `--yes` when the plan removes something or replaces a whole collection such as `lights`, `postfx`, `objects`, `timeline.tracks` or `ui.elements`: `plan.replaces` lists them). Ops run in order on a copy; the result is validated; on any error nothing is written and the error names the failing op (`details.opIndex`).
 
 ## Paths
 
@@ -15,6 +15,7 @@ Apply with `npx -y @fleox/agent3d@0.2.0 scene patch --project <dir> --file ops.j
 | `timeline.duration`, `timeline.tracks[0].keys`, `timeline.markers`, `timeline.segments`, `timeline.scroll` | Timeline |
 | `camera.shots`, `camera.shots[1].duration` | Cinematic camera moves |
 | `interactions`, `interactions[0].do` | Hover / click / scroll / key triggers |
+| `ui.elements#retry.text`, `ui.elements#score.visible` | A HUD element by id (`#id` works in any array of objects with ids: `lights#key`, `ui.elements#…`) |
 | `postfx[0].strength`, `target.posterTime`, `ui.elements[2].text`, `data.speed` | Anything else in the scene |
 
 An unknown id fails with `invalid` and the hint lists how to find ids (`object list`).
@@ -31,7 +32,7 @@ An unknown id fails with `invalid` and the hint lists how to find ids (`object l
 ]
 ```
 
-Object kinds: `mesh` (geometry + material), `text`, `model` (`src` = `assets/…` or `library:<id>`, `fit`, `animation`), `group`, `generator` (`generator` + `params` + `seed`), `particles` (`preset` + overrides), `instances` (one geometry many times: `layout` grid / scatter / circle / list), `svg` (inline markup or a project path, extruded). Common fields: `position`, `rotation` (degrees), `scale` (number or [x, y, z]), `visible`, `castShadow`, `receiveShadow`, `behaviours`, `children`, `tags`, `body` (physics), `href` (click opens a URL, pointer cursor), `userData`.
+Object kinds: `mesh` (geometry + material), `text`, `model` (`src` = `assets/…` or `library:<id>`, `fit`, `animation`), `group`, `generator` (`generator` + `params` + `seed`), `particles` (`preset` + overrides), `instances` (one geometry many times: `layout` grid / scatter / circle / list), `svg` (inline markup or a project path, extruded). Common fields: `position`, `rotation` (degrees), `scale` (number or [x, y, z]), `visible`, `castShadow`, `receiveShadow`, `behaviours`, `children`, `tags`, `body` (physics), `href` (click opens a URL, pointer cursor), `userData`, `attach: "camera"` (top-level objects: rides with the camera; `position` / `rotation` are then in camera space, x right, y up, -z forward — `[0, -1.2, -6]` = 6 units in front of the lens — for captions and chapter labels that stay on screen during shots and scroll stories).
 
 Duplicating a prop: `object get <id>`, change its `id` and `position`, `addObject`. Many copies: one `instances` object instead (cheaper):
 
@@ -50,7 +51,7 @@ Duplicating a prop: `object get <id>`, change its `id` and `position`, `addObjec
 ]
 ```
 
-`splitLetters` makes each glyph a child `<id>/<n>` (n = 0, 1, … counting non-space characters, line after line) with its own pivot and material. `children:<id>` targets every letter. A simpler per-letter entrance without tracks: `"reveal": { "effect": "rise", "stagger": 0.05, "duration": 0.7, "delay": 0.2, "order": "forward" }` (effects rise, fade, scale, spin, drop; it implies `splitLetters`). Other text fields: `font` (`catalog fonts`), `size`, `depth` (0 = flat), `bevel`, `letterSpacing`, `lineHeight`, `maxWidth` (wraps on spaces), `kerning` (on by default), `align`. Validation rejects a `<id>/<n>` target on a text that is not split, but not a letter index past the end: count the letters yourself.
+`splitLetters` makes each glyph a child `<id>/<n>` (n = 0, 1, … counting non-space characters, line after line) with its own pivot and material. `children:<id>` targets every letter. A simpler per-letter entrance without tracks: `"reveal": { "effect": "rise", "stagger": 0.05, "duration": 0.7, "delay": 0.2, "order": "forward" }` (effects rise, fade, scale, spin, drop; it implies `splitLetters`). Other text fields: `font` (`catalog fonts`), `size`, `depth` (0 = flat), `bevel` (a number: bevel size in scene units, 0 = sharp), `letterSpacing` (scene units, scale it with `size`), `lineHeight`, `maxWidth` (wraps on spaces), `kerning` (on by default), `align`. Validation rejects a `<id>/<n>` target on a text that is not split, but not a letter index past the end: count the letters yourself. The block is centred vertically on `position` and placed by `align` (`center` default, `left` = lines start at x, `right` = lines end at x); extra lines grow it up and down. Split letters × `outline` = two meshes per letter (draw calls add up fast).
 
 ## Materials
 
@@ -111,7 +112,7 @@ Outdoors and abstract backgrounds (each `set` replaces the previous background; 
 
 ```json
 [
-  { "op": "set", "path": "environment.background", "value": { "sky": { "preset": "golden-hour", "sun": { "azimuth": 215 } } } },
+  { "op": "set", "path": "environment.background", "value": { "sky": { "preset": "golden-hour", "sun": { "azimuth": 125 } } } },
   { "op": "remove", "path": "environment.lighting" },
   { "op": "set", "path": "environment.fog", "value": { "density": 0.025, "height": 1, "falloff": 0.25 } },
   { "op": "set", "path": "environment.background", "value": { "meshGradient": ["#ff9a8b", "#ff6a88", "#7b5cff", "#2ad4ff"], "speed": 0.15 } },
@@ -174,7 +175,7 @@ Controls: `none`, `orbit` (drag), `parallax` (drifts with the pointer: `parallax
 ]
 ```
 
-`addTrack` replaces an existing track with the same target. Values: numbers, [x, y, z], colours, booleans, or relative strings `"+=1"`, `"-=0.5"`, `"*=1.2"` (from the property's rest value). `loop`: true, false or `"pingpong"`. A track on a property that a behaviour also drives (e.g. `position.y` + `float`) fights it: animate a parent group instead. Every key time must be within `duration` (validation warns otherwise).
+`addTrack` replaces an existing track with the same target. Colour keys blend in OKLCh by default (perceptual: orange → teal stays saturated instead of going grey); `"colorSpace": "oklab" | "rgb" | "hsl"` on the track changes it. Values: numbers, [x, y, z], colours, booleans, or relative strings `"+=1"`, `"-=0.5"`, `"*=1.2"` (from the property's rest value). `loop`: true, false or `"pingpong"`. A track on a property that a behaviour also drives (e.g. `position.y` + `float`) fights it: animate a parent group instead. Every key time must be within `duration` (validation warns otherwise).
 
 Per-key easing, parametric eases, relative values and staggered multi-target tracks:
 

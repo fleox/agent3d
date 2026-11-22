@@ -25,11 +25,44 @@ Export straight into that layout with `python3 <skill dir>/scripts/agent3d.py ex
 ```
 
 - One `<script type="module">` per page is enough for any number of scenes; browsers run a module URL once.
-- Overlaying HTML text on the scene: put both in a `position: relative` container and the text in an absolutely positioned layer; the scene keeps its aspect ratio underneath.
+- Overlaying HTML text on the scene: see [Hero with HTML text](#hero-with-html-text) below.
 - Transparent scenes (`target.transparent: true`) let the page background show through.
 - Caching: the runtime's chunk files have content hashes; `agent3d-runtime.js` and `scene.json` don't. Export with `--cache-bust` (runtime in `agent3d-runtime-<hash>/`, `scene.json?v=<hash>`) to cache the runtime and the scene for a year; otherwise long cache headers are safe for `chunks/` only. The poster and the files under `<name>/assets/` keep their names in both cases: give them a short cache, or re-export under a new `--name` when they change.
 - Personalise per page with `data-*` attributes (`data-title="Summer sale"` fills `{data.title}` in the scene) or `document.querySelector("agent3d-scene").setData({ title: "…" })`.
 - `head.html` lists `<link rel="modulepreload">` for every module the runtime needs up front: put it in the `<head>` of pages with scenes for the fastest start (the snippet already preloads three.js).
+
+## Hero with HTML text
+
+Keep the headline, copy and buttons in HTML (readable by search engines and screen readers, styled by the site) and let the scene fill the hero behind them. Compose the scene for it: subject on one third (x ≈ +2 to +2.5 in a 16:9 hero at fov 30–35), the other half empty, no 3D text. Then stack both in one grid cell:
+
+```html
+<section class="hero3d">
+  <agent3d-scene src="/agent3d/bottle-hero/scene.json" aspect="16:9" role="img" aria-label="…">
+    <img slot="poster" src="/agent3d/bottle-hero/poster.webp" alt="…" width="1200" height="675" style="display:block;width:100%;height:auto">
+  </agent3d-scene>
+  <div class="hero3d-text">
+    <h1>Water that goes where you go</h1>
+    <p>Insulated steel, 24 h cold.</p>
+    <a class="button" href="/shop">Shop the bottle</a>
+  </div>
+</section>
+
+<style>
+  .hero3d { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .hero3d > * { grid-area: 1 / 1; }               /* scene and text share one cell */
+  .hero3d-text { z-index: 1; align-self: center; max-width: 42%; padding: 0 5%; pointer-events: none; }
+  .hero3d-text a, .hero3d-text button { pointer-events: auto; }
+  @media (max-width: 640px) {                       /* phones: text below the scene */
+    .hero3d > * { grid-area: auto; }
+    .hero3d-text { max-width: none; padding: 1.5rem 1rem; }
+  }
+</style>
+```
+
+- `minmax(0, 1fr)` stops the poster's `width="1200"` from widening the grid on small screens.
+- `pointer-events: none` on the text layer lets drags, hovers and clicks reach the scene everywhere except the links and buttons, which turn it back on. If the scene should not react at all, add `interactive="false"` to the element instead.
+- The scene keeps its aspect ratio, so the hero's height follows its width; an absolutely positioned text layer (`position: relative` on the section, `position: absolute; inset: 0` on the text) works the same way.
+- On phones the empty half is wasted: stack the text below (as above), or export a second, centred composition for small screens.
 
 ## WordPress
 

@@ -44,7 +44,7 @@ npx -y @fleox/agent3d@0.2.0 export --project my-banner --optimize --json
 npx -y @fleox/agent3d@0.2.0 export --format zip --project my-banner --json
 npx -y @fleox/agent3d@0.2.0 export --format single-html --project my-banner --json
 npx -y @fleox/agent3d@0.2.0 export --format poster --time 2 --image png --quality high --transparent --project my-banner --json
-npx -y @fleox/agent3d@0.2.0 export --format video --out my-banner/dist/promo.mp4 --duration 8 --fps 30 --size 1920x1080 --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 export --format video --out dist/promo.mp4 --duration 8 --fps 30 --size 1920x1080 --project my-banner --json
 npx -y @fleox/agent3d@0.2.0 export --format gif --duration 4 --project my-banner --json
 ```
 
@@ -61,20 +61,30 @@ Embed / zip options:
 | `--no-og` | No `<name>/og-image.png` (1200×630 social preview). To use it, add `<meta property="og:image" content="https://<site>/…/<name>/og-image.png">` and `<meta name="twitter:card" content="summary_large_image">` to the page head — crawlers need an absolute URL (the demo `index.html` uses a relative one) |
 | `--no-extras` | No `EMBED.md` and no `frameworks/` |
 
+- **Page weight**: for a brief like "under 300 KB", quote `pageKb` / `pageKbGzip` from the export result (what a visitor downloads for this scene, runtime chunks included — `folderKb` counts every file written, unused chunks too). `--prune-runtime` copies only the chunks this scene loads (a smaller folder to upload) — only when this runtime folder serves this scene alone; other scenes sharing `agent3d-runtime/` may need the chunks it leaves out.
 - Exporting again into a non-empty folder prints a plan (`needsConfirmation`, with the existing entries): re-run with `--yes` after the user agreed.
 - The result gives `snippet`, `head` (all modulepreload links), `integrity`, `runtimeDir`, `out`, `entry` (the demo page, or the zip / html file), `pageKb` / `pageKbGzip` (what a visitor downloads for this scene: the runtime entry + the lazy chunks it uses + scene, assets, scripts, poster — quote this one as the page weight), `folderKb` (= `totalKb`, every file written, all chunks and og-image included), `page` (runtime files loaded / chunks skipped), `sizes` (`runtimeKb`, `sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`), `credits`, `issues` (+ `optimized` with `--optimize`). Media formats return `{ format, path, codec?, frames?, fps?, duration?, size, bytes }`.
 
 Media straight from `render` (frame-exact, any size / fps; LOOK at a few frames of the result):
 
 ```bash
-npx -y @fleox/agent3d@0.2.0 render --video my-banner/renders/promo.mp4 --duration 6 --size 1920x1080 --quality high --project my-banner --json
-npx -y @fleox/agent3d@0.2.0 render --gif my-banner/renders/banner.gif --duration 4 --project my-banner --json
-npx -y @fleox/agent3d@0.2.0 render --webp my-banner/renders/banner.webp --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --video renders/promo.mp4 --duration 6 --size 1920x1080 --quality high --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --gif renders/banner.gif --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.0 render --webp renders/banner.webp --duration 4 --project my-banner --json
 npx -y @fleox/agent3d@0.2.0 render --frames 2 --size 2400x600 --quality ultra --transparent --project my-banner --json
 npx -y @fleox/agent3d@0.2.0 render --scroll 0.5 --project my-scroll-story --json
 ```
 
-`--quality high|ultra` supersamples 2× / 3× (smoother edges), `--transparent` gives alpha PNG / GIF / WebP, `--scroll 0.5` holds a scroll-driven scene at that scroll progress, `--fps` / `--start` / `--bitrate` tune videos, `--yes` overwrites an existing media file. `--video`, `--gif` and `--webp` paths (like `--out`) are relative to the project folder. MP4 needs Google Chrome or Edge (H.264 encoder); with Chromium, render `.webm`. Videos capture the WebGL canvas only (no HUD).
+`--quality high|ultra` supersamples 2× / 3× (smoother edges), `--transparent` gives alpha PNG / GIF / WebP, `--scroll 0.5` holds a scroll-driven scene at that scroll progress, `--fps` / `--start` / `--bitrate` tune videos, `--yes` overwrites an existing media file. `--video`, `--gif` and `--webp` paths (like `--out`) are relative to the project folder. MP4 needs Google Chrome or Edge (H.264 encoder); with Chromium, render `.webm`. Videos and posters capture the WebGL canvas only (no HUD).
+
+Scenes whose timeline waits for the visitor (`autoplay: false`, `trigger: "manual"` / `"click"`, segments played by interactions) are still at t = 0 in a plain render: film the segment with `--segment`, or play the interaction with `--input` (frames, `--video`, `--gif` and `--webp` all apply it):
+
+```bash
+npx -y @fleox/agent3d@0.2.0 render --video renders/celebrate.webm --segment celebrate --duration 4 --project my-mascot --json
+npx -y @fleox/agent3d@0.2.0 render --sheet --frames 0,1,2,3 --input '[{"t": 0, "segment": "celebrate"}]' --project my-mascot --json
+```
+
+`--reduced-motion` renders what visitors with prefers-reduced-motion see.
 
 ## The snippet
 
@@ -109,7 +119,7 @@ npx -y @fleox/agent3d@0.2.0 scene patch --project my-banner '[{"op":"set","path"
 <agent3d-scene src="./my-banner/scene.json" data-title="Summer sale −30%"></agent3d-scene>
 ```
 
-Placeholders work in text objects' `text`, any object's `href` and HUD texts. `{data.cta|Shop now}` has a fallback; `data-cta-label` maps to `ctaLabel`; `data-json='{"price": 9}'` merges an object; `el.setData({ title: "…" })` changes it live; scripts read the merged values as `api.data`. Renders and posters show the `scene.data` values. Keep the scene `title` / `ariaLabel` free of placeholders: the export copies them as written into the snippet's `aria-label` / `alt`, `index.html` and EMBED.md.
+Placeholders work in text objects' `text`, any object's `href` and HUD texts. `{data.cta|Shop now}` has a fallback; `data-cta-label` maps to `ctaLabel`; `data-json='{"price": 9}'` merges an object; `el.setData({ title: "…" })` changes it live; scripts read the merged values as `api.data`. Renders and posters show the `scene.data` defaults (the poster is rendered once, at export): pick defaults that look right on their own. Leave layout room for the longest value a page may pass — a longer `data-title` widens the text (or wraps with `maxWidth`, growing the block up and down around its position). Keep the scene `title` / `ariaLabel` free of placeholders: the export copies them as written into the snippet's `aria-label` / `alt`, `index.html` and EMBED.md.
 
 ## Where it goes
 

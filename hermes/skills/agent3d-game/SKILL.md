@@ -38,7 +38,7 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py new dodge --target game --title "
 python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py scene summary --project dodge --json
 ```
 
-The game starter has a `kinematic` player moved by position, coins with a `coin` tag, a follow camera, a score HUD, a coin sound and `scripts/game.js` (move with arrows / WASD, collect coins). Game templates to start from (`templates list --json`): `game-coin-collector`, `game-runner`, `game-maze`, `game-tap-targets`, `game-physics-playground` (rigid bodies, impulses, impact sounds) — `new my-game --template game-physics-playground --json`. A complete validated example (lane runner: lanes, spawning by cloning, difficulty ramp, best score, attract mode) is in skill `agent3d-create` → `references/recipes.md` ("Game"); patterns in [references/game-patterns.md](references/game-patterns.md); the full API in [references/script-api.md](references/script-api.md).
+The game starter has a `kinematic` player moved by position, coins with a `coin` tag, a follow camera, a score HUD, a coin sound and `scripts/game.js` (move with arrows / WASD, collect coins). Game templates to start from (`templates list --json`): `game-coin-collector`, `game-runner`, `game-maze`, `game-tap-targets`, `game-physics-playground` (rigid bodies, impulses, impact sounds) — `new my-game --template game-physics-playground --json`. A complete validated example (lane runner: lanes, spawning by cloning, difficulty ramp, best score, attract mode) is in skill `agent3d-create` → `references/recipes.md` ("Lane runner game"; "Physics toss game" for rigid bodies); patterns in [references/game-patterns.md](references/game-patterns.md); the full API in [references/script-api.md](references/script-api.md).
 
 ## The script contract
 
@@ -74,7 +74,7 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
    ```bash
    python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project dodge --sheet --frames 0,2,4,6 --json
    ```
-   Plain renders have no player input, so the game must show something on its own: an **attract mode** (an autopilot plays during the `ready` phase, behind the title and Play button). The HUD is captured because the scene has a `ui` (`--capture page` forces it). Check `data.issues` and `data.consoleErrors` for `script-error`. `data.state` is the script's `api.state` after the last frame (e.g. `{ "score": 0, "phase": "ready" }`); frame and sheet paths are relative to the project folder `data.dir`.
+   Plain renders have no player input, so the game must show something on its own: an **attract mode** (an autopilot plays during the `ready` phase, behind the title and Play button). The HUD is captured because the scene has a `ui` (`--capture page` forces it); posters (`export --format poster`, the embed's `poster.webp`) and videos show the canvas only, without the HUD. Check `data.issues` and `data.consoleErrors` for `script-error`. `data.state` is the script's `api.state` after the last frame (e.g. `{ "score": 0, "phase": "ready" }`); frame and sheet paths are relative to the project folder `data.dir`.
 6. **Play it headlessly** with `--input`: a JSON script of simulated keys / clicks applied while seeking (frames are rendered in time order), then check `data.state` and the frames:
    ```bash
    python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project dodge --sheet --frames 0,1,2,3 --input '[{"t": 0.2, "click": [0, -0.3]}, {"t": 0.5, "key": "ArrowLeft", "hold": 0.6}, {"t": 1.5, "key": "Space", "down": true}, {"t": 1.6, "key": "Space", "down": false}]' --json
@@ -107,6 +107,7 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
 - **Best score**: `api.storage.get("best")` / `api.storage.set("best", n)` (namespaced, never throws).
 - **Feedback**: `api.audio.play("hit")`, `api.camera.shake(0.3, 0.4)`, `api.ui.toast("+10", 1)`, `obj.setColor(...)`.
 - **Restart**: reset your own state in a function called from `onEvent("retry")`, or `api.restart()` to rebuild the scene from its definition.
+- **HUD look**: `ui.color` (text), `ui.accent` (buttons, pills' accent), `ui.buttonText` (button labels; default: white or near-black, whichever contrasts with the accent), and per element `color` / `background` (a pill, panel, button or bar track: one highlighted pill, a red danger button). `style: "panel"` is a backdrop card for game-over / pause screens (`\n` breaks lines, the first line is the heading); `pill` stays on one line. Patch one element by id: `{ "op": "set", "path": "ui.elements#retry.text", "value": "Try again" }`.
 
 ## Performance (games need a steady 60 fps)
 
@@ -117,7 +118,8 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
 ## Rules
 
 - No external code, no network, no DOM: only `api`. Tell the user when a request needs something the sandbox forbids (online leaderboards, analytics) and offer a local alternative (best score in storage).
-- Games must be playable on phones: touch swipes / taps for every control, big HUD buttons, no hover-only interactions. The HUD scales with the embed and anchors in one row never overlap (3 × 3 grid; side columns get ~80 px on a 360 px phone): keep side texts short, put sentences in `top` / `center` / `bottom`, and check with `render --size 360x640`.
+- Games must be playable on phones: touch swipes / taps for every control, big HUD buttons, no hover-only interactions. The HUD scales with the embed and anchors in one row never overlap (3 × 3 grid; side columns get ~80 px on a 360 px phone): keep side texts short, put sentences in `top` / `center` / `bottom`.
+- Phone sizes: the embed keeps `target.aspect` at any width, so a 16:9 game is 390 × 219 on a 390 px phone — render exactly that (`render --size 390x219`) and check the HUD leaves room for the action. `--size 390x700` shows a taller box, which only happens when `target.height` or the page's CSS sets a height (the camera then widens its vertical view to keep the horizontal framing). For a mobile-first game, use a portrait `target.aspect` (`"9:16"` or `"3:4"`), raise the fov (65–75) or pull the camera back until every lane / target fits, and render at `--width 390`.
 - Audio starts only after a user gesture (browser rule); the HUD shows a mute toggle. Keep sounds short and not too loud (`volume` 0.4–0.6).
 - Reduced motion: games default to `target.reducedMotion: "ignore"` (the player drives the motion); other kinds default to `static`. Don't set `static` on a game: it would freeze it.
 - Keep the first frame meaningful (attract mode) and `target.posterTime` on a frame with action: it is the poster and the reduced-motion still.

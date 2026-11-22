@@ -153,7 +153,7 @@ export default function (api) {
 
 ## HUD
 
-Declared in `scene.ui.elements` (`type` text, button or bar; `anchor` top-left … bottom-right; `style` plain, pill, title, subtitle). Text placeholders `{key}` read `api.state.key`; `visible` takes a boolean, a state key or an expression (`"phase == 'over'"`, `"lives > 0 && !paused"`); a bar's `value` names a state key holding 0..1; a button's `action` is the event name sent to `onEvent`. `scene.ui.color` / `accent` / `font` (system font stacks only) theme it.
+Declared in `scene.ui.elements` (`type` text, button or bar; `anchor` top-left … bottom-right; `style` plain, pill (one line), title, subtitle, panel — a backdrop card, `\n` breaks lines, the first line is a heading). Text placeholders `{key}` read `api.state.key`; `visible` takes a boolean, a state key or an expression (`"phase == 'over'"`, `"lives > 0 && !paused"`); placeholders and expressions also read `timeline.time`, `timeline.progress`, `timeline.segment` and `timeline.marker` (a script's own `state.timeline` wins). A bar's `value` names a state key holding 0..1; a button's `action` is the event name sent to `onEvent`. Theme: `scene.ui.color` / `accent` / `font` (system font stacks only) / `buttonText` (default: white or near-black, whichever contrasts with the accent), and per element `color` / `background` (a bar's `color` is its fill). Patch an element by id: `ui.elements#retry.text`. Headless tests click a button with the `--input` event `{ "t": 3, "ui": "retry" }`; posters and videos never include the HUD.
 
 | Member | Description |
 |---|---|

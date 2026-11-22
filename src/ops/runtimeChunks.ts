@@ -105,6 +105,17 @@ export function pageRuntime(files: Record<string, Uint8Array>, entry: string, sc
     loaded.add(f);
     queue.push(f);
   };
+  // Files the entry imports statically (transitively): a dynamic import of one
+  // of them (e.g. `import("three")` next to the static import) is no lazy chunk.
+  const eager = new Set<string>([entry]);
+  const todo = [entry];
+  while (todo.length) {
+    for (const s of graph.get(todo.pop()!)?.static ?? []) {
+      if (eager.has(s)) continue;
+      eager.add(s);
+      todo.push(s);
+    }
+  }
   loaded.add(entry);
   while (queue.length) {
     const f = queue.shift()!;
@@ -112,6 +123,10 @@ export function pageRuntime(files: Record<string, Uint8Array>, entry: string, sc
     if (!g) continue;
     for (const s of g.static) add(s);
     for (const d of g.dynamic) {
+      if (eager.has(d)) {
+        add(d);
+        continue;
+      }
       const base = chunkBase(d);
       const rule = CHUNK_FEATURES[base];
       if (!rule) {

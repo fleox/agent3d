@@ -7,6 +7,7 @@ How to make an Agent3D scene look good on the first render. Each row below is a 
 | ![Product shot](images/recipe-product.jpg) **Product shot** | ![Golden-hour landscape](images/recipe-landscape.jpg) **Golden-hour landscape** | ![Neon title](images/recipe-neon.jpg) **Neon title** |
 | ![Mesh gradient banner](images/recipe-gradient.jpg) **Mesh gradient banner** | ![Letter-reveal headline](images/recipe-reveal.jpg) **Letter-reveal headline** | ![Scroll story](images/recipe-scroll.jpg) **Scroll story** |
 | ![Click-to-shop shelf](images/recipe-shop.jpg) **Click-to-shop shelf** | ![Physics toss game](images/recipe-game.jpg) **Physics toss game** | ![Character card](images/recipe-character.jpg) **Character card** |
+| ![Lane runner game](images/recipe-runner.jpg) **Lane runner game** | | |
 
 ## Where to start, per kind
 
@@ -15,7 +16,7 @@ How to make an Agent3D scene look good on the first render. Each row below is a 
 | **Banner** (4:1) | Mesh gradient or a 2–3 tone gradient, studio reflections | `studio-3point` | `clean` look; no bloom on light backgrounds | `auto` |
 | **Hero** (16:9) | Radial gradient centred on the subject | `studio-3point`, `dramatic` (moody) or `neon` (night) | `cinematic` look at 0.6–0.8, `neon` at 0.7 | `auto` |
 | **Product / card** | Light radial gradient in the product's tones, studio reflections (or the softbox HDRI, +1.5 MB) | `softbox`, `product-top` for glossy and metal | `product` look | `auto` |
-| **Landscape** (21:9) | Physical sky preset (`golden-hour`, `afternoon`…) + height fog; the sky adds the sun | the sky's own sun | `cinematic` look at 0.8 | `auto` |
+| **Landscape** (21:9) | Physical sky preset (`golden-hour`, `afternoon`…) + height fog; the sky adds the sun | the sky's own sun | bloom + warm grading + vignette (or `cinematic` at 0.6–0.8 when the scene is light: its AO pass re-draws the geometry) | `auto` |
 | **Character** | Soft radial gradient, soft reflections | `studio-3point` with a warm tint | `clean` look or none | `auto` |
 | **Game** | Plain gradient or colour | `studio-3point` | none, or bloom / grading / vignette / FXAA only | `medium` |
 

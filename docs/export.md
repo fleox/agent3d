@@ -163,7 +163,7 @@ agent3d render --video promo.webm --duration 6            # VP9
 agent3d render --gif banner.gif --duration 4 --fps 15     # 640 px wide by default
 agent3d render --webp banner.webp --duration 4            # animated WebP (smaller, alpha)
 agent3d render --frames 2 --size 2400x600 --quality ultra --transparent   # alpha PNG still, 3× supersampled
-agent3d render --scroll 0.5 --frames 0                    # a scroll-driven scene half-way down the page
+agent3d render --scroll 0.5                               # a scroll-driven scene half-way down the page (one frame)
 ```
 
 - **MP4**: H.264 High profile through WebCodecs in headless Chrome, muxed by `agent/render/mp4.ts` (fast start: plays while downloading). Google Chrome / Edge have the encoder; some Chromium builds don't — the error says to render a `.webm` instead.

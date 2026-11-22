@@ -45,7 +45,7 @@ npx -y @fleox/agent3d@0.2.0 scene patch --project my-banner --file ops.json --js
 
 | Op | Shape | Use |
 |---|---|---|
-| `set` | `{ "op": "set", "path": "camera.position", "value": [0, 1, 9] }` | Replace a value (creates missing keys) |
+| `set` | `{ "op": "set", "path": "camera.position", "value": [0, 1, 9] }` | Replace a value (creates missing keys; replacing a whole collection — `lights`, `postfx`, `objects`, `timeline.tracks`, `ui.elements`… — is a plan that needs `--yes`) |
 | `merge` | `{ "op": "merge", "path": "target", "value": { "posterTime": 2, "height": null } }` | Deep merge (RFC 7396: `null` deletes a key) |
 | `remove` | `{ "op": "remove", "path": "postfx[1]" }` | Delete a value (plan, needs `--yes`) |
 | `addObject` | `{ "op": "addObject", "object": { … }, "parent": "group-id", "index": 0 }` | New object (top level without `parent`) |

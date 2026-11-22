@@ -68,29 +68,31 @@ A library bottle on a ceramic pedestal, soft studio light, blurred contact shado
 - Knobs: `fit` (size), the pedestal `color` (keep it a tone of the background, not white: white ceramic blows out under a softbox), `rig.rotation` to move the highlight.
 - Your own model: `assets add ./bottle.glb --license proprietary`, then `"src": "assets/models/bottle.glb"`; keep `fit`.
 
-## Golden-hour landscape (21:9): physical sky, height fog, generators
+## Golden-hour landscape (21:9): physical sky, valley terrain, lake, birds
 
-Low-poly mountains with a pine forest, warm side light from a low physical sun, haze in the valleys, drifting clouds, a slow camera sway.
+A low-poly valley at golden hour: a mirror lake on the valley floor, pine forests below a snow line, warm side light from a low physical sun just out of frame, haze in the valley, a V of birds crossing the sky, a slow camera sway.
 
 ```json
 {
   "version": 1,
   "id": "golden-valley",
   "title": "Golden-hour valley",
-  "ariaLabel": "Low-poly mountains and a pine forest at golden hour, with haze in the valley",
+  "ariaLabel": "A low-poly mountain valley at golden hour: a lake on the valley floor, pine forests, snowy peaks, haze and a flock of birds",
   "seed": 8,
   "target": {"kind": "hero", "aspect": "21:9", "reducedMotion": "slow", "posterTime": 0},
   "camera": {
     "type": "perspective",
-    "fov": 38,
-    "position": [0, 16, 66],
-    "target": [0, 10, 0],
+    "fov": 40,
+    "position": [0, 16, 68],
+    "target": [0, 7, -30],
     "controls": "parallax",
     "parallax": {"strength": 1, "smoothing": 0.95}
   },
   "environment": {
-    "background": {"sky": {"preset": "golden-hour", "sun": {"elevation": 8, "azimuth": 70}}},
-    "fog": {"density": 0.018, "height": 3, "falloff": 0.35}
+    "background": {
+      "sky": {"preset": "golden-hour", "sun": {"elevation": 6, "azimuth": 125}, "clouds": 0.2}
+    },
+    "fog": {"density": 0.007, "height": 5, "falloff": 0.35}
   },
   "lights": [],
   "objects": [
@@ -101,15 +103,32 @@ Low-poly mountains with a pine forest, warm side light from a low physical sun, 
       "seed": 14,
       "receiveShadow": true,
       "params": {
-        "size": 110,
-        "resolution": 120,
-        "height": 24,
-        "shape": "mountains",
+        "size": 130,
+        "resolution": 88,
+        "height": 30,
+        "scale": 1.3,
+        "shape": "valley",
         "lowpoly": true,
-        "palette": ["#a88c5a", "#6f8f3c", "#46703a", "#7a6a6e", "#fdf7f2"],
-        "waterLevel": null,
-        "waterColor": "#3a8fb0",
-        "snowLine": 0.6
+        "palette": ["#c9b48a", "#6b8f45", "#3f6b37", "#7a6c70", "#fbf6f1"],
+        "waterLevel": 2.6,
+        "waterPlane": false,
+        "snowHeight": 17
+      }
+    },
+    {
+      "id": "lake",
+      "kind": "generator",
+      "generator": "water",
+      "position": [0, 2.6, 0],
+      "params": {
+        "size": 130,
+        "color": "#2a4a6e",
+        "shallowColor": "#9fc0d4",
+        "foamColor": "#fff1e0",
+        "waveHeight": 0.03,
+        "waveSpeed": 0.6,
+        "ripples": 0.8,
+        "reflections": true
       }
     },
     {
@@ -119,41 +138,30 @@ Low-poly mountains with a pine forest, warm side light from a low physical sun, 
       "seed": 3,
       "castShadow": true,
       "params": {
-        "count": 200,
-        "area": [90, 0, 60],
+        "count": 180,
+        "area": [120, 0, 120],
         "style": "pine",
-        "minScale": 0.8,
-        "maxScale": 1.6,
+        "minScale": 0.7,
+        "maxScale": 1.35,
         "leafColors": ["#26492c", "#2f5a33", "#3c6b3a"],
         "onTerrain": true,
         "sway": true
       }
     },
     {
-      "id": "clouds",
+      "id": "flock",
       "kind": "generator",
-      "generator": "clouds",
-      "seed": 5,
-      "position": [0, 0, -20],
+      "generator": "birds",
+      "position": [0, 20, -10],
       "params": {
         "count": 9,
-        "area": [150, 6, 30],
-        "height": 28,
-        "size": 2.2,
-        "color": "#ffe6cc",
-        "shadowColor": "#c9a9a6",
-        "speed": 0.15
+        "mode": "drift",
+        "formation": "v",
+        "area": [90, 2, 0],
+        "heading": 10,
+        "speed": 5,
+        "size": 1.2
       }
-    },
-    {
-      "id": "birds",
-      "kind": "particles",
-      "preset": "fireflies",
-      "count": 50,
-      "area": [30, 4, 10],
-      "position": [0, 8, 40],
-      "color": "#ffd27a",
-      "size": 0.12
     }
   ],
   "timeline": {
@@ -162,19 +170,27 @@ Low-poly mountains with a pine forest, warm side light from a low physical sun, 
     "tracks": [
       {
         "target": "camera.position",
-        "keys": [[0, [-4, 16, 66]], [7, [4, 17, 64]], [14, [-4, 16, 66]]],
+        "keys": [[0, [-3, 16, 68]], [7, [3, 17, 66]], [14, [-3, 16, 68]]],
         "ease": "inOutSine"
       }
     ]
   },
-  "postfx": [{"type": "look", "preset": "cinematic", "intensity": 0.8}]
+  "postfx": [
+    {"type": "bloom", "strength": 0.25, "threshold": 0.9, "radius": 0.5},
+    {"type": "grading", "look": "warm", "intensity": 0.2, "saturation": 1.12, "contrast": 1.06},
+    {"type": "vignette", "darkness": 0.35},
+    {"type": "fxaa"}
+  ]
 }
 ```
 
-- The `golden-hour` sky preset adds its own sun light (no `lights` needed) and lights the scene through `lighting: "sky"`. Keep the sun **out of frame** (azimuth 50–130 from a camera on +Z): a low sun in frame with fog blows the whole image out.
-- Height fog (`height`, `falloff`) fills the valleys while peaks stay crisp; density 0.01–0.03 for a hero, more reads as smog.
-- Scatter generators (`trees`, `rocks`, `grass`, `flowers`) with `onTerrain` must share the terrain's position: keep both at the origin and move the camera instead.
-- Knobs: `sun.elevation` (3–12 for golden hour), terrain `shape` / `height` / `palette`, tree `count`.
+- The `golden-hour` sky preset adds its own sun light (no `lights` needed) and lights the scene through `lighting: "sky"`. `sun.azimuth` is measured around Y from +Z: 0 = behind a camera on +Z (front light), 90 = from +X (the right), 180 = straight ahead in the frame (back light), 270 = from the left. A 21:9 frame at fov 40 shows about 180 ± 45: keep a low sun just outside it (here 125, light from the right) or above it; a low sun in frame with fog or bloom washes the image out.
+- `shape: "valley"` gives a flat floor along z between mountain walls, closed by a range at the far end (a camera on +z looks down it); `basin` rings a central lake with mountains. `edgeFalloff` (default per shape) sinks the borders so no cut wall shows at the edge.
+- The lake: `waterPlane: false` drops the terrain's own plane while `waterLevel` still shapes the shore and keeps trees out of it; the `water` object sits at `y = waterLevel`. `"reflections": true` makes it a mirror (keep `waveHeight` / `ripples` low); it renders the scene a second time each frame (half resolution on the `medium` tier, off on `low`), so the forest is 180 pines and the terrain 88 cells to stay at ~140 k triangles per frame, under the hero aim.
+- `snowHeight` caps everything above an absolute altitude with the last palette colour; trees stay below it. Terrain, water and scatter generators (`trees`, `rocks`, `grass`, `flowers` with `onTerrain`) share one `position`: keep them at the origin and move the camera instead.
+- `birds` is one instanced draw call: `drift` with `formation: "v"` crosses the sky along `heading` (keep `area` x wider than the view); `orbit` circles, `path` follows `points`. Dark birds read against a bright sky. (Particle presets such as `fireflies` are glowing dots, not birds.)
+- Height fog (`height`, `falloff`) fills the valley while peaks stay crisp; density 0.005–0.02 for a hero, more reads as smog. No `look` here: `cinematic` adds an AO pre-pass that pushes the triangles per frame over the aim; bloom + grading + vignette cost no geometry pass.
+- Knobs: `sun.elevation` (3–12 for golden hour), terrain `seed` / `height` / `palette`, tree `count`, the flock `heading` and `count`.
 
 ## Neon title (16:9): rect panel lights, volumetric spot, bloom
 
@@ -342,10 +358,10 @@ A soft drifting gradient with glossy shapes on the sides and an outlined headlin
       ]
     },
     {
-      "id": "bubble",
+      "id": "pearl",
       "kind": "mesh",
       "geometry": {"type": "sphere", "radius": 1.05, "segments": 64, "heightSegments": 32},
-      "material": {"preset": "soapBubble", "color": "#ffe9f6"},
+      "material": {"preset": "pearl", "color": "#ffd9ef"},
       "position": [8.8, -0.2, -0.5],
       "behaviours": [{"type": "float", "amplitude": 0.2, "speed": 0.25, "phase": 0.5}]
     },
@@ -377,7 +393,8 @@ A soft drifting gradient with glossy shapes on the sides and an outlined headlin
 - `meshGradient` gives the Stripe-like background for zero bytes; `grain` hides banding.
 - Light text on a light gradient needs an `outline` (or a dark text colour) to read; avoid bloom here: white text glows into the background.
 - Props at abs(x) 7.6–8.8 stay outside the title (visible width ≈ 25.8 at z 0 with this camera).
-- Knobs: the 5 gradient colours, `speed` (0 = still), `chromeGradient` ramps, `soapBubble` / `mattePastel` presets.
+- Transmission presets (`soapBubble`, `glass`, `jelly`, `diamond`) render the scene a second time behind them: a soap bubble here doubled the triangles per frame past the banner aim (50 k), so the sphere is `pearl`.
+- Knobs: the 5 gradient colours, `speed` (0 = still), `chromeGradient` ramps, `pearl` / `mattePastel` presets.
 
 ## Letter-reveal headline (16:9)
 
@@ -463,12 +480,13 @@ The title rises in letter by letter, a wave runs through it, then the last word 
 
 - `reveal` (implies `splitLetters`) makes each glyph an object `title/<n>` (non-space characters, from 0); a timeline can then target `children:title` (all letters) or a list like `title/6,title/7,title/8` with `stagger`.
 - Relative keys (`"+=0.3"`) move letters from where the reveal left them; `outBounce` on the settle key gives the wave its snap.
+- Colour keys blend in OKLCh by default (track `colorSpace`: `oklch`, `oklab`, `rgb`, `hsl`): white → amber stays clean and saturated instead of passing through a muddy mix.
 - Pick a `posterTime` after the last animation (here 3.2) so the poster and reduced-motion still show the final state.
 - Knobs: `reveal.effect` (rise, fade, scale, spin, drop), `order` (`center`, `random`), the accent colour and which letters get it.
 
 ## Scroll story (16:9): camera shots driven by scroll
 
-A marble bust on a plinth; scrolling the page orbits the camera, pushes in on the face and cranes up.
+A marble bust on a plinth; scrolling the page orbits the camera, pushes in on the face and cranes up, with a caption that rides with the camera and a HUD pill per chapter.
 
 ```json
 {
@@ -489,7 +507,12 @@ A marble bust on a plinth; scrolling the page orbits the camera, pushes in on th
     ]
   },
   "environment": {
-    "background": {"radial": ["#3a3430", "#121012"], "center": [0.5, 0.6], "radius": 0.85, "grain": 0.03},
+    "background": {
+      "radial": ["#3a3430", "#121012"],
+      "center": [0.5, 0.6],
+      "radius": 0.85,
+      "grain": 0.03
+    },
     "lighting": "studio",
     "lightingIntensity": 0.35,
     "rig": {"preset": "dramatic", "intensity": 1.3},
@@ -523,6 +546,19 @@ A marble bust on a plinth; scrolling the page orbits the camera, pushes in on th
       "size": 0.02,
       "color": "#ffe8cc",
       "opacity": 0.35
+    },
+    {
+      "id": "caption",
+      "kind": "text",
+      "attach": "camera",
+      "text": "THE COLLECTION",
+      "font": "sans",
+      "size": 0.05,
+      "depth": 0,
+      "align": "left",
+      "letterSpacing": 0.015,
+      "position": [-0.75, -0.39, -2],
+      "material": {"type": "basic", "color": "#e8dccb"}
     }
   ],
   "timeline": {
@@ -530,14 +566,49 @@ A marble bust on a plinth; scrolling the page orbits the camera, pushes in on th
     "trigger": "scroll",
     "loop": false,
     "scroll": {"start": "top top", "end": "bottom top", "smoothing": 0.85},
-    "tracks": []
+    "tracks": [],
+    "segments": {"overview": [0, 3], "portrait": [3, 6.5], "details": [6.5, 10]}
   },
-  "postfx": [{"type": "look", "preset": "cinematic", "intensity": 0.8}]
+  "postfx": [{"type": "look", "preset": "cinematic", "intensity": 0.8}],
+  "ui": {
+    "color": "#f4ede4",
+    "accent": "#c9a46a",
+    "elements": [
+      {
+        "id": "ch1",
+        "type": "text",
+        "style": "pill",
+        "anchor": "top-left",
+        "text": "01 · The piece",
+        "visible": "timeline.segment == 'overview'"
+      },
+      {
+        "id": "ch2",
+        "type": "text",
+        "style": "pill",
+        "anchor": "top-left",
+        "text": "02 · The face",
+        "visible": "timeline.segment == 'portrait'"
+      },
+      {
+        "id": "ch3",
+        "type": "text",
+        "style": "pill",
+        "anchor": "top-left",
+        "text": "03 · The marble",
+        "visible": "timeline.segment == 'details'",
+        "background": "#c9a46a",
+        "color": "#1a1410"
+      }
+    ]
+  }
 }
 ```
 
 - With `trigger: "scroll"`, the timeline time is the scroll progress, and `camera.shots` run on that clock (no tracks needed). Shots chain: each starts from the pose the previous one left.
 - In renders, the progress is `t / duration`: `render --count 4` shows the story at 0, 33, 67 and 100 % of the scroll.
+- `"attach": "camera"` keeps the caption on screen while the shots move the camera: its `position` is in camera space (x right, y up, -z forward; `[-0.75, -0.39, -2]` = 2 units in front of the lens, lower left). Keep it closer to the lens than the subject, or the subject hides it during a push-in. `letterSpacing` is in scene units: scale it with `size`.
+- HUD expressions read the timeline: `timeline.segment` (the chapter being scrolled through), `timeline.progress` (0..1), `timeline.time`, `timeline.marker`, so the pills need no script. Per-element `background` / `color` highlight one pill.
 - `contactShadows.y` pins the shadow plane: without it the plane fits all objects, particles included, and may float below the subject.
 - Knobs: shot `angle` / `distance` / `height`, `scroll.start` / `end` (ScrollTrigger-like), `smoothing`.
 
@@ -966,6 +1037,269 @@ export default function (api) {
 - Throws set a ballistic velocity once (`api.physics.setVelocity`); `ccd: true` on the ball prevents tunnelling. Clones of a hidden prototype are the cheap way to spawn.
 - `target.quality: "medium"` and no postfx keep it light (`check` warns about heavy effects in games).
 - Test a real throw: `render --frames 2 --input '[{"t": 0.5, "click": [0, 0.1]}]'` returns `state` (`phase: "play"`, `down`, `throws`).
+- Scoring pitfalls: a can counts as down by its height (`position.y` below the table top), not by its rotation: `rotation` is Euler XYZ in degrees, so a can lying on its side can read x = 90 or z = 90 and a toppled-then-turned one other combinations. Restacking (`reset`) zeroes velocities and removes the balls still in flight (they would knock the fresh stack over), and the autopilot waits before the next throw so the cans settle first.
+
+## Lane runner game (16:9)
+
+Three lanes, rows of blocks rushing at the runner, speed ramping up, score and best score, Play / Play again buttons, and an attract mode: until the visitor plays, an autopilot dodges behind the title, so renders and the poster show action. Save the script below as `scripts/game.js`.
+
+```json
+{
+  "version": 1,
+  "id": "lane-runner",
+  "title": "Lane Runner",
+  "ariaLabel": "Lane Runner, a mini game: change lanes with the arrow keys, A / D, a swipe or a tap on either side to dodge the blocks",
+  "seed": 4,
+  "target": {
+    "kind": "game",
+    "aspect": "16:9",
+    "reducedMotion": "ignore",
+    "posterTime": 4,
+    "quality": "medium"
+  },
+  "camera": {"type": "perspective", "fov": 50, "position": [0, 3.4, 7], "target": [0, 0.9, -8]},
+  "environment": {
+    "background": {"gradient": ["#ffd9b0", "#ffd9b0", "#ffd9b0", "#9cc8ff", "#4f86d9"], "angle": 0},
+    "lighting": "soft",
+    "lightingIntensity": 0.7,
+    "rig": {"preset": "golden-hour", "intensity": 1.1, "castShadow": true},
+    "fog": {"color": "#ffd9b0", "near": 18, "far": 44}
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "road",
+      "kind": "generator",
+      "generator": "road",
+      "params": {
+        "width": 6,
+        "length": 80,
+        "lanes": 3,
+        "color": "#3d405b",
+        "lineColor": "#f4f1de",
+        "speed": 12,
+        "vergeColor": ["#8fd16a", "#7cc45a"]
+      },
+      "receiveShadow": true
+    },
+    {
+      "id": "player",
+      "kind": "generator",
+      "generator": "character",
+      "params": {
+        "style": "humanoid",
+        "shirt": "#ffd166",
+        "pants": "#26547c",
+        "hair": "#3b2a20",
+        "animation": "run",
+        "animationSpeed": 1.4,
+        "height": 1.4
+      },
+      "rotation": [0, 180, 0],
+      "castShadow": true
+    },
+    {
+      "id": "block",
+      "kind": "mesh",
+      "geometry": {"type": "roundedBox", "width": 1.6, "height": 1.2, "depth": 0.8, "radius": 0.12},
+      "material": {"preset": "plastic", "color": "#ef476f"},
+      "position": [0, 0.6, -44],
+      "visible": false,
+      "castShadow": true,
+      "tags": ["template"]
+    }
+  ],
+  "scripts": ["scripts/game.js"],
+  "data": {
+    "lanes": [-2, 0, 2],
+    "startSpeed": 12,
+    "maxSpeed": 26,
+    "accel": 0.4,
+    "rowEvery": 14,
+    "spawnZ": -44
+  },
+  "ui": {
+    "color": "#ffffff",
+    "accent": "#ffd166",
+    "elements": [
+      {
+        "id": "score",
+        "type": "text",
+        "text": "Score {score}",
+        "anchor": "top-left",
+        "style": "pill"
+      },
+      {"id": "best", "type": "text", "text": "Best {best}", "anchor": "top-right", "style": "pill"},
+      {
+        "id": "title",
+        "type": "text",
+        "text": "Lane Runner",
+        "anchor": "top",
+        "style": "title",
+        "visible": "phase == 'ready'"
+      },
+      {
+        "id": "play",
+        "type": "button",
+        "text": "Play",
+        "anchor": "bottom",
+        "action": "start",
+        "visible": "phase == 'ready'"
+      },
+      {
+        "id": "over",
+        "type": "text",
+        "text": "Game over\nScore {score} · Best {best}",
+        "anchor": "center",
+        "style": "panel",
+        "visible": "phase == 'over'"
+      },
+      {
+        "id": "retry",
+        "type": "button",
+        "text": "Play again",
+        "anchor": "bottom",
+        "action": "retry",
+        "visible": "phase == 'over'"
+      }
+    ]
+  },
+  "audio": {
+    "sounds": {
+      "move": {"preset": "whoosh", "volume": 0.3},
+      "point": {"preset": "coin", "volume": 0.4},
+      "lose": {"preset": "lose", "volume": 0.5}
+    }
+  }
+}
+```
+
+```js
+// Lane Runner: dodge the blocks by changing lanes (arrows / A D, swipes, or a tap
+// on the left / right half). phase: "ready" (an autopilot plays behind the title,
+// so renders and the poster show action) -> "play" -> "over".
+export default function (api) {
+  const { lanes, startSpeed, maxSpeed, accel, rowEvery, spawnZ } = api.data;
+  const player = api.get("player");
+  const road = api.get("road");
+  let blocks = [];
+  let n = 0;
+  let lane = 1;
+  let speed = startSpeed;
+  let nextRow = 0;
+  let distance = 0;
+  let overAt = 0;
+
+  function reset(phase) {
+    for (const b of blocks) b.remove();
+    blocks = [];
+    lane = 1;
+    speed = startSpeed;
+    nextRow = 0; // the first row reaches the player after ~3.5 s
+    distance = 0;
+    player.position.x = lanes[1];
+    api.state.phase = phase;
+    api.state.score = 0;
+    api.state.best = Number(api.storage.get("best") ?? 0);
+  }
+
+  // A row of 1-2 blocks at spawnZ (hidden in the fog); one lane always stays open.
+  function spawnRow() {
+    const open = Math.floor(api.random() * 3);
+    for (let i = 0; i < 3; i++) {
+      if (i === open || (i !== (open + 1) % 3 && api.random() < 0.5)) continue;
+      const b = api.clone("block", { id: "block" + n++, position: [lanes[i], 0.6, spawnZ] });
+      b.visible = true;
+      blocks.push(b);
+    }
+  }
+
+  // Distance to the nearest block ahead in a lane (Infinity when clear).
+  function clearance(i) {
+    let d = Infinity;
+    for (const b of blocks) if (Math.abs(b.position.x - lanes[i]) < 0.5 && b.position.z < 0.8) d = Math.min(d, -b.position.z);
+    return d;
+  }
+
+  function autopilot() {
+    if (clearance(lane) > 12) return 0;
+    const left = lane > 0 ? clearance(lane - 1) : -1;
+    const right = lane < 2 ? clearance(lane + 1) : -1;
+    return left >= right ? -1 : 1;
+  }
+
+  function readInput() {
+    const swipe = api.input.swipe();
+    const tap = api.input.pointer.justPressed ? Math.sign(api.input.pointer.x) : 0;
+    if (api.input.pressed("ArrowLeft") || api.input.pressed("KeyA") || swipe === "left" || tap < 0) return -1;
+    if (api.input.pressed("ArrowRight") || api.input.pressed("KeyD") || swipe === "right" || tap > 0) return 1;
+    return 0;
+  }
+
+  function gameOver() {
+    api.state.phase = "over";
+    overAt = api.time();
+    api.audio.play("lose");
+    api.camera.shake(0.3, 0.4);
+    const best = Math.max(Number(api.state.best), Number(api.state.score));
+    api.state.best = best;
+    api.storage.set("best", best);
+  }
+
+  return {
+    start() {
+      reset("ready");
+    },
+    onEvent(name) {
+      if (name === "start" || name === "retry") reset("play");
+    },
+    update(dt) {
+      const phase = api.state.phase;
+      if (phase === "over") {
+        if (api.time() - overAt > 0.6 && (api.input.pressed("Space") || api.input.pressed("Enter"))) reset("play");
+        return;
+      }
+      if (phase === "ready" && (api.input.pressed("Space") || api.input.pressed("Enter") || api.input.pointer.justPressed)) return reset("play");
+
+      // Difficulty ramp: faster over time, rows closer together in time.
+      speed = Math.min(maxSpeed, speed + accel * dt);
+      road.userData.speed = speed;
+      distance += speed * dt;
+      nextRow -= speed * dt;
+      if (nextRow <= 0) {
+        spawnRow();
+        nextRow = rowEvery;
+      }
+
+      const move = phase === "play" ? readInput() : autopilot();
+      if (move && lane + move >= 0 && lane + move <= 2) {
+        lane += move;
+        if (phase === "play") api.audio.play("move");
+      }
+      player.position.x += (lanes[lane] - player.position.x) * Math.min(1, dt * 14);
+
+      for (const b of blocks.slice()) {
+        b.position.z += speed * dt;
+        if (b.position.z > 8) {
+          b.remove();
+          blocks.splice(blocks.indexOf(b), 1);
+        } else if (phase === "play" && Math.abs(b.position.z) < 0.6 && Math.abs(b.position.x - player.position.x) < 1.1) {
+          return gameOver();
+        }
+      }
+      if (phase === "play") api.state.score = Math.floor(distance / 4);
+    },
+  };
+}
+```
+
+- Spawning by cloning: `block` is a hidden template; `api.clone` copies it synchronously (deterministic), the script keeps its own array of live clones and `remove()`s them once they pass the camera. Rows spawn at `spawnZ`, inside the fog (`far` 44), so they fade in instead of popping.
+- Collisions are lane + z checks: no physics body, no physics chunk to download. One lane per row always stays open.
+- The `road` generator scrolls its own stripes; the script sets `road.userData.speed` so they match the ramping speed. Restyle it with `color`, `lineColor`, `curbColors` (one colour = a solid curb), `vergeColor`, or `verge: false` (road only).
+- The game-over screen is a `panel` (a backdrop card; `\n` breaks lines, the first line is the heading). Buttons get an auto-contrast label from `ui.accent` (`ui.buttonText` overrides it); `color` / `background` on an element restyle it alone. Patch one element by id: `ui.elements#retry.text`.
+- Tested: `render --sheet --frames 1,4,7,10` (attract mode dodging), then played headlessly: `render --frames 2,5,8 --input '[{"t": 0.5, "ui": "play"}, {"t": 2, "swipe": "left"}, {"t": 6, "ui": "retry"}]'` returns `state` (`phase`, `score`, `best`) — the swipe runs into a row (`phase: "over"`), `ui: "retry"` presses the HUD button and restarts. Posters and videos show the canvas only, without the HUD.
+- Phones: the embed keeps 16:9, so a 390 px wide phone shows it 390 × 219 (`render --size 390x219`): the corner pills and the button cover a lot. For a mobile-first game use a portrait aspect (`"9:16"` or `"3:4"`) and widen the camera (here fov 75 from `[0, 4.2, 7.5]` keeps the three lanes in a 9:16 frame).
+- Knobs: `data` (`startSpeed`, `maxSpeed`, `accel`, `rowEvery`), the runner's `params` (`catalog generators character`), block colour and shape, the sky gradient + fog colour (keep the fog the colour of the horizon).
 
 ## Character card (1:1): waving mascot
 

@@ -7,8 +7,8 @@ A 21:9 golden-hour landscape, fully procedural (0 KB of assets): a low-poly `ter
 | Change | Where |
 |---|---|
 | Another valley | `objects#valley.seed`; relief `params.height` / `params.scale`; `params.shape` `basin` for a lake ringed by mountains; lake size `params.waterLevel` (absolute height; keep `objects#lake.position[1]` equal to it). Keep `valley`, `lake` and `pines` at the same `position` |
-| Sun position | `environment.background.sky.sun.elevation` (degrees above the horizon) / `.azimuth` (180 = in front of the camera; 152 puts it at the right edge of the 21:9 frame, 120 out of frame) |
-| Time of day | `environment.background.sky.preset`: `sunrise`, `morning`, `golden-hour`, `sunset`, `dusk` (bright presets want `exposure` ≈ 0.4–0.6) |
+| Sun position | `environment.background.sky.sun.elevation` (degrees above the horizon) / `.azimuth` (0 = behind the camera, 90 = from the right, 180 = straight ahead in the frame; 152 puts it at the right edge of the 21:9 frame, 120 just out of frame) |
+| Time of day | `environment.background.sky.preset`: `sunrise`, `morning`, `golden-hour`, `sunset`, `dusk` (every preset is tuned for the default `exposure` 1; 0.7 = deeper colours, 1.3 = brighter) |
 | Sky colour | `.rayleigh` (more = deeper colours), `.turbidity` (haze), `.mieDirectionalG` (size of the sun glow), `.exposure` |
 | Valley mist | `environment.fog` (`density`, `height` = top of the mist, `falloff`) |
 | Forest | `objects#pines.params.count`, `.leafColors`, `.style` |
