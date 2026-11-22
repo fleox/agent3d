@@ -1,0 +1,16 @@
+{
+  "id": "card-hover-3d",
+  "title": "3D product card",
+  "description": "Clean product card (4:5): a PBR water bottle floating over a soft disc that lifts, tilts toward the pointer and grows on hover \u2014 drop it into any product grid.",
+  "kind": "card",
+  "tags": [
+    "card",
+    "product",
+    "ecommerce",
+    "hover",
+    "interactive",
+    "minimal",
+    "pbr"
+  ],
+  "aspect": "4:5"
+}

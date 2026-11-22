@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "id": "card-hover-3d",
+  "title": "3D product card",
+  "ariaLabel": "Reusable water bottle product, rotates gently and lifts when hovered",
+  "seed": 1,
+  "target": {
+    "kind": "card",
+    "aspect": "4:5",
+    "budgetKb": 800,
+    "reducedMotion": "static",
+    "posterTime": 0,
+    "maxDpr": 2,
+    "toneMapping": "neutral"
+  },
+  "camera": {"type": "perspective", "fov": 30, "position": [0, 1.6, 6.6], "target": [0, 0.95, 0]},
+  "environment": {
+    "background": {"gradient": ["#e9f1ec", "#f7f4ee"], "angle": 0},
+    "lighting": {"hdri": "library:hdri/studio.hdr", "intensity": 0.9},
+    "ground": {"y": 0, "size": 12, "shadowOnly": true, "color": "#2d4a3e"}
+  },
+  "lights": [
+    {"id": "key", "type": "directional", "position": [2, 6, 3], "intensity": 1.6, "castShadow": true},
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#ffffff",
+      "groundColor": "#d5e4da",
+      "intensity": 0.5
+    }
+  ],
+  "objects": [
+    {
+      "id": "disc",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 1.05, "radiusBottom": 1.1, "height": 0.12, "segments": 96},
+      "position": [0, 0.06, 0],
+      "material": {"preset": "clay", "color": "#cfe3d6", "roughness": 0.7},
+      "receiveShadow": true,
+      "castShadow": true
+    },
+    {
+      "id": "productRig",
+      "kind": "group",
+      "position": [0, 0.3, 0],
+      "behaviours": [
+        {"type": "hoverLift", "height": 0.25, "tilt": 12},
+        {"type": "hoverScale", "scale": 1.06},
+        {"type": "float", "amplitude": 0.05, "speed": 0.4}
+      ],
+      "children": [
+        {
+          "id": "product",
+          "kind": "model",
+          "src": "library:models/products/water-bottle.glb",
+          "fit": 1.55,
+          "rotation": [0, 0, 0],
+          "castShadow": true,
+          "behaviours": [{"type": "rotate", "speed": 18}]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "card-hover-3d",
+  "title": "3D product card",
+  "createdAt": "2026-11-22T00:00:00.000Z",
+  "updatedAt": "2026-11-22T00:00:00.000Z",
+  "template": "card-hover-3d",
+  "agent3d": "0.1.0"
+}
