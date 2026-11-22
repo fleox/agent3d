@@ -26,6 +26,9 @@ jobs:
       # After the build: the render / embed e2e tests use dist/runtime and the
       # runner's Chrome (they skip when either is missing).
       - run: npm test
+        env:
+          # Shared runners render WebGL in software (SwiftShader): give the browser e2e tests time.
+          AGENT3D_CDP_TIMEOUT_MS: "180000"
       - run: npm run check:skills
       # Hermes Agent skills (generated from plugin/skills) + their Python tests.
       - run: npm run check:hermes

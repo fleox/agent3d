@@ -35,6 +35,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
+        env:
+          # Shared runners render WebGL in software (SwiftShader): give the browser e2e tests time.
+          AGENT3D_CDP_TIMEOUT_MS: "180000"
       - run: npm run check:skills
       - run: npm run check:hermes
       - run: node scripts/build-cli-docs.mjs --check

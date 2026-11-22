@@ -13,6 +13,9 @@ interface Pending {
   method: string;
 }
 
+// Per-call answer timeout; $AGENT3D_CDP_TIMEOUT_MS raises it on slow machines (CI runners with software GL).
+const DEFAULT_TIMEOUT_MS = Number(process.env.AGENT3D_CDP_TIMEOUT_MS) || 60_000;
+
 export class CdpError extends Error {
   override name = "CdpError";
   constructor(
@@ -89,7 +92,7 @@ export class CdpClient implements CdpTarget {
     this.pending.clear();
   }
 
-  rawSend<T>(method: string, params: Record<string, unknown> = {}, sessionId?: string, timeoutMs = 60_000): Promise<T> {
+  rawSend<T>(method: string, params: Record<string, unknown> = {}, sessionId?: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
     if (this.closed) return Promise.reject(new CdpError(method, "connection closed"));
     const id = this.nextId++;
     return new Promise<T>((resolve, reject) => {
