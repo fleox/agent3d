@@ -1,7 +1,8 @@
 // Script host (loaded lazily when a scene has scripts, ui, physics or bodies):
 // implements ScriptApi (src/runtime/api.ts) over the World, runs scripts at a
-// fixed step (scene.physics.step, default 1/60) together with the light
-// physics engine, drives the HUD, audio, storage and events.
+// fixed step (scene.physics.step, default 1/60) together with the rigid-body
+// physics (physicsHost.ts + cannon-es, its own lazy chunk loaded only when the
+// scene has bodies or joints), drives the HUD, audio, storage and events.
 
 import * as THREE from "three";
 import type { BodyDef, ObjectDef, SceneDoc } from "../../core/types";
@@ -13,9 +14,14 @@ import type { Rng } from "../registry";
 import { DEG, meshMaterials, toColor } from "../util";
 import { createAudio, type AudioBridge } from "./audio";
 import { createHud, type Hud } from "./hud";
-import { PhysicsWorld, type Body, type V3 } from "./physics";
+import type { ContactInfo, V3 } from "./physics";
+import type { PhysicsBridge } from "./physicsHost";
 
-export { PhysicsWorld } from "./physics";
+let physicsModule: Promise<typeof import("./physicsHost")> | null = null;
+const loadPhysics = () => (physicsModule ??= import("./physicsHost"));
+
+type ContactHandler = (a: ScriptObject, b: ScriptObject, info: ContactInfo) => void;
+type PairHandler = (a: ScriptObject, b: ScriptObject) => void;
 
 export interface GameHostOptions {
   scene: SceneDoc;
@@ -55,16 +61,18 @@ const scriptModuleCache = new Map<string, Promise<ScriptFactory | null>>();
 
 export class GameHost implements Pick<ScriptApi, "state"> {
   world!: World;
-  physics!: PhysicsWorld;
+  physics: PhysicsBridge | null = null;
   state: Record<string, unknown> = {};
   hud: Hud | null = null;
   audio: AudioBridge;
   private instances: { path: string; inst: ScriptInstance; failed: boolean }[] = [];
   private factories: { path: string; factory: ScriptFactory }[] = [];
   private objCache = new Map<string, ScriptObject>();
-  private bodyOffsets = new Map<string, THREE.Vector3>();
   private handlers = new Map<string, ((p?: unknown) => void)[]>();
-  private collisionHandlers: ((a: ScriptObject, b: ScriptObject) => void)[] = [];
+  private collisionHandlers: ContactHandler[] = [];
+  private collisionEndHandlers: PairHandler[] = [];
+  private triggerEnterHandlers: PairHandler[] = [];
+  private triggerExitHandlers: PairHandler[] = [];
   private rng: Rng;
   private simTime = 0;
   private acc = 0;
@@ -152,19 +160,10 @@ export class GameHost implements Pick<ScriptApi, "state"> {
   private async attach(world: World): Promise<void> {
     this.world = world;
     this.objCache.clear();
-    this.bodyOffsets.clear();
-    const g = this.opts.scene.physics?.gravity ?? [0, -9.81, 0];
-    this.physics = new PhysicsWorld([g[0], g[1], g[2]]);
-    this.physics.onCollision((a, b) => {
-      const oa = this.api.get(a.id), ob = this.api.get(b.id);
-      if (!oa || !ob) return;
-      for (const h of this.collisionHandlers) this.safe(() => h(oa, ob), "onCollision");
-    });
+    this.physics?.dispose();
+    this.physics = null;
     world.scene.updateMatrixWorld(true);
-    for (const e of world.entries.values()) {
-      this.addBody(e);
-      this.addGeneratorBodies(e);
-    }
+    if (this.needsPhysics(world)) await this.ensurePhysics();
     this.instances = [];
     for (const { path, factory } of this.factories) {
       try {
@@ -184,86 +183,56 @@ export class GameHost implements Pick<ScriptApi, "state"> {
     this.hud?.update(this.state, 0);
   }
 
-  private addBody(e: WorldEntry, def?: BodyDef): Body | null {
-    const body = def ?? (e.def as ObjectDef).body;
-    if (!body || e.kind === "light") return null;
-    const o = e.object;
-    o.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(o);
-    const wp = o.getWorldPosition(new THREE.Vector3());
-    const size = box.isEmpty() ? new THREE.Vector3(1, 1, 1) : box.getSize(new THREE.Vector3());
-    const center = box.isEmpty() ? wp.clone() : box.getCenter(new THREE.Vector3());
-    if (body.size) size.set(body.size[0], body.size[1], body.size[2]);
-    const shape = body.shape === "sphere" ? "sphere" : "box";
-    this.bodyOffsets.set(e.id, center.clone().sub(wp));
-    return this.physics.add({
-      id: e.id,
-      type: body.type,
-      shape,
-      position: [center.x, center.y, center.z],
-      size: [size.x, size.y, size.z],
-      radius: body.radius ?? Math.max(size.x, size.y, size.z) / 2,
-      velocity: body.velocity,
-      mass: body.mass,
-      restitution: body.restitution,
-      friction: body.friction,
-    });
+  private needsPhysics(world: World): boolean {
+    if (this.opts.scene.physics?.joints?.length) return true;
+    for (const e of world.entries.values()) if (e.kind !== "light" && ((e.def as ObjectDef).body || Array.isArray(e.object.userData.bodies))) return true;
+    return false;
   }
 
-  // Generators that publish local collision boxes (maze walls: userData.bodies
-  // [{ min, max }]) get one static body per box, id "<objectId>:body<i>".
-  private addGeneratorBodies(e: WorldEntry): void {
-    if (e.kind === "light") return;
-    const boxes = e.object.userData.bodies as { min: [number, number, number]; max: [number, number, number] }[] | undefined;
-    if (!Array.isArray(boxes) || (e.def as ObjectDef).body) return;
-    const m = e.object.matrixWorld;
-    const box = new THREE.Box3();
-    const size = new THREE.Vector3();
-    const center = new THREE.Vector3();
-    boxes.forEach((b, i) => {
-      box.set(new THREE.Vector3(...b.min), new THREE.Vector3(...b.max)).applyMatrix4(m);
-      box.getSize(size);
-      box.getCenter(center);
-      this.physics.add({ id: `${e.id}:body${i}`, type: "static", shape: "box", position: [center.x, center.y, center.z], size: [size.x, size.y, size.z] });
-    });
+  // Loads the physics chunk (cannon-es) and builds every body + joint.
+  private async ensurePhysics(): Promise<PhysicsBridge> {
+    if (this.physics) return this.physics;
+    const { PhysicsBridge } = await loadPhysics();
+    const bridge = new PhysicsBridge(this.opts.scene.physics, this.world, (i) => this.opts.issue(i));
+    bridge.engine.onCollision((a, b, info) => this.dispatchContact(a.id, b.id, info));
+    bridge.engine.onCollisionEnd((a, b) => this.dispatchContact(a.id, b.id, null));
+    this.physics = bridge;
+    bridge.attachAll();
+    return bridge;
   }
 
-  // Sync a body from its object (scripts moved the object).
-  private syncBodyFromObject(id: string): void {
-    const b = this.physics.get(id);
-    const e = this.world.entries.get(id);
-    if (!b || !e) return;
-    e.object.updateMatrixWorld(true);
-    const wp = e.object.getWorldPosition(new THREE.Vector3()).add(this.bodyOffsets.get(id) ?? new THREE.Vector3());
-    b.position[0] = wp.x;
-    b.position[1] = wp.y;
-    b.position[2] = wp.z;
-  }
-
-  private syncObjectsFromBodies(): void {
-    const tmp = new THREE.Vector3();
-    const axis = new THREE.Vector3();
-    const q = new THREE.Quaternion();
-    for (const b of this.physics.bodies) {
-      if (b.type !== "dynamic" && b.type !== "kinematic") continue;
-      const e = this.world.entries.get(b.id);
-      if (!e) continue;
-      tmp.set(b.position[0], b.position[1], b.position[2]).sub(this.bodyOffsets.get(b.id) ?? new THREE.Vector3());
-      if (e.object.parent) e.object.parent.worldToLocal(tmp);
-      // Visual rolling of dynamic spheres (the engine itself has no angular state).
-      const def = (e.def as ObjectDef).body;
-      if (b.shape === "sphere" && b.type === "dynamic" && !def?.fixedRotation) {
-        const dx = tmp.x - e.object.position.x, dz = tmp.z - e.object.position.z;
-        const dist = Math.hypot(dx, dz);
-        if (dist > 1e-6 && b.radius > 0) {
-          axis.set(dz, 0, -dx).normalize();
-          e.object.quaternion.premultiply(q.setFromAxisAngle(axis, dist / b.radius));
-          if (e.animated) e.rest.quaternion.copy(e.object.quaternion);
-        }
+  private dispatchContact(aId: string, bId: string, info: ContactInfo | null): void {
+    const oa = this.api.get(aId), ob = this.api.get(bId);
+    if (!oa || !ob || !this.physics) return;
+    const ta = this.physics.engine.get(aId)?.type === "trigger";
+    const tb = this.physics.engine.get(bId)?.type === "trigger";
+    if (info) {
+      for (const h of this.collisionHandlers) this.safe(() => h(oa, ob, info), "onCollision");
+      for (const h of this.triggerEnterHandlers) {
+        if (ta) this.safe(() => h(oa, ob), "onTriggerEnter");
+        if (tb) this.safe(() => h(ob, oa), "onTriggerEnter");
       }
-      e.object.position.copy(tmp);
-      if (e.animated) e.rest.position.copy(tmp);
+    } else {
+      for (const h of this.collisionEndHandlers) this.safe(() => h(oa, ob), "onCollisionEnd");
+      for (const h of this.triggerExitHandlers) {
+        if (ta) this.safe(() => h(oa, ob), "onTriggerExit");
+        if (tb) this.safe(() => h(ob, oa), "onTriggerExit");
+      }
     }
+  }
+
+  // Bodies of a freshly added subtree (spawn / clone).
+  private async addBodies(e: WorldEntry, def?: BodyDef): Promise<void> {
+    const ids: string[] = [];
+    e.object.traverse((o) => {
+      const id = o.userData.a3dId as string | undefined;
+      if (id && !ids.includes(id)) ids.push(id);
+    });
+    const entries = ids.map((id) => this.world.entries.get(id)).filter((x): x is WorldEntry => !!x);
+    const wanted = entries.filter((x) => (x === e && def) || (x.def as ObjectDef).body);
+    if (!wanted.length) return;
+    const bridge = await this.ensurePhysics();
+    for (const x of wanted) if (!bridge.has(x.id)) bridge.addEntry(x, x === e ? def : undefined);
   }
 
   requestRestart(): void {
@@ -281,6 +250,9 @@ export class GameHost implements Pick<ScriptApi, "state"> {
     for (const k of Object.keys(this.state)) delete this.state[k];
     this.handlers.clear();
     this.collisionHandlers = [];
+    this.collisionEndHandlers = [];
+    this.triggerEnterHandlers = [];
+    this.triggerExitHandlers = [];
     this.rng = createRng(this.opts.scene.seed ?? 1);
     this.simTime = 0;
     this.acc = 0;
@@ -336,10 +308,7 @@ export class GameHost implements Pick<ScriptApi, "state"> {
         this.opts.issue({ code: "script-error", message: `${s.path} update(): ${(err as Error).message}`, path: s.path });
       }
     }
-    if (this.physics.bodies.length) {
-      this.physics.step(dt);
-      this.syncObjectsFromBodies();
-    }
+    this.physics?.step(dt);
     this.stepPressed = new Set();
     this.stepJust = false;
     this.stepSwipe = null;
@@ -372,6 +341,7 @@ export class GameHost implements Pick<ScriptApi, "state"> {
   dispose(): void {
     for (const s of this.instances) this.safe(() => s.inst.dispose?.(), "dispose");
     this.instances = [];
+    this.physics?.dispose();
     this.hud?.dispose();
     this.audio.dispose();
     this.unlockListeners?.();
@@ -392,24 +362,23 @@ export class GameHost implements Pick<ScriptApi, "state"> {
         en.rest.quaternion.copy(en.object.quaternion);
         en.rest.scale.copy(en.object.scale);
       }
-      host.syncBodyFromObject(id);
+      host.physics?.moved(id);
     };
-    const bodyVel = (): THREE.Vector3 => {
-      const b = host.physics.get(id);
-      const v = new THREE.Vector3();
-      if (b) v.set(b.velocity[0], b.velocity[1], b.velocity[2]);
-      return v;
+    const vel = (): V3 => host.physics?.engine.get(id)?.velocity ?? [0, 0, 0];
+    const setVel = (i: number, x: number) => {
+      const v = vel();
+      v[i] = x;
+      host.physics?.engine.setVelocity(id, v);
     };
     const velocity: Vec3Like = {
-      get x() { return bodyVel().x; },
-      set x(v) { const b = host.physics.get(id); if (b) b.velocity[0] = v; },
-      get y() { return bodyVel().y; },
-      set y(v) { const b = host.physics.get(id); if (b) b.velocity[1] = v; },
-      get z() { return bodyVel().z; },
-      set z(v) { const b = host.physics.get(id); if (b) b.velocity[2] = v; },
+      get x() { return vel()[0]; },
+      set x(v) { setVel(0, v); },
+      get y() { return vel()[1]; },
+      set y(v) { setVel(1, v); },
+      get z() { return vel()[2]; },
+      set z(v) { setVel(2, v); },
       set(x, y, z) {
-        const b = host.physics.get(id);
-        if (b) b.velocity = [x, y, z];
+        host.physics?.engine.setVelocity(id, [x, y, z]);
       },
     };
     const obj: ScriptObject = {
@@ -455,7 +424,12 @@ export class GameHost implements Pick<ScriptApi, "state"> {
         return a.distanceTo(oe.object.getWorldPosition(new THREE.Vector3()));
       },
       remove() {
-        host.physics.remove(id);
+        const en = host.world.entries.get(id);
+        en?.object.traverse((o) => {
+          const cid = o.userData.a3dId as string | undefined;
+          if (cid) host.physics?.remove(cid);
+        });
+        host.physics?.remove(id);
         host.world.removeEntry(id);
         host.objCache.delete(id);
       },
@@ -511,7 +485,7 @@ export class GameHost implements Pick<ScriptApi, "state"> {
         const e = await host.world.addObject(def, parentEntry?.object ?? host.world.scene, parentEntry?.id, new Map());
         if (!e) throw new Error(`spawn(${def.id}) failed`);
         host.world.scene.updateMatrixWorld(true);
-        host.addBody(e);
+        await host.addBodies(e);
         return host.wrap(e);
       },
       clone: (id, overrides) => {
@@ -540,7 +514,7 @@ export class GameHost implements Pick<ScriptApi, "state"> {
         };
         host.world.entries.set(newId, entry);
         host.world.scene.updateMatrixWorld(true);
-        if (def.body) host.addBody(entry);
+        if (def.body && host.physics) host.physics.addEntry(entry);
         return host.wrap(entry);
       },
       camera: cameraObj as unknown as ScriptApi["camera"],
@@ -559,7 +533,7 @@ export class GameHost implements Pick<ScriptApi, "state"> {
           const p = inp().pointer;
           raycaster.setFromCamera(new THREE.Vector2(p.x, p.y), host.world.camera);
           const targets: THREE.Object3D[] = [];
-          for (const b of host.physics.bodies) {
+          for (const b of host.physics?.engine.bodies ?? []) {
             const e = host.world.entries.get(b.id);
             if (e) targets.push(e.object);
           }
@@ -573,14 +547,41 @@ export class GameHost implements Pick<ScriptApi, "state"> {
         },
       },
       physics: {
-        overlaps: (a, b) => host.physics.overlaps(host.idOf(a), host.idOf(b)),
-        contacts: (a) => host.physics.contactsOf(host.idOf(a)).map((b) => api.get(b.id)).filter((x): x is ScriptObject => !!x),
-        raycast: (from, dir, maxDistance) => {
-          const hit = host.physics.raycast(from as V3, dir as V3, maxDistance ?? Infinity);
-          return hit ? { objectId: hit.body.id, distance: hit.distance, point: hit.point } : null;
+        overlaps: (a, b) => host.physics?.engine.overlaps(host.idOf(a), host.idOf(b)) ?? false,
+        contacts: (a) => (host.physics?.engine.contactsOf(host.idOf(a)) ?? []).map((b) => api.get(b.id)).filter((x): x is ScriptObject => !!x),
+        raycast: (from, dir, maxDistance, options) => {
+          const eng = host.physics?.engine;
+          if (!eng) return null;
+          const ignore = new Set((options?.ignore ?? []).map((x) => host.idOf(x)));
+          const hit = eng.raycast(from as V3, dir as V3, maxDistance ?? Infinity, {
+            ignore: ignore.size ? (b) => ignore.has(b.id) : undefined,
+            mask: options?.layers ? eng.layerMask(options.layers) : undefined,
+            triggers: options?.triggers,
+          });
+          return hit ? { objectId: hit.body.id, distance: hit.distance, point: hit.point, normal: hit.normal } : null;
         },
-        applyImpulse: (o, impulse) => host.physics.applyImpulse(host.idOf(o), impulse as V3),
+        applyImpulse: (o, impulse, point) => host.physics?.engine.applyImpulse(host.idOf(o), impulse as V3, point as V3 | undefined),
+        applyForce: (o, force, point) => host.physics?.engine.applyForce(host.idOf(o), force as V3, point as V3 | undefined),
+        applyTorque: (o, torque) => host.physics?.engine.applyTorque(host.idOf(o), torque as V3),
+        setVelocity: (o, v) => host.physics?.engine.setVelocity(host.idOf(o), v as V3),
+        getVelocity: (o) => host.physics?.engine.get(host.idOf(o))?.velocity ?? [0, 0, 0],
+        setAngularVelocity: (o, w) => host.physics?.engine.setAngularVelocity(host.idOf(o), [w[0] * DEG, w[1] * DEG, w[2] * DEG]),
+        getAngularVelocity: (o) => {
+          const w = host.physics?.engine.get(host.idOf(o))?.angularVelocity ?? [0, 0, 0];
+          return [w[0] / DEG, w[1] / DEG, w[2] / DEG];
+        },
+        grounded: (o) => host.physics?.engine.grounded(host.idOf(o)) ?? false,
+        moveCharacter: (o, move, options) => {
+          const m: [number, number] = Array.isArray(move) ? [move[0], move[1]] : [move.x, move.z];
+          host.physics?.engine.moveCharacter(host.idOf(o), m, options);
+        },
+        jump: (o, speed) => host.physics?.engine.jump(host.idOf(o), speed) ?? false,
+        wake: (o) => host.physics?.engine.wake(host.idOf(o)),
+        setMotorSpeed: (jointId, speed) => host.physics?.engine.setMotorSpeed(jointId, speed * DEG),
         onCollision: (handler) => void host.collisionHandlers.push(handler),
+        onCollisionEnd: (handler) => void host.collisionEndHandlers.push(handler),
+        onTriggerEnter: (handler) => void host.triggerEnterHandlers.push(handler),
+        onTriggerExit: (handler) => void host.triggerExitHandlers.push(handler),
       },
       state: host.state,
       ui: {

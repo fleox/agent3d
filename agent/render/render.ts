@@ -73,6 +73,7 @@ export function frameTimes(scene: Pick<SceneDoc, "timeline" | "target"> | null, 
 //   { "t": 2, "pointerUp": [0.4, 0] }                    release it (or "pointerUp": true where it is)
 //   { "t": 1, "drag": { "from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4 } }   press, move (30 steps/s), release
 //   { "t": 1, "swipe": "left" }                          a swipe gesture: "left" | "right" | "up" | "down"
+//   { "t": 1, "scroll": 0.5 }                            page scroll progress 0..1 (scroll-driven scenes; null = back to t / duration)
 
 export type Point = [number, number];
 export type SwipeDirection = "left" | "right" | "up" | "down";
@@ -82,13 +83,14 @@ export type InputEvent =
   | { t: number; pointer: Point; down?: boolean }
   | { t: number; pointerDown: Point }
   | { t: number; pointerUp: Point | null }
-  | { t: number; swipe: SwipeDirection };
+  | { t: number; swipe: SwipeDirection }
+  | { t: number; scroll: number | null };
 
 const pair = (v: unknown): v is Point => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
 const SWIPES: SwipeDirection[] = ["left", "right", "up", "down"];
 
 export const INPUT_SHAPES =
-  'Events: {"t": 0.5, "key": "ArrowRight", "down": true} | {"t": 0.5, "key": "Space", "hold": 0.3} | {"t": 1, "click": [0, 0]} | {"t": 1, "pointer": [0.5, -0.2], "down"?: true} | {"t": 1, "pointerDown": [0, 0]} | {"t": 2, "pointerUp": [0.4, 0]} | {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}} | {"t": 1, "swipe": "left"|"right"|"up"|"down"} (coordinates -1..1, y up; key = KeyboardEvent.code).';
+  'Events: {"t": 0.5, "key": "ArrowRight", "down": true} | {"t": 0.5, "key": "Space", "hold": 0.3} | {"t": 1, "click": [0, 0]} | {"t": 1, "pointer": [0.5, -0.2], "down"?: true} | {"t": 1, "pointerDown": [0, 0]} | {"t": 2, "pointerUp": [0.4, 0]} | {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}} | {"t": 1, "swipe": "left"|"right"|"up"|"down"} | {"t": 1, "scroll": 0.5} (coordinates -1..1, y up; key = KeyboardEvent.code).';
 
 // Allowed fields per event kind (anything else is a usage error).
 const FIELDS: Record<string, string[]> = {
@@ -99,6 +101,7 @@ const FIELDS: Record<string, string[]> = {
   pointerUp: ["t", "pointerUp"],
   drag: ["t", "drag"],
   swipe: ["t", "swipe"],
+  scroll: ["t", "scroll"],
 };
 
 export function parseInputScript(raw: unknown): InputEvent[] {
@@ -148,6 +151,9 @@ export function parseInputScript(raw: unknown): InputEvent[] {
         out.push({ t: Math.round((t + duration * f) * 1e6) / 1e6, pointer: [from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f] });
       }
       out.push({ t: Math.round((t + duration) * 1e6) / 1e6, pointerUp: to });
+    } else if (kind === "scroll") {
+      if (ev.scroll !== null && (typeof ev.scroll !== "number" || !(ev.scroll >= 0 && ev.scroll <= 1))) throw bad(i, '"scroll" must be a progress between 0 and 1 (or null)');
+      out.push({ t, scroll: ev.scroll as number | null });
     } else {
       if (typeof ev.swipe !== "string" || !SWIPES.includes(ev.swipe as SwipeDirection)) throw bad(i, '"swipe" must be "left", "right", "up" or "down"');
       out.push({ t, swipe: ev.swipe as SwipeDirection });
@@ -165,6 +171,7 @@ export function inputCall(ev: InputEvent): string {
   if ("pointerDown" in ev) return `(i.pointer(${p(ev.pointerDown)}), i.down?.(${p(ev.pointerDown)}))`;
   if ("pointerUp" in ev) return ev.pointerUp ? `(i.pointer(${p(ev.pointerUp)}), i.up?.(${p(ev.pointerUp)}))` : "i.up?.()";
   if ("swipe" in ev) return `i.swipe?.(${JSON.stringify(ev.swipe)})`;
+  if ("scroll" in ev) return `i.scroll?.(${JSON.stringify(ev.scroll)})`;
   return ev.down === undefined ? `i.pointer(${p(ev.pointer)})` : `(i.pointer(${p(ev.pointer)}), ${ev.down ? "i.down?.()" : "i.up?.()"})`;
 }
 
@@ -202,7 +209,24 @@ export interface RenderSession {
   seek(t: number): Promise<void>;
   input(ev: InputEvent): Promise<void>;
   info(): Promise<PageInfo>;
+  // seek(t) + capture of the canvas downscaled by `ss` (supersampling) over an optional background.
+  grab(t: number, o?: GrabOptions): Promise<Uint8Array>;
+  // seek(t) + raw RGBA pixels (GIF encoding).
+  grabRgba(t: number, o?: GrabOptions): Promise<{ width: number; height: number; rgba: Uint8Array }>;
+  // A frame fitted into w×h over a blurred copy of itself (social preview).
+  social(png: Uint8Array, width: number, height: number): Promise<Uint8Array>;
+  // Force the scroll progress (Player.setScrollProgress); false when the runtime has no such API.
+  setScroll(progress: number): Promise<boolean>;
+  // Evaluate an expression in the page (returns by value).
+  evaluate<T>(expression: string): Promise<T>;
   close(): Promise<void>;
+}
+
+export interface GrabOptions {
+  ss?: number; // supersampling factor the session renders at (viewport.deviceScaleFactor = scale × ss)
+  type?: "image/png" | "image/webp" | "image/jpeg";
+  quality?: number;
+  bg?: string; // CSS colour / "checker" drawn under the frame
 }
 
 export interface OpenOptions {
@@ -406,6 +430,27 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
       async info() {
         return (await page.evaluate<PageInfo>("window.__agent3dInfo()", timeoutMs)) ?? { stats: null, inspect: null, issues: [], state: null };
       },
+      async grab(t, o = {}) {
+        return dataUrlBytes(await page.evaluate(`window.__agent3dGrab(${JSON.stringify(t)}, ${JSON.stringify(o)})`, timeoutMs), `t=${t}`);
+      },
+      async grabRgba(t, o = {}) {
+        const r = await page.evaluate<{ width: number; height: number; rgba: string }>(`window.__agent3dGrab(${JSON.stringify(t)}, ${JSON.stringify({ ...o, raw: true })})`, timeoutMs);
+        if (!r?.rgba) throw new CliError("render-failed", `The page returned no pixels for t=${t}.`, "See consoleErrors; `agent3d doctor` runs a test render.");
+        return { width: r.width, height: r.height, rgba: new Uint8Array(Buffer.from(r.rgba, "base64")) };
+      },
+      async social(png, width, height) {
+        const r = await page.send<{ result: { value?: unknown }; exceptionDetails?: unknown }>(
+          "Runtime.callFunctionOn",
+          { functionDeclaration: "function (u, w, h) { return window.__agent3dSocial(u, w, h); }", objectId: await globalObjectId(page), arguments: [{ value: `data:image/png;base64,${b64(png)}` }, { value: width }, { value: height }], awaitPromise: true, returnByValue: true },
+          timeoutMs,
+        );
+        if (r.exceptionDetails) throw new CliError("render-failed", "Could not compose the social preview image.", "Export with --no-og.");
+        return dataUrlBytes(r.result.value, "the social preview");
+      },
+      async setScroll(progress) {
+        return !!(await page.evaluate<boolean>(`(() => { const p = window.__agent3d.player; if (typeof p.setScrollProgress !== "function") return false; p.setScrollProgress(${JSON.stringify(progress)}); return true; })()`, timeoutMs));
+      },
+      evaluate: <T,>(expression: string) => page.evaluate<T>(expression, timeoutMs),
       close: cleanup,
     };
     return session;
@@ -443,6 +488,12 @@ export interface RenderOptions {
   bg?: string;
   // Render only this object, auto-framed, on a neutral background.
   isolate?: string;
+  // Supersampling (draft / standard 1×, high 2×, ultra 3×).
+  quality?: MediaQuality;
+  // Force a transparent canvas (alpha PNGs) for scenes with a background.
+  transparent?: boolean;
+  // Scroll progress 0..1 (scroll-driven scenes): Player.setScrollProgress, else the matching time.
+  scroll?: number;
   timeoutMs?: number;
   log?: (msg: string) => void;
 }
@@ -457,6 +508,7 @@ export interface RenderResult {
   // Down-scaled copy of the sheet / first frame (previewWidth), when it was wider.
   preview?: string;
   size: { width: number; height: number; deviceScaleFactor: number };
+  supersampling?: number;
   capture: "canvas" | "page";
   stats: FrameStats | null;
   inspect: InspectResult | null;
@@ -531,13 +583,16 @@ export function frameBox(min: number[], max: number[], fov = 35, aspect = 1): { 
 
 export async function renderProject(opts: RenderOptions): Promise<RenderResult> {
   const t0 = Date.now();
-  const original = opts.scene ?? readScene(opts.projectDir);
+  const original = sceneForRender(opts.scene ?? readScene(opts.projectDir), { transparent: opts.transparent });
   const scene = opts.isolate ? isolateScene(original, opts.isolate) : original;
   const bgOpt = parseBg(opts.bg);
   const transparent = !!scene.target?.transparent;
   const frameBg = bgOpt && bgOpt !== "none" ? bgOpt : undefined;
   const sheetBg = bgOpt === "none" ? undefined : (bgOpt ?? (transparent ? "checker" : undefined));
-  const viewport = viewportFor(scene, { size: opts.size ?? (opts.isolate ? "800x800" : undefined), width: opts.width, scale: opts.scale });
+  const outViewport = viewportFor(scene, { size: opts.size ?? (opts.isolate ? "800x800" : undefined), width: opts.width, scale: opts.scale });
+  const ss = clampSs(QUALITY_SS[opts.quality ?? "standard"], outViewport);
+  const viewport = { ...outViewport, deviceScaleFactor: outViewport.deviceScaleFactor * ss };
+  if (opts.scroll !== undefined && !(opts.scroll >= 0 && opts.scroll <= 1)) throw new CliError("usage", "--scroll must be a progress between 0 and 1.", "e.g. --scroll 0.5 (half-way through the page scroll).", 2);
   const inputs = opts.input ?? [];
   let times = frameTimes(scene, { frames: opts.frames, count: opts.count ?? (opts.isolate ? 1 : undefined) });
   // Seeking backwards restarts the game: with inputs, render in time order.
@@ -546,6 +601,7 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
   const outDir = resolve(opts.outDir ?? join(opts.projectDir, "renders"));
   const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, timeoutMs: opts.timeoutMs, log: opts.log });
   try {
+    if (opts.scroll !== undefined && !(await session.setScroll(opts.scroll)) && !opts.frames) times = [scrollTime(scene, opts.scroll)];
     let isolated: RenderResult["isolated"];
     if (opts.isolate) {
       // Frame the object's real bounds, then re-mount with that camera.
@@ -570,7 +626,14 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
         await session.seek(inputs[next].t);
         await session.input(inputs[next]);
       }
-      const shot = capture === "page" ? await session.screenshot(t) : await session.frame(t);
+      const shot =
+        capture === "page"
+          ? ss > 1
+            ? await session.scale(await session.screenshot(t), Math.round(outViewport.width * outViewport.deviceScaleFactor))
+            : await session.screenshot(t)
+          : ss > 1
+            ? await session.grab(t, { ss })
+            : await session.frame(t);
       shots.push(frameBg ? await session.composite(shot, frameBg) : shot);
     }
     const framesMs = Date.now() - tf;
@@ -604,7 +667,8 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
       ...(sheet ? { sheet: projectPath(projectDir, sheet) } : {}),
       ...(preview ? { preview: projectPath(projectDir, preview) } : {}),
       ...(isolated ? { isolated } : {}),
-      size: viewport,
+      size: outViewport,
+      ...(ss > 1 ? { supersampling: ss } : {}),
       capture,
       stats: info.stats,
       inspect: info.inspect,
@@ -622,39 +686,227 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
 
 // ─── poster & video ─────────────────────────────────────────────────────
 
-export async function renderPoster(opts: { projectDir: string; scene?: SceneDoc; format?: "webp" | "png"; size?: string; width?: number; scale?: number; time?: number; timeoutMs?: number; log?: (m: string) => void }): Promise<{ bytes: Uint8Array; t: number; format: "webp" | "png"; size: Viewport }> {
-  const scene = opts.scene ?? readScene(opts.projectDir);
+export async function renderPoster(opts: { projectDir: string; scene?: SceneDoc; format?: "webp" | "png" | "jpeg"; size?: string; width?: number; scale?: number; time?: number; quality?: MediaQuality; transparent?: boolean; bg?: string; scroll?: number; timeoutMs?: number; log?: (m: string) => void }): Promise<{ bytes: Uint8Array; t: number; format: "webp" | "png" | "jpeg"; size: Viewport; supersampling: number }> {
+  const scene = sceneForRender(opts.scene ?? readScene(opts.projectDir), { transparent: opts.transparent });
   const viewport = viewportFor(scene, { size: opts.size, width: opts.width, scale: opts.scale });
-  const t = opts.time ?? scene.target?.posterTime ?? 0;
+  const ss = clampSs(QUALITY_SS[opts.quality ?? "standard"], viewport);
+  let t = opts.time ?? scene.target?.posterTime ?? 0;
   const format = opts.format ?? "webp";
-  const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, timeoutMs: opts.timeoutMs, log: opts.log });
+  const bg = parseBg(opts.bg);
+  const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport: { ...viewport, deviceScaleFactor: viewport.deviceScaleFactor * ss }, timeoutMs: opts.timeoutMs, log: opts.log });
   try {
-    const bytes = await session.frame(t, format === "webp" ? "image/webp" : "image/png", format === "webp" ? 0.85 : undefined);
-    return { bytes, t, format, size: viewport };
+    if (opts.scroll !== undefined && !(await session.setScroll(opts.scroll)) && opts.time === undefined) t = scrollTime(scene, opts.scroll);
+    const type = format === "webp" ? "image/webp" : format === "jpeg" ? "image/jpeg" : "image/png";
+    const q = format === "png" ? undefined : opts.quality === "ultra" || opts.quality === "high" ? 0.92 : 0.85;
+    const fill = bg && bg !== "none" ? bg : format === "jpeg" && scene.target?.transparent ? "#ffffff" : undefined;
+    const bytes = ss > 1 || fill || type === "image/jpeg" ? await session.grab(t, { ss, type, quality: q, bg: fill }) : await session.frame(t, type, q);
+    return { bytes, t, format, size: viewport, supersampling: ss };
   } finally {
     await session.close();
   }
 }
 
-export async function renderVideo(opts: { projectDir: string; scene?: SceneDoc; size?: string; width?: number; duration?: number; fps?: number; timeoutMs?: number; log?: (m: string) => void }): Promise<{ bytes: Uint8Array; frames: number; fps: number; duration: number; size: Viewport; ms: number }> {
+export async function renderVideo(opts: { projectDir: string; scene?: SceneDoc; size?: string; width?: number; duration?: number; fps?: number; format?: "webm" | "mp4"; quality?: MediaQuality; timeoutMs?: number; log?: (m: string) => void }): Promise<{ bytes: Uint8Array; frames: number; fps: number; duration: number; size: Viewport; ms: number; codec: string }> {
+  const format = opts.format ?? "webm";
+  const r = await renderMedia({ projectDir: opts.projectDir, scene: opts.scene, out: `video.${format}`, format, size: opts.size, width: opts.width ?? 960, duration: opts.duration, fps: opts.fps, quality: opts.quality, write: false, timeoutMs: opts.timeoutMs, log: opts.log });
+  return { bytes: r.data, frames: r.frames, fps: r.fps, duration: r.duration, size: { ...r.size, deviceScaleFactor: 1 }, ms: r.ms, codec: r.codec };
+}
+
+// ─── High-quality stills, video (MP4 / WebM), GIF, animated WebP ───────
+//
+// Every frame is seeked exactly (deterministic player): any fps / duration /
+// size, no dropped frames however slow the software renderer is.
+//   quality  draft 1× · standard 1× · high 2× · ultra 3× supersampling (rendered at ss× the
+//            pixel ratio, downscaled with a box filter in the page) — clamped to 4096 px per side.
+
+export type MediaQuality = "draft" | "standard" | "high" | "ultra";
+export type MediaFormat = "mp4" | "webm" | "gif" | "webp";
+
+export const QUALITY_SS: Record<MediaQuality, number> = { draft: 1, standard: 1, high: 2, ultra: 3 };
+
+export function parseQuality(q: string | undefined, fallback: MediaQuality = "standard"): MediaQuality {
+  if (q === undefined) return fallback;
+  if (q in QUALITY_SS) return q as MediaQuality;
+  throw new CliError("usage", `--quality must be draft, standard, high or ultra, got "${q}".`, "high = 2× supersampling, ultra = 3× (slower, smoother edges and fine detail).", 2);
+}
+
+// Supersampling factor that keeps the rendered canvas within 4096 px per side.
+export function clampSs(ss: number, viewport: { width: number; height: number; deviceScaleFactor: number }): number {
+  const max = Math.floor(4096 / (Math.max(viewport.width, viewport.height) * viewport.deviceScaleFactor));
+  return Math.max(1, Math.min(ss, max));
+}
+
+export function mediaFormatFromPath(path: string): MediaFormat | null {
+  const m = /\.(mp4|m4v|webm|gif|webp)$/i.exec(path);
+  if (!m) return null;
+  const ext = m[1].toLowerCase();
+  return ext === "m4v" ? "mp4" : (ext as MediaFormat);
+}
+
+// The scene prepared for a render: forced transparency (alpha PNG / GIF / WebP).
+export function sceneForRender(scene: SceneDoc, opts: { transparent?: boolean }): SceneDoc {
+  if (!opts.transparent || scene.target?.transparent) return scene;
+  return { ...scene, target: { ...scene.target, transparent: true } };
+}
+
+// Timeline time for a scroll progress when the runtime cannot force scroll:
+// deterministic players derive the scroll from t (t / duration).
+export function scrollTime(scene: SceneDoc, progress: number): number {
+  const tl = scene.timeline;
+  const d = tl?.trigger === "scroll" && tl.duration > 0 ? tl.duration : 4;
+  return Math.round(Math.min(Math.max(progress, 0), 1) * d * 1000) / 1000;
+}
+
+export interface MediaOptions {
+  projectDir: string;
+  scene?: SceneDoc;
+  out: string; // absolute path; the extension picks the format unless `format` is given
+  format?: MediaFormat;
+  fps?: number;
+  duration?: number;
+  start?: number;
+  size?: string;
+  width?: number;
+  scale?: number;
+  quality?: MediaQuality;
+  bg?: string;
+  transparent?: boolean;
+  loop?: number; // GIF / WebP: 0 = forever (default)
+  bitrate?: number; // video bits per second
+  write?: boolean; // write `out` (default true)
+  timeoutMs?: number;
+  log?: (msg: string) => void;
+}
+
+export interface MediaResult {
+  path: string;
+  format: MediaFormat;
+  codec: string;
+  frames: number;
+  fps: number;
+  duration: number;
+  size: { width: number; height: number };
+  supersampling: number;
+  bytes: number;
+  ms: number;
+}
+
+const even = (n: number) => n - (n % 2);
+
+export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { data: Uint8Array }> {
   const t0 = Date.now();
-  const scene = opts.scene ?? readScene(opts.projectDir);
-  // VP8 needs even dimensions on some players.
-  const vp = viewportFor(scene, { size: opts.size, width: opts.width ?? 960, scale: 1 });
-  const viewport = { ...vp, width: vp.width - (vp.width % 2), height: vp.height - (vp.height % 2) };
-  const fps = Math.max(1, Math.min(60, Math.round(opts.fps ?? 30)));
+  const format = opts.format ?? mediaFormatFromPath(opts.out);
+  if (!format) throw new CliError("usage", `Unknown video / animation format for "${opts.out}".`, "Use a .mp4, .webm, .gif or .webp file name (or --format).", 2);
+  const animated = format === "gif" || format === "webp";
+  const source = opts.scene ?? readScene(opts.projectDir);
+  const scene = sceneForRender(source, { transparent: opts.transparent && animated });
+  const fps = Math.max(1, Math.min(60, Math.round(opts.fps ?? (format === "gif" ? 15 : format === "webp" ? 20 : 30))));
   const duration = opts.duration ?? (scene.timeline?.duration && scene.timeline.duration > 0 ? scene.timeline.duration : 5);
-  if (!(duration > 0) || duration > 120) throw new CliError("usage", "--duration must be between 0 and 120 seconds.", undefined, 2);
+  if (!(duration > 0) || duration > 300) throw new CliError("usage", "--duration must be between 0 and 300 seconds.", undefined, 2);
   const count = Math.max(1, Math.round(duration * fps));
+  if (animated && count > 900) throw new CliError("usage", `${count} frames is too many for a ${format.toUpperCase()} (max 900).`, "Lower --fps or --duration, or render a video (.mp4 / .webm).", 2);
+  const base = viewportFor(scene, { size: opts.size, width: opts.width ?? (format === "gif" ? 640 : format === "webp" ? 800 : 1280), scale: opts.scale ?? 1 });
+  const out = { width: even(Math.round(base.width * base.deviceScaleFactor)), height: even(Math.round(base.height * base.deviceScaleFactor)) };
+  const ss = clampSs(QUALITY_SS[opts.quality ?? "standard"], base);
+  const viewport = { width: out.width / base.deviceScaleFactor, height: out.height / base.deviceScaleFactor, deviceScaleFactor: base.deviceScaleFactor * ss };
+  // Opaque formats: transparent scenes are drawn over a background.
+  const transparentScene = !!scene.target?.transparent;
+  const bg = parseBg(opts.bg);
+  const bgFill = bg && bg !== "none" ? bg : !animated && transparentScene ? "#ffffff" : undefined;
+  const start = Math.max(0, opts.start ?? 0);
   const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, timeoutMs: opts.timeoutMs, log: opts.log });
+  const progress = (i: number) => {
+    if (i % Math.max(1, fps) === 0) opts.log?.(`[agent3d render] ${format} frame ${i + 1}/${count}`);
+  };
   try {
-    const frames = [];
-    for (let i = 0; i < count; i++) {
-      const webp = await session.frame(i / fps, "image/webp", 0.9);
-      frames.push(webpToVp8(webp));
-      if (i % fps === 0) opts.log?.(`[agent3d export] video frame ${i + 1}/${count}`);
+    let data: Uint8Array;
+    let codec: string;
+    if (format === "gif") {
+      const frames = [];
+      for (let i = 0; i < count; i++) {
+        const f = await session.grabRgba(start + i / fps, { ss, bg: bgFill });
+        frames.push({ rgba: f.rgba });
+        progress(i);
+      }
+      const { encodeGif } = await import("./gif");
+      data = encodeGif(frames, { width: out.width, height: out.height, fps, loop: opts.loop ?? 0 });
+      codec = "gif";
+    } else if (format === "webp") {
+      const frames: Uint8Array[] = [];
+      for (let i = 0; i < count; i++) {
+        frames.push(await session.grab(start + i / fps, { ss, bg: bgFill, type: "image/webp", quality: opts.quality === "ultra" || opts.quality === "high" ? 0.92 : 0.85 }));
+        progress(i);
+      }
+      const { muxAnimatedWebp } = await import("./webpAnim");
+      data = muxAnimatedWebp(frames, { fps, loop: opts.loop ?? 0 });
+      codec = "webp";
+    } else {
+      const { avcCodecFor, muxMp4 } = await import("./mp4");
+      const candidates = format === "mp4" ? [avcCodecFor(out.width, out.height, fps), "avc1.640033", "avc1.4d0033", "avc1.42e033"] : ["vp09.00.40.08", "vp09.00.31.08", "vp8"];
+      const chosen = await session.evaluate<string | null>(`window.__agent3dVideoSupport(${JSON.stringify(candidates)}, ${out.width}, ${out.height}, ${fps})`);
+      if (!chosen && format === "mp4")
+        throw new CliError("video-unsupported", `This browser (${session.browser.name}) cannot encode H.264 at ${out.width}x${out.height} (WebCodecs).`, "Render a WebM instead (--video out.webm), use Google Chrome (AGENT3D_CHROME), or a smaller --size.");
+      if (!chosen) {
+        // No WebCodecs: VP8 key frames taken from lossy WebP stills.
+        const frames = [];
+        for (let i = 0; i < count; i++) {
+          frames.push(webpToVp8(await session.grab(start + i / fps, { ss, bg: bgFill ?? "#000000", type: "image/webp", quality: 0.9 })));
+          progress(i);
+        }
+        data = muxWebm(frames, fps);
+        codec = "vp8 (key frames)";
+      } else {
+        const pixels = out.width * out.height * fps;
+        const bitrate = Math.round(opts.bitrate ?? Math.min(40e6, Math.max(1e6, pixels * (opts.quality === "ultra" ? 0.16 : opts.quality === "high" ? 0.12 : 0.08))));
+        await session.evaluate(`window.__agent3dVideoStart(${JSON.stringify({ codec: chosen, width: out.width, height: out.height, fps, bitrate, keyInterval: fps * 2, ss, bg: bgFill ?? (transparentScene ? "#000000" : undefined) })})`);
+        type Chunk = { b64: string; key: boolean };
+        const chunks: Chunk[] = [];
+        for (let i = 0; i < count; i++) {
+          await session.evaluate(`window.__agent3dVideoFrame(${JSON.stringify(start + i / fps)}, ${i})`);
+          if (i % 30 === 29) chunks.push(...((await session.evaluate<Chunk[]>("window.__agent3dVideoDrain()")) ?? []));
+          progress(i);
+        }
+        const end = await session.evaluate<{ chunks: Chunk[]; description: string | null; error: string | null }>("window.__agent3dVideoEnd()");
+        if (end.error) throw new CliError("render-failed", `The video encoder failed: ${end.error}`, "Try a smaller --size, another --fps, or a .webm file.");
+        chunks.push(...end.chunks);
+        const encoded = chunks.map((c) => ({ data: new Uint8Array(Buffer.from(c.b64, "base64")), key: c.key }));
+        if (encoded.length !== count) throw new CliError("render-failed", `The encoder returned ${encoded.length} frames for ${count}.`, "Render again; if it persists, use a .webm file.");
+        if (format === "mp4") {
+          if (!end.description) throw new CliError("render-failed", "The H.264 encoder returned no decoder configuration (avcC).", "Use a .webm file.");
+          data = muxMp4(encoded, { width: out.width, height: out.height, fps, avcC: new Uint8Array(Buffer.from(end.description, "base64")) });
+        } else {
+          data = muxWebm(encoded.map((e) => ({ ...e, width: out.width, height: out.height })), fps, { codec: chosen.startsWith("vp09") ? "V_VP9" : "V_VP8" });
+        }
+        codec = chosen;
+      }
     }
-    return { bytes: muxWebm(frames, fps), frames: count, fps, duration, size: viewport, ms: Date.now() - t0 };
+    if (opts.write !== false) {
+      mkdirSync(join(opts.out, ".."), { recursive: true });
+      writeFileSync(opts.out, data);
+    }
+    return { path: opts.out, format, codec, frames: count, fps, duration, size: out, supersampling: ss, bytes: data.byteLength, ms: Date.now() - t0, data };
+  } finally {
+    await session.close();
+  }
+}
+
+// Export images in one browser session: the poster (scene aspect, 2× supersampled)
+// and the 1200×630 social preview.
+export async function renderExportImages(opts: { projectDir: string; scene?: SceneDoc; og?: boolean; width?: number; time?: number; timeoutMs?: number; log?: (m: string) => void }): Promise<{ poster: Uint8Array; posterSize: { width: number; height: number }; og?: Uint8Array; t: number }> {
+  const scene = opts.scene ?? readScene(opts.projectDir);
+  const base = viewportFor(scene, { width: opts.width ?? 1200, scale: 1 });
+  const ss = clampSs(2, base);
+  const t = opts.time ?? scene.target?.posterTime ?? 0;
+  const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport: { ...base, deviceScaleFactor: ss }, timeoutMs: opts.timeoutMs, log: opts.log });
+  try {
+    const poster = await session.grab(t, { ss, type: "image/webp", quality: 0.86 });
+    let og: Uint8Array | undefined;
+    if (opts.og !== false) {
+      const png = await session.grab(t, { ss, bg: scene.target?.transparent ? "#ffffff" : undefined });
+      // The frame fitted into 1200×630 over a blurred, darkened copy of itself (any aspect).
+      og = await session.social(png, 1200, 630);
+    }
+    return { poster, posterSize: { width: base.width, height: base.height }, og, t };
   } finally {
     await session.close();
   }

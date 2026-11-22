@@ -3,14 +3,14 @@
 import { CATALOG, type CatalogEntry, type CatalogSection } from "../core/catalog";
 import { getAt, PathError } from "../core/jsonPath";
 import { closest } from "../core/suggest";
-import type { ObjectDef, SceneDoc, TargetKind, TimelineDef, TrackDef } from "../core/types";
+import type { InteractionDef, ObjectDef, SceneDoc, SegmentDef, TargetKind, TimelineDef, TrackDef } from "../core/types";
 import { DEFAULT_ASPECT, TARGET_KINDS, validateScene } from "../core/validate";
 import { checkProject } from "../ops/check";
 import { OpsError } from "../ops/context";
 import { addObject, listObjects, removeObject, updateObject } from "../ops/objects";
 import { createProject, loadProject } from "../ops/project";
 import { applyScene, getScene, patchScene, PATCH_OPS, summarizeScene, type PatchOp } from "../ops/scene";
-import { editTimeline, setTimeline } from "../ops/timeline";
+import { editTimeline, setInteractions, setTimeline } from "../ops/timeline";
 import { listTemplates, findTemplate } from "../ops/templates";
 import { listAssets } from "../ops/assets";
 import { bool, compactIssues, issueCounts, mutationResult, optStr, str } from "./shared";
@@ -213,14 +213,16 @@ export const SCENE_TOOLS: AiTool[] = [
   {
     name: "timeline_set",
     description:
-      'Edit the keyframe timeline. Either replace it entirely with `timeline` ({ "duration": 6, "loop": true | "pingpong", "trigger": "visible|load|hover|click|scroll", "tracks": [...] }, or null to remove it), or edit incrementally with `addTracks` (replaces tracks with the same target), `removeTargets` and `settings` (duration, loop, trigger, autoplay). A track: { "target": "<id>.<property>", "keys": [[time_s, value], …], "ease": "inOutSine" }. Targets: position | rotation | scale (vec3, rotation in DEGREES) or position.x / rotation.y … (number), visible, material.opacity | color | emissive | emissiveIntensity | metalness | roughness, material.uniforms.<name>, "camera.position" / "camera.target" / "camera.fov", "<lightId>.intensity" / ".color". Keys are sorted for you; the duration grows to the last key.',
+      'Edit the keyframe timeline. Replace it with `timeline` ({ "duration": 6, "loop": true | "pingpong", "trigger": "visible|load|hover|click|scroll|manual", "speed", "autoplay": true | false | "<segment>", "markers": { "name": seconds }, "segments": { "name": { "from", "to" } | [from, to] }, "scroll": { "start": "top bottom", "end": "bottom top", "smoothing": 0.8 }, "tracks": [...] }, null removes it), or edit incrementally: `addTracks` (replaces tracks with the same target), `removeTargets`, `settings` (duration, loop, trigger, speed, autoplay, scroll), `markers` / `segments` (merged by name, null removes). A track: { "target": "<selector>.<property>", "keys": [[time_s, value], [time_s, value, "ease"]…], "ease": "outCubic", "stagger": 0.06, "staggerFrom": "start|end|center|edges|random" }. Selector: an id, "a,b,c", "tag:<tag>", "children:<id>" (text letters too), "camera", "environment", "postfx". Properties: position | rotation | scale (vec3, rotation in DEGREES) or .x/.y/.z, visible, material.<opacity|color|emissive|emissiveIntensity|metalness|roughness|…>, material.uniforms.<name>, morph.<name>, animation.<clip>.weight|speed|time (models), light intensity/color/angle/penumbra, camera.position|target|fov|zoom|focus, environment.fog.color|near|far|density, environment.lightingIntensity|exposure|background, postfx.<type>.<param>. Values may be relative: "+=1", "-=0.5", "*=1.2". Easings: in/out/inOut × Quad Cubic Quart Quint Sine Expo Circ Back Elastic Bounce, linear, step, "cubicBezier(x1,y1,x2,y2)", "spring(stiffness,damping)", "steps(n)". Keys are sorted for you.',
     inputSchema: {
       type: "object",
       properties: {
         timeline: { type: ["object", "null"], description: "Full replacement (null removes the timeline).", additionalProperties: true },
         addTracks: { type: "array", items: { type: "object", additionalProperties: true }, description: "Tracks to add or replace (by target)." },
         removeTargets: { type: "array", items: { type: "string" }, description: "Targets of tracks to remove." },
-        settings: { type: "object", description: "Timeline settings to merge: duration, loop, trigger, autoplay.", additionalProperties: true },
+        settings: { type: "object", description: "Timeline settings to merge: duration, loop, trigger, speed, autoplay, scroll.", additionalProperties: true },
+        markers: { type: "object", description: 'Markers to add / move ({ "reveal": 1.2 }); null removes one.', additionalProperties: true },
+        segments: { type: "object", description: 'Segments to add / change ({ "hover-in": { "from": 0, "to": 0.6 } }); null removes one.', additionalProperties: true },
         dryRun: dryRunProp,
       },
     },
@@ -228,11 +230,40 @@ export const SCENE_TOOLS: AiTool[] = [
     async handler(ctx, input) {
       const dryRun = bool(input, "dryRun");
       if ("timeline" in input && input.timeline !== undefined) return mutationResult(await setTimeline(ctx.fs, input.timeline as TimelineDef | null, { dryRun }), dryRun);
-      if (!input.addTracks && !input.removeTargets && !input.settings) throw new OpsError("invalid", "timeline_set needs `timeline`, `addTracks`, `removeTargets` or `settings`.");
+      if (!input.addTracks && !input.removeTargets && !input.settings && !input.markers && !input.segments) throw new OpsError("invalid", "timeline_set needs `timeline`, `addTracks`, `removeTargets`, `settings`, `markers` or `segments`.");
       return mutationResult(
-        await editTimeline(ctx.fs, { addTracks: input.addTracks as TrackDef[] | undefined, removeTargets: input.removeTargets as string[] | undefined, settings: input.settings as Partial<TimelineDef> | undefined }, { dryRun }),
+        await editTimeline(
+          ctx.fs,
+          {
+            addTracks: input.addTracks as TrackDef[] | undefined,
+            removeTargets: input.removeTargets as string[] | undefined,
+            settings: input.settings as Partial<TimelineDef> | undefined,
+            markers: input.markers as Record<string, number | null> | undefined,
+            segments: input.segments as Record<string, SegmentDef | null> | undefined,
+          },
+          { dryRun },
+        ),
         dryRun,
       );
+    },
+  },
+  {
+    name: "interactions_set",
+    description:
+      'Edit scene.interactions — no-code triggers. Replace the list with `interactions` (null or [] removes them) or append with `add`. An interaction: { "on": "click" | "hover" | "hoverEnd" | "visible" | "scroll" | "key" | "event", "target"?: "<objectId>" (click/hover/hoverEnd; omitted = whole canvas), "key"?: "Space" (on key), "event"?: "<marker or emitted name>" (on event), "at"?: 0.5 (on scroll: progress crossed downward), "once"?: true, "do": [actions] }. Actions: { "play": "<segment>" | "timeline", "reverse"?: true }, { "toggle": "<segment>" } (forward, then backward), { "seek": seconds | "<marker>" }, { "set": { "path": "<id>.<property>", "value": … }, "duration"?: 0.4, "ease"?: "outCubic" } (tweened from the current value), { "emit": "<event>", "payload"? }, { "openUrl": "https://…" | "/path", "newTab"? } (click / key only — the only way a scene navigates), { "playClip": "Wave", "target": "<modelId>", "loop"?, "speed"?, "crossfade"? }. Hover / click targets get a pointer cursor. Check hover / click states with render_preview `input` (pointer / click events).',
+    inputSchema: {
+      type: "object",
+      properties: {
+        interactions: { type: ["array", "null"], items: { type: "object", additionalProperties: true }, description: "Full replacement (null or [] removes them)." },
+        add: { type: "array", items: { type: "object", additionalProperties: true }, description: "Interactions to append." },
+        dryRun: dryRunProp,
+      },
+    },
+    mutating: true,
+    async handler(ctx, input) {
+      const dryRun = bool(input, "dryRun");
+      if (input.interactions === undefined && !input.add) throw new OpsError("invalid", "interactions_set needs `interactions` or `add`.");
+      return mutationResult(await setInteractions(ctx.fs, { interactions: input.interactions as InteractionDef[] | null | undefined, add: input.add as InteractionDef[] | undefined }, { dryRun }), dryRun);
     },
   },
   {

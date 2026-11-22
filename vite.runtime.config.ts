@@ -1,4 +1,22 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+
+// The catalog (src/core/catalog.ts) is shared with validation, docs and AI tools;
+// websites only need its ids, types and defaults. Drop the prose (descriptions,
+// examples' text stays) from the runtime bundle: ~10 KB gzipped off the core.
+function stripCatalogProse(): Plugin {
+  const STR = String.raw`"(?:[^"\\]|\\.)*"`;
+  return {
+    name: "agent3d-strip-catalog-prose",
+    enforce: "pre",
+    transform(code, id) {
+      if (!/src[\\/]core[\\/]catalog\.ts$/.test(id)) return null;
+      const out = code
+        .replace(new RegExp(String.raw`\bdescription: ${STR}`, "g"), 'description: ""')
+        .replace(new RegExp(String.raw`\b(n|i|b|c|cs|v3|e)\((${STR}), ${STR}`, "g"), '$1($2, ""');
+      return { code: out, map: null };
+    },
+  };
+}
 
 // Builds the runtime shipped to websites (src/runtime/index.ts):
 //   default        → dist/runtime/agent3d-runtime.js + lazy chunks/ (postfx,
@@ -10,6 +28,7 @@ export default defineConfig(({ mode }) => {
   const single = mode === "single";
   return {
     publicDir: false,
+    plugins: [stripCatalogProse()],
     define: {
       "process.env.NODE_ENV": JSON.stringify("production"),
     },
@@ -31,6 +50,9 @@ export default defineConfig(({ mode }) => {
         output: {
           format: "es",
           chunkFileNames: "chunks/[name]-[hash].js",
+          // Lib mode keeps whitespace in ES output (to preserve pure annotations for
+          // downstream bundlers); the runtime ships as-is to websites, so minify fully.
+          minify: true,
           ...(single ? { codeSplitting: false } : {}),
         },
       },

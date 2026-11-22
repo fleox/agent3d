@@ -3,9 +3,10 @@
 Everything in `library/` ships inside the Agent3D npm package and is used offline
 (scenes reference it as `"library:<id>"`, e.g. `"library:models/nature/pine-tree.glb"`).
 Every item is free to redistribute, modify and use commercially, with **no account**.
-Almost everything is **CC0 1.0** (public domain dedication). The one exception is the
-fox model, which also carries **CC BY 4.0** parts: its attribution line is below and
-in `index.json` (`attribution` field). Exported embeds that use it should keep that credit.
+Almost everything is **CC0 1.0** (public domain dedication). The exceptions carry
+**CC BY 4.0** parts (the fox, the sneaker, the velvet sofa, the iridescent lamp): their
+attribution lines are below and in `index.json` (`attribution` field). Exported embeds that
+use them keep that credit (`CREDITS.txt`).
 
 Per-file provenance (author, original URL, pack) lives in `library/sources.json`;
 `library/index.json` is generated from it by `node scripts/build-library.mjs`
@@ -24,12 +25,12 @@ Fonts are documented separately in `library/fonts/LICENSES.md`.
 
 | Source | Licence | What we use | Where it comes from |
 |---|---|---|---|
-| **KayKit** by Kay Lousberg (www.kaylousberg.com) | CC0 1.0 | Animated chibi characters (knight, mage, skeleton), medieval buildings, nature, hex tiles, props, furniture, city blocks, roads, cars, food, space base | Official GitHub repos `KayKit-Game-Assets/*` (Character Pack Adventurers 1.0 and Skeletons 1.0, Medieval Hexagon Pack 1.0, City Builder Bits, Dungeon Remastered, Furniture Bits, Halloween Bits, Restaurant Bits, Space Base Bits, Prototype Bits). Each repo has a `LICENSE.txt` that says CC0. |
+| **KayKit** by Kay Lousberg (www.kaylousberg.com) | CC0 1.0 | Animated chibi characters (knight, mage, barbarian, rogue, skeleton), medieval buildings, nature, hex tiles, props, furniture, city blocks, roads, cars, food, space base | Official GitHub repos `KayKit-Game-Assets/*` (Character Pack Adventurers 1.0 and Skeletons 1.0, Medieval Hexagon Pack 1.0, City Builder Bits, Dungeon Remastered, Furniture Bits, Halloween Bits, Restaurant Bits, Space Base Bits, Prototype Bits). Each repo has a `LICENSE.txt` that says CC0. |
 | **Kenney** (www.kenney.nl) | CC0 1.0 | Platformer hero, mini soldier, platforms, blocks, coins, flag, clouds, grass, racing trucks, motorcycle, tracks, blaster, suburban house, forest tile, trophy, tree | Official Kenney starter kits on GitHub: `KenneyNL/Starter-Kit-3D-Platformer`, `-City-Builder`, `-Racing`, `-FPS`, `-Basic-Scene` (Mini Arena sample). The kit code is MIT, and the READMEs say: "Assets included in this package (2D sprites, 3D models and sound effects) are CC0 licensed". |
 | **three.js examples**: RobotExpressive | CC0 1.0 | `characters/robot.glb` | `mrdoob/three.js/examples/models/gltf/RobotExpressive`. Model by Tomás Laulhé (Quaternius), CC0 1.0. Don McCurdy added face morph targets and converted it to glTF. |
-| **Khronos glTF-Sample-Assets** | CC0 1.0 (Fox: CC0 + CC BY 4.0) | `animals/fox.glb`, `animals/fish.glb` (BarramundiFish, Microsoft), `food/avocado.glb` (Microsoft), `products/boombox.glb` (Microsoft), `products/water-bottle.glb` (Microsoft), `products/lantern.glb` (sbtron, Frank Galligan) | `KhronosGroup/glTF-Sample-Assets/Models/*`. Licences come from each model's `metadata.json`. |
+| **Khronos glTF-Sample-Assets** | CC0 1.0 (Fox, MaterialsVariantsShoe, GlamVelvetSofa, IridescenceLamp: CC BY 4.0) | `animals/fox.glb`, `animals/fish.glb` (BarramundiFish, Microsoft), `food/avocado.glb` (Microsoft), `products/boombox.glb` (Microsoft), `products/water-bottle.glb` (Microsoft), `products/lantern.glb` (sbtron, Frank Galligan), `products/lounge-chair.glb` (SheenChair, Eric Chadwick / Wayfair, CC0), `products/sneaker.glb` (Shopify), `products/velvet-sofa.glb` and `products/iridescent-lamp.glb` (Eric Chadwick / Wayfair) | `KhronosGroup/glTF-Sample-Assets/Models/*`. Licences come from each model's `metadata.json` (models with logos or non-commercial parts were left out). Prepared by `scripts/make-library-models.mjs`: material variants and embedded lights dropped, textures ≤ 1024 px (opaque PNG → JPEG), unused data pruned. |
 | **Agent3D** (own work) | CC0 1.0 | Bakery models: `food/croissant.glb`, `food/baguette.glb`, `food/bread-loaf.glb`, `food/donut.glb`, `food/cupcake.glb`, `food/cookie.glb`, `food/pain-au-chocolat.glb` | Generated procedurally by `scripts/make-bakery-models.mjs` (three.js geometry + GLTFExporter, deterministic). Dedicated to the public domain under CC0 1.0. |
-| **Poly Haven** (polyhaven.com) | CC0 1.0 | 6 PBR texture sets (`textures/*`) and 4 HDRIs (`hdri/*`) | Poly Haven public API and `dl.polyhaven.org`. Textures: Wood Floor Deck (Dimitrios Savva); Concrete Floor 02, Denim Fabric, Aerial Grass Rock, Rusty Metal 02, Red Brick 03 (Rob Tuytel). HDRIs: Studio Small 09 (Sergej Majboroda), Venice Sunset (Greg Zaal), Kloofendal 48d Partly Cloudy Pure Sky (Greg Zaal, Jarod Guest), Moonless Golf (Greg Zaal). |
+| **Poly Haven** (polyhaven.com) | CC0 1.0 | PBR texture sets (`textures/*`), HDRIs (`hdri/*`) and photoreal props packed as `.glb` by `scripts/make-library-models.mjs` (glTF 1k): `props/potted-succulent.glb`, `props/modern-armchair.glb`, `props/rubber-duck.glb`, `props/coffee-table.glb`, `food/apple.glb`, `props/alarm-clock.glb`, `props/marble-bust.glb`, `props/brass-vase.glb` (Poly Haven) | Poly Haven public API and `dl.polyhaven.org`. Textures: Wood Floor Deck (Dimitrios Savva); Concrete Floor 02, Denim Fabric, Aerial Grass Rock, Rusty Metal 02, Red Brick 03 (Rob Tuytel). HDRIs: Studio Small 09 (Sergej Majboroda), Venice Sunset (Greg Zaal), Kloofendal 48d Partly Cloudy Pure Sky (Greg Zaal, Jarod Guest), Moonless Golf (Greg Zaal), Studio Small 08 (Sergej Majboroda, `softbox`), Empty Warehouse 01 (Sergej Majboroda, `warehouse`), Forest Slope (Andreas Mischok, `forest`), Potsdamer Platz (Greg Zaal, `city`), Spiaggia di Mondello (Andreas Mischok, `beach`), Shanghai Bund (Greg Zaal, `night-city`) — 1024×512 `.hdr` + tonemapped 1024×512 `.jpg` previews. |
 
 ## Attribution required (CC BY 4.0)
 
@@ -65,3 +66,12 @@ descriptive ids.
   part), CesiumMan (CC BY plus a trademark logo), ToyCar and SheenChair (CC0, but 1.4–3.8 MB
   each after optimisation, over the size budget).
 - **three.js Horse / Flamingo / Parrot / Stork**: no explicit licence statement.
+- **`models/products/sneaker.glb`**: "Materials Variants Shoe" by Shopify, CC BY 4.0, from
+  KhronosGroup/glTF-Sample-Assets (https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/MaterialsVariantsShoe).
+  Changes by Agent3D: default colourway only (variants dropped), textures ≤ 1024 px.
+- **`models/products/velvet-sofa.glb`**: "Glam Velvet Sofa" by Eric Chadwick / Wayfair, LLC, CC BY 4.0,
+  from KhronosGroup/glTF-Sample-Assets (https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/GlamVelvetSofa).
+  Changes by Agent3D: default variant only, embedded light removed, textures ≤ 1024 px.
+- **`models/products/iridescent-lamp.glb`**: "Iridescence Lamp" by Eric Chadwick / Wayfair, LLC, CC BY 4.0,
+  from KhronosGroup/glTF-Sample-Assets (https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/IridescenceLamp).
+  Changes by Agent3D: textures ≤ 1024 px (JPEG), unused data pruned.

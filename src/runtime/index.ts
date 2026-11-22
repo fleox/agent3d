@@ -3,13 +3,15 @@
 
 import { version } from "../../package.json";
 import type { MountScene } from "./api";
+import { bindSceneData } from "./data";
 import { Agent3DSceneElement, defineElement } from "./element";
-import { mountScene } from "./player";
+import { liveContextCount, mountScene } from "./player";
 
 export type { FrameStats, HeadlessHandle, InspectResult, MountOptions, Player, RuntimeIssue, ScriptApi } from "./api";
-export { mountScene, Agent3DSceneElement, version };
+export { mountScene, Agent3DSceneElement, bindSceneData, liveContextCount, version };
 
 defineElement();
 
-const g = globalThis as unknown as { Agent3D?: { mountScene: MountScene; version: string } };
-if (!g.Agent3D) g.Agent3D = { mountScene, version };
+// One global per page, shared by every scene (several <script> tags of the same runtime are harmless).
+const g = globalThis as unknown as { Agent3D?: { mountScene: MountScene; version: string; bindSceneData: typeof bindSceneData; liveContexts: () => number } };
+if (!g.Agent3D) g.Agent3D = { mountScene, version, bindSceneData, liveContexts: liveContextCount };

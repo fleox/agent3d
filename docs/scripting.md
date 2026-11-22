@@ -54,27 +54,54 @@ Several scripts can run side by side; they share `api.state` and events.
 | `api.input.pressed(code)` | Key went down during this step |
 | `api.input.pointer` | `{ x, y, down, justPressed }`, normalised −1..1 over the canvas (mouse or touch) |
 | `api.input.swipe()` | `"left" | "right" | "up" | "down" | null` for this step (touch gestures) |
-| `api.input.pointerWorld()` | World point under the pointer on the y = 0 plane or on a body: `{ x, y, z, objectId? }` or `null` |
+| `api.input.pointerWorld()` | World point under the pointer on a body (its rendered mesh) or else on the y = 0 plane: `{ x, y, z, objectId? }` or `null` |
 
 The embed takes keyboard focus when clicked (games get `tabindex="0"` and `role="application"`).
 
 ## Physics
 
-Light AABB / sphere physics, fixed step. Objects take part when they have a `body`:
+Real rigid-body physics (cannon-es, fixed step, deterministic): bodies rotate, tumble, stack, roll and sleep. Objects take part when they have a `body`:
 
 ```json
 "body": { "type": "dynamic", "shape": "sphere", "restitution": 0.7, "friction": 0.3, "mass": 1 }
 ```
 
-`type`: `static` (walls, ground), `dynamic` (falls, bounces, pushed by impulses), `kinematic` (moved by your script, pushes dynamic bodies), `trigger` (detects overlaps, no response). `shape`: `box`, `sphere`, `auto` (from the bounding box); `size` / `radius` override it. `scene.physics.gravity` (default `[0, -9.81, 0]`), `scene.physics.step` (default 1/60).
+`type`: `static` (walls, ground), `dynamic` (simulated), `kinematic` (moved by your script — set its position every step or give it a velocity — and pushes dynamic bodies), `trigger` (detects overlaps, no response). Shapes (`box`, `sphere`, `cylinder`, `capsule`, `convex`, `trimesh`, `heightfield`, `compound`, `auto`), materials, collision layers, joints (hinge, point, distance, lock, spring) and `physics.debug` wireframes are described in [scene-format.md](scene-format.md#rigid-body-physics). Angles and angular velocities are in degrees (/ s), like rotations everywhere.
+
+Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports it (dynamic bodies keep their velocity; kinematic bodies sweep to the new pose so they push what they touch). A player whose velocity you set every step should have `"fixedRotation": true` (or `"character": true`), otherwise friction makes it tumble.
 
 | Member | Description |
 |---|---|
-| `api.physics.overlaps(a, b)` | Bounding volumes intersect (ids or objects) |
-| `api.physics.contacts(a)` | Bodies currently touching `a` |
-| `api.physics.raycast(from, dir, maxDistance?)` | First body hit: `{ objectId, distance, point }` or `null` |
-| `api.physics.applyImpulse(obj, [x, y, z])` | Instant velocity change (jumps, kicks) |
-| `api.physics.onCollision((a, b) => {})` | Called when two bodies start touching (register it in `start`) |
+| `api.physics.overlaps(a, b)` | Exact shape overlap right now (ids or objects, any body types, no step needed) |
+| `api.physics.contacts(a)` | Objects touching `a` during the last step (incl. triggers) |
+| `api.physics.raycast(from, dir, maxDistance?, { ignore?, layers?, triggers? }?)` | Nearest hit on the real shapes: `{ objectId, distance, point, normal }` or `null` (triggers are hit unless `triggers: false`) |
+| `api.physics.applyImpulse(obj, [x, y, z], point?)` | Instant velocity change; a world `point` off the centre also spins it |
+| `api.physics.applyForce(obj, [x, y, z], point?)` / `applyTorque(obj, [x, y, z])` | Continuous push for the next step (call every update: thrusters, wind) |
+| `api.physics.setVelocity(obj, v)` / `getVelocity(obj)` | Linear velocity (m/s) — also `obj.velocity.x = …` |
+| `api.physics.setAngularVelocity(obj, deg)` / `getAngularVelocity(obj)` | Spin in degrees / s |
+| `api.physics.grounded(obj)` | Standing on something (a contact pushing up) |
+| `api.physics.moveCharacter(obj, { x, z }, { speed?, acceleration?, airControl? }?)` | Character controller: steer horizontally toward `move × speed` (move length ≤ 1, default speed 5), keeps the vertical velocity, reduced control in the air; turns the body into a character (no rotation, no friction). Call once per update |
+| `api.physics.jump(obj, speed?)` | Jumps (default 6 m/s) when grounded or within 0.12 s of leaving the ground (coyote time); no double jump; returns `true` when it jumped |
+| `api.physics.wake(obj)` | Wake a sleeping body |
+| `api.physics.setMotorSpeed(jointId, deg)` | Hinge motor speed of a `physics.joints` entry |
+| `api.physics.onCollision((a, b, info) => {})` | Contact began (also for triggers); `info = { point, normal (a → b), impulse (N·s), speed (m/s) }` — e.g. play a sound when `info.impulse > 1` (register it in `start`) |
+| `api.physics.onCollisionEnd((a, b) => {})` | Contact ended |
+| `api.physics.onTriggerEnter((trigger, other) => {})` / `onTriggerExit(...)` | Something entered / left a trigger body |
+
+Platformer sketch:
+
+```js
+export default function (api) {
+  const hero = api.get("hero"); // body: { "type": "dynamic", "shape": "capsule", "character": true }
+  return {
+    update() {
+      const x = (api.input.isDown("ArrowRight") ? 1 : 0) - (api.input.isDown("ArrowLeft") ? 1 : 0);
+      api.physics.moveCharacter(hero, { x, z: 0 }, { speed: 6 });
+      if (api.input.pressed("Space") && api.physics.jump(hero, 7)) api.audio.play("jump");
+    },
+  };
+}
+```
 
 ## HUD
 
@@ -94,7 +121,7 @@ Layout and phones: the HUD is a 3 × 3 grid (top / middle / bottom rows × left 
 |---|---|
 | `api.audio.play(name)` | A sound from `scene.audio.sounds` (`{ "preset": "coin" }` synthesised, or `{ "src": "assets/audio/x.mp3" }`) |
 | `api.audio.music(on)` | Start / stop `scene.audio.music` |
-| `api.on(event, handler)`, `api.emit(event, payload?)` | Custom events between scripts (HUD buttons emit their `action`) |
+| `api.on(event, handler)`, `api.emit(event, payload?)` | Custom events between scripts (HUD buttons emit their `action`). Every emitted event also reaches the page as an `agent3d:event` DOM event (`detail: { name, payload }`) on `<agent3d-scene>`, and the page can send events in with `element.trigger(name, payload)` — e.g. report a game's score to analytics, or start a level from a button outside the canvas |
 | `api.storage.get(key)`, `api.storage.set(key, value)` | Small persistent values (best score), namespaced per scene, never throws |
 | `api.data` | `scene.data` (read it for tuning and levels) |
 | `api.restart()` | Rebuild the scene from its definition |
@@ -127,7 +154,7 @@ The lint is a contract checked before export, not a runtime isolation boundary: 
 
 - Embed exports copy scripts to `<name>/scripts/` and the runtime imports them by URL (same origin as the scene).
 - Single-HTML exports inline them as `<script type="text/agent3d-script" data-path="scripts/game.js">` and the runtime imports them from a `blob:` URL (a CSP must allow `script-src blob:`, see [export.md](export.md)).
-- The default export must be a function; otherwise the runtime reports `script-error` (in `render` results as `issues`, in the page as an `agent3d-error` event).
+- The default export must be a function; otherwise the runtime reports `script-error` (in `render` results as `issues`, in the page as an `agent3d:error` event).
 
 ## Testing scripts
 

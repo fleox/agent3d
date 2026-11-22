@@ -8,6 +8,12 @@ import { useStore, type TinyStore } from "./tinyStore";
 
 export type BottomTab = "timeline" | "json" | "check";
 export type Device = "desktop" | "tablet" | "phone";
+export type GizmoMode = "translate" | "rotate" | "scale";
+export type ViewMode = "editor" | "camera";
+export interface LightSelection {
+  id: string;
+  part: "position" | "target";
+}
 
 export interface CheckIssue {
   severity: "error" | "warning" | "info";
@@ -32,6 +38,12 @@ export interface UiState {
   device: Device;
   helpers: boolean;
   interact: boolean;
+  // Viewport editing: gizmo mode / space, snapping, editor camera vs scene camera, selected light handle.
+  gizmo: GizmoMode;
+  space: "local" | "world";
+  snap: boolean;
+  view: ViewMode;
+  lightSel: LightSelection | null;
   dialog: null | "export" | "render" | "shortcuts";
   flash: { ids: string[]; at: number } | null;
   agentPulse: number;

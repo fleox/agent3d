@@ -1,6 +1,7 @@
 // Add panel: primitives, text, generators, particles, library models, lights.
 // Click a tile to add it at the origin (inside the selected group when one
-// is selected) and select it.
+// is selected) and select it, or drag it onto the viewport to place it where
+// it is dropped.
 
 import clsx from "clsx";
 import {
@@ -17,6 +18,7 @@ import { newObject, takenIds, type NewObjectSpec } from "../lib/patches";
 import { findObject } from "../../ops/tree";
 import { useEditor, useSnapshot, useUi } from "../state/context";
 import { pretty } from "../lib/labels";
+import { setDragPayload, type DropPayload } from "../lib/dnd";
 
 const GEO_ICONS: Record<string, LucideIcon> = {
   box: Box, roundedBox: SquareRoundCorner, sphere: Circle, cylinder: Cylinder, cone: Cone, capsule: Pill, torus: Donut, torusKnot: InfinityIcon,
@@ -84,7 +86,7 @@ export function AddPanel() {
       body = (
         <Grid>
           {GEOMETRIES.map((g) => (
-            <Tile key={g.id} icon={GEO_ICONS[g.id] ?? Box} label={pretty(g.id)} hint={g.description} onClick={() => add({ kind: "mesh", geometry: g.id })} />
+            <Tile key={g.id} icon={GEO_ICONS[g.id] ?? Box} label={pretty(g.id)} hint={g.description} drag={{ object: { kind: "mesh", geometry: g.id } }} onClick={() => add({ kind: "mesh", geometry: g.id })} />
           ))}
         </Grid>
       );
@@ -95,7 +97,7 @@ export function AddPanel() {
           <input value={text} onChange={(e) => setText(e.target.value)} className="field h-7" aria-label={t("add.textValue")} placeholder={t("add.textValue")} />
           <div className="grid grid-cols-2 gap-1.5">
             {FONTS.map((f) => (
-              <button key={f.id} type="button" title={f.description} onClick={() => add({ kind: "text", text: text || "Text", font: f.id })} className="flex h-12 flex-col items-start justify-center rounded-md bg-ink-2 px-2 text-left hover:bg-ink-3">
+              <button key={f.id} type="button" title={f.description} draggable onDragStart={(e) => setDragPayload(e, { object: { kind: "text", text: text || "Text", font: f.id } })} onClick={() => add({ kind: "text", text: text || "Text", font: f.id })} className="flex h-12 flex-col items-start justify-center rounded-md bg-ink-2 px-2 text-left hover:bg-ink-3">
                 <span className={clsx("text-base leading-none", f.id.includes("serif") && "font-serif", f.id === "mono" && "font-mono", f.id.includes("bold") && "font-bold", f.id === "display" && "font-black tracking-tight")}>Aa</span>
                 <span className="mt-1 text-2xs text-fg-faint">{f.id}</span>
               </button>
@@ -108,7 +110,7 @@ export function AddPanel() {
       body = (
         <Grid>
           {GENERATORS.map((g) => (
-            <Tile key={g.id} icon={GEN_ICONS[g.id] ?? Castle} label={pretty(g.id)} hint={g.description} onClick={() => add({ kind: "generator", generator: g.id })} />
+            <Tile key={g.id} icon={GEN_ICONS[g.id] ?? Castle} label={pretty(g.id)} hint={g.description} drag={{ object: { kind: "generator", generator: g.id } }} onClick={() => add({ kind: "generator", generator: g.id })} />
           ))}
         </Grid>
       );
@@ -117,7 +119,7 @@ export function AddPanel() {
       body = (
         <Grid>
           {PARTICLE_PRESETS.map((g) => (
-            <Tile key={g.id} icon={PARTICLE_ICONS[g.id] ?? Sparkles} label={pretty(g.id)} hint={g.description} onClick={() => add({ kind: "particles", preset: g.id })} />
+            <Tile key={g.id} icon={PARTICLE_ICONS[g.id] ?? Sparkles} label={pretty(g.id)} hint={g.description} drag={{ object: { kind: "particles", preset: g.id } }} onClick={() => add({ kind: "particles", preset: g.id })} />
           ))}
         </Grid>
       );
@@ -140,7 +142,7 @@ export function AddPanel() {
           </div>
           <div className="py-1">
             {filtered.slice(0, 120).map((a) => (
-              <button key={a.id} type="button" title={`${a.description}\n${a.license}${a.author ? ` · ${a.author}` : ""}`} onClick={() => add({ kind: "model", src: `library:${a.id}`, name: a.id.split("/").pop() })} className="flex w-full items-center gap-2 px-2.5 py-1 text-left hover:bg-ink-2">
+              <button key={a.id} type="button" title={`${a.description}\n${a.license}${a.author ? ` · ${a.author}` : ""}`} draggable onDragStart={(e) => setDragPayload(e, { object: { kind: "model", src: `library:${a.id}`, name: a.id.split("/").pop() } })} onClick={() => add({ kind: "model", src: `library:${a.id}`, name: a.id.split("/").pop() })} className="flex w-full items-center gap-2 px-2.5 py-1 text-left hover:bg-ink-2">
                 <Box size={12} className="shrink-0 text-fg-faint" />
                 <span className="min-w-0 flex-1 truncate text-sm">{a.id.split("/").pop()}</span>
                 <span className="shrink-0 text-2xs text-fg-faint">{a.id.split("/")[0]}</span>
@@ -155,7 +157,7 @@ export function AddPanel() {
       body = (
         <Grid>
           {LIGHTS.map((l) => (
-            <Tile key={l.type} icon={l.icon} label={pretty(l.type)} hint={t("add.lightHint")} onClick={() => addLight(l.def)} />
+            <Tile key={l.type} icon={l.icon} label={pretty(l.type)} hint={t("add.lightHint")} drag={{ light: l.def }} onClick={() => addLight(l.def)} />
           ))}
         </Grid>
       );
@@ -184,9 +186,9 @@ function Grid({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-3 gap-1 p-1.5">{children}</div>;
 }
 
-function Tile({ icon: I, label, hint, onClick }: { icon: LucideIcon; label: string; hint?: string; onClick(): void }) {
+function Tile({ icon: I, label, hint, onClick, drag }: { icon: LucideIcon; label: string; hint?: string; onClick(): void; drag?: DropPayload }) {
   return (
-    <button type="button" title={hint} onClick={onClick} className="flex h-[60px] flex-col items-center justify-center gap-1.5 rounded-md text-fg-muted transition-colors hover:bg-ink-3 hover:text-fg active:bg-ink-4">
+    <button type="button" title={hint} onClick={onClick} draggable={!!drag} onDragStart={drag ? (e) => setDragPayload(e, drag) : undefined} className="flex h-[60px] flex-col items-center justify-center gap-1.5 rounded-md text-fg-muted transition-colors hover:bg-ink-3 hover:text-fg active:bg-ink-4">
       <I size={18} strokeWidth={1.5} />
       <span className="w-full truncate px-1 text-center text-2xs">{label}</span>
     </button>

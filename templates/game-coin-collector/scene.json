@@ -194,7 +194,8 @@
           0.8
         ],
         "friction": 0,
-        "restitution": 0
+        "restitution": 0,
+        "fixedRotation": true
       },
       "castShadow": true
     },

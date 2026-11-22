@@ -1,0 +1,19 @@
+{
+  "id": "game-physics-playground",
+  "title": "Tower smash (physics)",
+  "description": "Rigid-body physics playground: click or tap to throw balls at a tower of wooden blocks that really tumbles, slides and stacks — knock it all off in as few throws as possible, impact sounds, best score, attract mode.",
+  "kind": "game",
+  "tags": [
+    "game",
+    "physics",
+    "rigid-body",
+    "tower",
+    "blocks",
+    "throw",
+    "click",
+    "touch",
+    "casual",
+    "sandbox"
+  ],
+  "aspect": "16:9"
+}

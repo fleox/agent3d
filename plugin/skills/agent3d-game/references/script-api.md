@@ -50,27 +50,101 @@ Several scripts can run side by side; they share `api.state` and events.
 | `api.input.pressed(code)` | Key went down during this step |
 | `api.input.pointer` | `{ x, y, down, justPressed }`, normalised −1..1 over the canvas (mouse or touch) |
 | `api.input.swipe()` | `"left" | "right" | "up" | "down" | null` for this step (touch gestures) |
-| `api.input.pointerWorld()` | World point under the pointer on the y = 0 plane or on a body: `{ x, y, z, objectId? }` or `null` |
+| `api.input.pointerWorld()` | World point under the pointer on a body (its rendered mesh) or else on the y = 0 plane: `{ x, y, z, objectId? }` or `null` |
 
 The embed takes keyboard focus when clicked (games get `tabindex="0"` and `role="application"`).
 
 ## Physics
 
-Light AABB / sphere physics, fixed step. Objects take part when they have a `body`:
+Real rigid-body physics (cannon-es, fixed step, deterministic): bodies rotate, tumble, stack, roll and sleep. Objects take part when they have a `body`:
 
 ```json
 "body": { "type": "dynamic", "shape": "sphere", "restitution": 0.7, "friction": 0.3, "mass": 1 }
 ```
 
-`type`: `static` (walls, ground), `dynamic` (falls, bounces, pushed by impulses), `kinematic` (moved by your script, pushes dynamic bodies), `trigger` (detects overlaps, no response). `shape`: `box`, `sphere`, `auto` (from the bounding box); `size` / `radius` override it. `scene.physics.gravity` (default `[0, -9.81, 0]`), `scene.physics.step` (default 1/60).
+`type`: `static` (walls, ground), `dynamic` (simulated), `kinematic` (moved by your script — set its position every step or give it a velocity — and pushes dynamic bodies), `trigger` (detects overlaps, no response). Shapes (`box`, `sphere`, `cylinder`, `capsule`, `convex`, `trimesh`, `heightfield`, `compound`, `auto`), materials, collision layers, joints (hinge, point, distance, lock, spring) and `physics.debug` wireframes are listed below (recipes: `game-patterns.md` → Physics recipes). Angles and angular velocities are in degrees (/ s), like rotations everywhere.
+
+| `physics` field | Meaning |
+|---|---|
+| `gravity` | World gravity, default `[0, -9.81, 0]` (m/s²) |
+| `step` | Fixed simulation step (s), default 1/60 |
+| `substeps` | Solver sub-steps per step (1–8, default 1): stabler tall stacks, less tunnelling |
+| `iterations` | Constraint solver iterations (default 10) |
+| `sleep` | Resting bodies fall asleep (cheap, stable stacks); default `true` |
+| `debug` | Draws collider wireframes on top of the scene (green dynamic, blue static, orange kinematic, magenta trigger, grey sleeping) — use it in `agent3d render` to check colliders |
+| `materials` | Named surfaces `{ friction?, restitution? }` referenced by `body.material` |
+| `contacts` | Per-pair overrides `{ a, b, friction?, restitution? }` between two named materials (otherwise friction = √(f₁·f₂), restitution = max) |
+| `layers` | Collision layer names (bit order, max 16 with `"default"`); layers used by bodies are added automatically |
+| `joints` | Constraints, see below |
+
+**Body** (`objects#…body`):
+
+| Field | Meaning |
+|---|---|
+| `type` | `dynamic` (simulated), `static` (immovable), `kinematic` (moved by scripts / velocity, pushes dynamic bodies, ignores gravity), `trigger` (detects overlaps, never pushes) |
+| `shape` | `box` (default: the object's bounding box, in the object's rotated frame), `sphere`, `cylinder`, `capsule` (Y-up), `convex` (hull of the mesh / model, good for dynamic models), `trimesh` (exact triangles; static / kinematic only — level geometry, models), `heightfield` (terrain generators), `compound` (`shapes`), `auto` (primitive geometry → matching shape, terrain → heightfield, static models / meshes → trimesh, dynamic → convex) |
+| `size`, `radius`, `height` | Override the measured box size / sphere, cylinder, capsule radius / cylinder, capsule height (world units) |
+| `offset` | Collider centre relative to the object origin (default: bounding-box centre) |
+| `shapes` | `compound`: `[{ "shape": "box" \| "sphere" \| "cylinder" \| "capsule", "size"?, "radius"?, "height"?, "offset"?, "rotation"? }]` (offsets from the object origin) |
+| `mass` | kg, default 1 (dynamic only) |
+| `friction`, `restitution`, `material` | Surface: friction (default 0.5), bounciness 0..1 (default 0.2), or a `physics.materials` name |
+| `velocity`, `angularVelocity` | Initial velocity (m/s) and spin (degrees / s) |
+| `linearDamping`, `angularDamping` | 0..1, default 0.01 (air drag) |
+| `gravityScale` | Gravity multiplier (0 = floats) |
+| `fixedRotation` | Never rotates (players driven by velocity) |
+| `character` | Character controller body: fixed rotation, no friction (no wall sticking), never sleeps — drive it with `api.physics.moveCharacter` / `jump` |
+| `sleep` | `false` keeps it always awake |
+| `ccd` | Fast object (bullets, thrown balls): extra sub-steps against tunnelling |
+| `layer`, `collidesWith` | Collision layer name and the layers it collides with (default: all) |
+
+Generators that publish collision boxes (the maze generator with `bodies: true`) get a static compound body with the generator's id.
+
+**Joints** (`physics.joints[]`, pivots and axes in world space at scene start; omit `b` to attach `a` to the world):
+
+| `type` | Fields |
+|---|---|
+| `hinge` | `pivot`, `axis` (default `[0, 1, 0]`), `motor: { speed (degrees / s), maxForce? }` — doors, wheels, flippers |
+| `point` | `pivot` — ball-and-socket: pendulums, chains, ragdoll joints |
+| `distance` | `distance` (default: current distance between the centres) — rigid rods |
+| `lock` | — welds two bodies together (breakable with `maxForce`) |
+| `spring` | `restLength` (default: current distance), `stiffness` (default 50), `damping` (default 1), `pivot` = world anchor on `b` (or the world point when `b` is omitted) |
+
+All joints take `maxForce` (default 1e6) and `collideConnected` (default `false`).
+
+Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports it (dynamic bodies keep their velocity; kinematic bodies sweep to the new pose so they push what they touch). A player whose velocity you set every step should have `"fixedRotation": true` (or `"character": true`), otherwise friction makes it tumble.
 
 | Member | Description |
 |---|---|
-| `api.physics.overlaps(a, b)` | Bounding volumes intersect (ids or objects) |
-| `api.physics.contacts(a)` | Bodies currently touching `a` |
-| `api.physics.raycast(from, dir, maxDistance?)` | First body hit: `{ objectId, distance, point }` or `null` |
-| `api.physics.applyImpulse(obj, [x, y, z])` | Instant velocity change (jumps, kicks) |
-| `api.physics.onCollision((a, b) => {})` | Called when two bodies start touching (register it in `start`) |
+| `api.physics.overlaps(a, b)` | Exact shape overlap right now (ids or objects, any body types, no step needed) |
+| `api.physics.contacts(a)` | Objects touching `a` during the last step (incl. triggers) |
+| `api.physics.raycast(from, dir, maxDistance?, { ignore?, layers?, triggers? }?)` | Nearest hit on the real shapes: `{ objectId, distance, point, normal }` or `null` (triggers are hit unless `triggers: false`) |
+| `api.physics.applyImpulse(obj, [x, y, z], point?)` | Instant velocity change; a world `point` off the centre also spins it |
+| `api.physics.applyForce(obj, [x, y, z], point?)` / `applyTorque(obj, [x, y, z])` | Continuous push for the next step (call every update: thrusters, wind) |
+| `api.physics.setVelocity(obj, v)` / `getVelocity(obj)` | Linear velocity (m/s) — also `obj.velocity.x = …` |
+| `api.physics.setAngularVelocity(obj, deg)` / `getAngularVelocity(obj)` | Spin in degrees / s |
+| `api.physics.grounded(obj)` | Standing on something (a contact pushing up) |
+| `api.physics.moveCharacter(obj, { x, z }, { speed?, acceleration?, airControl? }?)` | Character controller: steer horizontally toward `move × speed` (move length ≤ 1, default speed 5), keeps the vertical velocity, reduced control in the air; turns the body into a character (no rotation, no friction). Call once per update |
+| `api.physics.jump(obj, speed?)` | Jumps (default 6 m/s) when grounded or within 0.12 s of leaving the ground (coyote time); no double jump; returns `true` when it jumped |
+| `api.physics.wake(obj)` | Wake a sleeping body |
+| `api.physics.setMotorSpeed(jointId, deg)` | Hinge motor speed of a `physics.joints` entry |
+| `api.physics.onCollision((a, b, info) => {})` | Contact began (also for triggers); `info = { point, normal (a → b), impulse (N·s), speed (m/s) }` — e.g. play a sound when `info.impulse > 1` (register it in `start`) |
+| `api.physics.onCollisionEnd((a, b) => {})` | Contact ended |
+| `api.physics.onTriggerEnter((trigger, other) => {})` / `onTriggerExit(...)` | Something entered / left a trigger body |
+
+Platformer sketch:
+
+```js
+export default function (api) {
+  const hero = api.get("hero"); // body: { "type": "dynamic", "shape": "capsule", "character": true }
+  return {
+    update() {
+      const x = (api.input.isDown("ArrowRight") ? 1 : 0) - (api.input.isDown("ArrowLeft") ? 1 : 0);
+      api.physics.moveCharacter(hero, { x, z: 0 }, { speed: 6 });
+      if (api.input.pressed("Space") && api.physics.jump(hero, 7)) api.audio.play("jump");
+    },
+  };
+}
+```
 
 ## HUD
 

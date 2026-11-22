@@ -4,15 +4,20 @@
 
 import * as THREE from "three";
 import type { SceneDoc } from "../core/types";
-import type { FrameStats, InspectResult, MountOptions, Player, RuntimeIssue } from "./api";
+import type { EditorBridge, EditorOverlayHooks, FrameStats, InspectResult, MountOptions, Player, RuntimeIssue } from "./api";
 import { createResolver } from "./assets";
+import { bindSceneData } from "./data";
 import { loadGenerators, loadShaders, type RuntimeContext } from "./build/context";
 import { World, type FrameInput } from "./build/index";
+import { shadowMapSettings } from "./build/lights";
 import type { GameHost } from "./game/index";
 import { bindInput, createInputState, endFrame, scrollProgress, setKey, type InputBinding } from "./input";
 import type { PostFxPipeline } from "./postfx/index";
+import { lowerTier, qualitySettings, resolveQualityTier, type QualitySettings } from "../core/postfx";
 import { createRng } from "./random";
-import { timelineTime } from "./timeline/sample";
+import { TimelineController } from "./timeline/controller";
+import { InteractionRunner, safeUrl } from "./timeline/interactions";
+import { scrollProgressFor } from "./timeline/scroll";
 import { toColor } from "./util";
 
 const TONE_MAPPING: Record<string, THREE.ToneMapping> = {
@@ -75,13 +80,23 @@ class PlayerImpl implements Player {
   private world: World | null = null;
   private game: GameHost | null = null;
   private postfx: PostFxPipeline | null = null;
+  // Quality tier (target.quality) + runtime adaptation state ("auto" only).
+  private quality: QualitySettings = qualitySettings("high");
+  private qualityAuto = false;
+  private perfClock = 0;
+  private slowFor = 0;
+  private renderSamples = 1;
   private inputState = createInputState();
   private inputBinding: InputBinding | null = null;
   private resolveAsset: (p: string) => string;
   private deterministic: boolean;
   private t = 0;
-  private tlClock = 0;
-  private tlClickAt = -1;
+  // Motion: timeline playback, interactions, event bus, scroll.
+  private tl: TimelineController | null = null;
+  private interactions: InteractionRunner | null = null;
+  private eventListeners = new Map<string, Set<(payload?: unknown) => void>>();
+  private scrollOverride: number | null = null;
+  private tlScroll: number | null = null;
   private raf = 0;
   private playing = false;
   private visible = true;
@@ -103,6 +118,10 @@ class PlayerImpl implements Player {
   private height = 1;
   private lastStats: FrameStats = { triangles: 0, drawCalls: 0, geometries: 0, textures: 0 };
   private onVisibility = () => this.updateRunning();
+  // Studio editor overlay (options.editor only).
+  readonly editor?: EditorBridge;
+  private overlay: EditorOverlayHooks | null = null;
+  private worldListeners = new Set<() => void>();
 
   constructor(private container: HTMLElement, scene: SceneDoc, private options: MountOptions) {
     this.scene = scene;
@@ -121,14 +140,31 @@ class PlayerImpl implements Player {
     if (!pos || pos === "static") container.style.position = "relative";
 
     const self = this;
+    if (options.editor) {
+      this.editor = {
+        world: () => self.world,
+        renderer: () => self.renderer,
+        setOverlay: (o) => {
+          self.overlay = o;
+        },
+        render: () => self.render(),
+        onWorld: (l) => {
+          self.worldListeners.add(l);
+          return () => self.worldListeners.delete(l);
+        },
+        running: () => !!self.raf,
+      };
+    }
     this.input = {
       pointer(x, y) {
         self.inputState.pointer.x = x;
         self.inputState.pointer.y = y;
         self.inputState.pointer.inside = true;
+        self.inputInteractions();
       },
       key(code, down) {
         setKey(self.inputState, code, down);
+        self.inputInteractions();
       },
       click(x, y) {
         const px = x ?? self.inputState.pointer.x, py = y ?? self.inputState.pointer.y;
@@ -137,6 +173,7 @@ class PlayerImpl implements Player {
         self.inputState.pointer.inside = true;
         self.inputState.pointer.justPressed = true;
         self.inputState.clicks.push({ x: px, y: py });
+        self.inputInteractions();
       },
       down(x, y) {
         const p = self.inputState.pointer;
@@ -152,6 +189,10 @@ class PlayerImpl implements Player {
       },
       swipe(direction) {
         self.inputState.swipe = direction;
+      },
+      scroll(progress) {
+        self.setScrollProgress(progress);
+        self.inputInteractions();
       },
     };
 
@@ -219,11 +260,15 @@ class PlayerImpl implements Player {
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = TONE_MAPPING[target.toneMapping ?? "aces"] ?? THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = target.exposure ?? 1;
-    const dpr = this.options.pixelRatio ?? Math.min(globalThis.devicePixelRatio || 1, target.maxDpr ?? 2);
+    this.quality = qualitySettings(resolveQualityTier(target.quality, this.deviceHints(r)));
+    this.qualityAuto = (target.quality ?? "auto") === "auto" && !this.deterministic && !this.options.editor;
+    this.perfClock = this.slowFor = 0;
+    const dpr = this.options.pixelRatio ?? Math.min(globalThis.devicePixelRatio || 1, target.maxDpr ?? 2, this.quality.dprCap);
     r.setPixelRatio(dpr);
-    const anyShadow = (this.scene.lights ?? []).some((l) => l.castShadow);
-    r.shadowMap.enabled = target.shadows !== false && anyShadow;
-    r.shadowMap.type = THREE.PCFShadowMap;
+    // Lights, the physical-sky sun and light rigs can cast shadows (build/lights.ts).
+    const shadows = shadowMapSettings(this.scene);
+    r.shadowMap.enabled = shadows.enabled;
+    r.shadowMap.type = shadows.type;
     if (target.transparent) r.setClearColor(0x000000, 0);
     else {
       const bg = this.scene.environment?.background;
@@ -264,6 +309,7 @@ class PlayerImpl implements Player {
           this.t = this.scene.target?.posterTime ?? 0;
           this.game?.advanceTo(this.t);
           this.frame(0);
+          this.renderStill();
         } else {
           this.frame(0);
           this.playing = true;
@@ -292,6 +338,7 @@ class PlayerImpl implements Player {
       deterministic: this.deterministic,
       track: (p) => {
         tracked.push(p.catch(() => undefined));
+        this.trackProgress(p);
         return p;
       },
       onUpdate: () => undefined,
@@ -304,7 +351,7 @@ class PlayerImpl implements Player {
   private async buildWorld(): Promise<World> {
     const tracked: Promise<unknown>[] = [];
     const ctx = this.makeContext(tracked);
-    const world = await World.create(this.scene, ctx, this.width / Math.max(this.height, 1), this.canvas, !!this.options.editor);
+    const world = await World.create(bindSceneData(this.scene), ctx, this.width / Math.max(this.height, 1), this.canvas, !!this.options.editor);
     await Promise.all(tracked);
     // Second pass for tracked promises registered by late loaders (textures).
     await Promise.all(tracked);
@@ -314,16 +361,17 @@ class PlayerImpl implements Player {
 
   private async attachWorld(world: World): Promise<void> {
     this.world = world;
+    this.attachMotion(world);
     world.settleEntrances = this.staticMotion;
-    this.postfx?.dispose();
-    this.postfx = null;
-    if (this.scene.postfx?.length && this.renderer) {
-      const { createPostFx } = await import("./postfx/index");
-      this.postfx = createPostFx(this.scene.postfx, { renderer: this.renderer, scene: world.scene, camera: world.camera, width: this.width, height: this.height }, (id) =>
-        this.report({ code: "unknown-catalog-id", message: `Unknown post effect "${id}"`, path: "postfx" }),
-      );
-    }
+    await this.buildPostFx(world);
     this.renderer?.shadowMap && (this.renderer.shadowMap.needsUpdate = true);
+    for (const l of this.worldListeners) {
+      try {
+        l();
+      } catch {
+        /* editor listener */
+      }
+    }
   }
 
   private async buildAll(): Promise<void> {
@@ -337,7 +385,7 @@ class PlayerImpl implements Player {
       const { GameHost } = await import("./game/index");
       this.game = await GameHost.create(
         {
-          scene: this.scene,
+          scene: bindSceneData(this.scene),
           container: this.container,
           input: this.inputState,
           resolveAsset: this.resolveAsset,
@@ -354,6 +402,13 @@ class PlayerImpl implements Player {
         },
         world,
       );
+      // Report script / UI events to the host page (element: `agent3d:event`).
+      const game = this.game;
+      const emit = game.emit.bind(game);
+      game.emit = (name: string, payload?: unknown) => {
+        emit(name, payload);
+        this.notify(name, payload);
+      };
     }
     // Compile shaders up front so the first visible frame does not hitch.
     try {
@@ -361,6 +416,47 @@ class PlayerImpl implements Player {
     } catch {
       /* compile is an optimisation */
     }
+  }
+
+  private loadTotal = 0;
+  private loadDone = 0;
+
+  private trackProgress(p: Promise<unknown>): void {
+    if (!this.options.onProgress) return;
+    this.loadTotal++;
+    const done = () => {
+      this.loadDone++;
+      try {
+        this.options.onProgress?.(this.loadDone, this.loadTotal);
+      } catch {
+        /* user callback */
+      }
+    };
+    p.then(done, done);
+  }
+
+  private notify(name: string, payload?: unknown): void {
+    try {
+      this.options.onEvent?.(name, payload);
+    } catch {
+      /* user callback */
+    }
+  }
+
+  // Player.emit (api.ts): scripts' api.on(name) + MountOptions.onEvent (the
+  // element re-dispatches it as `agent3d:event`). Interactions / markers can hook in here.
+  emit(name: string, payload?: unknown): void {
+    if (this.game) this.game.emit(name, payload);
+    else this.notify(name, payload);
+    // Motion: Player.on listeners and interactions { on: "event" } (markers, emit actions).
+    for (const h of this.eventListeners.get(name) ?? []) {
+      try {
+        h(payload);
+      } catch {
+        /* user callback */
+      }
+    }
+    this.interactions?.event(name, payload);
   }
 
   private report(issue: RuntimeIssue): void {
@@ -387,7 +483,8 @@ class PlayerImpl implements Player {
         // never step backwards (time below 0 would keep `appear` hidden).
         const dt = Math.min(Math.max((now - this.lastNow) / 1000, 0), 0.1);
         this.lastNow = now;
-        if (dt > 0) this.fps = this.fps ? this.fps * 0.9 + (1 / dt) * 0.1 : 1 / dt;
+        if (dt > 0.002) this.fps = this.fps ? this.fps * 0.9 + (1 / dt) * 0.1 : 1 / dt;
+        if (this.qualityAuto) this.adaptQuality(dt);
         this.tick(dt * this.timeScale);
       };
       this.raf = requestAnimationFrame(loop);
@@ -404,8 +501,7 @@ class PlayerImpl implements Player {
       void this.game.restart().then(() => {
         this.rebuilding = false;
         this.t = 0;
-        this.tlClock = 0;
-        this.tlClickAt = -1;
+        this.resetMotion();
       });
       return;
     }
@@ -415,34 +511,128 @@ class PlayerImpl implements Player {
     this.frame(dt);
   }
 
+  // ─── Motion ───────────────────────────────────────────────────────────
+
+  private attachMotion(world: World): void {
+    this.tl = this.scene.timeline ? new TimelineController(this.scene.timeline) : null;
+    this.tlScroll = null;
+    world.postfxParam = (type, param, value) => (this.postfx as unknown as { setParam?(t: string, p: string, v: unknown): void } | null)?.setParam?.(type, param, value);
+    const defs = this.scene.interactions ?? [];
+    this.interactions = defs.length
+      ? new InteractionRunner(defs, {
+          play: (seg, reverse) => this.playSegment(seg, { reverse }),
+          toggle: (seg) => {
+            if (!this.tl?.toggle(seg, this.t)) this.unknownSegment(seg);
+          },
+          seek: (to) => this.tl?.seek(to, this.t),
+          set: (path, value, duration, ease) => world.overrides.set(path, value, this.t, duration, ease),
+          emit: (name, payload) => this.emit(name, payload),
+          openUrl: (url, newTab) => this.openUrl(url, newTab),
+          playClip: (target, clip, opts) => {
+            const a = world.entries.get(target)?.animator;
+            if (a) a.play(clip, opts);
+            else this.report({ code: "interaction", message: `playClip: "${target}" is not a model with animation clips`, path: "interactions" });
+          },
+        })
+      : null;
+  }
+
+  // Deterministic renders apply simulated input between seeks: fire the
+  // interactions it causes at the input's time (not at the next seek), once.
+  private handledClicks = 0;
+  private handledKeys = new Set<string>();
+  private inputInteractions(): void {
+    const world = this.world;
+    if (!this.deterministic || !this.interactions || !world) return;
+    const inp = this.inputState;
+    const roots = world.interactiveRoots();
+    const hovered = new Set(inp.pointer.inside ? this.pickIds(inp.pointer.x, inp.pointer.y, roots) : []);
+    const clicked = new Set<string>();
+    for (const c of inp.clicks.slice(this.handledClicks)) for (const id of this.pickIds(c.x, c.y, roots)) clicked.add(id);
+    const pressed = new Set([...inp.pressed].filter((k) => !this.handledKeys.has(k)));
+    this.interactions.step({ hovered, pointerInside: inp.pointer.inside, clicked, canvasClicked: inp.clicks.length > this.handledClicks, pressed, scroll: this.scrollValue(), visible: true, userGesture: false });
+    this.handledClicks = inp.clicks.length;
+    for (const k of pressed) this.handledKeys.add(k);
+  }
+
+  private resetMotion(): void {
+    this.tl?.reset();
+    this.interactions?.reset();
+    this.tlScroll = null;
+  }
+
+  private unknownSegment(name: string): void {
+    this.report({ code: "interaction", message: `Unknown timeline segment "${name}"`, path: "timeline.segments" });
+  }
+
   private timelineLocal(dt: number, containerHovered: boolean, clicked: boolean): number | null {
     const tl = this.scene.timeline;
-    if (!tl || !this.world?.timeline) return null;
-    const dur = Math.max(tl.duration || 0, 1e-3);
-    if (this.deterministic || this.staticMotion) return timelineTime(this.t, dur, tl.loop);
-    if (tl.autoplay === false) return 0;
-    switch (tl.trigger ?? "visible") {
-      case "hover":
-        this.tlClock += containerHovered || tl.loop ? (containerHovered ? dt : 0) : -dt;
-        if (!tl.loop) this.tlClock = Math.min(Math.max(this.tlClock, 0), dur);
-        return timelineTime(this.tlClock, dur, tl.loop);
-      case "click":
-        if (clicked) this.tlClickAt = this.t;
-        return this.tlClickAt < 0 ? 0 : timelineTime(this.t - this.tlClickAt, dur, tl.loop);
-      case "scroll":
-        return this.scrollValue() * dur;
-      default:
-        return timelineTime(this.t, dur, tl.loop);
-    }
+    if (!tl || !this.world?.timeline || !this.tl) return null;
+    return this.tl.update({
+      t: this.t,
+      dt,
+      deterministic: this.deterministic,
+      staticMotion: this.staticMotion,
+      posterTime: this.scene.target?.posterTime,
+      hovered: containerHovered,
+      clicked,
+      scroll: tl.trigger === "scroll" ? this.timelineScroll(dt) : 0,
+    });
+  }
+
+  // Scroll progress of the timeline (its own start / end + smoothing).
+  private timelineScroll(dt: number): number {
+    const tl = this.scene.timeline!;
+    if (this.scrollOverride !== null) return this.scrollOverride;
+    if (this.deterministic || this.staticMotion) return this.scrollValue();
+    const win = this.container.ownerDocument.defaultView;
+    const r = this.container.getBoundingClientRect();
+    const raw = scrollProgressFor(r.top, r.height, win?.innerHeight || 1, tl.scroll?.start, tl.scroll?.end);
+    const smoothing = Math.min(Math.max(tl.scroll?.smoothing ?? 0.8, 0), 0.99);
+    if (this.tlScroll === null || smoothing <= 0) this.tlScroll = raw;
+    else this.tlScroll += (raw - this.tlScroll) * (1 - Math.pow(smoothing, Math.max(dt, 0) * 60));
+    if (Math.abs(raw - this.tlScroll) < 1e-4) this.tlScroll = raw;
+    return this.tlScroll;
   }
 
   private scrollValue(): number {
+    if (this.scrollOverride !== null) return this.scrollOverride;
     if (this.deterministic || this.staticMotion) {
       const tl = this.scene.timeline;
       const d = tl?.trigger === "scroll" && tl.duration > 0 ? tl.duration : 4;
       return Math.min(Math.max(this.t / d, 0), 1);
     }
     return scrollProgress(this.container);
+  }
+
+  private openUrl(url: string, newTab: boolean | undefined): void {
+    const win = this.container.ownerDocument.defaultView;
+    const href = win ? safeUrl(url, win.location.href) : null;
+    this.emit("openUrl", { url: href ?? url, blocked: !href || this.deterministic });
+    if (!href || !win || this.deterministic) return;
+    const external = new URL(href).origin !== win.location.origin;
+    if (newTab ?? external) win.open(href, "_blank", "noopener,noreferrer");
+    else win.location.assign(href);
+  }
+
+  playSegment(name: string, opts: { reverse?: boolean } = {}): void {
+    if (!this.tl?.play(name, this.t, opts)) this.unknownSegment(name);
+  }
+
+  trigger(on: string, target?: string): void {
+    this.interactions?.fire(on, target, !this.deterministic);
+    this.interactions?.flush();
+  }
+
+  on(name: string, handler: (payload?: unknown) => void): () => void {
+    let set = this.eventListeners.get(name);
+    if (!set) this.eventListeners.set(name, (set = new Set()));
+    set.add(handler);
+    return () => set!.delete(handler);
+  }
+
+  setScrollProgress(progress: number | null): void {
+    this.scrollOverride = progress === null || !Number.isFinite(progress) ? null : Math.min(Math.max(progress, 0), 1);
   }
 
   private pickIds(x: number, y: number, roots: THREE.Object3D[]): string[] {
@@ -463,6 +653,15 @@ class PlayerImpl implements Player {
     for (const c of inp.clicks) {
       const ids = this.pickIds(c.x, c.y, roots);
       for (const id of ids) clicked.add(id);
+      if (this.options.onClick) {
+        const all = [...world.entries.values()].filter((e) => e.topLevel && e.kind !== "light").map((e) => e.object);
+        const hit = ids[0] ?? this.pickIds(c.x, c.y, all)[0] ?? null;
+        try {
+          this.options.onClick(hit, { x: c.x, y: c.y });
+        } catch {
+          /* user callback */
+        }
+      }
       const link = ids.map((id) => world.entries.get(id)?.def).find((d) => d && "href" in d && d.href) as { href?: string } | undefined;
       if (link?.href && !this.deterministic) this.navigate(link.href);
     }
@@ -473,18 +672,40 @@ class PlayerImpl implements Player {
     const wantCursor = hasLink || [...this.hovered].some((id) => world.entries.get(id)?.interactive) ? "pointer" : "";
     if (this.canvas.style.cursor !== wantCursor) this.canvas.style.cursor = wantCursor;
 
+    const scroll = this.scrollValue();
+    // Interactions fire before the frame is evaluated so their effect shows now
+    // (clicks / keys already handled at input time in deterministic mode are skipped).
+    let iClicked = clicked;
+    if (this.handledClicks) {
+      iClicked = new Set();
+      for (const c of inp.clicks.slice(this.handledClicks)) for (const id of this.pickIds(c.x, c.y, roots)) iClicked.add(id);
+    }
+    this.interactions?.step({
+      hovered: this.hovered,
+      pointerInside: inp.pointer.inside,
+      clicked: iClicked,
+      canvasClicked: inp.clicks.length > this.handledClicks,
+      pressed: this.handledKeys.size ? new Set([...inp.pressed].filter((k) => !this.handledKeys.has(k))) : inp.pressed,
+      scroll,
+      visible: true,
+      userGesture: !this.deterministic,
+    });
     const input: FrameInput = {
       pointer: inp.pointer,
-      scroll: this.scrollValue(),
+      scroll,
       hovered: this.hovered,
       clicked,
       timelineT: this.timelineLocal(dt, inp.pointer.inside, inp.clicks.length > 0),
     };
+    for (const m of this.tl?.drainMarkers() ?? []) this.emit(m.name, { marker: m.name, time: m.time });
+    this.interactions?.flush();
     const followId = this.scene.camera?.follow?.target;
     world.frame(this.t, dt, input, followId ? world.entries.get(followId)?.object : null);
     this.game?.afterFrame();
     this.render();
     endFrame(inp);
+    this.handledClicks = 0;
+    this.handledKeys.clear();
   }
 
   private navigate(href: string): void {
@@ -500,18 +721,50 @@ class PlayerImpl implements Player {
     }
   }
 
-  private render(): void {
+  private render(withOverlay = true): void {
     const r = this.renderer, w = this.world;
     if (!r || !w) return;
+    // Studio editor camera: render through its pose / projection (post effects included), then restore.
+    const overlay = withOverlay ? this.overlay : null;
+    const view = overlay?.viewCamera?.() ?? null;
+    const cam = w.camera;
+    const saved = view && view !== cam ? { p: cam.position.clone(), q: cam.quaternion.clone(), proj: cam.projectionMatrix.clone(), inv: cam.projectionMatrixInverse.clone(), near: cam.near, far: cam.far } : null;
+    if (view && saved) {
+      view.updateMatrixWorld();
+      view.matrixWorld.decompose(cam.position, cam.quaternion, new THREE.Vector3());
+      cam.projectionMatrix.copy(view.projectionMatrix);
+      cam.projectionMatrixInverse.copy(view.projectionMatrixInverse);
+      const v = view as THREE.PerspectiveCamera;
+      if (typeof v.near === "number") (cam.near = v.near), (cam.far = v.far);
+      cam.updateMatrixWorld(true);
+    }
     r.info.reset();
-    if (this.postfx) this.postfx.render(this.t);
+    if (this.postfx) this.postfx.render(this.t, { samples: this.renderSamples });
     else r.render(w.scene, w.camera);
-    this.lastStats = {
+    // Supersampled stills draw the scene N times: keep the per-frame stats of a normal frame.
+    if (this.renderSamples === 1) this.lastStats = {
       triangles: r.info.render.triangles,
       drawCalls: r.info.render.calls,
       geometries: r.info.memory.geometries,
       textures: r.info.memory.textures,
     };
+    if (overlay) {
+      try {
+        overlay.draw(r, cam);
+      } catch (err) {
+        this.report({ code: "editor-overlay", message: (err as Error).message });
+        this.overlay = null;
+      }
+    }
+    if (saved) {
+      cam.position.copy(saved.p);
+      cam.quaternion.copy(saved.q);
+      cam.projectionMatrix.copy(saved.proj);
+      cam.projectionMatrixInverse.copy(saved.inv);
+      cam.near = saved.near;
+      cam.far = saved.far;
+      cam.updateMatrixWorld(true);
+    }
   }
 
   // ─── Context release ─────────────────────────────────────────────────
@@ -570,6 +823,7 @@ class PlayerImpl implements Player {
   pause(): void {
     this.playing = false;
     this.updateRunning();
+    if (!this.deterministic) this.renderStill();
   }
 
   async seek(t: number): Promise<void> {
@@ -581,8 +835,7 @@ class PlayerImpl implements Player {
       if (this.game) await this.game.restart();
       else this.world.resetBehaviours();
       this.t = 0;
-      this.tlClock = 0;
-      this.tlClickAt = -1;
+      this.resetMotion();
       this.world.frame(0, 0, { pointer: this.inputState.pointer, scroll: 0, hovered: new Set(), clicked: new Set(), timelineT: this.world.timeline ? 0 : null });
     }
     const dt = target - this.t;
@@ -683,8 +936,117 @@ class PlayerImpl implements Player {
   }
 
   snapshot(type: "image/png" | "image/webp" = "image/png", quality?: number): string {
-    this.render();
+    // Deterministic stills with `taa`: supersampled (jittered accumulation).
+    this.renderSamples = this.deterministic ? this.postfx?.stillSamples || 1 : 1;
+    try {
+      this.render(false);
+    } finally {
+      this.renderSamples = 1;
+    }
     return this.canvas.toDataURL(type, quality);
+  }
+
+  async snapshotHighQuality(samples = 16, type: "image/png" | "image/webp" = "image/png", quality?: number): Promise<string> {
+    if (!this.started) this.start();
+    await this.building;
+    const r = this.renderer, w = this.world;
+    if (!r || !w) return this.canvas.toDataURL(type, quality);
+    const n = Math.max(1, Math.min(64, Math.round(samples)));
+    // No post effects: a bare pipeline (scene + tone mapping + sRGB) renders exactly like the direct path.
+    let temp: PostFxPipeline | null = null;
+    if (!this.postfx) {
+      const { createPostFx } = await import("./postfx/index");
+      temp = createPostFx([], { renderer: r, scene: w.scene, camera: w.camera, width: this.width, height: this.height, quality: qualitySettings("ultra"), antialias: this.scene.target?.antialias !== false }, () => undefined);
+    }
+    const pipe = this.postfx ?? temp!;
+    try {
+      pipe.render(this.t, { samples: n });
+      return this.canvas.toDataURL(type, quality);
+    } finally {
+      temp?.dispose();
+    }
+  }
+
+  // ─── Quality ──────────────────────────────────────────────────────────
+
+  private deviceHints(r: THREE.WebGLRenderer): Parameters<typeof resolveQualityTier>[1] {
+    const nav = (globalThis.navigator ?? {}) as Navigator & { deviceMemory?: number; userAgentData?: { mobile?: boolean } };
+    let gpu: string | undefined;
+    try {
+      const gl = r.getContext();
+      const ext = gl.getExtension("WEBGL_debug_renderer_info");
+      gpu = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? "");
+    } catch {
+      /* not exposed */
+    }
+    const ua = nav.userAgent ?? "";
+    return {
+      deterministic: this.deterministic,
+      mobile: nav.userAgentData?.mobile ?? /Mobi|Android|iPhone|iPad|iPod/i.test(ua),
+      cores: nav.hardwareConcurrency,
+      memoryGb: nav.deviceMemory,
+      gpu,
+    };
+  }
+
+  // swap: keep the current pipeline on screen until the new one is ready (quality change).
+  private async buildPostFx(world: World, swap = false): Promise<void> {
+    if (!swap) {
+      this.postfx?.dispose();
+      this.postfx = null;
+    }
+    if (!this.scene.postfx?.length || !this.renderer) return;
+    const { createPostFx } = await import("./postfx/index");
+    if (this.world !== world || !this.renderer) return;
+    const pipe = createPostFx(
+      this.scene.postfx,
+      { renderer: this.renderer, scene: world.scene, camera: world.camera, width: this.width, height: this.height, quality: this.quality, antialias: this.scene.target?.antialias !== false },
+      (id) => this.report({ code: "unknown-catalog-id", message: `Unknown post effect "${id}"`, path: "postfx" }),
+    );
+    await pipe.ready;
+    if (this.world !== world) return pipe.dispose();
+    this.postfx?.dispose();
+    this.postfx = pipe;
+  }
+
+  // Supersampled still (`taa`) for frames that stay on screen: the
+  // reduced-motion still and paused frames.
+  private renderStill(): void {
+    const n = this.postfx?.stillSamples ?? 0;
+    if (n < 2 || !this.world) return;
+    this.renderSamples = n;
+    try {
+      this.render();
+    } finally {
+      this.renderSamples = 1;
+    }
+  }
+
+  // "auto" quality: when the frame rate stays below 40 fps for 3 s (after a
+  // 2 s warm-up), lower the pixel ratio first (×0.75 down to 1), then the
+  // tier (drops / downsizes costly effects). Never steps back up (no oscillation).
+  private adaptQuality(dt: number): void {
+    const r = this.renderer;
+    if (!r || !this.world || this.rebuilding) return;
+    this.perfClock += dt;
+    if (this.perfClock < 2) return;
+    if (this.fps < 40) this.slowFor += dt;
+    else this.slowFor = Math.max(0, this.slowFor - dt);
+    if (this.slowFor < 3) return;
+    this.slowFor = 0;
+    this.perfClock = 0;
+    if (this.options.pixelRatio === undefined && r.getPixelRatio() > 1.01) {
+      r.setPixelRatio(Math.max(1, r.getPixelRatio() * 0.75));
+      this.resize();
+      return;
+    }
+    const lower = lowerTier(this.quality.tier);
+    if (!lower) {
+      this.qualityAuto = false;
+      return;
+    }
+    this.quality = qualitySettings(lower);
+    if (this.scene.postfx?.length) void this.buildPostFx(this.world, true);
   }
 
   // Id of the object under a normalised canvas point (Studio picking).
@@ -708,6 +1070,8 @@ class PlayerImpl implements Player {
     this.interObs?.disconnect();
     this.container.ownerDocument.removeEventListener("visibilitychange", this.onVisibility);
     this.inputBinding?.dispose();
+    this.overlay = null;
+    this.worldListeners.clear();
     this.game?.dispose();
     this.postfx?.dispose();
     this.world?.dispose();

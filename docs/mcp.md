@@ -62,7 +62,8 @@ Exactly the AI tool catalog of `src/ai/tools.ts` (`agent3d tools list` prints th
 | `scene_apply` | yes | Replace the whole scene (plan first) |
 | `scene_patch` | yes | Patch ops (set, merge, remove, addObject, updateObject, removeObject, moveObject, addBehaviour, addTrack, removeTrack) |
 | `object_add`, `object_update`, `object_remove`, `object_list` | some | Object shortcuts |
-| `timeline_set` | yes | Replace or edit the timeline |
+| `timeline_set` | yes | Replace or edit the timeline (tracks, markers, segments, scroll) |
+| `interactions_set` | yes | Replace or append no-code interactions (click / hover / scroll / key → play segments, set properties, open URLs) |
 | `catalog_get` | | Geometries, materials, shaders, behaviours, generators, particles, post effects, fonts, sounds with parameters |
 | `templates_list` | | Starter templates |
 | `check` | | Validation, sandbox lint, budgets, framing, licences, web settings |

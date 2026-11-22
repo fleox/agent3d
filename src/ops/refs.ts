@@ -3,6 +3,7 @@
 // rewritten by `export` (library ids → copied relative paths).
 
 import type { AssetEntry, ObjectDef, SceneDoc } from "../core/types";
+import { MATERIAL_TEXTURE_SLOTS } from "../core/validate";
 import { walkObjects } from "./tree";
 
 export interface AssetRef {
@@ -31,7 +32,8 @@ export function visitAssetRefs(scene: SceneDoc, visit: Visitor): void {
   const material = (m: unknown, at: string) => {
     if (!m || typeof m !== "object") return;
     const mat = m as Record<string, unknown>;
-    for (const k of ["map", "normalMap", "roughnessMap"]) {
+    // String slots only: procedural textures ({ "procedural": … }) are generated, not files.
+    for (const k of MATERIAL_TEXTURE_SLOTS) {
       if (typeof mat[k] === "string") {
         const r = visit(mat[k] as string, `${at}.${k}`, "texture");
         if (typeof r === "string") mat[k] = r;

@@ -291,7 +291,7 @@ function KeyEditor({ track, index, onChange, onDelete }: { track: TrackDef; inde
         ) : typeof value === "boolean" ? (
           <Toggle checked={value} onChange={(v) => setValue(v, true)} ariaLabel={t("timeline.keyValue")} />
         ) : Array.isArray(value) ? (
-          <VecField value={value} onChange={(v, f) => setValue(v as [number, number, number], f)} />
+          <VecField value={value.map((x) => (typeof x === "number" ? x : 0))} onChange={(v, f) => setValue(v as [number, number, number], f)} />
         ) : (
           <ColorField value={String(value)} onChange={(v, f) => setValue(v, f)} />
         )}

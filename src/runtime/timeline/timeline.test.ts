@@ -63,27 +63,29 @@ describe("track binding", () => {
   const light = new THREE.PointLight(0xffffff, 1);
   const cam = { position: new THREE.Vector3(), target: new THREE.Vector3(), fov: 45 };
   const host = { object: (id: string) => (id === "box" ? mesh : id === "lamp" ? light : null), camera: cam, issue: () => undefined };
+  const set = (target: string, v: Parameters<ReturnType<typeof bindTrack>[number]["set"]>[0], h = host) => bindTrack({ target, keys: [] }, h)[0].set(v);
   it("rotation in degrees, scale uniform, material props, light props, camera", () => {
-    bindTrack({ target: "box.rotation.y", keys: [] }, host)!(90);
+    set("box.rotation.y", 90);
     expect(mesh.rotation.y).toBeCloseTo(Math.PI / 2);
-    bindTrack({ target: "box.scale", keys: [] }, host)!(2);
+    set("box.scale", 2);
     expect(mesh.scale.toArray()).toEqual([2, 2, 2]);
-    bindTrack({ target: "box.material.opacity", keys: [] }, host)!(0.5);
+    set("box.material.opacity", 0.5);
     expect((mesh.material as THREE.Material).opacity).toBe(0.5);
     expect((mesh.material as THREE.Material).transparent).toBe(true);
-    bindTrack({ target: "lamp.intensity", keys: [] }, host)!(7);
+    set("lamp.intensity", 7);
     expect(light.intensity).toBe(7);
-    bindTrack({ target: "camera.position", keys: [] }, host)!([1, 2, 3]);
+    set("camera.position", [1, 2, 3]);
     expect(cam.position.toArray()).toEqual([1, 2, 3]);
-    bindTrack({ target: "camera.fov", keys: [] }, host)!(30);
+    set("camera.fov", 30);
     expect(cam.fov).toBe(30);
   });
   it("reports unknown targets", () => {
     const issues: string[] = [];
-    expect(bindTrack({ target: "ghost.position", keys: [] }, { ...host, issue: (_c, m) => issues.push(m) })).toBeNull();
+    expect(bindTrack({ target: "ghost.position", keys: [] }, { ...host, issue: (_c, m) => issues.push(m) })).toEqual([]);
     expect(issues.length).toBe(1);
   });
   it("applies a whole timeline", () => {
+    mesh.position.set(0, 0, 0);
     const tl = createTimeline({ duration: 2, tracks: [{ target: "box.position.x", keys: [[0, 0], [2, 4]] }] }, host);
     tl.apply(1);
     expect(mesh.position.x).toBeCloseTo(2);

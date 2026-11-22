@@ -26,6 +26,14 @@ export interface MountOptions {
   editor?: boolean;
   onError?(error: RuntimeIssue): void;
   onReady?(player: Player): void;
+  // Script / UI events (api.emit, UI button actions, Player.emit) — the Web
+  // Component re-dispatches them as `agent3d:event` DOM events.
+  onEvent?(name: string, payload?: unknown): void;
+  // A click / tap on the canvas: the id of the object hit (top-level, or the
+  // nearest interactive ancestor), or null; point in normalised -1..1 coordinates.
+  onClick?(id: string | null, point: { x: number; y: number }): void;
+  // Asset loading progress (models, fonts, textures, scripts): loaded / total so far.
+  onProgress?(loaded: number, total: number): void;
 }
 
 export interface RuntimeIssue {
@@ -62,6 +70,12 @@ export interface Player {
   inspect(): InspectResult;
   // PNG data URL of the current frame.
   snapshot(type?: "image/png" | "image/webp", quality?: number): string;
+  // Supersampled still of the current frame: `samples` (1…64, default 16)
+  // sub-pixel-jittered renders accumulated through the post-processing
+  // pipeline (a bare tone-mapping pipeline when the scene has no postfx) —
+  // perfect edges, smooth AO / shadows / dithering. For posters and HQ renders.
+  // Note: deterministic snapshot() already supersamples when postfx has `taa`.
+  snapshotHighQuality?(samples?: number, type?: "image/png" | "image/webp", quality?: number): Promise<string>;
   // Simulated input for headless tests of games / interactions.
   input: {
     pointer(x: number, y: number): void; // normalised -1..1
@@ -71,12 +85,53 @@ export interface Player {
     down?(x?: number, y?: number): void;
     up?(x?: number, y?: number): void;
     swipe?(direction: "left" | "right" | "up" | "down"): void;
+    // Page scroll progress 0..1 (scroll-driven timelines / behaviours); null = real scroll.
+    scroll?(progress: number | null): void;
   };
   // Script-visible state (games): read by tests / render.
   state(): Record<string, unknown>;
   // Id of the top-level object under a normalised (-1..1) canvas point, or null (Studio picking).
   pick?(x: number, y: number): string | null;
+  // ─── Motion (timeline segments, interactions, events) ───
+  // Play a timeline segment (timeline.segments) or "timeline" (all of it from 0).
+  playSegment?(name: string, opts?: { reverse?: boolean }): void;
+  // Fire the scene's interactions as if `on` happened ("click" | "hover" |
+  // "hoverEnd" | "key" | "event"…) on `target` (object id, key code or event name).
+  trigger?(on: string, target?: string): void;
+  // Emit an event: scripts api.on(name), MountOptions.onEvent (the element's
+  // agent3d:event), Player.on listeners and interactions { on: "event" }.
+  // Timeline markers are emitted the same way (payload { marker, time }).
+  emit?(name: string, payload?: unknown): void;
+  // Listen to emitted events / markers. Returns an unsubscribe function.
+  on?(name: string, handler: (payload?: unknown) => void): () => void;
+  // Force the page scroll progress (0..1) — headless renders of scroll states; null = real scroll.
+  setScrollProgress?(progress: number | null): void;
+  // Studio only (mounted with `editor: true`): low-level access for the editor
+  // overlay (src/runtime/editor/, imported lazily by the Studio, never by websites).
+  editor?: EditorBridge;
   dispose(): void;
+}
+
+// Bridge between the Player and the Studio's editor overlay (gizmos, editor camera).
+export interface EditorBridge {
+  // The live scene graph (src/runtime/build/index.ts World). Replaced on every
+  // update(): listen with onWorld and re-resolve objects by id.
+  world(): import("./build/index").World | null;
+  renderer(): import("three").WebGLRenderer | null;
+  // Draws after each rendered frame (gizmos on top) and may replace the view camera.
+  setOverlay(overlay: EditorOverlayHooks | null): void;
+  // Re-render the current frame now (paused player: gizmo hover / drag, editor camera moves).
+  render(): void;
+  onWorld(listener: () => void): () => void;
+  // Whether the player's own loop is running (it then renders every frame anyway).
+  running(): boolean;
+}
+
+export interface EditorOverlayHooks {
+  // Free editor camera: its pose and projection are used for rendering instead of the scene camera's (null → scene camera).
+  viewCamera?(): import("three").Camera | null;
+  // Called after the scene (and post effects) rendered, with the camera used.
+  draw(renderer: import("three").WebGLRenderer, camera: import("three").Camera): void;
 }
 
 export interface InspectResult {
@@ -154,14 +209,47 @@ export interface ScriptApi {
     // World point under the pointer on the y=0 plane (or on objects with a body)
     pointerWorld(): { x: number; y: number; z: number; objectId?: string } | null;
   };
-  // Physics / collisions
+  // Physics / collisions (rigid bodies: cannon-es, fixed step, deterministic).
+  // Angles / angular velocities in degrees (/ s), like rotations everywhere.
   physics: {
+    // Exact shape overlap right now (any body types, no step needed).
     overlaps(a: string | ScriptObject, b: string | ScriptObject): boolean;
-    // Objects with a body currently touching `a`
+    // Objects with a body touching `a` during the last step
     contacts(a: string | ScriptObject): ScriptObject[];
-    raycast(from: [number, number, number], dir: [number, number, number], maxDistance?: number): { objectId: string; distance: number; point: [number, number, number] } | null;
-    applyImpulse(obj: string | ScriptObject, impulse: [number, number, number]): void;
-    onCollision(handler: (a: ScriptObject, b: ScriptObject) => void): void;
+    // Nearest hit on the real collider shapes. options: ignore objects, only
+    // some collision layers, skip triggers (included by default).
+    raycast(
+      from: [number, number, number],
+      dir: [number, number, number],
+      maxDistance?: number,
+      options?: { ignore?: (string | ScriptObject)[]; layers?: string[]; triggers?: boolean },
+    ): { objectId: string; distance: number; point: [number, number, number]; normal: [number, number, number] } | null;
+    // point: world point where it is applied (default: centre of mass → no spin)
+    applyImpulse(obj: string | ScriptObject, impulse: [number, number, number], point?: [number, number, number]): void;
+    // Continuous force for the next fixed step (call it every update to keep pushing).
+    applyForce(obj: string | ScriptObject, force: [number, number, number], point?: [number, number, number]): void;
+    applyTorque(obj: string | ScriptObject, torque: [number, number, number]): void;
+    setVelocity(obj: string | ScriptObject, v: [number, number, number]): void;
+    getVelocity(obj: string | ScriptObject): [number, number, number];
+    setAngularVelocity(obj: string | ScriptObject, degreesPerSecond: [number, number, number]): void;
+    getAngularVelocity(obj: string | ScriptObject): [number, number, number];
+    // Character controller: standing on something (contact normal pointing up).
+    grounded(obj: string | ScriptObject): boolean;
+    // Steer horizontally toward move * speed (|move| ≤ 1, x / z), keeping the vertical
+    // velocity; call once per update. Makes the body a character (no rotation, no friction).
+    moveCharacter(obj: string | ScriptObject, move: { x: number; z: number } | [number, number], options?: { speed?: number; acceleration?: number; airControl?: number }): void;
+    // Jump when grounded (0.12 s coyote time, no double jump). Returns true when it jumped.
+    jump(obj: string | ScriptObject, speed?: number): boolean;
+    wake(obj: string | ScriptObject): void;
+    // Hinge motor speed of a physics.joints entry (by its id).
+    setMotorSpeed(jointId: string, degreesPerSecond: number): void;
+    // Contact began (also fires for triggers). info: world point, normal (a → b),
+    // impulse (N·s) and approach speed (m/s) — e.g. play a sound when impulse > 1.
+    onCollision(handler: (a: ScriptObject, b: ScriptObject, info: { point: [number, number, number]; normal: [number, number, number]; impulse: number; speed: number }) => void): void;
+    onCollisionEnd(handler: (a: ScriptObject, b: ScriptObject) => void): void;
+    // Something entered / left a trigger body.
+    onTriggerEnter(handler: (trigger: ScriptObject, other: ScriptObject) => void): void;
+    onTriggerExit(handler: (trigger: ScriptObject, other: ScriptObject) => void): void;
   };
   // Shared state: HUD placeholders {key} read from here; tests read it too.
   state: Record<string, unknown>;

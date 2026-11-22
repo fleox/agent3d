@@ -1,0 +1,1232 @@
+{
+  "version": 1,
+  "id": "game-physics-playground",
+  "title": "Tower smash",
+  "ariaLabel": "Physics mini game: click or tap to throw balls at a tower of wooden blocks and knock it down",
+  "seed": 7,
+  "target": {
+    "kind": "game",
+    "aspect": "16:9",
+    "budgetKb": 200,
+    "reducedMotion": "ignore",
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 40,
+    "position": [
+      0,
+      6.4,
+      9.4
+    ],
+    "target": [
+      0,
+      1.25,
+      0
+    ]
+  },
+  "environment": {
+    "background": {
+      "gradient": [
+        "#f4d6c8",
+        "#ee8a82"
+      ],
+      "angle": 0
+    },
+    "fog": {
+      "color": "#efc1b0",
+      "near": 14,
+      "far": 34
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.3
+  },
+  "lights": [
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#fff4e8",
+      "groundColor": "#b9786e",
+      "intensity": 0.45
+    },
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [
+        -6,
+        10,
+        6
+      ],
+      "intensity": 3.6,
+      "color": "#fff1dc",
+      "castShadow": true
+    },
+    {
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        7,
+        6,
+        -7
+      ],
+      "intensity": 1.4,
+      "color": "#ffc2d9"
+    }
+  ],
+  "objects": [
+    {
+      "id": "ground",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 140,
+        "height": 1,
+        "depth": 100
+      },
+      "position": [
+        0,
+        -0.5,
+        -30
+      ],
+      "material": {
+        "preset": "matte",
+        "color": "#f3cdbb"
+      },
+      "receiveShadow": true,
+      "body": {
+        "type": "static",
+        "friction": 0.7
+      }
+    },
+    {
+      "id": "pedestal",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.9,
+        "radiusBottom": 2.1,
+        "height": 0.6,
+        "segments": 48
+      },
+      "position": [
+        0,
+        0.3,
+        0
+      ],
+      "material": {
+        "preset": "ceramic",
+        "color": "#463b52"
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "body": {
+        "type": "static",
+        "shape": "auto",
+        "friction": 0.7
+      }
+    },
+    {
+      "id": "block0",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        0.75,
+        -0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e76f51",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block1",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        0.75,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e76f51",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block2",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        0.75,
+        0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e76f51",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block3",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        -0.51,
+        1.05,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#f4a261",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block4",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.05,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#f4a261",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block5",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0.51,
+        1.05,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#f4a261",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block6",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.35,
+        -0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e9c46a",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block7",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.35,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e9c46a",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block8",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.35,
+        0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e9c46a",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block9",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        -0.51,
+        1.65,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#2a9d8f",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block10",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.65,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#2a9d8f",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block11",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0.51,
+        1.65,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#2a9d8f",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block12",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.95,
+        -0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#3a86ff",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block13",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.95,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#3a86ff",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block14",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        1.95,
+        0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#3a86ff",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block15",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        -0.51,
+        2.25,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#8e5cf7",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block16",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        2.25,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#8e5cf7",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block17",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0.51,
+        2.25,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#8e5cf7",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block18",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        2.55,
+        -0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e76f51",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block19",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        2.55,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e76f51",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block20",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        2.55,
+        0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e76f51",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block21",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        -0.51,
+        2.85,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#f4a261",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block22",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        2.85,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#f4a261",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block23",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0.51,
+        2.85,
+        0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#f4a261",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block24",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        3.15,
+        -0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e9c46a",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block25",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        3.15,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e9c46a",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "block26",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 1.5,
+        "height": 0.3,
+        "depth": 0.48,
+        "radius": 0.035,
+        "segments": 2
+      },
+      "position": [
+        0,
+        3.15,
+        0.51
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#e9c46a",
+        "roughness": 0.42
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tags": [
+        "block"
+      ],
+      "body": {
+        "type": "dynamic",
+        "mass": 0.6,
+        "friction": 0.55,
+        "restitution": 0.05
+      }
+    },
+    {
+      "id": "shelf",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 2,
+        "height": 0.2,
+        "depth": 2
+      },
+      "position": [
+        0,
+        -30.1,
+        0
+      ],
+      "visible": false,
+      "body": {
+        "type": "static"
+      }
+    },
+    {
+      "id": "ballProto",
+      "kind": "mesh",
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.3,
+        "segments": 32,
+        "heightSegments": 20
+      },
+      "position": [
+        0,
+        -29.7,
+        0
+      ],
+      "visible": false,
+      "material": {
+        "preset": "plastic",
+        "color": "#ef476f",
+        "roughness": 0.25
+      },
+      "castShadow": true,
+      "tags": [
+        "ball"
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "sphere",
+        "mass": 3,
+        "friction": 0.5,
+        "restitution": 0.3,
+        "ccd": true
+      }
+    }
+  ],
+  "physics": {
+    "gravity": [
+      0,
+      -9.81,
+      0
+    ],
+    "substeps": 2,
+    "iterations": 12
+  },
+  "scripts": [
+    "scripts/playground.js"
+  ],
+  "data": {
+    "playground": {
+      "throwSpeed": 19,
+      "autoEvery": 1.3,
+      "maxBalls": 10
+    }
+  },
+  "ui": {
+    "color": "#4a2330",
+    "accent": "#ef476f",
+    "elements": [
+      {
+        "id": "title",
+        "type": "text",
+        "text": "Tower Smash",
+        "anchor": "top",
+        "style": "title",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "hint",
+        "type": "text",
+        "text": "Click or tap to throw — knock the whole tower off",
+        "anchor": "bottom",
+        "style": "subtitle",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "downHud",
+        "type": "text",
+        "text": "Down {down}/{total}",
+        "anchor": "top-left",
+        "style": "pill",
+        "visible": "phase != 'attract'"
+      },
+      {
+        "id": "throwsHud",
+        "type": "text",
+        "text": "Throws {throws}",
+        "anchor": "top",
+        "style": "pill",
+        "visible": "phase != 'attract'"
+      },
+      {
+        "id": "bestHud",
+        "type": "text",
+        "text": "Best {best}",
+        "anchor": "top-right",
+        "style": "pill"
+      },
+      {
+        "id": "cleared",
+        "type": "text",
+        "text": "Cleared in {throws} throws!",
+        "anchor": "center",
+        "style": "title",
+        "visible": "phase == 'cleared'"
+      },
+      {
+        "id": "rebuild",
+        "type": "button",
+        "text": "Rebuild",
+        "anchor": "bottom",
+        "action": "rebuild",
+        "visible": "phase != 'attract'"
+      }
+    ]
+  },
+  "audio": {
+    "sounds": {
+      "throw": {
+        "preset": "whoosh",
+        "volume": 0.35
+      },
+      "hit": {
+        "preset": "hit",
+        "volume": 0.3
+      },
+      "win": {
+        "preset": "win",
+        "volume": 0.6
+      },
+      "click": {
+        "preset": "click",
+        "volume": 0.4
+      }
+    }
+  }
+}

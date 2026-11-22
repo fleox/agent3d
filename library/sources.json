@@ -2377,6 +2377,480 @@
         "background"
       ],
       "description": "Moonless night on a golf course — dark, cool ambient. Tonemapped LDR equirect 2048x1024 (sRGB) for backgrounds; use hdri/night.hdr for lighting."
+    },
+    {
+      "path": "hdri/softbox.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_08",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "photo-studio",
+        "neutral"
+      ],
+      "description": "Photo studio with large soft boxes — clean, low-contrast product lighting with long soft highlights. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/softbox.jpg is a small tonemapped preview."
+    },
+    {
+      "path": "hdri/softbox.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_08",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "photo-studio",
+        "neutral",
+        "ldr",
+        "preview"
+      ],
+      "description": "Photo studio with large soft boxes — clean, low-contrast product lighting with long soft highlights. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/softbox.hdr for lighting."
+    },
+    {
+      "path": "hdri/warehouse.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/empty_warehouse_01",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "indoor",
+        "urban",
+        "windows"
+      ],
+      "description": "Empty industrial warehouse — skylights and window strips, gritty reflections for metal and cars. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/warehouse.jpg is a small tonemapped preview."
+    },
+    {
+      "path": "hdri/warehouse.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/empty_warehouse_01",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "indoor",
+        "urban",
+        "windows",
+        "ldr",
+        "preview"
+      ],
+      "description": "Empty industrial warehouse — skylights and window strips, gritty reflections for metal and cars. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/warehouse.hdr for lighting."
+    },
+    {
+      "path": "hdri/forest.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/forest_slope",
+      "tags": [
+        "forest",
+        "nature",
+        "outdoor",
+        "trees",
+        "green",
+        "daylight"
+      ],
+      "description": "Forest slope in soft daylight — green bounce light for nature, organic products and characters. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/forest.jpg is a small tonemapped preview."
+    },
+    {
+      "path": "hdri/forest.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/forest_slope",
+      "tags": [
+        "forest",
+        "nature",
+        "outdoor",
+        "trees",
+        "green",
+        "daylight",
+        "ldr",
+        "preview"
+      ],
+      "description": "Forest slope in soft daylight — green bounce light for nature, organic products and characters. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/forest.hdr for lighting."
+    },
+    {
+      "path": "hdri/city.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/potsdamer_platz",
+      "tags": [
+        "city",
+        "urban",
+        "street",
+        "outdoor",
+        "overcast",
+        "daylight"
+      ],
+      "description": "Potsdamer Platz city street under an overcast sky — soft urban daylight with building reflections. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/city.jpg is a small tonemapped preview."
+    },
+    {
+      "path": "hdri/city.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/potsdamer_platz",
+      "tags": [
+        "city",
+        "urban",
+        "street",
+        "outdoor",
+        "overcast",
+        "daylight",
+        "ldr",
+        "preview"
+      ],
+      "description": "Potsdamer Platz city street under an overcast sky — soft urban daylight with building reflections. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/city.hdr for lighting."
+    },
+    {
+      "path": "hdri/beach.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/spiaggia_di_mondello",
+      "tags": [
+        "beach",
+        "sea",
+        "sunny",
+        "outdoor",
+        "summer",
+        "clear-sky",
+        "high-contrast"
+      ],
+      "description": "Sunny Mediterranean beach — clear sky, strong sun, crisp shadows and blue reflections. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/beach.jpg is a small tonemapped preview."
+    },
+    {
+      "path": "hdri/beach.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/spiaggia_di_mondello",
+      "tags": [
+        "beach",
+        "sea",
+        "sunny",
+        "outdoor",
+        "summer",
+        "clear-sky",
+        "high-contrast",
+        "ldr",
+        "preview"
+      ],
+      "description": "Sunny Mediterranean beach — clear sky, strong sun, crisp shadows and blue reflections. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/beach.hdr for lighting."
+    },
+    {
+      "path": "hdri/night-city.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/shanghai_bund",
+      "tags": [
+        "night",
+        "city",
+        "urban",
+        "neon",
+        "outdoor",
+        "lights"
+      ],
+      "description": "Shanghai Bund at night — city lights and warm/cool neon reflections for night and cyberpunk scenes. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/night-city.jpg is a small tonemapped preview."
+    },
+    {
+      "path": "hdri/night-city.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/shanghai_bund",
+      "tags": [
+        "night",
+        "city",
+        "urban",
+        "neon",
+        "outdoor",
+        "lights",
+        "ldr",
+        "preview"
+      ],
+      "description": "Shanghai Bund at night — city lights and warm/cool neon reflections for night and cyberpunk scenes. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/night-city.hdr for lighting."
+    },
+    {
+      "path": "models/products/sneaker.glb",
+      "kind": "model",
+      "license": "CC-BY-4.0",
+      "author": "Shopify",
+      "source": "khronos-gltf-samples",
+      "pack": "glTF Sample Assets — MaterialsVariantsShoe",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/MaterialsVariantsShoe",
+      "attribution": "\"Materials Variants Shoe\" by Shopify, CC BY 4.0 (via Khronos glTF Sample Assets)",
+      "tags": [
+        "sneaker",
+        "shoe",
+        "product",
+        "fashion",
+        "ecommerce",
+        "pbr"
+      ],
+      "description": "Photoreal sneaker for product showcases (default colourway; textures 1k)"
+    },
+    {
+      "path": "models/products/lounge-chair.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Eric Chadwick (Wayfair)",
+      "source": "khronos-gltf-samples",
+      "pack": "glTF Sample Assets — SheenChair",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/SheenChair",
+      "tags": [
+        "chair",
+        "furniture",
+        "product",
+        "interior",
+        "fabric",
+        "sheen",
+        "pbr"
+      ],
+      "description": "Mid-century lounge chair with fabric sheen (textures 1k)"
+    },
+    {
+      "path": "models/products/velvet-sofa.glb",
+      "kind": "model",
+      "license": "CC-BY-4.0",
+      "author": "Eric Chadwick (Wayfair, LLC)",
+      "source": "khronos-gltf-samples",
+      "pack": "glTF Sample Assets — GlamVelvetSofa",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/GlamVelvetSofa",
+      "attribution": "\"Glam Velvet Sofa\" by Eric Chadwick / Wayfair, LLC, CC BY 4.0 (via Khronos glTF Sample Assets)",
+      "tags": [
+        "sofa",
+        "couch",
+        "furniture",
+        "product",
+        "interior",
+        "velvet",
+        "sheen",
+        "pbr"
+      ],
+      "description": "Glam velvet sofa with sheen (textures 1k)"
+    },
+    {
+      "path": "models/products/iridescent-lamp.glb",
+      "kind": "model",
+      "license": "CC-BY-4.0",
+      "author": "Eric Chadwick (Wayfair, LLC)",
+      "source": "khronos-gltf-samples",
+      "pack": "glTF Sample Assets — IridescenceLamp",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/IridescenceLamp",
+      "attribution": "\"Iridescence Lamp\" by Eric Chadwick / Wayfair, LLC, CC BY 4.0 (via Khronos glTF Sample Assets)",
+      "tags": [
+        "lamp",
+        "lighting",
+        "product",
+        "interior",
+        "glass",
+        "iridescent",
+        "pbr"
+      ],
+      "description": "Table lamp with an iridescent glass shade (transmission + iridescence; textures 1k)"
+    },
+    {
+      "path": "models/characters/barbarian.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Barbarian.glb",
+      "tags": [
+        "barbarian",
+        "warrior",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "description": "Chibi barbarian adventurer, rigged, curated clips"
+    },
+    {
+      "path": "models/characters/rogue.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb",
+      "tags": [
+        "rogue",
+        "thief",
+        "hooded",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "description": "Chibi hooded rogue adventurer, rigged, curated clips"
+    },
+    {
+      "path": "models/props/potted-succulent.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — potted_plant_04",
+      "sourceUrl": "https://polyhaven.com/a/potted_plant_04",
+      "tags": [
+        "plant",
+        "succulent",
+        "potted plant",
+        "interior",
+        "decor",
+        "nature"
+      ],
+      "description": "Potted succulent (photoscanned look; textures 1k)"
+    },
+    {
+      "path": "models/props/modern-armchair.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — modern_arm_chair_01",
+      "sourceUrl": "https://polyhaven.com/a/modern_arm_chair_01",
+      "tags": [
+        "armchair",
+        "chair",
+        "furniture",
+        "interior",
+        "office",
+        "modern"
+      ],
+      "description": "Modern armchair (textures 1k)"
+    },
+    {
+      "path": "models/props/rubber-duck.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — rubber_duck_toy",
+      "sourceUrl": "https://polyhaven.com/a/rubber_duck_toy",
+      "tags": [
+        "rubber duck",
+        "duck",
+        "toy",
+        "bath",
+        "cute",
+        "props"
+      ],
+      "description": "Yellow rubber duck toy (textures 1k)"
+    },
+    {
+      "path": "models/props/coffee-table.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — coffee_table_round_01",
+      "sourceUrl": "https://polyhaven.com/a/coffee_table_round_01",
+      "tags": [
+        "table",
+        "coffee table",
+        "furniture",
+        "interior",
+        "wood"
+      ],
+      "description": "Round coffee table (textures 1k)"
+    },
+    {
+      "path": "models/food/apple.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — food_apple_01",
+      "sourceUrl": "https://polyhaven.com/a/food_apple_01",
+      "tags": [
+        "apple",
+        "fruit",
+        "food",
+        "healthy",
+        "realistic"
+      ],
+      "description": "Realistic apple (textures 1k)"
+    },
+    {
+      "path": "models/props/alarm-clock.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — alarm_clock_01",
+      "sourceUrl": "https://polyhaven.com/a/alarm_clock_01",
+      "tags": [
+        "clock",
+        "alarm clock",
+        "time",
+        "retro",
+        "props",
+        "decor"
+      ],
+      "description": "Retro twin-bell alarm clock (textures 1k)"
+    },
+    {
+      "path": "models/props/marble-bust.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — marble_bust_01",
+      "sourceUrl": "https://polyhaven.com/a/marble_bust_01",
+      "tags": [
+        "bust",
+        "statue",
+        "marble",
+        "sculpture",
+        "art",
+        "classical",
+        "decor"
+      ],
+      "description": "Classical marble bust (textures 1k)"
+    },
+    {
+      "path": "models/props/brass-vase.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "pack": "Poly Haven — brass_vase_03",
+      "sourceUrl": "https://polyhaven.com/a/brass_vase_03",
+      "tags": [
+        "vase",
+        "brass",
+        "decor",
+        "interior",
+        "metal"
+      ],
+      "description": "Brass vase (textures 1k)"
     }
   ]
 }

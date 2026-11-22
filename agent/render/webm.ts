@@ -71,6 +71,8 @@ export interface Vp8Frame {
   data: Uint8Array;
   width: number;
   height: number;
+  // false for inter frames (WebCodecs VP8 / VP9); default true (WebP key frames).
+  key?: boolean;
 }
 
 // The VP8 key frame inside a lossy WebP (RIFF "WEBP" → "VP8 " chunk, also
@@ -96,8 +98,10 @@ export function webpToVp8(webp: Uint8Array): Vp8Frame {
   throw new Error("no VP8 data in the WebP image");
 }
 
-// frames: VP8 key frames, all the same size, at `fps`.
-export function muxWebm(frames: Vp8Frame[], fps: number): Uint8Array {
+// frames: VP8 (default) or VP9 frames, all the same size, at `fps`. Clusters
+// start on key frames (seekable) and last at most ~5 s.
+export function muxWebm(frames: Vp8Frame[], fps: number, opts: { codec?: "V_VP8" | "V_VP9" } = {}): Uint8Array {
+  const codec = opts.codec ?? "V_VP8";
   if (!frames.length) throw new Error("no frames");
   const { width, height } = frames[0];
   const frameMs = 1000 / fps;
@@ -108,9 +112,11 @@ export function muxWebm(frames: Vp8Frame[], fps: number): Uint8Array {
   while (i < frames.length) {
     const start = Math.round(i * frameMs);
     const blocks: El[] = [[0xe7, start]];
-    while (i < frames.length && Math.round(i * frameMs) - start < CLUSTER_MS) {
+    let first = true;
+    while (i < frames.length && Math.round(i * frameMs) - start < CLUSTER_MS && (first || frames[i].key === false || Math.round(i * frameMs) - start < 2000)) {
+      first = false;
       const rel = Math.round(i * frameMs) - start;
-      const header = new Uint8Array([0x81, (rel >> 8) & 0xff, rel & 0xff, 0x80]);
+      const header = new Uint8Array([0x81, (rel >> 8) & 0xff, rel & 0xff, frames[i].key === false ? 0x00 : 0x80]);
       blocks.push([0xa3, concat([header, frames[i].data])]);
       i++;
     }
@@ -150,8 +156,8 @@ export function muxWebm(frames: Vp8Frame[], fps: number): Uint8Array {
               [0x73c5, 1],
               [0x9c, 0],
               [0x22b59c, "und"],
-              [0x86, "V_VP8"],
-              [0x258688, "VP8"],
+              [0x86, codec],
+              [0x258688, codec === "V_VP9" ? "VP9" : "VP8"],
               [0x83, 1],
               [0x23e383, Math.round(1e9 / fps)],
               [

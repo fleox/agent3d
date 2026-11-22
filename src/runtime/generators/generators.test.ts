@@ -74,7 +74,7 @@ describe("generators", () => {
       expect(a.object).toBeInstanceOf(THREE.Object3D);
       const prim = primitives(a.object);
       expect(prim.triangles + prim.points + prim.lines).toBeGreaterThan(0);
-      if (!["starfield", "waveGrid"].includes(entry.id)) expect(prim.triangles).toBeGreaterThan(0);
+      if (!["starfield", "waveGrid", "galaxy"].includes(entry.id)) expect(prim.triangles).toBeGreaterThan(0);
       a.update?.(1.25, 1 / 60);
       const b = await GENERATOR_IMPLS[entry.id]!({}, makeCtx(5));
       b.update?.(1.25, 1 / 60);

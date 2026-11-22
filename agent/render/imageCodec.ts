@@ -7,7 +7,7 @@ import { CdpClient, type CdpSession } from "./cdp";
 // headless Chrome (createImageBitmap + OffscreenCanvas.convertToBlob), the
 // same browser the renders use. One browser for the whole run.
 
-const PAGE_FN = `async function (b64, mime, maxSize, quality, allowJpeg) {
+const PAGE_FN = `async function (b64, mime, maxSize, quality, format, allowJpeg) {
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -19,18 +19,21 @@ const PAGE_FN = `async function (b64, mime, maxSize, quality, allowJpeg) {
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = "high";
   g.drawImage(bmp, 0, 0, w, h);
-  let type = mime;
-  if (mime === "image/png" && allowJpeg) {
+  let hasAlpha = false;
+  if (mime !== "image/jpeg") {
     const d = g.getImageData(0, 0, w, h).data;
-    let opaque = true;
-    for (let i = 3; i < d.length; i += 4) if (d[i] < 255) { opaque = false; break; }
-    if (opaque) type = "image/jpeg";
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 255) { hasAlpha = true; break; }
   }
-  const blob = await canvas.convertToBlob(type === "image/png" ? { type } : { type, quality: quality / 100 });
+  let type = mime;
+  if (format === "auto" || format === "webp") type = "image/webp";
+  else if (format === "png") type = "image/png";
+  else if (format === "jpeg") type = hasAlpha ? mime : "image/jpeg";
+  else if (mime === "image/png" && allowJpeg && !hasAlpha) type = "image/jpeg";
+  const blob = await canvas.convertToBlob(type === "image/png" ? { type } : { type, quality: Math.min(quality, 99) / 100 });
   const buf = new Uint8Array(await blob.arrayBuffer());
   let out = "";
   for (let i = 0; i < buf.length; i += 0x8000) out += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-  return { b64: btoa(out), mimeType: blob.type, width: w, height: h, srcWidth: bmp.width, srcHeight: bmp.height };
+  return { b64: btoa(out), mimeType: blob.type, width: w, height: h, srcWidth: bmp.width, srcHeight: bmp.height, hasAlpha };
 }`;
 
 export interface ChromeImageCodec {
@@ -63,12 +66,12 @@ export async function openImageCodec(opts: { log?: (m: string) => void } = {}): 
     throw e;
   }
   const codec: ImageCodec = async (input: ImageCodecInput): Promise<ImageCodecOutput> => {
-    const r = await page.send<{ result: { value?: { b64: string; mimeType: string; width: number; height: number; srcWidth: number; srcHeight: number } }; exceptionDetails?: { exception?: { description?: string }; text?: string } }>(
+    const r = await page.send<{ result: { value?: { b64: string; mimeType: string; width: number; height: number; srcWidth: number; srcHeight: number; hasAlpha: boolean } }; exceptionDetails?: { exception?: { description?: string }; text?: string } }>(
       "Runtime.callFunctionOn",
       {
         functionDeclaration: PAGE_FN,
         objectId: windowId,
-        arguments: [{ value: Buffer.from(input.bytes).toString("base64") }, { value: input.mimeType }, { value: input.maxSize }, { value: input.quality }, { value: input.allowJpeg }],
+        arguments: [{ value: Buffer.from(input.bytes).toString("base64") }, { value: input.mimeType }, { value: input.maxSize }, { value: input.quality }, { value: input.format ?? "keep" }, { value: !!input.allowJpeg }],
         awaitPromise: true,
         returnByValue: true,
       },
@@ -77,7 +80,7 @@ export async function openImageCodec(opts: { log?: (m: string) => void } = {}): 
     if (r.exceptionDetails || !r.result.value)
       throw new CliError("image-decode", `Could not decode this ${input.mimeType} image: ${(r.exceptionDetails?.exception?.description ?? r.exceptionDetails?.text ?? "no result").split("\n")[0]}`, "The file may be corrupt or in an unsupported format.");
     const v = r.result.value;
-    return { bytes: new Uint8Array(Buffer.from(v.b64, "base64")), mimeType: v.mimeType, width: v.width, height: v.height, srcWidth: v.srcWidth, srcHeight: v.srcHeight };
+    return { bytes: new Uint8Array(Buffer.from(v.b64, "base64")), mimeType: v.mimeType, width: v.width, height: v.height, srcWidth: v.srcWidth, srcHeight: v.srcHeight, hasAlpha: v.hasAlpha };
   };
   return { codec, close };
 }

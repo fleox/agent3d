@@ -10,6 +10,17 @@ npx -y @fleox/agent3d@0.1.0 studio --project my-banner
 
 Without the CLI (`npm run dev`, or the static `dist/studio/` on any host) the Studio keeps projects in the browser.
 
+## Viewport editing
+
+The viewport renders the scene with the website runtime and adds editor-only tools on top (`src/runtime/editor/`, loaded lazily by the Studio and never shipped in exports):
+
+- **Select** (`Q`): click an object to select it; click again inside a group to go one level deeper. `Esc` deselects, `Delete` removes, `Ctrl/⌘+D` duplicates, `F` frames the selection (or the whole scene).
+- **Transform gizmos**: move `W`, rotate `E`, scale `R`; `X` toggles world / local space. The magnet button turns snapping on (0.25 m grid, 15°, 0.1 scale); hold `Shift` while dragging to invert it. Objects nested in groups are edited in their parent's space, so `scene.json` keeps local values in metres and degrees. Animated objects are edited at their authored pose. The drag previews live and saves as one `scene_patch` — one undo step.
+- **Lights**: directional, spot, point and rect lights show a handle (and a target diamond for directional / spot / rect lights). Click one to move it with the gizmo; its card is highlighted in the inspector.
+- **Cameras**: the editor camera (drag: orbit, right-drag: pan, wheel: zoom) starts on the scene camera; the scene camera's frame is drawn at its target distance with the scene's aspect ratio. "Set the scene camera from this view" writes `camera.position` / `camera.target`. `C` switches to the scene camera (what the website shows, with rule-of-thirds and title-safe guides). Interact mode (`I`) always looks through the scene camera and passes the pointer to the scene.
+- **Drag and drop**: drag a primitive, text, generator, particle preset, library model or light from the Add panel onto the viewport to place it on the surface under the pointer (or on the ground plane).
+- The overlay shows triangles, draw calls and fps; `G` toggles the grid and helpers. `?` lists every shortcut.
+
 ## Live preview without the editor
 
 ```bash

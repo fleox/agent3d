@@ -109,3 +109,45 @@ describe("behaviour runner", () => {
     expect(o.rotation.y).toBeCloseTo(Math.PI / 2);
   });
 });
+
+describe("motion behaviours", () => {
+  it("spring follows the pointer, overshoots and settles", async () => {
+    const { springStep } = await import("./spring");
+    let x = 0, v = 0, max = 0;
+    for (let i = 0; i < 120; i++) {
+      [x, v] = springStep(x, v, 1, 1 / 60, 120, 8);
+      max = Math.max(max, x);
+    }
+    expect(max).toBeGreaterThan(1.05);
+    expect(x).toBeCloseTo(1, 2);
+    const ctx = ctxFor(new THREE.Object3D(), { pointer: { x: 1, y: 0, inside: true } });
+    const inst = BEHAVIOUR_IMPLS.spring({ type: "spring", strength: 1 } as BehaviourDef, ctx);
+    inst.update(0, 3);
+    expect(ctx.object.position.x).toBeCloseTo(1, 2);
+  });
+  it("parallax moves by depth, tilt leans when hovered", () => {
+    const p = step("parallax", { depth: 1, pointer: 0.5, smoothing: 0 }, 0, ctxFor(new THREE.Object3D(), { pointer: { x: 1, y: 0, inside: true } }));
+    expect(p.position.x).toBeCloseTo(0.5);
+    const t = step("tilt", { maxAngle: 10, smoothing: 0 }, 0, ctxFor(new THREE.Object3D(), { pointer: { x: 1, y: 0, inside: true }, hovered: () => true }));
+    expect(t.rotation.y).toBeCloseTo((10 * Math.PI) / 180);
+    expect(t.scale.x).toBeCloseTo(1.04);
+  });
+  it("breathe expands Y most at the top of the inhale", () => {
+    const o = step("breathe", { amount: 0.1, period: 1, rise: 0 }, 0.6);
+    expect(o.scale.y).toBeCloseTo(1.1);
+    expect(o.scale.x).toBeCloseTo(1.05);
+  });
+  it("noise is deterministic and bounded", () => {
+    const a = step("noise", { amplitude: [1, 1, 1], seed: 2 }, 3, ctxFor(new THREE.Object3D(), { rng: createRng(5) }));
+    const b = step("noise", { amplitude: [1, 1, 1], seed: 2 }, 3, ctxFor(new THREE.Object3D(), { rng: createRng(5) }));
+    expect(a.position.toArray()).toEqual(b.position.toArray());
+    expect(Math.abs(a.position.x)).toBeLessThanOrEqual(1.01);
+  });
+  it("lookAt turns +Z toward the target", () => {
+    const target = new THREE.Object3D();
+    target.position.set(5, 0, 0);
+    const o = step("lookAt", { target: "t", smoothing: 0 }, 0, ctxFor(new THREE.Object3D(), { find: () => target }));
+    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(o.quaternion);
+    expect(fwd.x).toBeCloseTo(1);
+  });
+});

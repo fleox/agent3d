@@ -2,7 +2,7 @@
 // src/ops/docs.test.ts fails when the file is stale; regenerate with
 // `UPDATE_DOCS=1 npx vitest run src/ops/docs.test.ts`.
 
-import { CATALOG, type CatalogEntry, type ParamSpec } from "../core/catalog";
+import { CATALOG, GRADING_LOOKS, POSTFX_LOOKS, type CatalogEntry, type ParamSpec } from "../core/catalog";
 
 const SECTIONS: { key: Exclude<keyof typeof CATALOG, "materialPresets">; title: string; intro: string }[] = [
   { key: "geometries", title: "Geometries", intro: 'Mesh / instances `geometry: { "type": "<id>", …params }`. Sizes in units (≈ metres).' },
@@ -10,6 +10,8 @@ const SECTIONS: { key: Exclude<keyof typeof CATALOG, "materialPresets">; title: 
   { key: "generators", title: "Generators", intro: 'Procedural content, zero download: `{ "kind": "generator", "generator": "<id>", "params": { … }, "seed"?: n }`.' },
   { key: "particlePresets", title: "Particle presets", intro: '`{ "kind": "particles", "preset": "<id>", "count"?, "area"?, "size"?, "color"?, … }` — object fields override the preset.' },
   { key: "shaders", title: "Shaders", intro: 'Material `{ "type": "shader", "shader": "<id>", "uniforms": { …params } }`.' },
+  { key: "textures", title: "Procedural textures", intro: 'Any material texture slot (`map`, `normalMap`, `roughnessMap`, `metalnessMap`, `bumpMap`, `aoMap`, `emissiveMap`, `alphaMap`, `displacementMap`) accepts `{ "procedural": "<id>", …params }` instead of a file: generated at load time, seamless, zero bytes. Colour slots use `colors`; data slots use the pattern height; `normalMap` derives normals from it.' },
+  { key: "lightRigs", title: "Light rigs", intro: '`environment.rig: "<id>"` or `{ "preset": "<id>", …params }` — named lighting setups added to `lights` (positions assume a subject ~1–3 units around the origin; use `scale` for bigger scenes, `rotation` to turn the rig).' },
   { key: "postfx", title: "Post effects", intro: 'Scene `postfx: [{ "type": "<id>", …params }]`.' },
   { key: "fonts", title: "Fonts", intro: 'Text objects `font: "<id>"` (bundled, no web font fetch).' },
   { key: "sounds", title: "Synth sounds", intro: 'Audio `sounds: { "<name>": { "preset": "<id>" } }` — synthesised with WebAudio, zero bytes.' },
@@ -30,11 +32,20 @@ function paramTable(params: ParamSpec[]): string {
 }
 
 function entry(e: CatalogEntry, withParams: boolean): string {
-  const parts = [`### \`${e.id}\`\n`, `${e.description}${e.cost ? ` _Cost: ~${e.cost.replace(/^~/, "")} triangles._` : ""}\n`];
+  const parts = [`### \`${e.id}\`\n`, `${e.description}${e.cost ? ` _Cost: ~${e.cost.replace(/^~/, "")} triangles._` : ""}${e.gpu ? ` _GPU cost: ${e.gpu}._` : ""}\n`];
   if (e.material) parts.push(`**\`material\` override** (object-level \`"material": { … }\`): ${e.material}\n`);
   if (withParams) parts.push(paramTable(e.params));
   if (e.example) parts.push("```json\n" + JSON.stringify(e.example) + "\n```\n");
   return parts.join("\n");
+}
+
+function postfxLooks(): string[] {
+  const out = ["### Look presets", "", '`{ "type": "look", "preset": "<id>", "intensity"?: 0…1 }` expands into exactly this stack (`intensity` scales the amounts; effects listed next to the look override the matching entry param by param):', "", "| Preset | Description | Expands to |", "|---|---|---|"];
+  for (const [id, l] of Object.entries(POSTFX_LOOKS)) out.push(`| \`${id}\` | ${cell(l.description)} | \`${cell(JSON.stringify(l.effects))}\` |`);
+  out.push("", "### Grading looks", "", '`{ "type": "grading", "look": "<id>", "intensity"?: 0…1 }` — procedural LUTs (no texture); explicit grading params override them:', "", "| Look | Description | Values |", "|---|---|---|");
+  for (const [id, g] of Object.entries(GRADING_LOOKS)) out.push(`| \`${id}\` | ${cell(g.description)} | \`${cell(JSON.stringify(g.values))}\` |`);
+  out.push("");
+  return out;
 }
 
 export function renderCatalogMarkdown(): string {
@@ -56,6 +67,7 @@ export function renderCatalogMarkdown(): string {
     const hasParams = list.some((e) => e.params.length);
     out.push(`## ${s.title}`, "", s.intro, "");
     if (hasParams) for (const e of list) out.push(entry(e, true));
+    if (s.key === "postfx") out.push(...postfxLooks());
     else {
       out.push("| Id | Description |", "|---|---|", ...list.map((e) => `| \`${e.id}\` | ${cell(e.description)} |`), "");
     }

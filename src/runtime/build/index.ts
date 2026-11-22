@@ -10,7 +10,9 @@ import { createRunner, type BehaviourRunner } from "../behaviours/runner";
 import { createParticles, type ParticleSystem } from "../particles/index";
 import { createRng, hashSeed } from "../random";
 import type { BehaviourContext, BuiltObject } from "../registry";
-import { createTimeline, type TimelineRunner } from "../timeline/index";
+import { createTimeline, selectIds, type TimelineHost, type TimelineRunner } from "../timeline/index";
+import { PropertyOverrides } from "../timeline/overrides";
+import { evaluateShots, sortShots } from "../timeline/shots";
 import { DEG, disposeObject, toColor, withDefaults } from "../util";
 import { createCamera, createRig, setCameraAspect, type CameraRig } from "./camera";
 import type { RuntimeContext } from "./context";
@@ -85,7 +87,14 @@ export class World {
   // Reduced motion "static": entrance behaviours (`appear`) show their final state.
   settleEntrances = false;
   private updaters: ((t: number, dt: number) => void)[] = [];
-  private cameraRest0 = { position: new THREE.Vector3(), target: new THREE.Vector3(), fov: 45 };
+  private cameraRest0 = { position: new THREE.Vector3(), target: new THREE.Vector3(), fov: 45, zoom: 10, focus: undefined as number | undefined };
+  // Motion: property overrides from interactions, camera shots, post effect params.
+  motionHost!: TimelineHost;
+  overrides!: PropertyOverrides;
+  private shots: NonNullable<SceneDoc["camera"]["shots"]> = [];
+  private focusWritten = false;
+  // Set by the player: live post effect params (postfx.<type>.<param> tracks, rack focus).
+  postfxParam: ((type: string, param: string, value: unknown) => void) | null = null;
   private viewportH = 600;
   private input: FrameInput = { pointer: { x: 0, y: 0, inside: false }, scroll: 0, hovered: new Set(), clicked: new Set(), timelineT: null };
   private disposed = false;
@@ -109,6 +118,10 @@ export class World {
       this.cameraRest0.position.copy(this.rig.rest.position);
       this.cameraRest0.target.copy(this.rig.rest.target);
       this.cameraRest0.fov = this.rig.rest.fov;
+      this.cameraRest0.zoom = this.rig.rest.zoom;
+      const dof = def.postfx?.find((f) => f.type === "dof");
+      this.cameraRest0.focus = dof && typeof dof.focus === "number" ? dof.focus : dof ? 8 : undefined;
+      this.rig.rest.focus = this.cameraRest0.focus;
 
       const envP = buildEnvironment(def.environment ?? { background: "#ffffff" }, this.scene, this.camera, !!def.target?.transparent, ctx);
       const lightsP = Promise.all((def.lights ?? []).map((l, i) => this.addLight(l, i)));
@@ -130,15 +143,46 @@ export class World {
         this.scene.add(grid, Object.assign(new THREE.AxesHelper(1.5), { userData: { helper: true } }));
       }
 
-      if (def.timeline && def.timeline.tracks?.length) {
-        this.timeline = createTimeline(def.timeline, {
-          object: (id) => this.entries.get(id)?.object ?? null,
-          camera: this.rig.rest,
-          issue: ctx.issue,
-        });
+      this.motionHost = {
+        object: (id) => this.entries.get(id)?.object ?? null,
+        select: (sel) => this.select(sel),
+        camera: this.rig.rest,
+        scene: this.scene,
+        renderer: ctx.renderer,
+        postfx: {
+          set: (type, param, value) => this.postfxParam?.(type, param, value),
+          base: (type, param) => {
+            const fx = def.postfx?.find((f) => f.type === type);
+            const v = fx?.[param];
+            return typeof v === "number" || typeof v === "string" ? v : undefined;
+          },
+        },
+        clips: (id) => this.entries.get(id)?.animator?.control,
+        issue: ctx.issue,
+        seed: def.seed ?? 1,
+      };
+      this.overrides = new PropertyOverrides(this.motionHost);
+      this.shots = sortShots(def.camera?.shots);
+      if (def.timeline) {
+        this.timeline = createTimeline(def.timeline, this.motionHost);
         for (const id of this.timeline.targets) {
           const e = this.entries.get(id);
           if (e) e.animated = true;
+        }
+      }
+      // Interaction targets are pickable (pointer cursor); `set` targets reset each frame.
+      for (const it of def.interactions ?? []) {
+        if (it.target && (it.on === "click" || it.on === "hover" || it.on === "hoverEnd")) {
+          const e = this.entries.get(it.target);
+          if (e) e.interactive = true;
+        }
+        for (const a of it.do ?? []) {
+          const path = (a as { set?: { path?: unknown } }).set?.path;
+          if (typeof path !== "string") continue;
+          for (const id of this.overrides.idsOf(path)) {
+            const e = this.entries.get(id);
+            if (e) e.animated = true;
+          }
         }
       }
       this.fitShadows();
@@ -182,6 +226,7 @@ export class World {
         return self.camera;
       },
       rng: this.rngFor(entry.id + ":behaviours"),
+      find: (id) => (id === "camera" ? self.camera : self.entries.get(id)?.object ?? null),
     };
   }
 
@@ -205,12 +250,14 @@ export class World {
     for (const e of this.entries.values()) {
       for (const r of e.runners) r.dispose();
       if (e.def.behaviours?.length) this.attachBehaviours(e);
-      e.animator?.mixer.setTime(0);
+      if (e.animator?.reset) e.animator.reset();
+      else e.animator?.mixer.setTime(0);
     }
+    this.overrides?.reset();
   }
 
   private async addLight(def: LightDef, index: number): Promise<void> {
-    const light = await buildLight(def);
+    const light = await buildLight(def, this.def.environment?.shadows);
     const id = def.id ?? `light${index}`;
     this.scene.add(light);
     if (light instanceof THREE.DirectionalLight || light instanceof THREE.SpotLight) this.scene.add(light.target);
@@ -226,6 +273,7 @@ export class World {
     let built: BuiltObject | undefined;
     let animator: ModelAnimator | undefined;
     let particles: ParticleSystem | undefined;
+    let textLetters: import("./text").TextLetter[] = [];
     const shadowDefault = def.kind !== "particles" && def.kind !== "generator";
     try {
       switch (def.kind) {
@@ -237,11 +285,11 @@ export class World {
           break;
         }
         case "text": {
-          const { buildTextGeometry } = await import("./text");
-          const mat = await createMaterial(def.material, ctx, { defaultColor: "#ffffff" });
-          const geo = await ctx.track(buildTextGeometry(def, ctx));
-          fitGradient(mat, geo);
-          object = new THREE.Mesh(geo, mat);
+          // Single mesh, or a group of letters "<id>/<n>" (splitLetters / reveal), registered below.
+          const { buildText } = await import("./text");
+          const res = await ctx.track(buildText(def, ctx));
+          object = res.object;
+          textLetters = res.letters;
           break;
         }
         case "svg": {
@@ -334,6 +382,12 @@ export class World {
     };
     this.entries.set(def.id, entry);
     this.attachBehaviours(entry);
+    // Text letters: timeline targets "<id>/<n>"; a text `reveal` runs as a per-letter entrance behaviour.
+    for (const l of textLetters) {
+      const le: WorldEntry = { id: l.id, kind: "text", def: l.def, object: l.object, rest: captureRest(l.object), runners: [], animated: true, topLevel: false, parentId: def.id, interactive: false };
+      if (l.reveal) le.runners.push(createRunner(l.reveal.def, l.reveal.impl, this.behaviourContext(le), { settled: () => this.settleEntrances }));
+      this.entries.set(l.id, le);
+    }
     if (def.children?.length) {
       const sib = new Map<string, BuiltObject>();
       const kids = def.children;
@@ -363,6 +417,34 @@ export class World {
       if (id && this.entries.has(id)) out.push(id);
     }
     return out;
+  }
+
+  // Ids for a multi-target selector: "tag:<tag>" (scene order), "children:<id>"
+  // (direct children, incl. text letters), "a,b,c".
+  select(selector: string): string[] {
+    if (selector.startsWith("tag:")) {
+      const tag = selector.slice(4);
+      const out: string[] = [];
+      const walk = (objs: ObjectDef[] | undefined) => {
+        for (const o of objs ?? []) {
+          if (o.tags?.includes(tag) && this.entries.has(o.id)) out.push(o.id);
+          walk(o.children);
+        }
+      };
+      walk(this.def.objects);
+      return out;
+    }
+    if (selector.startsWith("children:")) {
+      const id = selector.slice(9);
+      return [...this.entries.values()].filter((e) => e.parentId === id).map((e) => e.id);
+    }
+    return selectIds(selector, { object: () => null, camera: null, issue: () => undefined }).filter((id) => id !== "");
+  }
+
+  // World position of an entry (camera lookAt / shots).
+  objectPosition(id: string): THREE.Vector3 | null {
+    const e = this.entries.get(id);
+    return e ? e.object.getWorldPosition(new THREE.Vector3()) : null;
   }
 
   interactiveRoots(): THREE.Object3D[] {
@@ -419,21 +501,40 @@ export class World {
         if (e.rest.color && !this.timeline?.targets.has(e.id)) l.color.copy(e.rest.color);
       }
     }
-    // 2. Timeline (absolute values), 3. behaviours (offsets).
-    if (this.timeline && input.timelineT !== null) {
-      if (this.timeline.def.tracks.some((tr) => tr.target.startsWith("camera."))) {
-        this.rig.rest.position.copy(this.cameraRest0.position);
-        this.rig.rest.target.copy(this.cameraRest0.target);
-        this.rig.rest.fov = this.cameraRest0.fov;
+    // 2. Camera shots + timeline (absolute values), interaction overrides, 3. behaviours (offsets).
+    const shotT = this.def.timeline ? input.timelineT ?? 0 : t;
+    if (this.shots.length || this.timeline?.animatesCamera) {
+      const rest = this.rig.rest;
+      rest.position.copy(this.cameraRest0.position);
+      rest.target.copy(this.cameraRest0.target);
+      rest.fov = this.cameraRest0.fov;
+      rest.zoom = this.cameraRest0.zoom;
+      rest.focus = this.cameraRest0.focus;
+      if (this.shots.length) {
+        const pose = evaluateShots(this.shots, shotT, rest, { objectPosition: (id) => this.objectPosition(id) });
+        rest.position.copy(pose.position);
+        rest.target.copy(pose.target);
+        rest.fov = pose.fov;
+        rest.focus = pose.focus;
       }
-      this.timeline.apply(input.timelineT);
+    }
+    if (this.timeline && input.timelineT !== null) this.timeline.apply(input.timelineT);
+    this.overrides?.apply(t);
+    if (this.rig.rest.focus !== undefined && (this.focusWritten || this.rig.rest.focus !== this.cameraRest0.focus)) {
+      this.postfxParam?.("dof", "focus", this.rig.rest.focus);
+      this.focusWritten = true;
     }
     for (const e of this.entries.values()) for (const r of e.runners) r.step(t, dt);
-    // 4. Time-driven content.
+    // 4. Time-driven content (+ pointer-aware generators: character eyes, waveGrid ripple).
+    for (const e of this.entries.values()) {
+      const hook = (e.object.userData.setPointer ?? e.object.children[0]?.userData.setPointer) as ((x: number, y: number) => void) | undefined;
+      if (hook) hook(input.pointer.x, input.pointer.y);
+    }
     for (const u of this.updaters) u(t, dt);
     for (const e of this.entries.values()) e.animator?.mixer.update(dt);
     // 5. Camera.
-    this.rig.update(t, dt, { pointer: input.pointer, scroll: input.scroll, followTarget });
+    const lookAtId = this.def.camera?.lookAt;
+    this.rig.update(t, dt, { pointer: input.pointer, scroll: input.scroll, followTarget, lookAt: lookAtId ? this.objectPosition(lookAtId) : null });
   }
 
   dispose(): void {
@@ -447,6 +548,11 @@ export class World {
     disposeObject(this.scene);
     const env = this.scene.environment;
     if (env) env.dispose();
+    // Gradient / HDRI backgrounds are textures too (no leak on player.update / setData).
+    const bg = this.scene.background as THREE.Texture | null;
+    if (bg && (bg as THREE.Texture).isTexture) bg.dispose();
+    // Shadow maps are render targets owned by the lights.
+    this.scene.traverse((o) => (o as THREE.DirectionalLight).shadow?.dispose?.());
     this.entries.clear();
   }
 }

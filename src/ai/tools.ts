@@ -26,6 +26,7 @@ const ORDER = [
   "object_remove",
   "object_list",
   "timeline_set",
+  "interactions_set",
   "catalog_get",
   "templates_list",
   "project_create",

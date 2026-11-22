@@ -31,7 +31,7 @@ export function walkFiles(root: string): string[] {
 
 // dist/runtime files for an export format (path relative to it → bytes):
 // embed = agent3d-runtime.js + chunks/; single-html = agent3d-runtime.single.js.
-export function readRuntimeFiles(format: "embed" | "single-html" = "embed"): Record<string, Uint8Array> {
+export function readRuntimeFiles(format: "embed" | "single-html" | "zip" = "embed"): Record<string, Uint8Array> {
   if (!runtimeBuilt())
     throw new CliError("runtime-missing", `The runtime build is missing (${join(runtimeDir(), "agent3d-runtime.js")}).`, "Use the npm package (it ships dist/runtime), or run `npm run build:runtime` in a clone. AGENT3D_DIST can point at another dist/ folder.");
   const root = runtimeDir();

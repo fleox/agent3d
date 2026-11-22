@@ -99,20 +99,25 @@ npx -y @fleox/agent3d@0.1.0 assets remove assets/textures/old.jpg --yes --projec
 
 `assets list` shows each file's size on disk, licence, whether it exists and which objects use it (`usedBy`); it is read-only: entries whose recorded size differs from the file on disk are listed in `stale` (`assets optimize` / `assets add` rewrite the manifest). `remove` prints a plan (with `usedBy`) unless `--yes`: fix the references first.
 
-## Shrinking textures (over budget)
+## Optimising textures and models
 
-When `check` reports `budget`, its hint names the heaviest files. Downscale them in place (lossy, so it prints a plan unless `--yes`):
+When `check` reports `budget` or `optimizable`, or before exporting a scene with project textures / `.glb` models, run `assets optimize`. Without `--yes` it prints the plan (no Chrome needed): for every file the size it will get and **why** (target kind, the object's size on screen, the camera distance, the texture role). Show the plan to the user, then apply:
 
 ```bash
-npx -y @fleox/agent3d@0.1.0 assets optimize assets/textures/wood_planks --max-size 512 --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 assets optimize assets/textures/wood_planks --max-size 512 --yes --project my-banner --json
-npx -y @fleox/agent3d@0.1.0 assets optimize --all --max-size 1024 --quality 75 --yes --project my-hero --json
+npx -y @fleox/agent3d@0.1.0 assets optimize --all --project my-hero --json
+npx -y @fleox/agent3d@0.1.0 assets optimize --all --dry-run --project my-hero --json
+npx -y @fleox/agent3d@0.1.0 assets optimize --all --yes --project my-hero --json
+npx -y @fleox/agent3d@0.1.0 assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
+npx -y @fleox/agent3d@0.1.0 assets optimize assets/textures/wood_planks --max-size 512 --format jpeg --yes --project my-banner --json
 ```
 
-- Paths are files or folders; `--all` takes every texture and `.glb` under `assets/`. `--max-size` (default 1024) is the longest side in pixels, never upscaled; `--quality` (default 80) applies to JPEG / WebP.
-- Standalone `.jpg` / `.png` / `.webp` keep their format and path (the scene does not change). Images embedded in a `.glb` are re-encoded inside the binary (an opaque PNG becomes a JPEG). A file is only rewritten when it gets smaller; `assets/manifest.json` sizes follow.
-- The result lists every file (`beforeBytes`, `afterBytes`, `changed`) and image (`from` / `to` as `WxH type KB`), plus `savedKb`. Run `check` again, then `render` to make sure the textures still look right (512 suits banners and small props; keep 1024 for a hero's main surface).
-- Needs headless Chrome (like `render`). MCP: the `assets_optimize` tool takes `{ "paths": [...] | "all": true, "maxSize", "quality" }`.
+- **Smart size (default).** Each texture gets the smallest tier (256 / 512 / 1024 / 2048; up to 4096 for an equirect background) that still gives about one texel per screen pixel where the scene shows it: canvas size from the target (a hero ≈ 2880×1620 device px), object size (`fit`, geometry, scale) and closest camera distance (orbit zoom, scroll paths and timeline camera keys count), divided by `repeat`. Normal maps get ~0.75× and roughness ~0.5× of the colour size; a model's atlas ~1.5× its on-screen size. Heroes never go below 512 for colour maps; games and cards are capped at 1024. Textures not placed in `scene.json` (scripts, unused) get 1024. `--max-size <px>` forces one size for everything. Never upscales.
+- **WebP (default `--format auto`).** Standalone `.jpg` / `.png` files become `.webp`: the file is renamed and every `scene.json` reference rewritten (`renamed` in the result) — unless a script, a `.gltf` or scene data names the file, then the format is kept (`note`). Images inside `.glb` models become WebP with `EXT_texture_webp`. `--format jpeg|png|keep` for other needs; `--quality` (default 80; normal maps at least 90).
+- **Geometry.** `.glb` models are welded (duplicate vertices merged), reordered for the GPU vertex cache and compressed with meshopt (`EXT_meshopt_compression`, 16-bit positions / UVs, 10-bit normals — invisible), which typically cuts the geometry by 60–80 %; the runtime loads the decoder (~27 KB) only for models that use it. `--simplify 0.5` keeps about half of the triangles within `--simplify-error` (default 0.01 = 1 % of the mesh size; the result says when it stopped early); `--compress none` skips meshopt. Draco-compressed models cannot be decoded (the runtime refuses them too): re-export them without Draco.
+- A file only changes when it gets clearly smaller (re-encoding without resizing needs a 10 % gain); `assets/manifest.json` follows. Each file reports `maxSize`, `sizeReason`, its images (`role`, `from` / `to` as `WxH type KB`) and `geometry` (triangles / vertices before and after, filters). `--dry-run` encodes everything and returns the real savings without writing.
+- After applying, run `check` and `render` and look at the image: textures and models must look the same. If a surface looks soft, re-run that file with `--max-size 2048`.
+- Library assets (`library:`) are never modified. `export --optimize` exports optimised copies of every asset (library ones included; textures keep their format there) without touching the project.
+- Textures need headless Chrome (like `render`); geometry does not. MCP: `assets_optimize` takes `{ "paths": [...] | "all": true, "maxSize", "quality", "format", "compress", "simplify", "simplifyError", "dryRun" }` — call it with `dryRun: true` first.
 
 ## Licences and attribution
 

@@ -42,6 +42,17 @@ export async function refreshAssetManifest(fs: ProjectFs): Promise<string[]> {
   return changed;
 }
 
+// Moves a manifest entry to a new path (assets optimize changing a
+// texture's format renames the file). No-op when the entry is missing.
+export async function renameAssetEntry(fs: ProjectFs, from: string, to: string): Promise<void> {
+  if (!(await fs.exists(ASSET_MANIFEST_FILE))) return;
+  const m = await readAssetManifest(fs);
+  const e = m.assets.find((a) => a.path === from);
+  if (!e) return;
+  e.path = to;
+  await writeAssetManifest(fs, m);
+}
+
 export interface AssetListing extends AssetEntry {
   exists: boolean;
   usedBy: string[]; // scene paths referencing it
@@ -256,7 +267,8 @@ export async function downloadAsset(
   const images = written.filter((p) => /\.(png|jpe?g|webp|glb)$/i.test(p));
   if (maxSize && images.length) {
     if (opts.codec) {
-      optimized = await optimizeAssets(fs, { paths: images, maxSize, quality: opts.quality }, opts.codec);
+      // Paths and formats are kept: `written` and `suggestion` name these files.
+      optimized = await optimizeAssets(fs, { paths: images, maxSize, quality: opts.quality, format: "keep", compress: false }, opts.codec);
       mainEntry = (await readAssetManifest(fs)).assets.find((a) => a.path === mainEntry!.path) ?? mainEntry;
     } else note = `Not downscaled to ${maxSize} px here (needs headless Chrome): run \`agent3d assets optimize ${images.join(" ")} --max-size ${maxSize} --yes\`.`;
   }

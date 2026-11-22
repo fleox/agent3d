@@ -1,404 +1,331 @@
-// Post-processing (loaded lazily only when scene.postfx is set). One factory
-// per CATALOG.postfx id. Pipeline (EffectComposer):
-//   RenderPass (scene WITHOUT its background, transparent clear, HDR)
-//   → sanitize → HDR effects (outline, bloom, dof) in the declared order
-//   → BackgroundPass: tone mapping of the scene + the background composited
-//     under it untouched (exact CSS colour, like the non-postfx path, where
-//     three never tone maps a colour / sRGB background)
-//   → screen effects (vignette, film, chromatic, pixelate) in the declared order
-//   → OutputPass without tone mapping (sRGB only).
+// Post-processing (loaded lazily only when scene.postfx is set, or for a
+// supersampled still). One implementation per CATALOG.postfx id. Pipeline:
+//
+//   scene (WITHOUT its background, transparent clear, HDR half-float, MSAA
+//   per quality tier; `taa` stills: N sub-pixel-jittered renders accumulated)
+//   → HDR effects in a fixed order: ao → outline → godrays → dof → bloom → lensflare
+//     (sanitised first: NaN / Inf pixels would explode in bloom)
+//   → BackgroundPass: tone mapping + the background composited under it
+//   → antialiasing (fxaa | smaa)
+//   → stylised looks in the declared order (tiltshift, pixelate, halftone, ascii, glitch)
+//   → FinishPass: chromatic + sharpen + grading + vignette + film + sRGB + dither (ONE pass)
+//
+// Effects sharing scene data use one normal/depth pre-pass (GBuffer). Look
+// presets are expanded and effects above the quality tier's cost dropped by
+// src/core/postfx.ts before this runs.
 
 import * as THREE from "three";
-import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { FilmPass } from "three/addons/postprocessing/FilmPass.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { FullScreenQuad, Pass } from "three/addons/postprocessing/Pass.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { RGBShiftShader } from "three/addons/shaders/RGBShiftShader.js";
+import type { Pass } from "three/addons/postprocessing/Pass.js";
+import { FullScreenQuad } from "three/addons/postprocessing/Pass.js";
+import { activePostFx, qualitySettings, type QualitySettings } from "../../core/postfx";
 import type { PostFxDef } from "../../core/types";
-import { bool, num, toColor } from "../util";
+import { num } from "../util";
+import { BackgroundPass, SANITIZE_GLSL } from "./background";
+import { type Cam, type EffectHandle, type EffectImpl, type FxRuntime, fsMaterial, GBuffer, ShaderFxPass } from "./common";
+import { FinishPass } from "./finish";
+import { createAo, createBloom, createDof, createGodrays, createLensflare, createOutline } from "./hdr";
+import { createAscii, createFxaa, createGlitch, createHalftone, createPixelate, createSmaa, createTiltshift } from "./ldr";
 
-type Cam = THREE.PerspectiveCamera | THREE.OrthographicCamera;
+export type { EffectHandle } from "./common";
 
 export interface PostFxContext {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
   camera: Cam;
+  /** CSS size of the canvas. */
   width: number;
   height: number;
+  /** Quality settings (default: "high"). */
+  quality?: QualitySettings;
+  /** MSAA on the scene target (default true: target.antialias). */
+  antialias?: boolean;
 }
 
-export interface EffectHandle {
-  pass: Pass;
-  update?(t: number): void;
-  setSize?(w: number, h: number): void;
-}
+const finishOnly: EffectImpl = { stage: "finish" };
 
-// Hide helpers (sky dome, grids, particles) while a pass renders the scene
-// with an override material (depth / normals).
-function withoutHelpers(scene: THREE.Scene, fn: () => void, hideGround = false): void {
-  const hidden: THREE.Object3D[] = [];
-  scene.traverse((o) => {
-    if (o.visible && ((o.userData.helper && (hideGround || !o.userData.ground)) || (o as THREE.Points).isPoints || (o as THREE.Sprite).isSprite)) {
-      hidden.push(o);
-      o.visible = false;
-    }
-  });
-  const bg = scene.background;
-  scene.background = null;
-  try {
-    fn();
-  } finally {
-    scene.background = bg;
-    for (const o of hidden) o.visible = true;
-  }
-}
-
-// ─── Custom passes ─────────────────────────────────────────────────────
-
-const PixelateShader = {
-  name: "PixelateShader",
-  uniforms: { tDiffuse: { value: null }, uResolution: { value: new THREE.Vector2(1, 1) }, uPixel: { value: 4 } },
-  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uResolution; uniform float uPixel; varying vec2 vUv;
-    void main() { vec2 cell = uPixel / uResolution; vec2 uv = (floor(vUv / cell) + 0.5) * cell; gl_FragColor = texture2D(tDiffuse, uv); }`,
+export const POSTFX_IMPLS: Record<string, EffectImpl> = {
+  look: { stage: "meta" }, // expanded by expandPostFx (src/core/postfx.ts)
+  taa: { stage: "meta" }, // still accumulation, read by the pipeline
+  ao: { stage: "hdr", create: createAo },
+  outline: { stage: "hdr", create: createOutline },
+  godrays: { stage: "hdr", create: createGodrays },
+  dof: { stage: "hdr", create: createDof },
+  bloom: { stage: "hdr", create: createBloom },
+  lensflare: { stage: "hdr", create: createLensflare },
+  fxaa: { stage: "aa", create: createFxaa },
+  smaa: { stage: "aa", create: createSmaa },
+  tiltshift: { stage: "ldr", create: createTiltshift },
+  pixelate: { stage: "ldr", create: createPixelate },
+  halftone: { stage: "ldr", create: createHalftone },
+  ascii: { stage: "ldr", create: createAscii },
+  glitch: { stage: "ldr", create: createGlitch },
+  chromatic: finishOnly,
+  sharpen: finishOnly,
+  grading: finishOnly,
+  vignette: finishOnly,
+  film: finishOnly,
 };
 
-// Vignette that never goes negative (the addon's shader can, on HDR input).
-const VignetteShader = {
-  name: "Agent3DVignette",
-  uniforms: { tDiffuse: { value: null }, offset: { value: 1 }, darkness: { value: 1.1 } },
-  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float offset; uniform float darkness; varying vec2 vUv;
-    void main() {
-      vec4 texel = texture2D(tDiffuse, vUv);
-      float d = length(vUv - 0.5) * 1.4142;
-      float v = 1.0 - clamp(darkness * 0.65 * smoothstep(0.3 * offset, 1.1 * offset, d), 0.0, 1.0);
-      gl_FragColor = vec4(texel.rgb * v, texel.a);
-    }`,
-};
+const HDR_ORDER = ["ao", "outline", "godrays", "dof", "bloom", "lensflare"];
 
-// Toon outlines: edges from a depth + normal pre-pass (Sobel-like cross filter).
-class ToonOutlinePass extends Pass {
-  private target: THREE.WebGLRenderTarget;
-  private normalMat = new THREE.MeshNormalMaterial();
-  private quad: FullScreenQuad;
-  private mat: THREE.ShaderMaterial;
-  constructor(private scene: THREE.Scene, private camera: Cam, color: THREE.Color, thickness: number, w: number, h: number) {
-    super();
-    this.target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType });
-    this.target.depthTexture = new THREE.DepthTexture(w, h);
-    this.mat = new THREE.ShaderMaterial({
-      uniforms: {
-        tDiffuse: { value: null },
-        tNormal: { value: this.target.texture },
-        tDepth: { value: this.target.depthTexture },
-        uResolution: { value: new THREE.Vector2(w, h) },
-        uColor: { value: color },
-        uThickness: { value: thickness },
-        uNear: { value: 0.1 },
-        uFar: { value: 1000 },
-        uOrtho: { value: 0 },
-      },
-      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform sampler2D tDiffuse; uniform sampler2D tNormal; uniform sampler2D tDepth;
-        uniform vec2 uResolution; uniform vec3 uColor; uniform float uThickness; uniform float uNear; uniform float uFar; uniform float uOrtho;
-        varying vec2 vUv;
-        float lin(vec2 uv) {
-          float d = texture2D(tDepth, uv).x;
-          if (uOrtho > 0.5) return mix(uNear, uFar, d);
-          float z = d * 2.0 - 1.0;
-          return 2.0 * uNear * uFar / (uFar + uNear - z * (uFar - uNear));
-        }
-        void main() {
-          vec4 base = texture2D(tDiffuse, vUv);
-          vec2 o = uThickness / uResolution;
-          float d0 = lin(vUv);
-          float dd = abs(lin(vUv + vec2(o.x, 0.0)) - d0) + abs(lin(vUv - vec2(o.x, 0.0)) - d0) + abs(lin(vUv + vec2(0.0, o.y)) - d0) + abs(lin(vUv - vec2(0.0, o.y)) - d0);
-          vec3 n0 = texture2D(tNormal, vUv).xyz;
-          float nd = length(texture2D(tNormal, vUv + vec2(o.x, 0.0)).xyz - n0) + length(texture2D(tNormal, vUv - vec2(o.x, 0.0)).xyz - n0) + length(texture2D(tNormal, vUv + vec2(0.0, o.y)).xyz - n0) + length(texture2D(tNormal, vUv - vec2(0.0, o.y)).xyz - n0);
-          float edge = max(smoothstep(0.04, 0.12, dd / max(d0, 1e-3)), smoothstep(0.5, 0.9, nd));
-          gl_FragColor = vec4(mix(base.rgb, uColor, edge), base.a);
-        }`,
-    });
-    this.quad = new FullScreenQuad(this.mat);
-  }
-  override setSize(w: number, h: number): void {
-    this.target.setSize(w, h);
-    this.mat.uniforms.uResolution.value.set(w, h);
-  }
-  override render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget): void {
-    const prevOverride = this.scene.overrideMaterial;
-    const prevClear = renderer.getClearColor(new THREE.Color());
-    const prevAlpha = renderer.getClearAlpha();
-    withoutHelpers(this.scene, () => {
-      this.scene.overrideMaterial = this.normalMat;
-      renderer.setRenderTarget(this.target);
-      renderer.setClearColor(0x000000, 0);
-      renderer.clear();
-      renderer.render(this.scene, this.camera);
-    }, true);
-    this.scene.overrideMaterial = prevOverride;
-    renderer.setClearColor(prevClear, prevAlpha);
-    const u = this.mat.uniforms;
-    u.tDiffuse.value = readBuffer.texture;
-    u.uNear.value = this.camera.near;
-    u.uFar.value = this.camera.far;
-    u.uOrtho.value = (this.camera as THREE.OrthographicCamera).isOrthographicCamera ? 1 : 0;
-    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
-    if (this.clear) renderer.clear();
-    this.quad.render(renderer);
-  }
-  override dispose(): void {
-    this.target.dispose();
-    this.normalMat.dispose();
-    this.mat.dispose();
-    this.quad.dispose();
-  }
+export interface RenderOptions {
+  /** Jittered frames accumulated into this frame (supersampling). 1 = plain render. */
+  samples?: number;
 }
-
-// Tone maps the scene (premultiplied, alpha = coverage) and composites the
-// scene background under it: out = tm(fg) + bg * (1 - a). The background is
-// rendered by three itself into its own target (colour, flat texture, equirect
-// / cube, blurriness and rotation all behave as without post effects); linear
-// (HDR) texture backgrounds are tone mapped, as three does on screen.
-const TONE_DEFINES: Partial<Record<THREE.ToneMapping, string>> = {
-  [THREE.LinearToneMapping]: "LINEAR_TONE_MAPPING",
-  [THREE.ReinhardToneMapping]: "REINHARD_TONE_MAPPING",
-  [THREE.CineonToneMapping]: "CINEON_TONE_MAPPING",
-  [THREE.ACESFilmicToneMapping]: "ACES_FILMIC_TONE_MAPPING",
-  [THREE.AgXToneMapping]: "AGX_TONE_MAPPING",
-  [THREE.NeutralToneMapping]: "NEUTRAL_TONE_MAPPING",
-  [THREE.CustomToneMapping]: "CUSTOM_TONE_MAPPING",
-};
-
-class BackgroundPass extends Pass {
-  private bgScene = new THREE.Scene();
-  private target: THREE.WebGLRenderTarget;
-  private quad: FullScreenQuad;
-  private mat: THREE.RawShaderMaterial;
-  private toneMapping: THREE.ToneMapping | null = null;
-  /** Clear colour / alpha of the renderer before the passes ran (no scene.background). */
-  clearColor = new THREE.Color(0, 0, 0);
-  clearAlpha = 0;
-  constructor(private scene: THREE.Scene, private camera: Cam, w: number, h: number) {
-    super();
-    this.target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType });
-    this.mat = new THREE.RawShaderMaterial({
-      uniforms: { tDiffuse: { value: null }, tBackground: { value: this.target.texture }, toneMappingExposure: { value: 1 }, uToneBg: { value: 0 } },
-      vertexShader: `precision highp float;
-        uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; attribute vec3 position; attribute vec2 uv; varying vec2 vUv;
-        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `precision highp float;
-        uniform sampler2D tDiffuse; uniform sampler2D tBackground; uniform float uToneBg;
-        #include <tonemapping_pars_fragment>
-        varying vec2 vUv;
-        vec3 tm(vec3 c) {
-          #if defined(LINEAR_TONE_MAPPING)
-            return LinearToneMapping(c);
-          #elif defined(REINHARD_TONE_MAPPING)
-            return ReinhardToneMapping(c);
-          #elif defined(CINEON_TONE_MAPPING)
-            return CineonToneMapping(c);
-          #elif defined(ACES_FILMIC_TONE_MAPPING)
-            return ACESFilmicToneMapping(c);
-          #elif defined(AGX_TONE_MAPPING)
-            return AgXToneMapping(c);
-          #elif defined(NEUTRAL_TONE_MAPPING)
-            return NeutralToneMapping(c);
-          #elif defined(CUSTOM_TONE_MAPPING)
-            return CustomToneMapping(c);
-          #else
-            return c;
-          #endif
-        }
-        void main() {
-          vec4 fg = texture2D(tDiffuse, vUv);
-          vec4 bg = texture2D(tBackground, vUv);
-          if (uToneBg > 0.5) bg.rgb = tm(bg.rgb);
-          float a = clamp(fg.a, 0.0, 1.0);
-          gl_FragColor = vec4(tm(fg.rgb) + bg.rgb * (1.0 - a), a + bg.a * (1.0 - a));
-        }`,
-    });
-    this.quad = new FullScreenQuad(this.mat);
-  }
-  override setSize(w: number, h: number): void {
-    this.target.setSize(w, h);
-  }
-  override render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget): void {
-    if (this.toneMapping !== renderer.toneMapping) {
-      this.toneMapping = renderer.toneMapping;
-      const def = TONE_DEFINES[renderer.toneMapping];
-      this.mat.defines = def ? { [def]: "" } : {};
-      this.mat.needsUpdate = true;
-    }
-    const bg = this.scene.background;
-    const bgs = this.bgScene;
-    bgs.background = bg;
-    bgs.backgroundBlurriness = this.scene.backgroundBlurriness;
-    bgs.backgroundIntensity = this.scene.backgroundIntensity;
-    bgs.backgroundRotation.copy(this.scene.backgroundRotation);
-    const prevClear = renderer.getClearColor(new THREE.Color());
-    const prevAlpha = renderer.getClearAlpha();
-    renderer.setClearColor(this.clearColor, this.clearAlpha);
-    renderer.setRenderTarget(this.target);
-    renderer.clear();
-    renderer.render(bgs, this.camera);
-    renderer.setClearColor(prevClear, prevAlpha);
-    bgs.background = null;
-    const u = this.mat.uniforms;
-    u.tDiffuse.value = readBuffer.texture;
-    u.toneMappingExposure.value = renderer.toneMappingExposure;
-    u.uToneBg.value = bg instanceof THREE.Texture && THREE.ColorManagement.getTransfer(bg.colorSpace) !== THREE.SRGBTransfer ? 1 : 0;
-    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
-    if (this.clear) renderer.clear();
-    this.quad.render(renderer);
-  }
-  override dispose(): void {
-    this.target.dispose();
-    this.mat.dispose();
-    this.quad.dispose();
-  }
-}
-
-// sRGB conversion only (tone mapping already happened in BackgroundPass).
-class SrgbOutputPass extends OutputPass {
-  override render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget, deltaTime?: number, maskActive?: boolean): void {
-    const tm = renderer.toneMapping;
-    renderer.toneMapping = THREE.NoToneMapping;
-    try {
-      super.render(renderer, writeBuffer, readBuffer, deltaTime ?? 0, maskActive ?? false);
-    } finally {
-      renderer.toneMapping = tm;
-    }
-  }
-}
-
-// Effects that need the HDR, background-free image (before tone mapping).
-const HDR_EFFECTS = new Set(["outline", "bloom", "dof"]);
-
-// ─── Effect factories ──────────────────────────────────────────────────
-
-export const POSTFX_IMPLS: Record<string, (def: PostFxDef, ctx: PostFxContext) => EffectHandle> = {
-  bloom: (d, c) => ({ pass: new UnrealBloomPass(new THREE.Vector2(c.width, c.height), num(d.strength, 0.8), num(d.radius, 0.4), num(d.threshold, 0.85)) }),
-  vignette: (d) => {
-    const pass = new ShaderPass(VignetteShader);
-    pass.uniforms.offset.value = num(d.offset, 1);
-    pass.uniforms.darkness.value = num(d.darkness, 1.1);
-    return { pass };
-  },
-  film: (d) => {
-    const pass = new FilmPass(num(d.intensity, 0.35), bool(d.grayscale, false));
-    const u = (pass as unknown as { uniforms: Record<string, THREE.IUniform> }).uniforms;
-    return {
-      pass,
-      update(t) {
-        // FilmPass adds deltaTime itself; composer.render(0) keeps it a function of t.
-        u.time.value = t;
-      },
-    };
-  },
-  chromatic: (d) => {
-    const pass = new ShaderPass(RGBShiftShader);
-    pass.uniforms.amount.value = num(d.amount, 0.002);
-    pass.uniforms.angle.value = 0.6;
-    return { pass };
-  },
-  pixelate: (d, c) => {
-    const pass = new ShaderPass(PixelateShader);
-    pass.uniforms.uPixel.value = Math.max(1, num(d.pixelSize, 4)) * c.renderer.getPixelRatio();
-    const res = pass.uniforms.uResolution.value as THREE.Vector2;
-    res.set(c.width * c.renderer.getPixelRatio(), c.height * c.renderer.getPixelRatio());
-    return { pass, setSize: (w, h) => res.set(w, h) };
-  },
-  outline: (d, c) => {
-    const pr = c.renderer.getPixelRatio();
-    return { pass: new ToonOutlinePass(c.scene, c.camera, toColor(String(d.color ?? "#000000")), num(d.thickness, 1) * pr, c.width * pr, c.height * pr) };
-  },
-  dof: (d, c) => {
-    const pass = new BokehPass(c.scene, c.camera, { focus: num(d.focus, 8), aperture: num(d.aperture, 0.002), maxblur: num(d.maxblur, 0.01) });
-    const orig = pass.render.bind(pass);
-    pass.render = (...args: Parameters<typeof orig>) => withoutHelpers(c.scene, () => orig(...args));
-    return { pass };
-  },
-};
 
 export interface PostFxPipeline {
-  render(t: number): void;
+  render(t: number, opts?: RenderOptions): void;
   setSize(w: number, h: number): void;
   dispose(): void;
+  /** Resolves when every effect's resources are loaded (SMAA lookup textures). */
+  ready: Promise<void>;
+  /** Jittered frames `taa` asks for on stills (0 = no taa). */
+  stillSamples: number;
+  /** Effect ids actually running (after look expansion and the quality tier). */
+  effects: string[];
+  /** Effect ids dropped by the quality tier. */
+  dropped: string[];
+  /** Live param change of a running effect (timeline tracks postfx.<type>.<param>). */
+  setParam(type: string, param: string, value: unknown): void;
+}
+
+// Halton (2, 3) sub-pixel offsets in [-0.5, 0.5).
+function halton(i: number, base: number): number {
+  let f = 1, r = 0;
+  while (i > 0) {
+    f /= base;
+    r += f * (i % base);
+    i = Math.floor(i / base);
+  }
+  return r;
 }
 
 export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (id: string) => void): PostFxPipeline {
   const { renderer, scene, camera } = ctx;
-  const pr = renderer.getPixelRatio();
-  const rt = new THREE.WebGLRenderTarget(Math.max(1, ctx.width * pr), Math.max(1, ctx.height * pr), { type: THREE.HalfFloatType, samples: 4 });
-  const composer = new EffectComposer(renderer, rt);
-  composer.setPixelRatio(pr);
-  composer.setSize(ctx.width, ctx.height);
-  // The scene renders without its background onto a transparent clear: the
-  // background is composited back, untouched, after tone mapping.
-  const renderPass = new RenderPass(scene, camera, null, new THREE.Color(0, 0, 0), 0);
-  const bgPass = new BackgroundPass(scene, camera, Math.max(1, ctx.width * pr), Math.max(1, ctx.height * pr));
-  const baseRender = renderPass.render.bind(renderPass);
-  renderPass.render = (...args: Parameters<typeof baseRender>) => {
+  const quality = ctx.quality ?? qualitySettings("high");
+  const { active, dropped } = activePostFx(defs, quality.tier);
+  let pr = renderer.getPixelRatio();
+  let pw = Math.max(1, Math.floor(ctx.width * pr)), ph = Math.max(1, Math.floor(ctx.height * pr));
+  const msaa = ctx.antialias === false ? 0 : Math.min(quality.msaa, renderer.capabilities.maxSamples ?? 4);
+
+  const sceneTarget = new THREE.WebGLRenderTarget(pw, ph, { type: THREE.HalfFloatType, samples: msaa });
+  const rtA = new THREE.WebGLRenderTarget(pw, ph, { type: THREE.HalfFloatType, depthBuffer: false });
+  const rtB = rtA.clone();
+  let frame = 0;
+  let gbuffer: GBuffer | null = null;
+  const finish = new FinishPass();
+  const fx: FxRuntime = {
+    renderer,
+    scene,
+    camera,
+    quality,
+    get width() {
+      return pw;
+    },
+    get height() {
+      return ph;
+    },
+    get pixelRatio() {
+      return pr;
+    },
+    gbuffer: () => (gbuffer ??= new GBuffer(pw, ph)),
+    frame: () => frame,
+    finish,
+  };
+
+  // Build the effect handles in pipeline order.
+  const handles: EffectHandle[] = [];
+  const byType = new Map<string, EffectHandle>();
+  const finishDefs = new Map<string, PostFxDef>();
+  const names: string[] = [];
+  const make = (d: PostFxDef) => {
+    const impl = POSTFX_IMPLS[d.type];
+    if (!impl) return void onUnknown(d.type);
+    if (impl.stage === "finish") {
+      finishDefs.set(d.type, { ...d });
+      finish.configure(d);
+      names.push(d.type);
+      return;
+    }
+    if (impl.stage === "meta" || !impl.create) return;
+    const h = impl.create(d, fx);
+    if (h) {
+      handles.push(h);
+      byType.set(d.type, h);
+      names.push(d.type);
+    }
+  };
+  for (const id of HDR_ORDER) {
+    const d = active.find((x) => x.type === id);
+    if (d) make(d);
+  }
+  const hdrCount = handles.length;
+  const bgPass = new BackgroundPass(scene, camera, pw, ph);
+  const aa = active.find((x) => x.type === "smaa") ?? active.find((x) => x.type === "fxaa");
+  if (aa) make(aa);
+  for (const d of active) if (POSTFX_IMPLS[d.type]?.stage === "ldr") make(d);
+  for (const d of active) if (POSTFX_IMPLS[d.type]?.stage === "finish") make(d);
+  for (const d of active) if (!POSTFX_IMPLS[d.type]) onUnknown(d.type);
+
+  // Sanitise before HDR effects (bloom would spread one NaN pixel screen-wide);
+  // without HDR effects the background pass sanitises itself.
+  const sanitize = hdrCount
+    ? new ShaderFxPass(fsMaterial(`uniform sampler2D tDiffuse; varying vec2 vUv;\n${SANITIZE_GLSL}\nvoid main() { gl_FragColor = a3dSanitize(texture2D(tDiffuse, vUv)); }`, { tDiffuse: { value: null } }))
+    : null;
+
+  const passes: Pass[] = [];
+  if (sanitize) passes.push(sanitize);
+  for (let i = 0; i < hdrCount; i++) passes.push(handles[i].pass);
+  passes.push(bgPass);
+  for (let i = hdrCount; i < handles.length; i++) passes.push(handles[i].pass);
+  passes.push(finish);
+  passes.forEach((p, i) => (p.renderToScreen = i === passes.length - 1));
+  finish.setSize(pw, ph);
+  finish.setPixelRatio(pr);
+
+  const taa = active.find((x) => x.type === "taa");
+  const stillSamples = taa ? Math.max(2, Math.min(quality.maxStillSamples, Math.round(num(taa.samples, 8)))) : 0;
+
+  // ── Still accumulation: running average of reversibly tone-mapped samples
+  // (no bright-edge aliasing), ping-pong between two float targets (no float
+  // blending needed). ──
+  let accum: [THREE.WebGLRenderTarget, THREE.WebGLRenderTarget] | null = null;
+  let accMat: THREE.ShaderMaterial | null = null;
+  let resolveMat: THREE.ShaderMaterial | null = null;
+  const quad = new FullScreenQuad();
+  const accumulate = (samples: number) => {
+    accum ??= [0, 1].map(() => new THREE.WebGLRenderTarget(pw, ph, { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter })) as [THREE.WebGLRenderTarget, THREE.WebGLRenderTarget];
+    for (const t of accum) if (t.width !== pw || t.height !== ph) t.setSize(pw, ph);
+    accMat ??= fsMaterial(
+      `uniform sampler2D tDiffuse; uniform sampler2D tPrev; uniform float uWeight; varying vec2 vUv;\n${SANITIZE_GLSL}
+      void main() {
+        vec4 c = a3dSanitize(texture2D(tDiffuse, vUv));
+        float m = max(c.r, max(c.g, c.b));
+        gl_FragColor = mix(texture2D(tPrev, vUv), vec4(c.rgb / (1.0 + m), c.a), uWeight);
+      }`,
+      { tDiffuse: { value: null }, tPrev: { value: null }, uWeight: { value: 1 } },
+    );
+    resolveMat ??= fsMaterial(
+      `uniform sampler2D tDiffuse; varying vec2 vUv;
+      void main() { vec4 c = texture2D(tDiffuse, vUv); float m = max(c.r, max(c.g, c.b)); gl_FragColor = vec4(c.rgb / max(1.0 - m, 1e-3), c.a); }`,
+      { tDiffuse: { value: null } },
+    );
+    const ortho = (camera as THREE.OrthographicCamera).isOrthographicCamera;
+    let [prev, next] = accum;
+    for (let i = 0; i < samples; i++) {
+      const jx = halton(i + 1, 2) - 0.5, jy = halton(i + 1, 3) - 0.5;
+      if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera || ortho) camera.setViewOffset(pw, ph, jx, jy, pw, ph);
+      renderScene(sceneTarget);
+      accMat.uniforms.tDiffuse.value = sceneTarget.texture;
+      accMat.uniforms.tPrev.value = prev.texture;
+      accMat.uniforms.uWeight.value = 1 / (i + 1);
+      quad.material = accMat;
+      renderer.setRenderTarget(next);
+      quad.render(renderer);
+      [prev, next] = [next, prev];
+    }
+    camera.clearViewOffset();
+    resolveMat.uniforms.tDiffuse.value = prev.texture;
+    quad.material = resolveMat;
+    renderer.setRenderTarget(rtA);
+    quad.render(renderer);
+  };
+
+  let clearColor = new THREE.Color();
+  let clearAlpha = 1;
+  function renderScene(target: THREE.WebGLRenderTarget) {
     const bg = scene.background;
-    bgPass.clearColor.copy(args[0].getClearColor(new THREE.Color()));
-    bgPass.clearAlpha = args[0].getClearAlpha();
     scene.background = null;
+    renderer.setRenderTarget(target);
+    renderer.setClearColor(0x000000, 0);
+    renderer.clear();
     try {
-      baseRender(...args);
+      renderer.render(scene, camera);
     } finally {
       scene.background = bg;
     }
-  };
-  composer.addPass(renderPass);
-  // Degenerate normals (text bevels, extrusions) can produce NaN / Inf pixels in
-  // the HDR target; bloom would spread one into a screen-wide white flash.
-  const sanitize = new ShaderPass({
-    uniforms: { tDiffuse: { value: null } },
-    vertexShader: "varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-    fragmentShader: "uniform sampler2D tDiffuse;\nvarying vec2 vUv;\nvoid main() {\n  vec4 c = texture2D(tDiffuse, vUv);\n  bvec4 bad = bvec4(isnan(c.r) || isinf(c.r), isnan(c.g) || isinf(c.g), isnan(c.b) || isinf(c.b), isnan(c.a) || isinf(c.a));\n  c = vec4(bad.r ? 0.0 : c.r, bad.g ? 0.0 : c.g, bad.b ? 0.0 : c.b, bad.a ? 1.0 : c.a);\n  gl_FragColor = vec4(min(c.rgb, vec3(32.0)), c.a);\n}",
-  });
-  composer.addPass(sanitize);
-  const handles: EffectHandle[] = [];
-  // Outlines read the un-bloomed image: run them first. HDR effects run before
-  // tone mapping + background, screen effects after (they apply to the whole frame).
-  const ordered = [...defs].sort((a, b) => (a.type === "outline" ? -1 : 0) - (b.type === "outline" ? -1 : 0));
-  const add = (d: PostFxDef) => {
-    const impl = POSTFX_IMPLS[d.type];
-    if (!impl) {
-      onUnknown(d.type);
-      return;
-    }
-    const h = impl(d, ctx);
-    handles.push(h);
-    composer.addPass(h.pass);
-  };
-  for (const d of ordered) if (HDR_EFFECTS.has(d.type)) add(d);
-  composer.addPass(bgPass);
-  for (const d of ordered) if (!HDR_EFFECTS.has(d.type)) add(d);
-  composer.addPass(new SrgbOutputPass());
+  }
+
+  const ready = Promise.all(handles.map((h) => h.ready).filter(Boolean)).then(() => undefined);
+
   return {
-    render(t) {
+    ready,
+    stillSamples,
+    effects: names,
+    dropped,
+    setParam(type, param, value) {
+      const fd = finishDefs.get(type);
+      if (fd) {
+        fd[param] = value;
+        finish.configure(fd);
+        return;
+      }
+      byType.get(type)?.set?.(param, value);
+    },
+    render(t, opts) {
+      frame++;
       for (const h of handles) h.update?.(t);
-      composer.render(0);
+      finish.setTime(t);
+      clearColor = renderer.getClearColor(clearColor);
+      clearAlpha = renderer.getClearAlpha();
+      bgPass.clearColor.copy(clearColor);
+      bgPass.clearAlpha = clearAlpha;
+      const autoClear = renderer.autoClear;
+      renderer.autoClear = true;
+      const samples = Math.max(1, Math.floor(opts?.samples ?? 1));
+      let read: THREE.WebGLRenderTarget, write: THREE.WebGLRenderTarget;
+      try {
+        if (samples > 1) {
+          accumulate(samples);
+          read = rtA;
+          write = rtB;
+        } else {
+          renderScene(sceneTarget);
+          read = sceneTarget;
+          write = rtA;
+        }
+        renderer.setClearColor(clearColor, clearAlpha);
+        for (const p of passes) {
+          if (!p.enabled) continue;
+          p.render(renderer, write, read, 0, false);
+          if (p.needsSwap) {
+            const next = read === sceneTarget ? rtB : read;
+            read = write;
+            write = next;
+          }
+        }
+      } finally {
+        renderer.setClearColor(clearColor, clearAlpha);
+        renderer.autoClear = autoClear;
+        renderer.setRenderTarget(null);
+      }
     },
     setSize(w, h) {
-      composer.setPixelRatio(renderer.getPixelRatio());
-      composer.setSize(w, h);
-      const p = renderer.getPixelRatio();
-      for (const hd of handles) hd.setSize?.(w * p, h * p);
+      pr = renderer.getPixelRatio();
+      pw = Math.max(1, Math.floor(w * pr));
+      ph = Math.max(1, Math.floor(h * pr));
+      sceneTarget.setSize(pw, ph);
+      rtA.setSize(pw, ph);
+      rtB.setSize(pw, ph);
+      gbuffer?.setSize(pw, ph);
+      bgPass.setSize(pw, ph);
+      finish.setSize(pw, ph);
+      finish.setPixelRatio(pr);
+      for (const hd of handles) {
+        if (hd.setSize) hd.setSize(pw, ph);
+        else hd.pass.setSize(pw, ph);
+      }
     },
     dispose() {
-      for (const h of handles) h.pass.dispose();
-      bgPass.dispose();
-      composer.dispose();
-      rt.dispose();
+      for (const p of passes) p.dispose();
+      gbuffer?.dispose();
+      sceneTarget.dispose();
+      rtA.dispose();
+      rtB.dispose();
+      for (const t of accum ?? []) t.dispose();
+      accMat?.dispose();
+      resolveMat?.dispose();
+      quad.dispose();
     },
   };
 }

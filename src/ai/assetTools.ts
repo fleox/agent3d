@@ -3,7 +3,7 @@
 import type { AssetEntry } from "../core/types";
 import { downloadAsset, importAssetZip, listAssets, listLibrary, parseResolution, searchAssetsDetailed, addAsset, type AssetHit } from "../ops/assets";
 import { modelFileBounds } from "../ops/gltf";
-import { DEFAULT_MAX_SIZE, optimizeAssets } from "../ops/optimize";
+import { optimizeAssets, type TextureFormat } from "../ops/optimize";
 import { OpsError } from "../ops/context";
 import { buildExport, prefixFiles, type ExportFormat } from "../ops/export";
 import { SOURCE_IDS, type SourceId } from "../ops/sources";
@@ -105,19 +105,23 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "assets_optimize",
     description:
-      'Shrink project textures in place when `check` reports the KB budget is exceeded: downscales .jpg / .png / .webp files to `maxSize` px (format and path kept) and the images embedded in .glb models (opaque PNGs become JPEG), re-encoding at `quality`. A file only changes when it gets smaller; assets/manifest.json sizes are refreshed. Lossy — pass `paths` (files or folders) or `all: true`. Needs a host with headless Chrome (CLI / MCP).',
+      'Make project textures and .glb models lighter (run it when `check` reports the KB budget is exceeded, or before export). Textures (.jpg / .png / .webp files and images inside .glb) get the size the scene needs — a smart per-texture size from the target kind, the object\'s size on screen, the camera distance and the role (colour / normal / roughness, background) unless `maxSize` forces one — and are re-encoded as WebP by default (`format`; standalone files are renamed and scene references rewritten; models use EXT_texture_webp). .glb geometry is welded, reordered and meshopt-compressed (`compress`, default true; the runtime decodes it), optionally simplified (`simplify` ratio). A file only changes when it gets smaller; each file reports the size chosen and why. Lossy: call with `dryRun: true` first to show the user the savings, then without it once they agree. Pass `paths` (files or folders) or `all: true`. Textures need a host with headless Chrome (CLI / MCP); geometry does not.',
     inputSchema: {
       type: "object",
       properties: {
         paths: { type: "array", items: { type: "string" }, description: 'Project paths, e.g. ["assets/textures/wood/wood_diff_1k.jpg", "assets/models/fox.glb"] (folders: every image / .glb inside).' },
         all: { type: "boolean", description: "Every texture and .glb under assets/." },
-        maxSize: { type: "integer", minimum: 16, maximum: 8192, description: `Longest side in pixels (default ${DEFAULT_MAX_SIZE}; 512 suits banners and small props). Never upscales.` },
-        quality: { type: "integer", minimum: 1, maximum: 100, description: "JPEG / WebP quality (default 80)." },
+        maxSize: { type: "integer", minimum: 16, maximum: 8192, description: "Force this longest side in pixels for every texture (default: smart size per texture from the scene; never upscales)." },
+        quality: { type: "integer", minimum: 1, maximum: 100, description: "WebP / JPEG quality (default 80; normal maps use at least 90)." },
+        format: { type: "string", enum: ["auto", "webp", "jpeg", "png", "keep"], description: "Texture output format (default auto = WebP; jpeg keeps images with alpha in their format)." },
+        compress: { type: "boolean", description: "Meshopt-compress .glb geometry (default true)." },
+        simplify: { type: "number", minimum: 0.01, maximum: 1, description: "Keep this fraction of each .glb mesh's triangles (e.g. 0.5), within simplifyError." },
+        simplifyError: { type: "number", minimum: 0.0001, maximum: 1, description: "Max deviation for simplify, as a fraction of the mesh size (default 0.01)." },
+        dryRun: { type: "boolean", description: "Encode everything and report the savings, write nothing." },
       },
     },
     mutating: true,
     async handler(ctx, input) {
-      if (!ctx.host?.withImageCodec) throw new OpsError("invalid", "This host cannot re-encode images (it needs headless Chrome).", "Use the CLI: agent3d assets optimize <path>… --max-size 512 --yes.");
       const raw = Array.isArray(input.paths) ? (input.paths as string[]) : [];
       const paths: string[] = [];
       for (const p of raw) {
@@ -128,8 +132,9 @@ export const ASSET_TOOLS: AiTool[] = [
           paths.push(...(inside.length ? inside : [clean]));
         }
       }
-      const r = await ctx.host.withImageCodec((codec) => optimizeAssets(ctx.fs, { paths, all: input.all === true, maxSize: num(input, "maxSize"), quality: num(input, "quality") }, codec));
-      return { ...r, hint: "Run check again to see the new budget." };
+      const opts = { paths, all: input.all === true, maxSize: num(input, "maxSize"), quality: num(input, "quality"), format: optStr(input, "format") as TextureFormat | undefined, compress: input.compress !== false, simplify: num(input, "simplify"), simplifyError: num(input, "simplifyError"), dryRun: input.dryRun === true, library: ctx.host?.library?.index };
+      const r = ctx.host?.withImageCodec ? await ctx.host.withImageCodec((codec) => optimizeAssets(ctx.fs, opts, codec)) : await optimizeAssets(ctx.fs, opts);
+      return { ...r, hint: r.dryRun ? "Nothing written: show the user the savings, then call again without dryRun." : `Run check again to see the new budget.${ctx.host?.withImageCodec ? "" : " Textures were skipped (this host has no headless Chrome): use the CLI `agent3d assets optimize` for them."}` };
     },
   },
   {

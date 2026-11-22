@@ -127,16 +127,18 @@ renderCatalogMarkdown(): string               // docs/catalog.md (src/ops/docs.t
 `embed` (default) — drop the folder on any static site:
 ```
 <out>/
-  agent3d-runtime/agent3d-runtime.js (+ chunks/)     shared by every scene on the site
-  <name>/scene.json  assets/…  scripts/…  poster.webp
-  index.html          demo page (the snippet in context)
-  snippet.html        what to paste in the page
+  agent3d-runtime/agent3d-runtime.js (+ chunks/)     shared by every scene on the site (agent3d-runtime-<hash>/ with --cache-bust)
+  <name>/scene.json  assets/…  scripts/…  poster.webp  og-image.png  CREDITS.txt
+  index.html  snippet.html  head.html (modulepreload)  EMBED.md (website owner guide)
+  frameworks/  react/Agent3DScene.tsx  vue/Agent3DScene.vue  svelte/Agent3DScene.svelte  agent3d-scene.d.ts
 ```
-Snippet: `<script type="module" src="./agent3d-runtime/agent3d-runtime.js"></script><agent3d-scene src="./<name>/scene.json" poster="./<name>/poster.webp"></agent3d-scene>` — relative paths in the scene resolve against the scene.json URL; library assets are copied into `<name>/assets/library/`.
+Snippet: `<link rel="modulepreload" href="./agent3d-runtime/chunks/three.module-….js" integrity="sha384-…"><script type="module" src="./agent3d-runtime/agent3d-runtime.js" integrity="sha384-…"></script><agent3d-scene src="./<name>/scene.json" aspect="4:1" role="img" aria-label="…"><img slot="poster" src="./<name>/poster.webp" alt="…" width="1200" height="300" …></agent3d-scene>` — relative paths (or `--base-url`) ; paths in the scene resolve against the scene.json URL; library assets are copied into `<name>/assets/library/`. `zip` = the same folder as one .zip.
 
 `single-html` — one `<name>.html` with the single-file runtime, the scene inline (`<script type="application/json">`) and assets as data: URIs (budget warning above 5 MB).
 
-Also: `agent3d export --format poster` (PNG/WebP still) and `--format video` (WebM via headless Chrome MediaRecorder).
+Also: `agent3d export --format poster|video|gif` and `agent3d render --video x.mp4|x.webm / --gif / --webp` (frame-exact: seek + WebCodecs H.264 / VP9 muxed in agent/render/mp4.ts / webm.ts, pure-TS GIF encoder gif.ts, animated WebP webpAnim.ts; `--quality high|ultra` supersampling, `--transparent`, `--scroll`).
+
+Element API (`src/runtime/element.ts`, docs/export.md): attributes src, poster / `<img slot="poster">`, aspect, alt, autoplay, paused, loop, quality, interactive, data-* (→ `{data.key}` bindings, `src/runtime/data.ts`, applied before the build); methods play/pause/seek/setData/trigger/reload, `ready`; events `agent3d:ready|error|event|click|progress`; `::part(poster|loading|loading-bar|fallback)`; context-loss recovery, print, no-WebGL fallback.
 
 ## Headless render (agent/render/)
 

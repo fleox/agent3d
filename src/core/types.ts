@@ -30,6 +30,8 @@ export interface SceneDoc {
   lights: LightDef[];
   objects: ObjectDef[];
   timeline?: TimelineDef;
+  // No-code triggers: click / hover / scroll / key → play segments, set properties, open URLs.
+  interactions?: InteractionDef[];
   postfx?: PostFxDef[];
   physics?: PhysicsWorldDef;
   // Game / interactive logic: project-relative paths ("scripts/game.js").
@@ -76,6 +78,14 @@ export interface TargetDef {
   // Tone mapping (default "aces").
   toneMapping?: "none" | "aces" | "agx" | "neutral" | "reinhard";
   exposure?: number;
+  // Rendering quality tier (default "auto"). "auto" picks one from the device
+  // (high on desktops, medium on phones / small GPUs, low on software GL) and
+  // steps down while playing if the frame rate stays low (lower DPR first,
+  // then drops costly post effects) — never in deterministic renders, which
+  // use "high". "low": DPR ≤ 1, no MSAA, "high"-cost post effects (ao, dof)
+  // off. "medium": DPR ≤ 1.5, heavy effects at reduced resolution. "high":
+  // DPR ≤ maxDpr. "ultra": full-resolution effects, more samples, MSAA 8.
+  quality?: "auto" | "low" | "medium" | "high" | "ultra";
 }
 
 // ─── Camera ──────────────────────────────────────────────────────────────
@@ -98,6 +108,41 @@ export interface CameraDef {
   parallax?: { strength?: number; smoothing?: number };
   scrollPath?: { position: Vec3; target?: Vec3 }[];
   follow?: { target: string; offset?: Vec3; smoothing?: number; lookAhead?: number };
+  // Keep looking at this object (its world position replaces `target`).
+  lookAt?: string;
+  // Handheld camera: organic noise. amount: position wobble (units, default
+  // 0.03); rotation: aim wobble (degrees, default 0.4); speed (default 0.5).
+  shake?: { amount?: number; rotation?: number; speed?: number; seed?: number };
+  // Cinematic moves on the timeline clock (scene time without a timeline).
+  // Each shot starts from the pose the previous ones left.
+  shots?: CameraShotDef[];
+}
+
+// dolly / pushIn / pullOut: along the view axis by `distance` (pushIn
+// default: 25 % closer); truck: sideways; pedestal: up / down (target follows);
+// crane: rises by `height` while the target stays (+ `distance` toward it);
+// orbit: around the target by `angle` (yaw) and `elevation` degrees; zoom:
+// fov → `fov`; move: to `position` / `target` / `fov`; path: Catmull-Rom
+// through `points` looking `lookAhead` ahead (or at `lookAt`); lookAt: pan to
+// an object; focus: rack focus — postfx dof `focus` → `focus` distance or the
+// distance to `object`.
+export interface CameraShotDef {
+  type: "dolly" | "pushIn" | "pullOut" | "truck" | "pedestal" | "crane" | "orbit" | "zoom" | "move" | "path" | "lookAt" | "focus";
+  at: number; // start (s)
+  duration: number;
+  ease?: EaseSpec; // default "inOutCubic"
+  distance?: number;
+  height?: number;
+  angle?: number;
+  elevation?: number;
+  fov?: number;
+  position?: Vec3;
+  target?: Vec3;
+  points?: Vec3[];
+  lookAhead?: number; // path: 0..0.5 of the path (default 0.05)
+  lookAt?: string | Vec3; // path: object id or point to look at
+  object?: string; // lookAt / focus: object id
+  focus?: number; // focus: distance
 }
 
 // ─── Environment ─────────────────────────────────────────────────────────
@@ -105,27 +150,91 @@ export interface CameraDef {
 export type BackgroundDef =
   | Color
   | "transparent"
-  | { gradient: Color[]; angle?: number } // CSS-like linear gradient (degrees, 0 = bottom→top)
-  | { radial: Color[] }
+  | { gradient: Color[]; angle?: number; grain?: number } // CSS-like linear gradient (degrees, 0 = bottom→top)
+  | { radial: Color[]; center?: Vec2; radius?: number; grain?: number } // center in 0..1 (default [0.5, 0.5])
+  // Soft multi-colour "mesh gradient" (Stripe-like), animated when speed > 0.
+  | { meshGradient: Color[]; speed?: number; scale?: number; seed?: number; grain?: number }
   | { sky: SkyParams }
-  | { hdri: string; blur?: number };
+  // HDRI (.hdr/.exr or a .jpg equirect). rotation: degrees around Y (also turns the IBL
+  // when lighting comes from this background); groundProjection: the lower half is
+  // projected on a ground disc (GroundedSkybox) so objects stand inside the photo.
+  | { hdri: string; blur?: number; intensity?: number; rotation?: number; groundProjection?: boolean | { height?: number; radius?: number } };
+
+export type SkyPreset = "sunrise" | "morning" | "noon" | "afternoon" | "golden-hour" | "sunset" | "dusk";
+
+export interface SkySun {
+  direction?: Vec3; // or elevation/azimuth
+  elevation?: number; // degrees above the horizon
+  azimuth?: number; // degrees, 0 = +Z (towards the default camera), 90 = +X
+  color?: Color;
+  size?: number;
+  // Physical sky only: the matching directional sun light (default on).
+  light?: boolean;
+  intensity?: number;
+  castShadow?: boolean; // default true
+}
 
 export interface SkyParams {
   top?: Color;
   horizon?: Color;
   bottom?: Color;
-  sun?: { direction?: Vec3; color?: Color; size?: number } | false;
+  sun?: SkySun | false;
   stars?: number; // count, 0 = none
+  // Physical (Preetham) atmosphere instead of the colour gradient. Implied by `preset`.
+  physical?: boolean;
+  preset?: SkyPreset;
+  turbidity?: number; // haze (1..20)
+  rayleigh?: number; // blue scattering (0..4)
+  mieCoefficient?: number;
+  mieDirectionalG?: number;
+  exposure?: number; // physical sky brightness (default 1)
+  clouds?: number; // 0..1 cloud coverage (physical sky)
+}
+
+export interface ContactShadowsDef {
+  y?: number; // plane height (default: ground.y or 0)
+  size?: number; // square side in units (default: fitted to the objects)
+  opacity?: number; // 0..1 (default 0.6)
+  blur?: number; // softness (default 2.5)
+  far?: number; // how high above the plane objects still cast (default 1.5)
+  resolution?: number; // render target size (default 512)
+  color?: Color;
+  frames?: number; // re-render every frame (default 0 = always), or only the first N frames (static scenes)
+}
+
+export interface ShadowSettings {
+  type?: "pcf" | "vsm"; // vsm = smooth blurred shadows
+  softness?: number; // blur radius (default 3; 0 = hard)
+  mapSize?: number; // shadow map size (default 2048)
+  intensity?: number; // 0..1 darkness (default 1)
+}
+
+export interface LightRigDef {
+  preset: string; // catalog `lightRigs` id
+  intensity?: number;
+  rotation?: number; // degrees around Y
+  castShadow?: boolean;
+  color?: Color;
+  scale?: number; // distance multiplier
 }
 
 export interface EnvironmentDef {
   background: BackgroundDef;
   // Image-based lighting for reflections: a preset or an HDRI asset path.
-  lighting?: "studio" | "soft" | "sunset" | "night" | "neutral" | "none" | { hdri: string; intensity?: number };
+  // "sky" = from the background (physical / gradient sky, mesh gradient).
+  lighting?: "studio" | "soft" | "sunset" | "night" | "neutral" | "sky" | "none" | { hdri: string; intensity?: number; rotation?: number };
   lightingIntensity?: number;
-  fog?: { color?: Color; near?: number; far?: number } | { color?: Color; density: number };
+  // Linear (near/far) or exponential (density) fog. `height` (+ `falloff`) turns the
+  // exponential fog into a ground-hugging height fog (thick below `height`).
+  fog?: { color?: Color; near?: number; far?: number } | { color?: Color; density: number; height?: number; falloff?: number };
   // Simple ground: a plane at y = `y`, optionally only catching shadows.
-  ground?: { y?: number; size?: number; color?: Color; shadowOnly?: boolean; grid?: boolean; roughness?: number };
+  ground?: { y?: number; size?: number; color?: Color; shadowOnly?: boolean; grid?: boolean; roughness?: number; opacity?: number };
+  // Light rig preset (catalog `lightRigs`), added to `lights`.
+  rig?: string | LightRigDef;
+  // Blurred contact shadows under the objects (product shots).
+  contactShadows?: boolean | ContactShadowsDef;
+  // Shadow-map quality for every shadow-casting light.
+  shadows?: ShadowSettings;
 }
 
 // ─── Lights ──────────────────────────────────────────────────────────────
@@ -152,6 +261,12 @@ export interface LightDef {
   // rect
   width?: number;
   height?: number;
+  // rect: draw the glowing panel itself (visible in the frame and in reflections).
+  panel?: boolean;
+  // spot: cheap volumetric light cone.
+  volumetric?: boolean | { intensity?: number; length?: number; color?: Color };
+  // Per-light shadow tuning (overrides environment.shadows).
+  shadow?: { softness?: number; mapSize?: number; bias?: number; normalBias?: number; intensity?: number };
   behaviours?: BehaviourDef[];
 }
 
@@ -191,11 +306,37 @@ export interface TextObjectDef extends BaseObjectDef {
   font?: string; // catalog font id (default "sans-bold")
   size?: number; // cap height in units (default 1)
   depth?: number; // extrusion (default 0.2; 0 = flat)
-  bevel?: number; // bevel size (default 0.02)
+  bevel?: number; // bevel size (default min(depth × 0.3, size × 0.035))
   align?: "left" | "center" | "right"; // default center (the text is centred on its position)
-  letterSpacing?: number;
-  lineHeight?: number;
+  letterSpacing?: number; // units added between characters (on top of the font's kerning)
+  lineHeight?: number; // multiple of the font size (default 1.25)
+  kerning?: boolean; // apply the font's kerning pairs (default true)
+  maxWidth?: number; // wrap lines on spaces to this width (units)
+  curveSegments?: number; // points per glyph curve (default grows with the size)
+  // A darker / contrasting rim behind the letters (offset glyph outline, recessed).
+  outline?: boolean | TextOutlineDef;
+  // Each glyph becomes a child object "<id>/<n>" (n = 0, 1, … over non-space
+  // characters) that timeline tracks can target ("title/0.position.y").
+  splitLetters?: boolean;
+  // Per-letter staggered entrance (implies splitLetters).
+  reveal?: TextRevealDef;
   material?: MaterialDef;
+}
+
+export interface TextOutlineDef {
+  width?: number; // units (default size × 0.06)
+  color?: Color; // default "#111111"
+  depth?: number; // thickness (default depth × 0.6)
+  material?: MaterialDef; // overrides color
+}
+
+export interface TextRevealDef {
+  effect?: "rise" | "fade" | "scale" | "spin" | "drop"; // default "rise"
+  stagger?: number; // seconds between letters (default 0.04)
+  duration?: number; // seconds per letter (default 0.6)
+  delay?: number; // seconds before the first letter (default 0)
+  ease?: string; // timeline easing name (default outCubic; outBack for scale / spin)
+  order?: "forward" | "reverse" | "center" | "random"; // default forward
 }
 
 export interface ModelObjectDef extends BaseObjectDef {
@@ -205,7 +346,12 @@ export interface ModelObjectDef extends BaseObjectDef {
   fit?: number;
   // Move the model so its bounding box bottom-centre sits at the origin (default true).
   center?: boolean;
-  animation?: { clip?: string | number; loop?: boolean; speed?: number; crossfade?: number };
+  // offset: start time (s) into the clip; blend: extra clips playing at the
+  // same time with these weights (0..1) — animate them with
+  // "<id>.animation.<clip>.weight" tracks.
+  animation?: { clip?: string | number; loop?: boolean; speed?: number; crossfade?: number; offset?: number; blend?: Record<string, number> };
+  // Morph target influences by name (0..1), animatable as "<id>.morph.<name>".
+  morph?: Record<string, number>;
   // Override every material of the model (e.g. a colour or a preset).
   material?: MaterialDef;
 }
@@ -227,7 +373,7 @@ export interface GeneratorObjectDef extends BaseObjectDef {
 
 export interface ParticlesObjectDef extends BaseObjectDef {
   kind: "particles";
-  preset?: string; // catalog particle preset: stars, snow, rain, fireflies, confetti, sparks, dust, bubbles, embers
+  preset?: string; // catalog particle preset (`agent3d catalog particlePresets`)
   count?: number;
   area?: Vec3; // emission box size
   size?: number;
@@ -238,7 +384,7 @@ export interface ParticlesObjectDef extends BaseObjectDef {
   lifetime?: number;
   opacity?: number;
   blending?: "normal" | "additive";
-  shape?: "point" | "square" | "circle" | "star" | "spark";
+  shape?: "point" | "soft" | "square" | "circle" | "star" | "spark" | "streak" | "heart" | "bubble" | "smoke" | "petal" | "leaf" | "ring";
   seed?: number;
 }
 
@@ -259,9 +405,16 @@ export interface SvgObjectDef extends BaseObjectDef {
   kind: "svg";
   // Inline SVG markup or a project path to an .svg (a logo): extruded into 3D.
   src: string;
-  size?: number; // width in units (default 2)
-  depth?: number; // default 0.2
+  size?: number; // width in units (default 2; see fit)
+  fit?: "width" | "height" | "max"; // which dimension `size` sets (default "width")
+  depth?: number; // default 0.2 (0 = flat)
   bevel?: number;
+  // Keep the SVG's own fill / stroke colours (default true without material,
+  // false with one; true + material = the material's finish with the SVG colours).
+  keepColors?: boolean;
+  strokes?: boolean; // extrude stroked paths (stroke-width, linejoin, linecap) — default true
+  curveSegments?: number; // points per curve (default 12)
+  layerGap?: number; // z step between successive paths, painter's order (units, default depth × 0.02)
   material?: MaterialDef;
 }
 
@@ -330,17 +483,53 @@ export interface MaterialDef {
   clearcoat?: number;
   iridescence?: number;
   sheen?: number;
-  // textures (project paths or library ids)
-  map?: string;
-  normalMap?: string;
-  roughnessMap?: string;
+  clearcoatRoughness?: number;
+  sheenColor?: Color;
+  sheenRoughness?: number;
+  anisotropy?: number; // 0..1 stretched highlights (brushed metal)
+  anisotropyRotation?: number; // degrees
+  attenuationColor?: Color; // transmission: colour picked up through the volume
+  attenuationDistance?: number;
+  specularIntensity?: number;
+  specularColor?: Color;
+  dispersion?: number; // transmission: rainbow fire (gems), 0..10
+  iridescenceIOR?: number;
+  iridescenceThicknessRange?: Vec2; // nm
+  envMapIntensity?: number; // reflection strength of the environment lighting
+  // textures: project paths / library ids, or a procedural texture
+  // ({ "procedural": "<catalog textures id>", …params }) generated at load time.
+  map?: TextureRef;
+  normalMap?: TextureRef;
+  roughnessMap?: TextureRef;
+  metalnessMap?: TextureRef;
+  aoMap?: TextureRef;
+  emissiveMap?: TextureRef;
+  bumpMap?: TextureRef;
+  displacementMap?: TextureRef;
+  alphaMap?: TextureRef;
+  normalScale?: number;
+  bumpScale?: number;
+  aoMapIntensity?: number;
+  displacementScale?: number;
   repeat?: Vec2;
+  // Project textures along X/Y/Z instead of UVs (generators, terrain, any mesh
+  // without good UVs). true or a scale (texture repeats per unit, default 1).
+  triplanar?: boolean | number;
   // gradient material: vertical colour ramp in object space
   gradient?: Color[];
+  // gradient material: the ramp drives the emissive glow too (needs emissive + emissiveIntensity)
+  gradientEmissive?: boolean;
   // shader material: a catalog shader id (e.g. "plasma", "waves", "noise", "hologram")
   shader?: string;
   uniforms?: Record<string, number | Color | Vec2 | Vec3>;
 }
+
+// Procedural texture: a catalog `textures` id + its params (scale, colors, seed…).
+export interface ProceduralTextureDef {
+  procedural: string;
+  [param: string]: unknown;
+}
+export type TextureRef = string | ProceduralTextureDef;
 
 // ─── Behaviours (procedural animation & interaction) ───────────────────
 
@@ -354,41 +543,112 @@ export interface BehaviourDef {
 
 // ─── Timeline (keyframes) ───────────────────────────────────────────────
 
-export type EaseName =
-  | "linear"
-  | "inQuad" | "outQuad" | "inOutQuad"
-  | "inCubic" | "outCubic" | "inOutCubic"
-  | "inSine" | "outSine" | "inOutSine"
-  | "inExpo" | "outExpo" | "inOutExpo"
-  | "inBack" | "outBack" | "inOutBack"
-  | "outElastic" | "outBounce" | "step";
+export type EaseFamily = "Quad" | "Cubic" | "Quart" | "Quint" | "Sine" | "Expo" | "Circ" | "Back" | "Elastic" | "Bounce";
+export type EaseName = "linear" | "step" | `in${EaseFamily}` | `out${EaseFamily}` | `inOut${EaseFamily}`;
+// A named easing or a parametric one (src/core/ease.ts):
+// "cubicBezier(0.22, 1, 0.36, 1)", "spring" | "spring(stiffness, damping[, mass])", "steps(4)" | "steps(4, start)".
+export type EaseSpec = EaseName | `cubicBezier(${string})` | "spring" | `spring(${string})` | `steps(${string})`;
 
-export type KeyValue = number | Vec3 | Color | boolean;
+// Relative key values: "+=1" / "-=0.5" (added to the property's rest value),
+// "*=1.2" (multiplies it). Vec3 keys may mix numbers and relative strings.
+export type RelativeValue = `+=${number}` | `-=${number}` | `*=${number}`;
+export type KeyValue = number | Vec3 | Color | boolean | RelativeValue | [number | RelativeValue, number | RelativeValue, number | RelativeValue];
+// [time, value] or [time, value, ease]: the optional ease shapes the segment
+// that ENDS at this key (overrides the track ease).
+export type TrackKey = [number, KeyValue] | [number, KeyValue, EaseSpec];
 
 export interface TrackDef {
-  // "<objectId>.<property path>" — position, position.x, rotation.y (degrees),
-  // scale (number = uniform), visible, material.opacity, material.color,
-  // material.emissiveIntensity, or "camera.position" / "camera.target" /
-  // "camera.fov", "<lightId>.intensity", "<lightId>.color".
+  // "<selector>.<property path>". Selector: an object / light id, "camera",
+  // "environment", "postfx", a comma list "a,b,c", "tag:<tag>" (objects with
+  // that tag, scene order) or "children:<id>" (direct children of an object).
+  // Paths: position, position.x, rotation.y (degrees), scale (number =
+  // uniform), visible, material.<prop> (opacity, color, emissive,
+  // emissiveIntensity, metalness, roughness, …), material.uniforms.<name>,
+  // morph.<name> (models), animation.<clip>.weight|speed|time (models);
+  // lights: intensity, color, position, target, angle, penumbra, distance;
+  // camera.position | target | fov | zoom; environment.fog.color | near | far |
+  // density, environment.lightingIntensity, environment.exposure,
+  // environment.background (solid colours); postfx.<type>.<param>.
   target: string;
-  keys: [number, KeyValue][]; // [time, value], sorted by time
-  ease?: EaseName;
+  keys: TrackKey[]; // sorted by time
+  ease?: EaseSpec;
+  // Multi-target selectors: seconds between consecutive targets' starts.
+  stagger?: number;
+  // Order of the stagger: "start" (default), "end", "center", "edges", "random" (seeded).
+  staggerFrom?: "start" | "end" | "center" | "edges" | "random";
+}
+
+// A named range of the timeline. from / to: seconds or marker names; to < from plays backwards.
+export interface SegmentDef {
+  from: number | string;
+  to: number | string;
+  loop?: boolean | "pingpong";
+  speed?: number;
 }
 
 export interface TimelineDef {
   duration: number;
   loop?: boolean | "pingpong";
-  autoplay?: boolean; // default true
-  // What starts it: page load, when visible (default), on hover, on click, or
-  // scroll (timeline time = scroll progress of the embed through the viewport).
-  trigger?: "load" | "visible" | "hover" | "click" | "scroll";
+  // true (default): starts on `trigger`; false: waits for an interaction /
+  // script; a segment name: the trigger plays only that segment (e.g. "intro").
+  autoplay?: boolean | string;
+  // What drives the clock: page load, when visible (default), on hover
+  // (scrubs forward while hovered, back on leave), on click, scroll (timeline
+  // time = scroll progress, see `scroll`), or manual (only interactions /
+  // scripts play segments).
+  trigger?: "load" | "visible" | "hover" | "click" | "scroll" | "manual";
+  // Playback rate (default 1).
+  speed?: number;
+  // Named times (s). Crossing one emits an event with its name (scripts
+  // api.on(name), interactions { on: "event" }, DOM "agent3d-event").
+  markers?: Record<string, number>;
+  // Named ranges played by interactions ({ play: "hover-in" }) or player.playSegment().
+  segments?: Record<string, SegmentDef | [number | string, number | string]>;
+  // trigger "scroll": ScrollTrigger-like range — "<element edge> <viewport edge>"
+  // with edges top | center | bottom | N% | Npx. Default start "top bottom"
+  // (element top reaches the viewport bottom) → end "bottom top".
+  // smoothing 0..0.99 (default 0.8) eases the scrub.
+  scroll?: { start?: string; end?: string; smoothing?: number };
   tracks: TrackDef[];
+}
+
+// ─── Interactions (no-code triggers) ─────────────────────────────────────
+
+export type InteractionAction =
+  // Play a segment (or "timeline": the whole timeline from 0); reverse plays it backwards.
+  | { play: string; reverse?: boolean }
+  // Play a segment forward, then backward on the next trigger (open / close).
+  | { toggle: string }
+  // Jump the timeline to a time (s) or a marker name.
+  | { seek: number | string }
+  // Set an animatable property (track target syntax) — tweened when duration > 0.
+  | { set: { path: string; value: KeyValue }; duration?: number; ease?: EaseSpec }
+  // Emit an event (scripts api.on, interactions { on: "event" }, DOM "agent3d-event").
+  | { emit: string; payload?: unknown }
+  // Open a URL (http(s) or relative; only on click / key interactions — a user gesture).
+  | { openUrl: string; newTab?: boolean }
+  // Play a model animation clip (crossfades from the current one).
+  | { playClip: string | number; target: string; loop?: boolean; speed?: number; crossfade?: number };
+
+export interface InteractionDef {
+  // click / hover / hoverEnd on `target` (or the whole canvas without target),
+  // visible (the embed enters the viewport, once), scroll (progress crosses
+  // `at` downward), key (KeyboardEvent.code `key`), event (marker / emitted name).
+  on: "click" | "hover" | "hoverEnd" | "visible" | "scroll" | "key" | "event";
+  target?: string;
+  key?: string;
+  event?: string;
+  at?: number;
+  once?: boolean;
+  do: InteractionAction[];
 }
 
 // ─── Post-processing ────────────────────────────────────────────────────
 
 export interface PostFxDef {
-  type: string; // catalog postfx id: bloom, vignette, film, chromatic, pixelate, outline, dof
+  // Catalog postfx id (bloom, ao, grading, dof, …) or "look" (a named preset
+  // expanding into a tuned stack: { "type": "look", "preset": "cinematic" }).
+  type: string;
   [param: string]: unknown;
 }
 
@@ -398,18 +658,90 @@ export interface PhysicsWorldDef {
   gravity?: Vec3; // default [0, -9.81, 0]
   // Fixed step (s) for determinism (default 1/60).
   step?: number;
+  // Solver sub-steps per fixed step (1..8, default 1). More = stabler stacks and
+  // fewer tunnelling fast objects (bodies with `ccd: true` add sub-steps on their own).
+  substeps?: number;
+  iterations?: number; // constraint solver iterations (default 10)
+  sleep?: boolean; // let resting bodies sleep (default true)
+  debug?: boolean; // draw collider wireframes (handy in render screenshots)
+  // Named surface materials (body.material) and per-pair overrides.
+  materials?: Record<string, PhysicsMaterialDef>;
+  contacts?: PhysicsContactDef[];
+  // Collision layer names in bit order (max 16). Layers used by bodies but not
+  // listed are appended in scene order; "default" is always the first.
+  layers?: string[];
+  joints?: JointDef[];
+}
+
+export interface PhysicsMaterialDef {
+  friction?: number;
+  restitution?: number;
+}
+
+export interface PhysicsContactDef {
+  a: string; // material name
+  b: string;
+  friction?: number;
+  restitution?: number;
+}
+
+// Constraint between two bodies (or a body and the world when `b` is omitted).
+// Pivots and axes are in WORLD space at scene start.
+export interface JointDef {
+  id?: string;
+  type: "hinge" | "point" | "distance" | "lock" | "spring";
+  a: string; // object id with a body
+  b?: string; // other object id; omitted → anchored to the world
+  pivot?: Vec3; // world anchor (default: b's centre, or a's centre when b is omitted)
+  axis?: Vec3; // hinge axis (default [0, 1, 0])
+  distance?: number; // distance joint (default: the current distance)
+  restLength?: number; // spring (default: the current distance)
+  stiffness?: number; // spring (default 50)
+  damping?: number; // spring (default 1)
+  motor?: { speed: number; maxForce?: number }; // hinge motor, degrees / s
+  maxForce?: number; // constraint strength (default 1e6)
+  collideConnected?: boolean; // default false
+}
+
+export type ColliderShape = "box" | "sphere" | "cylinder" | "capsule";
+
+// One collider of a compound body (offsets in the object's frame, world units).
+export interface ColliderDef {
+  shape: ColliderShape;
+  size?: Vec3; // box
+  radius?: number; // sphere / cylinder / capsule
+  height?: number; // cylinder / capsule (total height)
+  offset?: Vec3;
+  rotation?: Vec3; // degrees
 }
 
 export interface BodyDef {
   type: "static" | "dynamic" | "kinematic" | "trigger";
-  shape?: "box" | "sphere" | "auto"; // auto: from the object's bounding box
+  // box (default, bounding box) | sphere | cylinder | capsule (Y-up) | convex
+  // (hull of the mesh/model) | trimesh (exact triangles, static only) |
+  // heightfield (terrain generators) | compound (`shapes`) | auto (primitive
+  // geometry → matching shape, terrain → heightfield, else bounding box).
+  shape?: "box" | "sphere" | "auto" | "cylinder" | "capsule" | "convex" | "trimesh" | "heightfield" | "compound";
   size?: Vec3; // box size override
-  radius?: number; // sphere radius override
+  radius?: number; // sphere / cylinder / capsule radius override
+  height?: number; // cylinder / capsule height override
+  shapes?: ColliderDef[]; // compound colliders
+  offset?: Vec3; // collider centre offset from the object origin (default: bounding-box centre)
   mass?: number;
   restitution?: number; // bounciness 0..1
   friction?: number;
+  material?: string; // physics.materials name (friction / restitution defaults)
   velocity?: Vec3;
-  fixedRotation?: boolean;
+  angularVelocity?: Vec3; // degrees / s
+  linearDamping?: number; // 0..1 (default 0.01)
+  angularDamping?: number; // 0..1 (default 0.01)
+  gravityScale?: number; // default 1 (dynamic)
+  fixedRotation?: boolean; // no rotation (players, characters)
+  character?: boolean; // character controller: fixed rotation, no friction, never sleeps
+  sleep?: boolean; // allow sleeping (default true)
+  ccd?: boolean; // fast object: extra sub-steps against tunnelling
+  layer?: string; // collision layer name (default "default")
+  collidesWith?: string[]; // layers this body collides with (default: all)
 }
 
 export interface UiElementDef {

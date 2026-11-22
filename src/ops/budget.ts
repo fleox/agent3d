@@ -90,18 +90,23 @@ function instanceCount(layout: unknown): number {
   return typeof l.count === "number" ? l.count : 0;
 }
 
-// 3D text, measured with the runtime (render stats of "ABCDEFGHIJ", size 1,
-// curveSegments 6): triangles per glyph of a flat (depth 0) face. Extruding
-// adds the side walls (×4); the bevel (on by default when depth > 0) ×16.
-export const TRIS_PER_GLYPH: Record<string, number> = { "sans-bold": 80, sans: 80, mono: 40, "serif-bold": 165, display: 165 };
-export const TRIS_PER_GLYPH_DEFAULT = 100;
+// 3D text, measured with the runtime (geometry of "ABCDEFGHIJ", size 1, default
+// curve sampling): triangles per glyph of a flat (depth 0) face. Extruding adds
+// the side walls (×8); the bevel (on by default when depth > 0) ×33; an outline
+// adds an unbevelled back layer (×8).
+export const TRIS_PER_GLYPH: Record<string, number> = {
+  "sans-bold": 33, sans: 35, "inter-black": 32, "montserrat-extrabold": 29, "space-grotesk-bold": 26, "bebas-neue": 19, anton: 20,
+  "serif-bold": 77, serif: 74, mono: 28, display: 49, pacifico: 108, lobster: 70,
+};
+export const TRIS_PER_GLYPH_DEFAULT = 50;
 
-export function textTriangles(o: { text?: unknown; font?: unknown; depth?: unknown; bevel?: unknown }): number {
+export function textTriangles(o: { text?: unknown; font?: unknown; depth?: unknown; bevel?: unknown; outline?: unknown }): number {
   const chars = String(o.text ?? "").replace(/\s/g, "").length;
   const face = TRIS_PER_GLYPH[typeof o.font === "string" ? o.font : "sans-bold"] ?? TRIS_PER_GLYPH_DEFAULT;
   const depth = typeof o.depth === "number" ? o.depth : 0.2;
-  const bevel = depth > 0 && (typeof o.bevel === "number" ? o.bevel : 0.02) > 0;
-  return Math.round(chars * face * (depth <= 0 ? 1 : bevel ? 16 : 4));
+  const bevel = depth > 0 && (typeof o.bevel === "number" ? o.bevel : 1) > 0;
+  const body = depth <= 0 ? 1 : bevel ? 33 : 8;
+  return Math.round(chars * face * (body + (o.outline ? 8 : 0)));
 }
 
 // Triangles of a model file by its `src` (library index / parsed GLB), when known.

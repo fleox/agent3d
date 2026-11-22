@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Multi-colour badge logo for Agent3D tests: evenodd ring, nonzero holes, stroke outline, transformed parts -->
+  <style>.accent { fill: #ffb703; }</style>
+  <!-- outer ring: two circles with fill-rule evenodd = a ring with a hole -->
+  <path fill="#023047" fill-rule="evenodd" d="M100 4a96 96 0 1 0 0.01 0zM100 22a78 78 0 1 1-0.01 0z"/>
+  <!-- inner disc -->
+  <circle cx="100" cy="100" r="66" fill="#219ebc"/>
+  <!-- letter A with a counter (nonzero, hole drawn counter-clockwise) -->
+  <path fill="#ffffff" d="M100 44 L142 150 L120 150 L112 128 L88 128 L80 150 L58 150 Z M100 76 L93 110 L107 110 Z"/>
+  <!-- accent star via CSS class, rotated -->
+  <polygon class="accent" transform="rotate(12 150 52)" points="150 34 155 47 169 47 158 55 162 69 150 61 138 69 142 55 131 47 145 47"/>
+  <!-- stroked smile with round caps -->
+  <path d="M70 160 Q100 182 130 160" fill="none" stroke="#fb8500" stroke-width="8" stroke-linecap="round"/>
+  <!-- half-transparent highlight -->
+  <ellipse cx="78" cy="70" rx="18" ry="9" fill="#ffffff" fill-opacity="0.35" transform="rotate(-30 78 70)"/>
+</svg>

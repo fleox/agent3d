@@ -78,18 +78,76 @@ Spawn close enough that the first obstacle appears within 2–3 seconds (a rende
 if (api.state.phase === "play" && api.physics.overlaps(player, b)) gameOver();
 ```
 
-Dynamic bodies (balls, falling crates) use real responses:
+Dynamic bodies (balls, falling crates) use real rigid-body responses:
 
 ```js
 start() {
-  api.physics.onCollision((a, b) => {
-    if (a.id === "ball" || b.id === "ball") api.audio.play("hit");
+  api.physics.onCollision((a, b, info) => {
+    // info: { point, normal, impulse, speed } — only real impacts make noise
+    if ((a.id === "ball" || b.id === "ball") && info.impulse > 1) api.audio.play("hit");
   });
 },
 update() {
   if (api.input.pressed("Space")) api.physics.applyImpulse("ball", [0, 6, 0]);
 },
 ```
+
+## Physics recipes
+
+Bodies are real rigid bodies (cannon-es): they rotate, tumble, stack and fall asleep. The simulation is deterministic (fixed step), so renders replay exactly.
+
+**Platformer hero** — a capsule character controller (no tipping, no wall sticking, coyote-time jumps):
+
+```json
+{ "id": "hero", "kind": "model", "src": "library:models/characters/robot.glb", "position": [0, 1, 0], "body": { "type": "dynamic", "shape": "capsule", "radius": 0.35, "height": 1.4, "character": true } }
+```
+
+```js
+update() {
+  const x = (api.input.isDown("ArrowRight") ? 1 : 0) - (api.input.isDown("ArrowLeft") ? 1 : 0);
+  api.physics.moveCharacter(hero, { x, z: 0 }, { speed: 6, acceleration: 40, airControl: 0.35 });
+  if (api.input.pressed("Space") && api.physics.jump(hero, 7)) api.audio.play("jump");
+  // api.physics.grounded(hero) picks the animation clip (jump / run / idle)
+}
+```
+
+**Throw / knock things over** — clone a hidden projectile (synchronous, keeps determinism) and launch it on a ballistic arc toward the pointer (`ccd: true` on fast projectiles stops tunnelling):
+
+```js
+const target = api.input.pointerWorld(); // { x, y, z, objectId? }
+const from = [0, 1.3, 7], T = 0.6, g = 9.81;
+const ball = api.clone("ballProto", { id: "ball" + ++n, position: from });
+ball.visible = true;
+api.physics.setVelocity(ball, [(target.x - from[0]) / T, (target.y - from[1]) / T + 0.5 * g * T, (target.z - from[2]) / T]);
+```
+
+Keep the prototype asleep out of sight: `"position": [0, -29.7, 0], "visible": false` resting on a hidden static shelf. The `game-physics-playground` template is a complete example (tower of blocks, rebuild without reload, impact sounds).
+
+**Moving platforms** — `kinematic` bodies moved from the script push and carry dynamic bodies:
+
+```js
+platform.position.x = Math.sin(api.time()) * 3; // every update
+```
+
+**Doors, pendulums, chains, wheels** — `physics.joints` (world-space pivots at scene start; omit `b` to pin to the world):
+
+```json
+"physics": { "joints": [
+  { "id": "door", "type": "hinge", "a": "door", "pivot": [-1, 1.2, 0], "axis": [0, 1, 0] },
+  { "type": "point", "a": "bob", "pivot": [0, 5, 0] },
+  { "id": "wheel", "type": "hinge", "a": "wheel", "pivot": [2, 0.5, 0], "axis": [0, 0, 1], "motor": { "speed": 180, "maxForce": 50 } }
+] }
+```
+
+`api.physics.setMotorSpeed("wheel", 360)` changes a motor at run time.
+
+**Sensors** — `trigger` bodies: `api.physics.onTriggerEnter((zone, other) => …)` / `onTriggerExit`, or poll `api.physics.overlaps(player, coin)` (exact shapes, works between any body types).
+
+**Layers** — `"layer": "debris", "collidesWith": ["default"]` keeps debris from blocking the player; raycasts take `{ layers: ["default"], ignore: [player], triggers: false }`.
+
+**Shapes** — boxes from the mesh bounds are the default (cheapest, stable stacks). Use `sphere` for balls (they roll), `capsule` for characters, `convex` for dynamic props of irregular shape (models), `trimesh` or `auto` for static level geometry (exact, e.g. a ramp model), `heightfield` / `auto` for a terrain generator, `compound` to assemble a few primitives (a table: top box + 4 leg boxes).
+
+**Debugging** — `"physics": { "debug": true }` draws every collider (green dynamic, blue static, orange kinematic, magenta trigger, grey asleep) in renders: look at it whenever something falls through, floats or collides early. Remove it before export.
 
 ## Difficulty ramp
 

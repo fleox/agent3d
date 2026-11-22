@@ -94,18 +94,19 @@ describe("budget", () => {
         { id: "h", kind: "mesh", geometry: { type: "sphere" }, visible: false },
       ],
     });
-    expect(est.byObject.find((o) => o.id === "t")!.triangles).toBe(5 * 80 * 16);
+    expect(est.byObject.find((o) => o.id === "t")!.triangles).toBe(5 * 33 * 33);
     expect(est.byObject.find((o) => o.id === "i")!.triangles).toBe(1200);
     expect(est.byObject.find((o) => o.id === "g")!.triangles).toBe(20000);
     expect(est.byObject.find((o) => o.id === "h")).toBeUndefined();
-    expect(est.total).toBe(6400 + 1200 + 20000 + 100);
+    expect(est.total).toBe(5445 + 1200 + 20000 + 100);
   });
   it("estimates text per glyph like the runtime (font, flat, extruded, bevel)", () => {
-    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0 })).toBe(800); // measured 783
-    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0.3, bevel: 0 })).toBe(3200); // measured 3150
-    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0.3, bevel: 0.03 })).toBe(12800); // measured 12666
-    expect(textTriangles({ text: "ABCDEFGHIJ", font: "display", depth: 0.3 })).toBe(26400); // measured 26838
-    expect(textTriangles({ text: "ABCDEFGHIJ", font: "mono", depth: 0 })).toBe(400); // measured 375
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0 })).toBe(330); // measured 330 (geometry, 10 glyphs)
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0.3, bevel: 0 })).toBe(2640); // measured 2780
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0.3, bevel: 0.03 })).toBe(10890); // measured 11190
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "display", depth: 0.3 })).toBe(16170); // measured 16710
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "mono", depth: 0 })).toBe(280); // measured 280
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0.2, outline: true })).toBe(13530);
   });
   it("counts model triangles from the library index and GLB files", () => {
     const est = estimateTriangles({ objects: [{ id: "m", kind: "model", src: "library:models/x.glb" }, { id: "n", kind: "model", src: "assets/unknown.glb" }] }, { models: (src) => (src === "library:models/x.glb" ? 1234 : undefined) });

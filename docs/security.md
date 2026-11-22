@@ -19,7 +19,7 @@ This is a **contract checked by static analysis**, not a runtime sandbox: script
 
 ## Content-Security-Policy
 
-Embeds work under a strict CSP: `script-src 'self'; connect-src 'self'; img-src 'self' blob:` (+ `style-src 'unsafe-inline'` with a HUD). Single-HTML exports additionally need `'unsafe-inline'` and `blob:` scripts and `data:` URLs. The runtime never uses `eval` or `new Function`. Details: [export.md](export.md#content-security-policy).
+Embeds work under a strict CSP: `script-src 'self'; connect-src 'self'; img-src 'self' blob:` (+ `style-src 'unsafe-inline'` with a HUD, + `'wasm-unsafe-eval'` in `script-src` when a model is meshopt-compressed: its decoder is WebAssembly). Single-HTML exports additionally need `'unsafe-inline'` and `blob:` scripts and `data:` URLs. The runtime never uses `eval` or `new Function`. Details: [export.md](export.md#content-security-policy).
 
 ## Asset licences
 

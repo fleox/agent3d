@@ -13,9 +13,11 @@ import type { FrameStats, InspectResult } from "../runtime/api";
 import { GENERATORS } from "../core/catalog";
 import { DRAW_CALL_LIMIT, estimateTriangles, TRIANGLE_LIMIT } from "./budget";
 import { modelInfo } from "./gltf";
+import { optimizeSuggestions } from "./optimizeSizing";
 import { KB, readJsonOr } from "./context";
 import { ASSET_MANIFEST_FILE, readSceneFile, SCENE_FILE } from "./project";
 import { collectAssetRefs, gltfDependencies } from "./refs";
+import { postfxReport, type GpuReport } from "./postfxCheck";
 import { lintScript } from "./scriptLint";
 import { walkObjects } from "./tree";
 
@@ -55,6 +57,10 @@ export interface CheckReport {
     totalKb: number; // scene + assets + scripts (runtime excluded)
     budgetKb: number;
     runtimeKb: number;
+    // Post-processing GPU cost estimate (look presets expanded): fullscreen-pass
+    // equivalents per frame, whether the scene is re-drawn for a normal / depth
+    // pre-pass, the effects the "low" tier drops, the target quality.
+    gpu: GpuReport;
   };
   licences: LicenceInfo[];
 }
@@ -176,7 +182,19 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
       code: "budget",
       path: "target.budgetKb",
       message: `The bundle weighs ~${totalKb} KB (runtime excluded), above the ${budgetKb} KB budget for a ${kind}.`,
-      hint: `${heaviest.length ? `Heaviest files: ${heaviest.map(([p, n]) => `${p} (${KB(n)} KB)`).join(", ")}. ` : ""}Shrink textures (also those inside .glb models) with \`agent3d assets optimize <path>… --max-size 512 --yes\` (or --all), download smaller resolutions (\`assets add --hit … --resolution 512\`), or replace heavy models with catalog geometries / generators (zero bytes). Raise target.budgetKb only if the page can afford it.`,
+      hint: `${heaviest.length ? `Heaviest files: ${heaviest.map(([p, n]) => `${p} (${KB(n)} KB)`).join(", ")}. ` : ""}Run \`agent3d assets optimize --all\` (shows the plan: a size per texture from how the scene uses it, WebP, meshopt geometry; then add --yes; --dry-run reports the real savings), download smaller resolutions (\`assets add --hit … --resolution 512\`), or replace heavy models with catalog geometries / generators (zero bytes). Raise target.budgetKb only if the page can afford it.`,
+    });
+  }
+  // Assets `assets optimize` would clearly shrink (under budget too).
+  const optimizable = await optimizeSuggestions(fs, scene, { library: opts.library }).catch(() => null);
+  if (optimizable && (optimizable.models.length || optimizable.textures.length)) {
+    const list = [...optimizable.textures.map((t) => `${t.path} (${t.size} px, the scene needs ~${t.maxSize})`), ...optimizable.models.map((m) => `${m.path} (${m.kb} KB, geometry not compressed)`)];
+    issues.push({
+      severity: "info",
+      code: "optimizable",
+      path: list.length === 1 ? (optimizable.textures[0]?.path ?? optimizable.models[0].path) : "assets/",
+      message: `${list.length} asset(s) are heavier than this scene needs: ${list.slice(0, 4).join(", ")}${list.length > 4 ? ", …" : ""}.`,
+      hint: "Run `agent3d assets optimize --all` to see the plan (per-texture size + reason, WebP, meshopt geometry), then add --yes (assets_optimize { all: true, dryRun: true } first from an agent).",
     });
   }
   const triLimit = TRIANGLE_LIMIT[kind] ?? 500_000;
@@ -187,7 +205,7 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
       code: "triangles",
       path: tris.byObject[0] ? `objects#${tris.byObject[0].id}` : "objects",
       message: `Estimated ${tris.total.toLocaleString("en-US")} triangles, above ${triLimit.toLocaleString("en-US")} for a ${kind}.`,
-      hint: `Heaviest: ${tris.byObject.slice(0, 3).map((o) => `${o.id} (~${o.triangles.toLocaleString("en-US")})`).join(", ")}. Lower segments / resolution / detail / count params, or use "instances" for repeated meshes.`,
+      hint: `Heaviest: ${tris.byObject.slice(0, 3).map((o) => `${o.id} (~${o.triangles.toLocaleString("en-US")})`).join(", ")}. Lower segments / resolution / detail / count params, use "instances" for repeated meshes, or simplify project models (\`agent3d assets optimize <model.glb> --simplify 0.5\`).`,
     });
   }
 
@@ -209,6 +227,10 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
     if (st.textures > 24) issues.push({ severity: "info", code: "textures", path: "objects", message: `${st.textures} textures in GPU memory.`, hint: "Share textures between materials and prefer 1k maps for web embeds." });
     if (st.fps !== undefined && st.fps < 30) issues.push({ severity: "warning", code: "fps", path: "target", message: `Measured ${Math.round(st.fps)} fps in the headless render.`, hint: "Headless rendering is slower than a real GPU, but simplify if it drops below ~20: fewer post effects, lower maxDpr, fewer shadows." });
   }
+
+  // ── Post-processing GPU cost ──
+  const pfx = postfxReport(scene);
+  issues.push(...pfx.issues);
 
   // ── Web friendliness ──
   if (!scene.ariaLabel) issues.push({ severity: "info", code: "aria-label", path: "ariaLabel", message: `No ariaLabel: screen readers will announce the title "${scene.title ?? ""}".`, hint: 'Set "ariaLabel" to a one-sentence description of what the animation shows.' });
@@ -239,6 +261,7 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
       totalKb,
       budgetKb,
       runtimeKb: opts.runtimeKb ?? 0,
+      gpu: pfx.gpu,
     },
     licences,
   };

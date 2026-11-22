@@ -2,6 +2,8 @@
 // camera, environment, lights, post effects, physics, audio, HUD.
 
 import { Plus, Trash2, X } from "lucide-react";
+import clsx from "clsx";
+import { useEffect, useRef } from "react";
 import { POSTFX, SOUND_PRESETS, catalogEntry } from "../../core/catalog";
 import type { BackgroundDef, EnvironmentDef, LightDef, SceneDoc } from "../../core/types";
 import { LIGHTING_PRESETS, TARGET_KINDS } from "../../core/validate";
@@ -13,7 +15,7 @@ import { NumberField } from "../components/ui/NumberField";
 import { Button, IconButton, Row, Section, Select, TextField, Toggle } from "../components/ui/controls";
 import { useI18n } from "../i18n";
 import { takenIds } from "../lib/patches";
-import { useEditor, useSnapshot } from "../state/context";
+import { useEditor, useSnapshot, useUi } from "../state/context";
 import { ParamForm, useBinder } from "./fields";
 import { CAMERA_SPECS, GROUND_SPECS, LIGHT_SPECS, PHYSICS_SPECS, SCENE_META_SPECS, TARGET_SPECS, UI_ELEMENT_SPECS, UI_THEME_SPECS } from "./specs";
 import { DEFAULT_ASPECT } from "../../core/validate";
@@ -185,8 +187,14 @@ function EnvironmentSection({ scene }: { scene: SceneDoc }) {
 
 function LightsSection({ scene }: { scene: SceneDoc }) {
   const { t } = useI18n();
-  const { edit } = useEditor();
+  const { edit, ui } = useEditor();
   const lights = scene.lights ?? [];
+  // The light picked in the viewport is highlighted and scrolled into view; clicking a header selects it.
+  const lightSel = useUi((s) => s.lightSel);
+  const rows = useRef(new Map<string, HTMLDivElement>());
+  useEffect(() => {
+    if (lightSel) rows.current.get(lightSel.id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [lightSel]);
   return (
     <Section
       title={
@@ -216,13 +224,30 @@ function LightsSection({ scene }: { scene: SceneDoc }) {
         {lights.map((l, i) => {
           const I = LIGHT_ICONS[l.type] ?? LIGHT_ICONS.point;
           const path = l.id ? `lights#${l.id}` : `lights[${i}]`;
+          const rid = l.id ?? `light${i}`;
+          const selected = lightSel?.id === rid;
+          const movable = l.type !== "ambient" && l.type !== "hemisphere";
           return (
-            <div key={`${l.id ?? i}`} className="rounded-md border border-line bg-ink-0/40 pb-1">
-              <div className="flex h-7 items-center gap-1.5 pl-2 pr-1">
+            <div
+              key={`${l.id ?? i}`}
+              ref={(el) => {
+                if (el) rows.current.set(rid, el);
+                else rows.current.delete(rid);
+              }}
+              className={clsx("rounded-md border bg-ink-0/40 pb-1", selected ? "border-accent/70" : "border-line")}
+            >
+              <div className={clsx("flex h-7 items-center gap-1.5 pl-2 pr-1", movable && "cursor-pointer")} onClick={movable ? () => ui.set({ lightSel: selected ? null : { id: rid, part: "position" } }) : undefined}>
                 <I size={12} className="text-key" />
                 <span className="flex-1 truncate text-xs font-medium">{l.id ?? `${l.type} ${i + 1}`}</span>
                 <span className="text-2xs text-fg-faint">{l.type}</span>
-                <IconButton label={t("scene.removeLight")} className="h-5 w-5" onClick={() => edit([{ op: "remove", path: `lights[${i}]` }])}>
+                <IconButton
+                  label={t("scene.removeLight")}
+                  className="h-5 w-5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    edit([{ op: "remove", path: `lights[${i}]` }]);
+                  }}
+                >
                   <X size={11} />
                 </IconButton>
               </div>

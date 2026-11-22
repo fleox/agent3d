@@ -4,6 +4,7 @@
 
 import * as THREE from "three";
 import type { CameraDef } from "../../core/types";
+import { noise2D } from "../random";
 import { DEG, clamp, num, smoothFactor } from "../util";
 
 export function createCamera(def: CameraDef, aspect: number): THREE.PerspectiveCamera | THREE.OrthographicCamera {
@@ -53,8 +54,9 @@ export function setCameraAspect(cam: THREE.Camera, def: CameraDef, aspect: numbe
 
 export interface CameraRig {
   // Rest values (timeline / scripts write here; the controller derives the final camera).
-  rest: { position: THREE.Vector3; target: THREE.Vector3; fov: number };
-  update(t: number, dt: number, input: { pointer: { x: number; y: number }; scroll: number; followTarget?: THREE.Object3D | null }): void;
+  // zoom: orthographic view height; focus: depth-of-field distance (postfx dof).
+  rest: { position: THREE.Vector3; target: THREE.Vector3; fov: number; zoom: number; focus?: number };
+  update(t: number, dt: number, input: { pointer: { x: number; y: number }; scroll: number; followTarget?: THREE.Object3D | null; lookAt?: THREE.Vector3 | null }): void;
   // Extra offset applied after the controller (camera shake).
   shake: THREE.Vector3;
   orbit: { enabled: boolean; dispose(): void; update(): void } | null;
@@ -63,7 +65,7 @@ export interface CameraRig {
 
 export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | THREE.OrthographicCamera, dom: HTMLElement | null, deterministic: boolean): Promise<CameraRig> {
   const target0 = new THREE.Vector3(...(def.target ?? [0, 0, 0]));
-  const rest = { position: new THREE.Vector3(...def.position), target: target0.clone(), fov: num(def.fov, 45) };
+  const rest: CameraRig["rest"] = { position: new THREE.Vector3(...def.position), target: target0.clone(), fov: num(def.fov, 45), zoom: num(def.zoom, 10) };
   const controls = def.controls ?? "none";
   const smoothPos = rest.position.clone();
   const smoothTarget = rest.target.clone();
@@ -93,6 +95,7 @@ export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | T
   }
 
   const tmp = new THREE.Vector3();
+  const handheld = new THREE.Vector3();
   const rig: CameraRig = {
     rest,
     shake,
@@ -105,6 +108,15 @@ export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | T
           cam.fov = fov;
           cam.updateProjectionMatrix();
         }
+      } else if (cam instanceof THREE.OrthographicCamera && num(cam.userData.zoomHeight, num(def.zoom, 10)) !== rest.zoom) {
+        cam.userData.zoomHeight = rest.zoom;
+        const aspect = (cam.right - cam.left) / Math.max(cam.top - cam.bottom, 1e-6);
+        const h = (rest.zoom / 2) * num(cam.userData.fitScale, 1);
+        cam.left = -h * aspect;
+        cam.right = h * aspect;
+        cam.top = h;
+        cam.bottom = -h;
+        cam.updateProjectionMatrix();
       }
       if (orbit) {
         orbit.update();
@@ -135,6 +147,7 @@ export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | T
         target.lerp(lookAt, k);
         pos = tmp.copy(smoothPos);
       } else target.copy(rest.target);
+      if (input.lookAt) target.copy(input.lookAt);
 
       if (def.autoRotate && controls !== "follow") {
         const ang = def.autoRotate * DEG * t;
@@ -154,8 +167,22 @@ export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | T
         const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
         pos.addScaledVector(right, parallax.x).addScaledVector(up, parallax.y);
       }
+      if (def.shake) {
+        // Handheld: two octaves of smooth noise on position and aim.
+        const sh = def.shake;
+        const sp = num(sh.speed, 0.5), amt = num(sh.amount, 0.03), rot = num(sh.rotation, 0.4) * DEG;
+        const seed = num(sh.seed, 1) * 17.31;
+        const n = (ch: number) => noise2D(t * sp + seed, ch * 7.13) * 0.75 + noise2D(t * sp * 2.7 + seed, ch * 7.13 + 3.1) * 0.25;
+        const fwd = target.clone().sub(pos);
+        const d = fwd.length() || 1;
+        fwd.divideScalar(d);
+        const right = new THREE.Vector3().crossVectors(fwd, cam.up).normalize();
+        const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
+        pos.addScaledVector(right, n(0) * amt).addScaledVector(up, n(1) * amt);
+        handheld.copy(target).addScaledVector(right, Math.tan(n(2) * rot) * d).addScaledVector(up, Math.tan(n(3) * rot) * d);
+      } else handheld.copy(target);
       cam.position.copy(pos).add(shake);
-      cam.lookAt(target);
+      cam.lookAt(handheld);
       first = false;
     },
     dispose() {

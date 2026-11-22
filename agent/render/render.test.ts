@@ -6,7 +6,9 @@ import { decodePng, pngVariance } from "./png";
 import { MINIMAL_SCENE, writeFakeDist } from "../testing/fakeRuntime";
 import { findBrowser } from "./browser";
 import { CliError } from "../output";
-import { frameBox, frameTimes, inputCall, isolateScene, parseBg, parseInputScript, projectPath, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
+import { frameBox, frameTimes, inputCall, isolateScene, parseBg, parseInputScript, projectPath, renderExportImages, renderMedia, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
+import { decodeGifInfo } from "./gif";
+import { readMp4Boxes } from "./mp4";
 
 // The render pipeline (server → Chrome → CDP → page → PNG files) against a
 // stand-in runtime. Runs only when a Chromium-family browser is installed.
@@ -106,6 +108,9 @@ describe("render --input scripts and paths", () => {
   });
   it("maps events to Player.input calls", () => {
     expect(inputCall({ t: 0, swipe: "up" })).toBe('i.swipe?.("up")');
+    expect(inputCall({ t: 0, scroll: 0.5 })).toBe("i.scroll?.(0.5)");
+    expect(parseInputScript([{ t: 1, scroll: 0.25 }])).toEqual([{ t: 1, scroll: 0.25 }]);
+    expect(() => parseInputScript([{ t: 1, scroll: 2 }])).toThrow(/progress/);
     expect(inputCall({ t: 0, pointerDown: [0.5, 0] })).toBe("(i.pointer(0.5, 0), i.down?.(0.5, 0))");
     expect(inputCall({ t: 0, pointerUp: null })).toBe("i.up?.()");
     expect(inputCall({ t: 0, pointer: [0, 0], down: false })).toBe("(i.pointer(0, 0), i.up?.())");
@@ -143,4 +148,27 @@ describe.skipIf(!browser)("headless render (stand-in runtime)", () => {
     expect(video.frames).toBe(10);
     expect(Buffer.from(video.bytes).readUInt32BE(0)).toBe(0x1a45dfa3);
   }, 90_000);
+
+  it("renders supersampled stills, GIF, animated WebP, MP4 and export images", async () => {
+    const hq = await renderProject({ projectDir: project, frames: "1", size: "400x100", quality: "high" });
+    expect(hq.supersampling).toBe(2);
+    expect(decodePng(readFileSync(resolve(hq.dir, hq.frames[0].path)))).toMatchObject({ width: 400, height: 100 });
+    const gifPath = join(project, "renders", "a.gif");
+    const gif = await renderMedia({ projectDir: project, out: gifPath, duration: 1, fps: 10, size: "160x40" });
+    expect(gif.frames).toBe(10);
+    expect(decodeGifInfo(readFileSync(gifPath))).toMatchObject({ width: 160, height: 40, frames: 10, loop: true });
+    const webp = await renderMedia({ projectDir: project, out: join(project, "renders", "a.webp"), duration: 0.5, fps: 10, size: "160x40", write: false });
+    expect(Buffer.from(webp.data).toString("latin1")).toContain("ANMF");
+    try {
+      const mp4 = await renderMedia({ projectDir: project, out: join(project, "renders", "a.mp4"), duration: 1, fps: 10, size: "320x80", write: false });
+      expect(mp4.codec).toMatch(/^avc1/);
+      expect(readMp4Boxes(mp4.data).map((x) => x.type)).toEqual(["ftyp", "moov", "mdat"]);
+    } catch (e) {
+      expect((e as CliError).code).toBe("video-unsupported"); // Chromium builds without H.264
+    }
+    const images = await renderExportImages({ projectDir: project });
+    expect(decodePng(images.og!)).toMatchObject({ width: 1200, height: 630 });
+    expect(images.posterSize).toEqual({ width: 1200, height: 300 });
+    expect(Buffer.from(images.poster).toString("ascii", 8, 12)).toBe("WEBP");
+  }, 120_000);
 });

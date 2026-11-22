@@ -5,6 +5,7 @@ import * as THREE from "three";
 import type { GeneratorImpl } from "../registry";
 import { generatorParams } from "./params";
 import { built, findGround, ramp, scatterPoint } from "./geom";
+import { noise2D } from "../random";
 import { addWind } from "./wind";
 
 export function bladeGeometry(height: number, colors: THREE.Color[]): THREE.BufferGeometry {
@@ -22,6 +23,7 @@ export function bladeGeometry(height: number, colors: THREE.Color[]): THREE.Buff
   const c = new THREE.Color();
   pts.forEach((pt, i) => {
     ramp(colors, pt[1] / height, c);
+    if (i === 4) c.lerp(new THREE.Color("#f4ffb0"), 0.25); // sunlit tip
     col.set([c.r, c.g, c.b], i * 3);
   });
   const g = new THREE.BufferGeometry();
@@ -70,8 +72,11 @@ export const grass: GeneratorImpl = (raw, ctx) => {
     s.set(sc, sc * rng.range(0.8, 1.2), sc);
     m.compose(v, q, s);
     mesh.setMatrixAt(k, m);
-    const l = rng.range(0.82, 1.12);
-    tint.setRGB(l, l * rng.range(0.97, 1.03), l * 0.95);
+    // Meadow patches (large-scale noise: lusher / drier areas) + per-blade jitter.
+    const patch = noise2D(pt.x * 0.12 + 7.3, pt.z * 0.12 - 2.1) * 0.5 + 0.5;
+    const dry = Math.max(0, noise2D(pt.x * 0.05 - 3.7, pt.z * 0.05 + 5.9)) * 0.35;
+    const l = rng.range(0.85, 1.1) * (0.82 + patch * 0.3);
+    tint.setRGB(l * (1 + dry * 0.35), l * rng.range(0.97, 1.03), l * (0.95 - dry * 0.4));
     mesh.setColorAt(k, tint);
   }
   mesh.instanceMatrix.needsUpdate = true;

@@ -10,9 +10,12 @@
 import { isValidAspect } from "./aspect";
 import { CATALOG, catalogEntry, materialPreset, type CatalogEntry, type CatalogSection, type ParamSpec } from "./catalog";
 import { isValidColor } from "./color";
+import { EASE_EXAMPLES, parseEase } from "./ease";
 import { ID_RE, isValidId } from "./ids";
 import { isLibraryRef, libraryId } from "./library";
 import { closest, didYouMean, listOptions } from "./suggest";
+import { EASE_NAMES } from "./ease";
+import { TIMELINE_TRIGGERS_ALL, validateMotion } from "./validateMotion";
 import type { Issue, SceneDoc, TargetKind, ObjectDef, TrackDef } from "./types";
 import { SCENE_VERSION } from "./types";
 
@@ -22,15 +25,16 @@ export const TARGET_KINDS: readonly TargetKind[] = ["banner", "hero", "card", "s
 export const OBJECT_KINDS = ["mesh", "text", "model", "group", "generator", "particles", "instances", "svg"] as const;
 export const LIGHT_TYPES = ["ambient", "directional", "point", "spot", "hemisphere", "rect"] as const;
 export const MATERIAL_TYPES = ["standard", "physical", "basic", "lambert", "toon", "normal", "matcap", "gradient", "shader"] as const;
-export const EASES = [
-  "linear", "inQuad", "outQuad", "inOutQuad", "inCubic", "outCubic", "inOutCubic", "inSine", "outSine", "inOutSine",
-  "inExpo", "outExpo", "inOutExpo", "inBack", "outBack", "inOutBack", "outElastic", "outBounce", "step",
-] as const;
-export const LIGHTING_PRESETS = ["studio", "soft", "sunset", "night", "neutral", "none"] as const;
+// Named easings (parametric ones too: "cubicBezier(…)", "spring(…)", "steps(n)" — src/core/ease.ts).
+export const EASES = EASE_NAMES;
+export const LIGHTING_PRESETS = ["studio", "soft", "sunset", "night", "neutral", "sky", "none"] as const;
+export const SKY_PRESETS = ["sunrise", "morning", "noon", "afternoon", "golden-hour", "sunset", "dusk"] as const;
+// Material texture slots (file path / library id, or { "procedural": "<catalog textures id>", … }).
+export const MATERIAL_TEXTURE_SLOTS = ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap", "bumpMap", "displacementMap", "alphaMap"] as const;
 export const CAMERA_CONTROLS = ["none", "orbit", "parallax", "scroll", "follow"] as const;
 export const UI_ANCHORS = ["top-left", "top", "top-right", "left", "center", "right", "bottom-left", "bottom", "bottom-right"] as const;
 export const BEHAVIOUR_WHEN = ["always", "hover", "click", "visible", "scroll"] as const;
-export const TIMELINE_TRIGGERS = ["load", "visible", "hover", "click", "scroll"] as const;
+export const TIMELINE_TRIGGERS = TIMELINE_TRIGGERS_ALL;
 export const TONE_MAPPINGS = ["none", "aces", "agx", "neutral", "reinhard"] as const;
 
 export const DEFAULT_ASPECT: Record<TargetKind, string> = {
@@ -64,44 +68,38 @@ const SVG_EXT = [".svg"];
 const BASE_OBJECT_KEYS = ["id", "kind", "name", "visible", "castShadow", "receiveShadow", "behaviours", "children", "tags", "body", "href", "userData", "position", "rotation", "scale"];
 const OBJECT_KEYS: Record<(typeof OBJECT_KINDS)[number], string[]> = {
   mesh: ["geometry", "material"],
-  text: ["text", "font", "size", "depth", "bevel", "align", "letterSpacing", "lineHeight", "material"],
-  model: ["src", "fit", "center", "animation", "material"],
+  text: ["text", "font", "size", "depth", "bevel", "align", "letterSpacing", "lineHeight", "kerning", "maxWidth", "curveSegments", "outline", "splitLetters", "reveal", "material"],
+  model: ["src", "fit", "center", "animation", "morph", "material"],
   group: [],
   generator: ["generator", "params", "seed", "material"],
   particles: ["preset", "count", "area", "size", "color", "speed", "direction", "spread", "lifetime", "opacity", "blending", "shape", "seed"],
   instances: ["geometry", "material", "layout", "colors"],
-  svg: ["src", "size", "depth", "bevel", "material"],
+  svg: ["src", "size", "fit", "depth", "bevel", "keepColors", "strokes", "curveSegments", "layerGap", "material"],
 };
-const SCENE_KEYS = ["version", "id", "title", "description", "target", "camera", "environment", "lights", "objects", "timeline", "postfx", "physics", "scripts", "ui", "audio", "data", "ariaLabel", "seed"];
-const TARGET_KEYS = ["kind", "aspect", "budgetKb", "height", "transparent", "lazy", "pauseOffscreen", "maxDpr", "reducedMotion", "posterTime", "antialias", "shadows", "toneMapping", "exposure"];
-const CAMERA_KEYS = ["type", "fov", "zoom", "position", "target", "near", "far", "controls", "autoRotate", "orbitZoom", "orbitLimits", "parallax", "scrollPath", "follow"];
-const ENV_KEYS = ["background", "lighting", "lightingIntensity", "fog", "ground"];
-const LIGHT_KEYS = ["id", "type", "color", "intensity", "position", "target", "castShadow", "skyColor", "groundColor", "distance", "decay", "angle", "penumbra", "width", "height", "behaviours"];
+const SCENE_KEYS = ["version", "id", "title", "description", "target", "camera", "environment", "lights", "objects", "timeline", "interactions", "postfx", "physics", "scripts", "ui", "audio", "data", "ariaLabel", "seed"];
+const TARGET_KEYS = ["kind", "aspect", "budgetKb", "height", "transparent", "lazy", "pauseOffscreen", "maxDpr", "reducedMotion", "posterTime", "antialias", "shadows", "toneMapping", "exposure", "quality"];
+const CAMERA_KEYS = ["type", "fov", "zoom", "position", "target", "near", "far", "controls", "autoRotate", "orbitZoom", "orbitLimits", "parallax", "scrollPath", "follow", "lookAt", "shake", "shots"];
+const ENV_KEYS = ["background", "lighting", "lightingIntensity", "fog", "ground", "rig", "contactShadows", "shadows"];
+const LIGHT_KEYS = ["id", "type", "color", "intensity", "position", "target", "castShadow", "skyColor", "groundColor", "distance", "decay", "angle", "penumbra", "width", "height", "panel", "volumetric", "shadow", "behaviours"];
 const MATERIAL_KEYS = [
   "preset", "type", "color", "metalness", "roughness", "emissive", "emissiveIntensity", "opacity", "transparent", "wireframe", "flatShading", "side",
   "transmission", "thickness", "ior", "clearcoat", "iridescence", "sheen", "map", "normalMap", "roughnessMap", "repeat", "gradient", "shader", "uniforms",
+  "clearcoatRoughness", "sheenColor", "sheenRoughness", "anisotropy", "anisotropyRotation", "attenuationColor", "attenuationDistance", "specularIntensity", "specularColor",
+  "dispersion", "iridescenceIOR", "iridescenceThicknessRange", "envMapIntensity", "metalnessMap", "aoMap", "emissiveMap", "bumpMap", "displacementMap", "alphaMap",
+  "normalScale", "bumpScale", "aoMapIntensity", "displacementScale", "triplanar", "gradientEmissive",
 ];
-const BODY_KEYS = ["type", "shape", "size", "radius", "mass", "restitution", "friction", "velocity", "fixedRotation"];
-const TIMELINE_KEYS = ["duration", "loop", "autoplay", "trigger", "tracks"];
+const BODY_KEYS = ["type", "shape", "size", "radius", "height", "shapes", "offset", "mass", "restitution", "friction", "material", "velocity", "angularVelocity", "linearDamping", "angularDamping", "gravityScale", "fixedRotation", "character", "sleep", "ccd", "layer", "collidesWith"];
+export const BODY_TYPES = ["static", "dynamic", "kinematic", "trigger"] as const;
+export const BODY_SHAPES = ["box", "sphere", "auto", "cylinder", "capsule", "convex", "trimesh", "heightfield", "compound"] as const;
+export const COLLIDER_SHAPES = ["box", "sphere", "cylinder", "capsule"] as const;
+export const JOINT_TYPES = ["hinge", "point", "distance", "lock", "spring"] as const;
+const PHYSICS_KEYS = ["gravity", "step", "substeps", "iterations", "sleep", "debug", "materials", "contacts", "layers", "joints"];
+const JOINT_KEYS = ["id", "type", "a", "b", "pivot", "axis", "distance", "restLength", "stiffness", "damping", "motor", "maxForce", "collideConnected"];
+// Bodies seen while walking objects (joints / materials / layers are checked in physics()).
+const bodiesSeen = new WeakMap<object, { id: string; path: string; body: Record<string, unknown> }[]>();
 const UI_ELEMENT_KEYS = ["id", "type", "text", "anchor", "style", "value", "action", "visible"];
 
-// Animatable track properties.
-const VEC3_PROPS = ["position", "rotation", "scale"];
-const AXIS = ["x", "y", "z"];
-const MATERIAL_TRACK_PROPS: Record<string, "number" | "color" | "boolean"> = {
-  opacity: "number",
-  color: "color",
-  emissive: "color",
-  emissiveIntensity: "number",
-  metalness: "number",
-  roughness: "number",
-  transmission: "number",
-  iridescence: "number",
-  clearcoat: "number",
-  wireframe: "boolean",
-};
-const CAMERA_TRACK_PROPS: Record<string, "vec3" | "number"> = { position: "vec3", target: "vec3", fov: "number", zoom: "number" };
-const LIGHT_TRACK_PROPS: Record<string, "vec3" | "number" | "color" | "boolean"> = { intensity: "number", color: "color", position: "vec3", target: "vec3", visible: "boolean", angle: "number", distance: "number" };
+// Animatable track properties: src/core/validateMotion.ts.
 
 // Array-of-points params (element shape).
 const POINT_PARAMS: Record<string, { dims: 2 | 3; min: number }> = {
@@ -127,6 +125,7 @@ class V {
   ids = new Map<string, string>(); // id → path where first declared
   objectIds = new Set<string>();
   lightIds = new Set<string>();
+  letterTexts = new Set<string>(); // text ids split into letters ("<id>/<n>" track targets)
 
   add(severity: Issue["severity"], code: string, path: string, message: string, hint?: string) {
     this.issues.push(hint ? { severity, code, path, message, hint } : { severity, code, path, message });
@@ -343,6 +342,8 @@ class V {
           this.error("type", path, `Expected an array for "${spec.name}" of "${entryId}", got ${typeName(v)}.`, spec.description);
           return false;
         }
+        // Arrays of ids (e.g. character accessories): every item must be a listed option.
+        if (spec.options) return v.every((item, i) => this.enumOf(item, spec.options ?? [], `${path}[${i}]`));
         return true;
     }
     return true;
@@ -385,6 +386,8 @@ function sectionLabel(s: CatalogSection): string {
       postfx: "post effect",
       fonts: "font",
       sounds: "sound",
+      textures: "procedural texture",
+      lightRigs: "light rig",
     } as const
   )[s];
 }
@@ -447,14 +450,15 @@ export function validateScene(scene: unknown): Issue[] {
 
   // References now that every id is known.
   cameraRefs(v, s.camera);
-  if (s.timeline !== undefined) timeline(v, s.timeline);
+  v.issues.push(...validateMotion(s, { objects: v.objectIds, lights: v.lightIds, letters: v.letterTexts }));
   if (s.postfx !== undefined) postfx(v, s.postfx);
   if (s.physics !== undefined) physics(v, s.physics);
   if (s.scripts !== undefined) scripts(v, s.scripts);
   if (s.ui !== undefined) ui(v, s.ui);
   if (s.audio !== undefined) audio(v, s.audio);
 
-  if (lights.length === 0 && isObj(s.environment) && (s.environment.lighting === "none" || s.environment.lighting === undefined) && objects.length > 0) {
+  const envLit = isObj(s.environment) && (s.environment.rig !== undefined || (isObj(s.environment.background) && isObj(s.environment.background.sky) && (s.environment.background.sky.preset !== undefined || s.environment.background.sky.physical === true) && s.environment.lighting !== "none"));
+  if (lights.length === 0 && !envLit && isObj(s.environment) && (s.environment.lighting === "none" || s.environment.lighting === undefined) && objects.length > 0) {
     v.warn("no-lights", "lights", "The scene has no lights and no environment lighting: lit materials (standard, physical, toon…) will render black.", 'Add lights (e.g. { "type": "hemisphere", "intensity": 1 } and a directional key light) or set environment.lighting to "studio".');
   }
   return v.issues;
@@ -475,6 +479,7 @@ function target(v: V, t: unknown) {
   v.number(t.maxDpr, "target.maxDpr", { min: 0.5, max: 4 });
   v.enumOf(t.reducedMotion, ["static", "slow", "ignore"], "target.reducedMotion");
   v.number(t.posterTime, "target.posterTime", { min: 0 });
+  v.enumOf(t.quality, ["auto", "low", "medium", "high", "ultra"], "target.quality");
   v.enumOf(t.toneMapping, TONE_MAPPINGS, "target.toneMapping");
   v.number(t.exposure, "target.exposure", { min: 0, exclusiveMin: true, max: 10 });
 }
@@ -555,7 +560,8 @@ function environment(v: V, e: unknown) {
   if (e.lighting !== undefined) {
     if (typeof e.lighting === "string") v.enumOf(e.lighting, LIGHTING_PRESETS, "environment.lighting");
     else if (isObj(e.lighting)) {
-      v.unknownKeys(e.lighting, ["hdri", "intensity"], "environment.lighting", "environment.lighting");
+      v.unknownKeys(e.lighting, ["hdri", "intensity", "rotation"], "environment.lighting", "environment.lighting");
+      v.number(e.lighting.rotation, "environment.lighting.rotation");
       if (v.required(e.lighting, "hdri", "environment.lighting", "an .hdr/.exr path or library id")) v.assetPath(e.lighting.hdri, "environment.lighting.hdri", HDRI_EXT, "an HDRI");
       v.number(e.lighting.intensity, "environment.lighting.intensity", { min: 0 });
     } else v.error("type", "environment.lighting", `Invalid lighting ${show(e.lighting)}.`, `Use a preset (${listOptions(LIGHTING_PRESETS)}) or { "hdri": "assets/hdris/x.hdr" }.`);
@@ -565,9 +571,12 @@ function environment(v: V, e: unknown) {
     const f = e.fog;
     if (!isObj(f)) v.error("type", "environment.fog", "fog must be an object.", 'Use { "color": "#ccd", "near": 10, "far": 50 } (linear) or { "color": "#ccd", "density": 0.03 } (exponential).');
     else {
-      v.unknownKeys(f, ["color", "near", "far", "density"], "environment.fog", "fog");
+      v.unknownKeys(f, ["color", "near", "far", "density", "height", "falloff"], "environment.fog", "fog");
       v.color(f.color, "environment.fog.color");
       if (f.density !== undefined) v.number(f.density, "environment.fog.density", { min: 0, max: 1 });
+      v.number(f.height, "environment.fog.height");
+      v.number(f.falloff, "environment.fog.falloff", { min: 0, exclusiveMin: true });
+      if ((f.height !== undefined || f.falloff !== undefined) && f.density === undefined) v.warn("ignored", "environment.fog.height", "Height fog needs an exponential fog (density).", 'Use { "density": 0.04, "height": 0, "falloff": 0.3 }.');
       v.number(f.near, "environment.fog.near", { min: 0 });
       v.number(f.far, "environment.fog.far", { min: 0 });
       if (isNum(f.near) && isNum(f.far) && f.far <= f.near) v.error("range", "environment.fog.far", "fog.far must be greater than fog.near.");
@@ -577,7 +586,8 @@ function environment(v: V, e: unknown) {
     const g = e.ground;
     if (!isObj(g)) v.error("type", "environment.ground", "ground must be an object.", 'Example: { "y": 0, "shadowOnly": true }.');
     else {
-      v.unknownKeys(g, ["y", "size", "color", "shadowOnly", "grid", "roughness"], "environment.ground", "ground");
+      v.unknownKeys(g, ["y", "size", "color", "shadowOnly", "grid", "roughness", "opacity"], "environment.ground", "ground");
+      v.number(g.opacity, "environment.ground.opacity", { min: 0, max: 1 });
       v.number(g.y, "environment.ground.y");
       v.number(g.size, "environment.ground.size", { min: 0, exclusiveMin: true });
       v.color(g.color, "environment.ground.color");
@@ -586,6 +596,48 @@ function environment(v: V, e: unknown) {
       v.number(g.roughness, "environment.ground.roughness", { min: 0, max: 1 });
     }
   }
+  if (e.rig !== undefined) {
+    const r = e.rig;
+    const ids = CATALOG.lightRigs.map((x) => x.id);
+    const id = typeof r === "string" ? r : isObj(r) ? r.preset : undefined;
+    if (!(typeof r === "string" || isObj(r))) v.error("type", "environment.rig", `Invalid rig ${show(r)}.`, `Use a rig id (${listOptions(ids)}) or { "preset": "softbox", "intensity": 1 }.`);
+    else if (typeof id !== "string") v.error("required", "environment.rig.preset", 'rig needs a "preset" id.', `One of ${listOptions(ids)}.`);
+    else {
+      const entry = catalogRef(v, "lightRigs", id, typeof r === "string" ? "environment.rig" : "environment.rig.preset");
+      if (entry && isObj(r)) v.params("lightRigs", entry, r, "environment.rig", ["preset"]);
+    }
+  }
+  if (e.contactShadows !== undefined && typeof e.contactShadows !== "boolean") {
+    const c = e.contactShadows;
+    const cp = "environment.contactShadows";
+    if (!isObj(c)) v.error("type", cp, "contactShadows must be true or an object.", 'Example: { "opacity": 0.6, "blur": 2.5 }.');
+    else {
+      v.unknownKeys(c, ["y", "size", "opacity", "blur", "far", "resolution", "color", "frames"], cp, "contactShadows");
+      v.number(c.y, `${cp}.y`);
+      v.number(c.size, `${cp}.size`, { min: 0, exclusiveMin: true });
+      v.number(c.opacity, `${cp}.opacity`, { min: 0, max: 1 });
+      v.number(c.blur, `${cp}.blur`, { min: 0, max: 20 });
+      v.number(c.far, `${cp}.far`, { min: 0, exclusiveMin: true });
+      v.number(c.resolution, `${cp}.resolution`, { min: 64, max: 2048, integer: true });
+      v.color(c.color, `${cp}.color`);
+      v.number(c.frames, `${cp}.frames`, { min: 0, integer: true });
+    }
+  }
+  if (e.shadows !== undefined) {
+    const sh = e.shadows;
+    if (!isObj(sh)) v.error("type", "environment.shadows", "shadows must be an object.", 'Example: { "type": "vsm", "softness": 6 }.');
+    else {
+      v.unknownKeys(sh, ["type", "softness", "mapSize", "intensity"], "environment.shadows", "shadows");
+      v.enumOf(sh.type, ["pcf", "vsm"], "environment.shadows.type");
+      shadowParams(v, sh, "environment.shadows");
+    }
+  }
+}
+
+function shadowParams(v: V, sh: Obj, p: string) {
+  v.number(sh.softness, `${p}.softness`, { min: 0, max: 30 });
+  v.number(sh.mapSize, `${p}.mapSize`, { min: 256, max: 4096, integer: true });
+  v.number(sh.intensity, `${p}.intensity`, { min: 0, max: 1 });
 }
 
 function background(v: V, b: unknown) {
@@ -594,22 +646,44 @@ function background(v: V, b: unknown) {
     if (b !== "transparent") v.color(b, p);
     return;
   }
-  if (!isObj(b)) return v.error("type", p, `Invalid background ${show(b)}.`, 'Use a colour ("#101020"), "transparent", { "gradient": ["#a", "#b"], "angle": 0 }, { "radial": [...] }, { "sky": {...} } or { "hdri": "assets/hdris/x.hdr" }.');
+  if (!isObj(b)) return v.error("type", p, `Invalid background ${show(b)}.`, 'Use a colour ("#101020"), "transparent", { "gradient": ["#a", "#b"], "angle": 0 }, { "radial": [...] }, { "meshGradient": [...] }, { "sky": {...} } or { "hdri": "assets/hdris/x.hdr" }.');
   const keys = Object.keys(b);
-  const kind = ["gradient", "radial", "sky", "hdri"].find((k) => k in b);
-  if (!kind) return v.error("type", p, `Background object needs one of "gradient", "radial", "sky" or "hdri" (got keys ${listOptions(keys)}).`, 'Example: { "gradient": ["#0f0c29", "#302b63", "#24243e"], "angle": 0 }.');
+  const kind = ["gradient", "radial", "meshGradient", "sky", "hdri"].find((k) => k in b);
+  if (!kind) return v.error("type", p, `Background object needs one of "gradient", "radial", "meshGradient", "sky" or "hdri" (got keys ${listOptions(keys)}).`, 'Example: { "gradient": ["#0f0c29", "#302b63", "#24243e"], "angle": 0 }.');
   if (kind === "gradient") {
-    v.unknownKeys(b, ["gradient", "angle"], p, "a gradient background");
+    v.unknownKeys(b, ["gradient", "angle", "grain"], p, "a gradient background");
     v.colors(b.gradient, `${p}.gradient`, 2);
     v.number(b.angle, `${p}.angle`);
+    v.number(b.grain, `${p}.grain`, { min: 0, max: 1 });
   } else if (kind === "radial") {
-    v.unknownKeys(b, ["radial"], p, "a radial background");
+    v.unknownKeys(b, ["radial", "center", "radius", "grain"], p, "a radial background");
     v.colors(b.radial, `${p}.radial`, 2);
+    v.vec(b.center, 2, `${p}.center`);
+    v.number(b.radius, `${p}.radius`, { min: 0, exclusiveMin: true });
+    v.number(b.grain, `${p}.grain`, { min: 0, max: 1 });
+  } else if (kind === "meshGradient") {
+    v.unknownKeys(b, ["meshGradient", "speed", "scale", "seed", "grain"], p, "a mesh-gradient background");
+    v.colors(b.meshGradient, `${p}.meshGradient`, 2);
+    if (Array.isArray(b.meshGradient) && b.meshGradient.length > 6) v.warn("ignored", `${p}.meshGradient`, "Only the first 6 colours are used.");
+    v.number(b.speed, `${p}.speed`, { min: 0 });
+    v.number(b.scale, `${p}.scale`, { min: 0.05 });
+    v.number(b.seed, `${p}.seed`);
+    v.number(b.grain, `${p}.grain`, { min: 0, max: 1 });
   } else if (kind === "sky") {
     v.unknownKeys(b, ["sky"], p, "a sky background");
     const sky = b.sky;
     if (!isObj(sky)) return v.error("type", `${p}.sky`, "sky must be an object.", 'Example: { "top": "#4a90d9", "horizon": "#f6d6a8", "sun": { "direction": [1, 0.4, 0.2] } }.');
-    v.unknownKeys(sky, ["top", "horizon", "bottom", "sun", "stars"], `${p}.sky`, "sky");
+    v.unknownKeys(sky, ["top", "horizon", "bottom", "sun", "stars", "physical", "preset", "turbidity", "rayleigh", "mieCoefficient", "mieDirectionalG", "exposure", "clouds"], `${p}.sky`, "sky");
+    v.boolean(sky.physical, `${p}.sky.physical`);
+    v.enumOf(sky.preset, SKY_PRESETS, `${p}.sky.preset`);
+    v.number(sky.turbidity, `${p}.sky.turbidity`, { min: 0, max: 30 });
+    v.number(sky.rayleigh, `${p}.sky.rayleigh`, { min: 0, max: 6 });
+    v.number(sky.mieCoefficient, `${p}.sky.mieCoefficient`, { min: 0, max: 0.1 });
+    v.number(sky.mieDirectionalG, `${p}.sky.mieDirectionalG`, { min: 0, max: 0.999 });
+    v.number(sky.exposure, `${p}.sky.exposure`, { min: 0 });
+    v.number(sky.clouds, `${p}.sky.clouds`, { min: 0, max: 1 });
+    const physical = sky.physical === true || sky.preset !== undefined || sky.turbidity !== undefined || sky.rayleigh !== undefined;
+    if (physical) for (const k of ["top", "horizon", "bottom"]) if (sky[k] !== undefined) v.warn("ignored", `${p}.sky.${k}`, `"${k}" is ignored by the physical sky (preset / physical).`, "Remove it, or drop preset/physical for a colour-gradient sky.");
     v.color(sky.top, `${p}.sky.top`);
     v.color(sky.horizon, `${p}.sky.horizon`);
     v.color(sky.bottom, `${p}.sky.bottom`);
@@ -617,16 +691,34 @@ function background(v: V, b: unknown) {
     if (sky.sun !== undefined && sky.sun !== false) {
       if (!isObj(sky.sun)) v.error("type", `${p}.sky.sun`, "sun must be an object or false.");
       else {
-        v.unknownKeys(sky.sun, ["direction", "color", "size"], `${p}.sky.sun`, "sun");
+        v.unknownKeys(sky.sun, ["direction", "elevation", "azimuth", "color", "size", "light", "intensity", "castShadow"], `${p}.sky.sun`, "sun");
         v.vec(sky.sun.direction, 3, `${p}.sky.sun.direction`);
+        v.number(sky.sun.elevation, `${p}.sky.sun.elevation`, { min: -90, max: 90 });
+        v.number(sky.sun.azimuth, `${p}.sky.sun.azimuth`);
         v.color(sky.sun.color, `${p}.sky.sun.color`);
         v.number(sky.sun.size, `${p}.sky.sun.size`, { min: 0 });
+        v.boolean(sky.sun.light, `${p}.sky.sun.light`);
+        v.number(sky.sun.intensity, `${p}.sky.sun.intensity`, { min: 0 });
+        v.boolean(sky.sun.castShadow, `${p}.sky.sun.castShadow`);
+        if (!physical) for (const k of ["light", "intensity", "castShadow"]) if (sky.sun[k] !== undefined) v.warn("ignored", `${p}.sky.sun.${k}`, `sun.${k} only applies to the physical sky (it adds a sun light).`, 'Set "preset" (e.g. "golden-hour") or "physical": true, or add a directional light yourself.');
       }
     }
   } else {
-    v.unknownKeys(b, ["hdri", "blur"], p, "an HDRI background");
+    v.unknownKeys(b, ["hdri", "blur", "intensity", "rotation", "groundProjection"], p, "an HDRI background");
     v.assetPath(b.hdri, `${p}.hdri`, HDRI_EXT, "an HDRI");
     v.number(b.blur, `${p}.blur`, { min: 0, max: 1 });
+    v.number(b.intensity, `${p}.intensity`, { min: 0 });
+    v.number(b.rotation, `${p}.rotation`);
+    const gp = b.groundProjection;
+    if (gp !== undefined && typeof gp !== "boolean") {
+      if (!isObj(gp)) v.error("type", `${p}.groundProjection`, "groundProjection must be true or { height, radius }.");
+      else {
+        v.unknownKeys(gp, ["height", "radius"], `${p}.groundProjection`, "groundProjection");
+        v.number(gp.height, `${p}.groundProjection.height`, { min: 0, exclusiveMin: true });
+        v.number(gp.radius, `${p}.groundProjection.radius`, { min: 0, exclusiveMin: true });
+      }
+    }
+    if (gp && b.blur) v.warn("ignored", `${p}.blur`, "blur is ignored with groundProjection (the photo is projected sharp).");
   }
 }
 
@@ -649,6 +741,28 @@ function light(v: V, l: unknown, path: string) {
   v.number(l.penumbra, `${p}.penumbra`, { min: 0, max: 1 });
   v.number(l.width, `${p}.width`, { min: 0 });
   v.number(l.height, `${p}.height`, { min: 0 });
+  v.boolean(l.panel, `${p}.panel`);
+  if (l.panel && l.type !== "rect") v.warn("ignored", `${p}.panel`, "panel only applies to rect lights.");
+  if (l.volumetric !== undefined && typeof l.volumetric !== "boolean") {
+    if (!isObj(l.volumetric)) v.error("type", `${p}.volumetric`, "volumetric must be true or { intensity, length, color }.");
+    else {
+      v.unknownKeys(l.volumetric, ["intensity", "length", "color"], `${p}.volumetric`, "volumetric");
+      v.number(l.volumetric.intensity, `${p}.volumetric.intensity`, { min: 0 });
+      v.number(l.volumetric.length, `${p}.volumetric.length`, { min: 0, exclusiveMin: true });
+      v.color(l.volumetric.color, `${p}.volumetric.color`);
+    }
+  }
+  if (l.volumetric && l.type !== "spot") v.warn("ignored", `${p}.volumetric`, "volumetric only applies to spot lights.", 'Use "type": "spot" (with "angle" and "target") for a light cone.');
+  if (l.shadow !== undefined) {
+    if (!isObj(l.shadow)) v.error("type", `${p}.shadow`, "shadow must be an object.", 'Example: { "softness": 6, "mapSize": 2048 }.');
+    else {
+      v.unknownKeys(l.shadow, ["softness", "mapSize", "bias", "normalBias", "intensity"], `${p}.shadow`, "shadow");
+      shadowParams(v, l.shadow, `${p}.shadow`);
+      v.number(l.shadow.bias, `${p}.shadow.bias`, { min: -0.1, max: 0.1 });
+      v.number(l.shadow.normalBias, `${p}.shadow.normalBias`, { min: 0, max: 1 });
+      if (!l.castShadow) v.info("ignored", `${p}.shadow`, "shadow settings only apply when castShadow is true.");
+    }
+  }
   if ((l.type === "directional" || l.type === "spot" || l.type === "point" || l.type === "rect") && l.position === undefined) {
     v.info("default", `${p}.position`, `This ${l.type} light has no position (the runtime uses a default).`, "Set position [x, y, z] explicitly so lighting is predictable, e.g. [5, 8, 5].");
   }
@@ -692,7 +806,14 @@ function object(v: V, o: unknown, fallback: string) {
     else if (/^\s*javascript:/i.test(o.href)) v.error("forbidden", `${p}.href`, "javascript: links are not allowed.", 'Use an http(s) URL, a relative page path or "#anchor".');
   }
   if (o.userData !== undefined && !isObj(o.userData)) v.error("type", `${p}.userData`, "userData must be an object.");
-  if (o.body !== undefined) body(v, o.body, `${p}.body`);
+  if (o.body !== undefined) {
+    body(v, o.body, `${p}.body`);
+    if (isObj(o.body) && typeof o.id === "string") {
+      const list = bodiesSeen.get(v) ?? [];
+      list.push({ id: o.id, path: `${p}.body`, body: o.body });
+      bodiesSeen.set(v, list);
+    }
+  }
   behaviours(v, o.behaviours, `${p}.behaviours`);
 
   switch (k) {
@@ -702,13 +823,16 @@ function object(v: V, o: unknown, fallback: string) {
       break;
     case "text":
       if (v.required(o, "text", p, "the text to display")) v.string(o.text, `${p}.text`, { nonEmpty: true });
-      if (o.font !== undefined) catalogRef(v, "fonts", o.font, `${p}.font`);
+      // A catalog font id, or a custom three.js typeface JSON (project path / library ref).
+      if (typeof o.font === "string" && (o.font.includes("/") || o.font.includes(":"))) v.assetPath(o.font, `${p}.font`, [".json"], "a three.js typeface JSON font (scripts/convert-font.mjs)");
+      else if (o.font !== undefined) catalogRef(v, "fonts", o.font, `${p}.font`);
       v.number(o.size, `${p}.size`, { min: 0, exclusiveMin: true });
       v.number(o.depth, `${p}.depth`, { min: 0 });
       v.number(o.bevel, `${p}.bevel`, { min: 0 });
       v.enumOf(o.align, ["left", "center", "right"], `${p}.align`);
       v.number(o.letterSpacing, `${p}.letterSpacing`);
       v.number(o.lineHeight, `${p}.lineHeight`, { min: 0, exclusiveMin: true });
+      textExtras(v, o, p);
       material(v, o.material, `${p}.material`);
       break;
     case "model":
@@ -719,7 +843,7 @@ function object(v: V, o: unknown, fallback: string) {
         const a = o.animation;
         if (!isObj(a)) v.error("type", `${p}.animation`, "animation must be an object.", 'Example: { "clip": "Walk", "loop": true }.');
         else {
-          v.unknownKeys(a, ["clip", "loop", "speed", "crossfade"], `${p}.animation`, "animation");
+          v.unknownKeys(a, ["clip", "loop", "speed", "crossfade", "offset", "blend"], `${p}.animation`, "animation");
           if (a.clip !== undefined && typeof a.clip !== "string" && !(isNum(a.clip) && Number.isInteger(a.clip) && a.clip >= 0)) v.error("type", `${p}.animation.clip`, "clip must be a clip name or a clip index (integer ≥ 0).");
           v.boolean(a.loop, `${p}.animation.loop`);
           v.number(a.speed, `${p}.animation.speed`);
@@ -759,7 +883,7 @@ function object(v: V, o: unknown, fallback: string) {
       v.number(o.lifetime, `${p}.lifetime`, { min: 0, exclusiveMin: true });
       v.number(o.opacity, `${p}.opacity`, { min: 0, max: 1 });
       v.enumOf(o.blending, ["normal", "additive"], `${p}.blending`);
-      v.enumOf(o.shape, ["point", "square", "circle", "star", "spark"], `${p}.shape`);
+      v.enumOf(o.shape, ["point", "soft", "square", "circle", "star", "spark", "streak", "heart", "bubble", "smoke", "petal", "leaf", "ring"], `${p}.shape`);
       v.number(o.seed, `${p}.seed`, { integer: true });
       if (o.preset === undefined && o.count === undefined) v.info("default", p, "Particles without preset or count use runtime defaults.", `Set a preset (${listOptions(CATALOG.particlePresets.map((x) => x.id))}) and/or count.`);
       break;
@@ -777,6 +901,11 @@ function object(v: V, o: unknown, fallback: string) {
       v.number(o.size, `${p}.size`, { min: 0, exclusiveMin: true });
       v.number(o.depth, `${p}.depth`, { min: 0 });
       v.number(o.bevel, `${p}.bevel`, { min: 0 });
+      v.enumOf(o.fit, ["width", "height", "max"], `${p}.fit`);
+      v.boolean(o.keepColors, `${p}.keepColors`);
+      v.boolean(o.strokes, `${p}.strokes`);
+      v.number(o.curveSegments, `${p}.curveSegments`, { integer: true, min: 1, max: 64 });
+      v.number(o.layerGap, `${p}.layerGap`, { min: 0 });
       material(v, o.material, `${p}.material`);
       break;
   }
@@ -829,8 +958,26 @@ function material(v: V, m: unknown, path: string) {
   v.number(m.ior, `${path}.ior`, { min: 1, max: 2.333 });
   for (const k of ["transparent", "wireframe", "flatShading"]) v.boolean(m[k], `${path}.${k}`);
   v.enumOf(m.side, ["front", "back", "double"], `${path}.side`);
-  for (const k of ["map", "normalMap", "roughnessMap"]) v.assetPath(m[k], `${path}.${k}`, TEXTURE_EXT, "a texture image");
+  for (const k of MATERIAL_TEXTURE_SLOTS) textureRef(v, m[k], `${path}.${k}`);
   v.vec(m.repeat, 2, `${path}.repeat`);
+  for (const k of ["clearcoatRoughness", "sheenRoughness", "anisotropy", "specularIntensity", "aoMapIntensity"]) v.number(m[k], `${path}.${k}`, { min: 0, max: 1 });
+  for (const k of ["sheenColor", "attenuationColor", "specularColor"]) v.color(m[k], `${path}.${k}`);
+  v.number(m.anisotropyRotation, `${path}.anisotropyRotation`);
+  v.number(m.attenuationDistance, `${path}.attenuationDistance`, { min: 0, exclusiveMin: true });
+  v.number(m.dispersion, `${path}.dispersion`, { min: 0, max: 10 });
+  v.number(m.iridescenceIOR, `${path}.iridescenceIOR`, { min: 1, max: 2.333 });
+  v.vec(m.iridescenceThicknessRange, 2, `${path}.iridescenceThicknessRange`);
+  v.number(m.envMapIntensity, `${path}.envMapIntensity`, { min: 0 });
+  v.number(m.normalScale, `${path}.normalScale`, { min: -10, max: 10 });
+  v.number(m.bumpScale, `${path}.bumpScale`, { min: -10, max: 10 });
+  v.number(m.displacementScale, `${path}.displacementScale`);
+  if (m.triplanar !== undefined && typeof m.triplanar !== "boolean") v.number(m.triplanar, `${path}.triplanar`, { min: 0, exclusiveMin: true });
+  v.boolean(m.gradientEmissive, `${path}.gradientEmissive`);
+  const PHYSICAL_ONLY = ["clearcoatRoughness", "sheenColor", "sheenRoughness", "anisotropy", "anisotropyRotation", "attenuationColor", "attenuationDistance", "specularIntensity", "specularColor", "dispersion", "iridescenceIOR", "iridescenceThicknessRange"];
+  const resolvedType = m.type ?? (typeof m.preset === "string" ? (materialPreset(m.preset)?.props.type as string | undefined) : undefined);
+  if (resolvedType !== undefined && resolvedType !== "physical") {
+    for (const k of PHYSICAL_ONLY) if (m[k] !== undefined) v.warn("ignored", `${path}.${k}`, `"${k}" needs a physical material (type is ${show(resolvedType)}).`, 'Set "type": "physical".');
+  }
   if (m.gradient !== undefined) v.colors(m.gradient, `${path}.gradient`, 2);
   if (m.type === "gradient" && m.gradient === undefined) v.error("required", `${path}.gradient`, 'material type "gradient" needs a "gradient" colour list.', 'Add "gradient": ["#ff7eb3", "#7afcff"].');
   if (isNum(m.opacity) && m.opacity < 1 && m.transparent !== true && !(m.transmission !== undefined)) {
@@ -849,6 +996,17 @@ function material(v: V, m: unknown, path: string) {
   } else if (m.uniforms !== undefined) {
     v.warn("ignored", `${path}.uniforms`, "uniforms are only used by shader materials.", 'Set "type": "shader" and "shader": "<id>", or remove uniforms.');
   }
+}
+
+function textureRef(v: V, t: unknown, path: string) {
+  if (t === undefined) return;
+  if (isObj(t)) {
+    if (!v.required(t, "procedural", path, `a procedural texture id (${listOptions(CATALOG.textures.map((x) => x.id))})`)) return;
+    const entry = catalogRef(v, "textures", t.procedural, `${path}.procedural`);
+    if (entry) v.params("textures", entry, t, path, ["procedural"]);
+    return;
+  }
+  v.assetPath(t, path, TEXTURE_EXT, "a texture image");
 }
 
 function behaviours(v: V, list: unknown, path: string) {
@@ -911,117 +1069,130 @@ function layout(v: V, l: unknown, path: string) {
 function body(v: V, b: unknown, path: string) {
   if (!isObj(b)) return v.error("type", path, "body must be an object.", 'Example: { "type": "dynamic", "shape": "box", "mass": 1 }.');
   v.unknownKeys(b, BODY_KEYS, path, "a physics body");
-  if (v.required(b, "type", path, '"static" | "dynamic" | "kinematic" | "trigger"')) v.enumOf(b.type, ["static", "dynamic", "kinematic", "trigger"], `${path}.type`);
-  v.enumOf(b.shape, ["box", "sphere", "auto"], `${path}.shape`);
+  if (v.required(b, "type", path, '"static" | "dynamic" | "kinematic" | "trigger"')) v.enumOf(b.type, BODY_TYPES, `${path}.type`);
+  v.enumOf(b.shape, BODY_SHAPES, `${path}.shape`);
   v.vec(b.size, 3, `${path}.size`);
   v.number(b.radius, `${path}.radius`, { min: 0, exclusiveMin: true });
+  v.number(b.height, `${path}.height`, { min: 0, exclusiveMin: true });
+  v.vec(b.offset, 3, `${path}.offset`);
   v.number(b.mass, `${path}.mass`, { min: 0 });
   v.number(b.restitution, `${path}.restitution`, { min: 0, max: 1 });
   v.number(b.friction, `${path}.friction`, { min: 0 });
+  v.string(b.material, `${path}.material`, { nonEmpty: true });
   v.vec(b.velocity, 3, `${path}.velocity`);
+  v.vec(b.angularVelocity, 3, `${path}.angularVelocity`);
+  v.number(b.linearDamping, `${path}.linearDamping`, { min: 0, max: 1 });
+  v.number(b.angularDamping, `${path}.angularDamping`, { min: 0, max: 1 });
+  v.number(b.gravityScale, `${path}.gravityScale`);
   v.boolean(b.fixedRotation, `${path}.fixedRotation`);
+  v.boolean(b.character, `${path}.character`);
+  v.boolean(b.sleep, `${path}.sleep`);
+  v.boolean(b.ccd, `${path}.ccd`);
+  v.string(b.layer, `${path}.layer`, { nonEmpty: true });
+  v.stringArray(b.collidesWith, `${path}.collidesWith`);
+  if (b.shapes !== undefined) {
+    if (!Array.isArray(b.shapes) || b.shapes.length === 0) v.error("type", `${path}.shapes`, "shapes must be a non-empty array of colliders.", 'Example: [{ "shape": "box", "size": [1, 0.2, 1] }, { "shape": "sphere", "radius": 0.3, "offset": [0, 0.5, 0] }].');
+    else
+      b.shapes.forEach((c, i) => {
+        const cp = `${path}.shapes[${i}]`;
+        if (!isObj(c)) return v.error("type", cp, "A collider must be an object.", 'Example: { "shape": "box", "size": [1, 1, 1], "offset": [0, 0.5, 0] }.');
+        v.unknownKeys(c, ["shape", "size", "radius", "height", "offset", "rotation"], cp, "a collider");
+        if (v.required(c, "shape", cp, listOptions(COLLIDER_SHAPES))) v.enumOf(c.shape, COLLIDER_SHAPES, `${cp}.shape`);
+        v.vec(c.size, 3, `${cp}.size`);
+        v.number(c.radius, `${cp}.radius`, { min: 0, exclusiveMin: true });
+        v.number(c.height, `${cp}.height`, { min: 0, exclusiveMin: true });
+        v.vec(c.offset, 3, `${cp}.offset`);
+        v.vec(c.rotation, 3, `${cp}.rotation`);
+      });
+    if (b.shape !== undefined && b.shape !== "compound") v.warn("ignored", `${path}.shapes`, `shapes is only used with shape "compound" (shape is ${show(b.shape)}).`, 'Set "shape": "compound" or remove "shapes".');
+  }
+  if (b.shape === "compound" && b.shapes === undefined) v.error("required", `${path}.shapes`, 'shape "compound" needs a "shapes" array.', 'Example: "shapes": [{ "shape": "box", "size": [1, 0.2, 1] }, { "shape": "sphere", "radius": 0.3, "offset": [0, 0.5, 0] }].');
+  if ((b.shape === "trimesh" || b.shape === "heightfield") && b.type === "dynamic") {
+    v.error("invalid", `${path}.shape`, `shape "${b.shape}" only works for static (or kinematic) bodies.`, 'Use "convex" (hull of the mesh) or "box" / "compound" for dynamic bodies.');
+  }
+  if (b.mass !== undefined && b.type !== undefined && b.type !== "dynamic") v.info("ignored", `${path}.mass`, `mass is ignored on ${show(b.type)} bodies (they have infinite mass).`);
 }
 
-// ─── Timeline ────────────────────────────────────────────────────────────
-
-type ValueKind = "vec3" | "number" | "color" | "boolean" | "number|vec3";
-
-// Resolves a track target to the kind of value its keys must hold.
-export function trackValueKind(target: string, ids: { objects: Set<string>; lights: Set<string> }): { kind?: ValueKind; error?: { message: string; hint: string } } {
-  const dot = target.indexOf(".");
-  if (dot < 1) return { error: { message: `Track target "${target}" must be "<id>.<property>".`, hint: 'Examples: "logo.position", "logo.rotation.y", "logo.material.opacity", "camera.position", "key.intensity".' } };
-  const head = target.slice(0, dot);
-  const prop = target.slice(dot + 1);
-  const parts = prop.split(".");
-  if (head === "camera") {
-    const k = CAMERA_TRACK_PROPS[prop];
-    if (prop.match(/^(position|target)\.[xyz]$/)) return { kind: "number" };
-    if (!k) return { error: { message: `Camera property "${prop}" is not animatable.`, hint: `${didYouMean(prop, Object.keys(CAMERA_TRACK_PROPS))}Use one of: ${listOptions(Object.keys(CAMERA_TRACK_PROPS))} (or position.x …).` } };
-    return { kind: k };
+function joint(v: V, j: unknown, p: string, bodies: Map<string, Record<string, unknown>>) {
+  if (!isObj(j)) return v.error("type", p, "A joint must be an object.", 'Example: { "type": "hinge", "a": "door", "pivot": [1, 1, 0], "axis": [0, 1, 0] }.');
+  v.unknownKeys(j, JOINT_KEYS, p, "a joint");
+  if (v.required(j, "type", p, listOptions(JOINT_TYPES))) v.enumOf(j.type, JOINT_TYPES, `${p}.type`);
+  v.string(j.id, `${p}.id`, { nonEmpty: true });
+  const ref = (key: "a" | "b") => {
+    const id = j[key];
+    if (id === undefined) return;
+    if (typeof id !== "string") return v.error("type", `${p}.${key}`, `${key} must be an object id.`);
+    if (!v.objectIds.has(id)) return v.error("unknown-ref", `${p}.${key}`, `Joint ${key} "${id}" is not an object id.`, `${didYouMean(id, v.objectIds)}Object ids: ${listOptions([...v.objectIds])}.`);
+    if (!bodies.has(id)) return v.error("invalid", `${p}.${key}`, `Object "${id}" has no body: joints connect physics bodies.`, `Add "body": { "type": "dynamic" } to "${id}".`);
+  };
+  if (v.required(j, "a", p, "the id of an object with a body")) ref("a");
+  ref("b");
+  if (typeof j.a === "string" && j.a === j.b) v.error("invalid", `${p}.b`, "A joint needs two different bodies.", "Omit b to anchor the body to the world.");
+  const ta = typeof j.a === "string" ? bodies.get(j.a)?.type : undefined;
+  const tb = typeof j.b === "string" ? bodies.get(j.b)?.type : undefined;
+  if (ta && ta !== "dynamic" && (j.b === undefined || (tb && tb !== "dynamic"))) v.warn("no-dynamic", p, "This joint connects no dynamic body: it will have no visible effect.", 'Make "a" (or "b") a dynamic body.');
+  v.vec(j.pivot, 3, `${p}.pivot`);
+  v.vec(j.axis, 3, `${p}.axis`);
+  if (Array.isArray(j.axis) && j.axis.every(isNum) && j.axis.every((x) => x === 0)) v.error("range", `${p}.axis`, "axis must not be [0, 0, 0].", "Example: [0, 1, 0] (vertical hinge, a door) or [0, 0, 1] (a pendulum swinging in the XY plane).");
+  v.number(j.distance, `${p}.distance`, { min: 0 });
+  v.number(j.restLength, `${p}.restLength`, { min: 0 });
+  v.number(j.stiffness, `${p}.stiffness`, { min: 0 });
+  v.number(j.damping, `${p}.damping`, { min: 0 });
+  v.number(j.maxForce, `${p}.maxForce`, { min: 0, exclusiveMin: true });
+  v.boolean(j.collideConnected, `${p}.collideConnected`);
+  if (j.motor !== undefined) {
+    if (!isObj(j.motor)) v.error("type", `${p}.motor`, "motor must be an object.", 'Example: { "speed": 90, "maxForce": 50 } (degrees / s).');
+    else {
+      v.unknownKeys(j.motor, ["speed", "maxForce"], `${p}.motor`, "a motor");
+      if (v.required(j.motor, "speed", `${p}.motor`, "degrees / s")) v.number(j.motor.speed, `${p}.motor.speed`);
+      v.number(j.motor.maxForce, `${p}.motor.maxForce`, { min: 0, exclusiveMin: true });
+    }
+    if (j.type !== "hinge") v.warn("ignored", `${p}.motor`, `motor only drives hinge joints (this one is ${show(j.type)}).`);
   }
-  if (ids.lights.has(head) && !ids.objects.has(head)) {
-    const k = LIGHT_TRACK_PROPS[prop];
-    if (prop.match(/^(position|target)\.[xyz]$/)) return { kind: "number" };
-    if (!k) return { error: { message: `Light property "${prop}" is not animatable.`, hint: `${didYouMean(prop, Object.keys(LIGHT_TRACK_PROPS))}Use one of: ${listOptions(Object.keys(LIGHT_TRACK_PROPS))}.` } };
-    return { kind: k };
-  }
-  if (!ids.objects.has(head)) {
-    const all = [...ids.objects, ...ids.lights, "camera"];
-    return { error: { message: `Track target "${target}" refers to "${head}", which is not an object id, a light id or "camera".`, hint: `${didYouMean(head, all)}Known ids: ${listOptions(all)}.` } };
-  }
-  if (VEC3_PROPS.includes(parts[0])) {
-    if (parts.length === 1) return { kind: parts[0] === "scale" ? "number|vec3" : "vec3" };
-    if (parts.length === 2 && AXIS.includes(parts[1])) return { kind: "number" };
-  }
-  if (prop === "visible") return { kind: "boolean" };
-  if (parts[0] === "material") {
-    if (parts.length === 2 && MATERIAL_TRACK_PROPS[parts[1]]) return { kind: MATERIAL_TRACK_PROPS[parts[1]] };
-    if (parts.length === 3 && parts[1] === "uniforms") return { kind: "number" };
-  }
-  const options = ["position", "position.x", "rotation", "rotation.y", "scale", "visible", ...Object.keys(MATERIAL_TRACK_PROPS).map((k) => `material.${k}`), "material.uniforms.<name>"];
-  return { error: { message: `Property "${prop}" of "${head}" is not animatable.`, hint: `${didYouMean(prop, options)}Animatable: ${listOptions(options)}.` } };
+  const only: Record<string, string[]> = { distance: ["distance"], restLength: ["spring"], stiffness: ["spring"], damping: ["spring"], axis: ["hinge"] };
+  for (const [k, types] of Object.entries(only)) if (j[k] !== undefined && typeof j.type === "string" && !types.includes(j.type)) v.warn("ignored", `${p}.${k}`, `${k} is ignored on ${show(j.type)} joints (used by ${types.join(", ")}).`);
 }
 
-function keyValueOk(kind: ValueKind, value: unknown): boolean {
-  switch (kind) {
-    case "vec3":
-      return Array.isArray(value) && value.length === 3 && value.every(isNum);
-    case "number":
-      return isNum(value);
-    case "color":
-      return isValidColor(value);
-    case "boolean":
-      return typeof value === "boolean";
-    case "number|vec3":
-      return isNum(value) || (Array.isArray(value) && value.length === 3 && value.every(isNum));
+// Text options beyond the basics: kerning, wrap, outline, letters, reveal.
+const TEXT_REVEAL_EFFECTS = ["rise", "fade", "scale", "spin", "drop"];
+function textExtras(v: V, o: Obj, p: string) {
+  v.boolean(o.kerning, `${p}.kerning`);
+  v.number(o.maxWidth, `${p}.maxWidth`, { min: 0, exclusiveMin: true });
+  v.number(o.curveSegments, `${p}.curveSegments`, { integer: true, min: 1, max: 32 });
+  v.boolean(o.splitLetters, `${p}.splitLetters`);
+  if (o.outline !== undefined && typeof o.outline !== "boolean") {
+    if (!isObj(o.outline)) v.error("type", `${p}.outline`, "outline must be true or an object.", 'Example: { "width": 0.06, "color": "#1a1033" }.');
+    else {
+      const ol = o.outline;
+      v.unknownKeys(ol, ["width", "color", "depth", "material"], `${p}.outline`, "outline");
+      v.number(ol.width, `${p}.outline.width`, { min: 0, exclusiveMin: true });
+      v.color(ol.color, `${p}.outline.color`);
+      v.number(ol.depth, `${p}.outline.depth`, { min: 0, exclusiveMin: true });
+      material(v, ol.material, `${p}.outline.material`);
+    }
   }
-}
-
-const KIND_EXAMPLE: Record<ValueKind, string> = { vec3: "[0, 1, 0]", number: "1.5", color: '"#ff8800"', boolean: "true", "number|vec3": "1.2 or [1, 2, 1]" };
-
-function timeline(v: V, t: unknown) {
-  if (!isObj(t)) return v.error("type", "timeline", "timeline must be an object.", 'Example: { "duration": 4, "loop": true, "tracks": [] }.');
-  v.unknownKeys(t, TIMELINE_KEYS, "timeline", "the timeline");
-  if (v.required(t, "duration", "timeline", "length in seconds")) v.number(t.duration, "timeline.duration", { min: 0, exclusiveMin: true });
-  if (t.loop !== undefined && typeof t.loop !== "boolean" && t.loop !== "pingpong") v.error("enum", "timeline.loop", `Invalid loop ${show(t.loop)}.`, 'Use true, false or "pingpong".');
-  v.boolean(t.autoplay, "timeline.autoplay");
-  v.enumOf(t.trigger, TIMELINE_TRIGGERS, "timeline.trigger");
-  if (!v.required(t, "tracks", "timeline", "an array of tracks")) return;
-  if (!Array.isArray(t.tracks)) return v.error("type", "timeline.tracks", "tracks must be an array.");
-  const duration = isNum(t.duration) ? t.duration : Infinity;
-  const seen = new Set<string>();
-  t.tracks.forEach((tr, i) => track(v, tr, `timeline.tracks[${i}]`, duration, seen));
-}
-
-function track(v: V, tr: unknown, path: string, duration: number, seen: Set<string>) {
-  if (!isObj(tr)) return v.error("type", path, "A track must be an object.", 'Example: { "target": "logo.rotation.y", "keys": [[0, 0], [4, 360]], "ease": "inOutSine" }.');
-  v.unknownKeys(tr, ["target", "keys", "ease"], path, "a track");
-  v.enumOf(tr.ease, EASES, `${path}.ease`);
-  let kind: ValueKind | undefined;
-  if (v.required(tr, "target", path, '"<id>.<property>"') && v.string(tr.target, `${path}.target`)) {
-    const target = tr.target as string;
-    if (seen.has(target)) v.warn("duplicate-track", `${path}.target`, `Another track already animates "${target}"; the last one wins.`, "Merge the keys into a single track.");
-    seen.add(target);
-    const r = trackValueKind(target, { objects: v.objectIds, lights: v.lightIds });
-    if (r.error) v.error("track-target", `${path}.target`, r.error.message, r.error.hint);
-    kind = r.kind;
+  if (o.reveal !== undefined) {
+    if (!isObj(o.reveal)) v.error("type", `${p}.reveal`, "reveal must be an object.", 'Example: { "effect": "rise", "stagger": 0.04, "duration": 0.6 }.');
+    else {
+      const r = o.reveal;
+      v.unknownKeys(r, ["effect", "stagger", "duration", "delay", "ease", "order"], `${p}.reveal`, "reveal");
+      v.enumOf(r.effect, TEXT_REVEAL_EFFECTS, `${p}.reveal.effect`);
+      v.number(r.stagger, `${p}.reveal.stagger`, { min: 0 });
+      v.number(r.duration, `${p}.reveal.duration`, { min: 0, exclusiveMin: true });
+      v.number(r.delay, `${p}.reveal.delay`, { min: 0 });
+      v.enumOf(r.order, ["forward", "reverse", "center", "random"], `${p}.reveal.order`);
+      if (r.ease !== undefined) {
+        const e = typeof r.ease === "string" ? parseEase(r.ease) : { error: "ease must be a string." };
+        if ("error" in e) v.error("enum", `${p}.reveal.ease`, `Invalid easing ${show(r.ease)}: ${e.error}`, `Examples: ${EASE_EXAMPLES.join(", ")}.`);
+      }
+    }
   }
-  if (!v.required(tr, "keys", path, "[[time, value], …]")) return;
-  if (!Array.isArray(tr.keys) || tr.keys.length === 0) return v.error("type", `${path}.keys`, "keys must be a non-empty array of [time, value].", "Example: [[0, [0, 0, 0]], [2, [0, 1, 0]]].");
-  let prev = -Infinity;
-  let sorted = true;
-  (tr.keys as unknown[]).forEach((k, i) => {
-    const kp = `${path}.keys[${i}]`;
-    if (!Array.isArray(k) || k.length !== 2 || !isNum(k[0])) return v.error("type", kp, `Expected [time, value], got ${show(k)}.`, `Example: [1.5, ${kind ? KIND_EXAMPLE[kind] : "1"}].`);
-    const time = k[0] as number;
-    if (time < 0) v.error("range", `${kp}[0]`, `Key time ${time} is negative.`, "Times are seconds from 0.");
-    if (time < prev) sorted = false;
-    prev = Math.max(prev, time);
-    if (time > duration) v.warn("range", `${kp}[0]`, `Key time ${time}s is after timeline.duration (${duration}s) and is never reached.`, `Increase timeline.duration to ≥ ${time} or move the key.`);
-    if (kind && !keyValueOk(kind, k[1])) v.error("track-value", `${kp}[1]`, `Value ${show(k[1])} does not match "${String(tr.target)}" (expects ${kind}).`, `Use a value like ${KIND_EXAMPLE[kind]}${kind === "vec3" && String(tr.target).match(/rotation$/) ? " (degrees)" : ""}.`);
-  });
-  if (!sorted) v.error("track-order", `${path}.keys`, "Keys are not sorted by time.", "Sort the [time, value] pairs by ascending time.");
+  if ((o.splitLetters === true || isObj(o.reveal)) && typeof o.id === "string") v.letterTexts.add(o.id);
 }
+
+// ─── Timeline, interactions, camera shots: src/core/validateMotion.ts ────
+
+export { trackValueKind } from "./validateMotion";
 
 // ─── Other sections ──────────────────────────────────────────────────────
 
@@ -1038,14 +1209,76 @@ function postfx(v: V, list: unknown) {
       seen.add(fx.type);
     }
     if (entry) v.params("postfx", entry, fx, p, ["type"]);
+    if (fx.type === "dof" && typeof fx.focusOn === "string" && !v.objectIds.has(fx.focusOn))
+      v.error("unknown-ref", `${p}.focusOn`, `dof.focusOn "${fx.focusOn}" is not an object id.`, `${didYouMean(fx.focusOn, v.objectIds)}Object ids: ${listOptions([...v.objectIds])}.`);
+    if (fx.type === "godrays" && typeof fx.source === "string" && fx.source !== "auto" && fx.source !== "sun" && !v.lightIds.has(fx.source))
+      v.error("unknown-ref", `${p}.source`, `godrays.source "${fx.source}" is not "auto", "sun" or a light id.`, `${didYouMean(fx.source, v.lightIds)}Light ids: ${listOptions([...v.lightIds])}.`);
   });
+  const types = list.map((fx) => (isObj(fx) ? fx.type : undefined));
+  if (types.includes("fxaa") && types.includes("smaa")) v.warn("duplicate", "postfx", "Both fxaa and smaa are set: they do the same job.", "Keep smaa (sharper) or fxaa (cheaper).");
 }
 
 function physics(v: V, ph: unknown) {
   if (!isObj(ph)) return v.error("type", "physics", "physics must be an object.", 'Example: { "gravity": [0, -9.81, 0] }.');
-  v.unknownKeys(ph, ["gravity", "step"], "physics", "physics");
+  v.unknownKeys(ph, PHYSICS_KEYS, "physics", "physics");
   v.vec(ph.gravity, 3, "physics.gravity");
   v.number(ph.step, "physics.step", { min: 0, exclusiveMin: true, max: 0.1 });
+  v.number(ph.substeps, "physics.substeps", { min: 1, max: 8, integer: true });
+  v.number(ph.iterations, "physics.iterations", { min: 1, max: 100, integer: true });
+  v.boolean(ph.sleep, "physics.sleep");
+  v.boolean(ph.debug, "physics.debug");
+  const seen = bodiesSeen.get(v) ?? [];
+  const bodies = new Map(seen.map((b) => [b.id, b.body]));
+  const materials = new Set<string>();
+  if (ph.materials !== undefined) {
+    if (!isObj(ph.materials)) v.error("type", "physics.materials", "materials must be an object { name: { friction, restitution } }.", 'Example: { "ice": { "friction": 0.02 }, "rubber": { "friction": 0.9, "restitution": 0.8 } }.');
+    else
+      for (const [name, m] of Object.entries(ph.materials)) {
+        const mp = `physics.materials.${name}`;
+        materials.add(name);
+        if (!isObj(m)) {
+          v.error("type", mp, "A physics material must be an object.", 'Example: { "friction": 0.4, "restitution": 0.2 }.');
+          continue;
+        }
+        v.unknownKeys(m, ["friction", "restitution"], mp, "a physics material");
+        v.number(m.friction, `${mp}.friction`, { min: 0 });
+        v.number(m.restitution, `${mp}.restitution`, { min: 0, max: 1 });
+      }
+  }
+  if (ph.contacts !== undefined) {
+    if (!Array.isArray(ph.contacts)) v.error("type", "physics.contacts", "contacts must be an array.", 'Example: [{ "a": "ice", "b": "rubber", "friction": 0.05 }].');
+    else
+      ph.contacts.forEach((c, i) => {
+        const cp = `physics.contacts[${i}]`;
+        if (!isObj(c)) return v.error("type", cp, "A contact must be an object.", 'Example: { "a": "ice", "b": "rubber", "friction": 0.05, "restitution": 0 }.');
+        v.unknownKeys(c, ["a", "b", "friction", "restitution"], cp, "a contact material");
+        for (const k of ["a", "b"] as const) {
+          if (!v.required(c, k, cp, "a physics.materials name")) continue;
+          if (typeof c[k] !== "string" || !materials.has(c[k] as string)) v.error("unknown-ref", `${cp}.${k}`, `Unknown physics material ${show(c[k])}.`, materials.size ? `${didYouMean(String(c[k]), materials)}Materials: ${listOptions([...materials])}.` : 'Declare it in physics.materials first, e.g. "materials": { "ice": { "friction": 0.02 } }.');
+        }
+        v.number(c.friction, `${cp}.friction`, { min: 0 });
+        v.number(c.restitution, `${cp}.restitution`, { min: 0, max: 1 });
+      });
+  }
+  if (ph.layers !== undefined) {
+    if (v.stringArray(ph.layers, "physics.layers") && Array.isArray(ph.layers) && new Set(["default", ...ph.layers]).size > 16) v.error("range", "physics.layers", "At most 16 collision layers (including \"default\").");
+  }
+  const layers = new Set<string>(["default", ...(Array.isArray(ph.layers) ? ph.layers.filter((x): x is string => typeof x === "string") : [])]);
+  for (const b of seen) {
+    if (typeof b.body.material === "string" && !materials.has(b.body.material)) v.error("unknown-ref", `${b.path}.material`, `Unknown physics material "${b.body.material}".`, materials.size ? `${didYouMean(b.body.material, materials)}Materials: ${listOptions([...materials])}.` : 'Declare it in physics.materials, e.g. "materials": { "ice": { "friction": 0.02 } }.');
+    if (typeof b.body.layer === "string") layers.add(b.body.layer);
+  }
+  if (layers.size > 16) v.error("range", "physics.layers", `Too many collision layers (${layers.size}, max 16).`, "Reuse layer names: a layer is a group like \"player\", \"enemy\", \"debris\".");
+  for (const b of seen) {
+    if (Array.isArray(b.body.collidesWith))
+      b.body.collidesWith.forEach((l, i) => {
+        if (typeof l === "string" && !layers.has(l)) v.warn("unknown-ref", `${b.path}.collidesWith[${i}]`, `Layer "${l}" is not used by any body.`, `${didYouMean(l, layers)}Layers: ${listOptions([...layers])}.`);
+      });
+  }
+  if (ph.joints !== undefined) {
+    if (!Array.isArray(ph.joints)) v.error("type", "physics.joints", "joints must be an array.", 'Example: [{ "type": "hinge", "a": "door", "pivot": [1, 1, 0], "axis": [0, 1, 0] }].');
+    else ph.joints.forEach((j, i) => joint(v, j, `physics.joints[${i}]`, bodies));
+  }
 }
 
 function scripts(v: V, list: unknown) {

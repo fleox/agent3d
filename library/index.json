@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generatedBy": "scripts/build-library.mjs",
-  "totalBytes": 11822734,
+  "totalBytes": 34960482,
   "assets": [
     {
       "id": "models/animals/fish.glb",
@@ -280,6 +280,55 @@
       ]
     },
     {
+      "id": "models/characters/barbarian.glb",
+      "path": "models/characters/barbarian.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Barbarian.glb",
+      "tags": [
+        "barbarian",
+        "warrior",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "bytes": 933056,
+      "description": "Chibi barbarian adventurer, rigged, curated clips. Bounding box ≈ 3.0 × 2.4 × 1.9 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "animations": [
+        "1H_Melee_Attack_Chop",
+        "Block",
+        "Cheer",
+        "Death_A",
+        "Hit_A",
+        "Idle",
+        "Interact",
+        "Jump_Full_Short",
+        "PickUp",
+        "Running_A",
+        "Sit_Chair_Idle",
+        "Spellcast_Shoot",
+        "Throw",
+        "Walking_A"
+      ],
+      "size": [
+        2.975,
+        2.398,
+        1.85
+      ],
+      "center": [
+        -0.015,
+        1.199,
+        0.4
+      ],
+      "minY": 0,
+      "triangles": 6543,
+      "skinned": true
+    },
+    {
       "id": "models/characters/knight.glb",
       "path": "models/characters/knight.glb",
       "kind": "model",
@@ -514,6 +563,56 @@
       "triangles": 3237,
       "skinned": true,
       "morphTargets": true
+    },
+    {
+      "id": "models/characters/rogue.glb",
+      "path": "models/characters/rogue.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "source": "kaykit",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/main/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb",
+      "tags": [
+        "rogue",
+        "thief",
+        "hooded",
+        "character",
+        "animated",
+        "fantasy",
+        "chibi"
+      ],
+      "bytes": 917084,
+      "description": "Chibi hooded rogue adventurer, rigged, curated clips. Bounding box ≈ 2.9 × 2.3 × 1.5 (w × h × d, glTF units = metres, Y-up, bind pose, faces +Z).",
+      "pack": "KayKit Character Pack: Adventurers 1.0",
+      "animations": [
+        "1H_Melee_Attack_Chop",
+        "Block",
+        "Cheer",
+        "Death_A",
+        "Hit_A",
+        "Idle",
+        "Interact",
+        "Jump_Full_Short",
+        "PickUp",
+        "Running_A",
+        "Sit_Chair_Idle",
+        "Spellcast_Shoot",
+        "Throw",
+        "Walking_A"
+      ],
+      "size": [
+        2.945,
+        2.251,
+        1.548
+      ],
+      "center": [
+        -0.469,
+        1.126,
+        0.207
+      ],
+      "minY": 0,
+      "triangles": 6035,
+      "skinned": true
     },
     {
       "id": "models/characters/skeleton.glb",
@@ -966,6 +1065,37 @@
       "extensions": [
         "EXT_texture_webp"
       ]
+    },
+    {
+      "id": "models/food/apple.glb",
+      "path": "models/food/apple.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/food_apple_01",
+      "tags": [
+        "apple",
+        "fruit",
+        "food",
+        "healthy",
+        "realistic"
+      ],
+      "bytes": 454292,
+      "description": "Realistic apple (textures 1k). Bounding box ≈ 0.10 × 0.09 × 0.10 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — food_apple_01",
+      "size": [
+        0.098,
+        0.085,
+        0.096
+      ],
+      "center": [
+        0,
+        0.043,
+        0.002
+      ],
+      "minY": 0,
+      "triangles": 7012
     },
     {
       "id": "models/food/avocado.glb",
@@ -2737,6 +2867,46 @@
       ]
     },
     {
+      "id": "models/products/iridescent-lamp.glb",
+      "path": "models/products/iridescent-lamp.glb",
+      "kind": "model",
+      "license": "CC-BY-4.0",
+      "author": "Eric Chadwick (Wayfair, LLC)",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/IridescenceLamp",
+      "tags": [
+        "lamp",
+        "lighting",
+        "product",
+        "interior",
+        "glass",
+        "iridescent",
+        "pbr"
+      ],
+      "bytes": 708080,
+      "description": "Table lamp with an iridescent glass shade (transmission + iridescence; textures 1k). Bounding box ≈ 0.30 × 0.48 × 0.30 (w × h × d, glTF units = metres, Y-up).",
+      "attribution": "\"Iridescence Lamp\" by Eric Chadwick / Wayfair, LLC, CC BY 4.0 (via Khronos glTF Sample Assets)",
+      "pack": "glTF Sample Assets — IridescenceLamp",
+      "size": [
+        0.297,
+        0.476,
+        0.302
+      ],
+      "center": [
+        0,
+        0.238,
+        0
+      ],
+      "minY": 0,
+      "triangles": 18866,
+      "extensions": [
+        "KHR_materials_transmission",
+        "KHR_materials_volume",
+        "KHR_materials_iridescence",
+        "KHR_materials_ior"
+      ]
+    },
+    {
       "id": "models/products/lantern.glb",
       "path": "models/products/lantern.glb",
       "kind": "model",
@@ -2767,6 +2937,116 @@
       "triangles": 5394,
       "extensions": [
         "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/products/lounge-chair.glb",
+      "path": "models/products/lounge-chair.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Eric Chadwick (Wayfair)",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/SheenChair",
+      "tags": [
+        "chair",
+        "furniture",
+        "product",
+        "interior",
+        "fabric",
+        "sheen",
+        "pbr"
+      ],
+      "bytes": 1811780,
+      "description": "Mid-century lounge chair with fabric sheen (textures 1k). Bounding box ≈ 0.83 × 0.69 × 0.57 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "glTF Sample Assets — SheenChair",
+      "size": [
+        0.827,
+        0.686,
+        0.57
+      ],
+      "center": [
+        -0.001,
+        0.343,
+        0.008
+      ],
+      "minY": 0,
+      "triangles": 39936,
+      "extensions": [
+        "KHR_texture_transform",
+        "KHR_materials_sheen"
+      ]
+    },
+    {
+      "id": "models/products/sneaker.glb",
+      "path": "models/products/sneaker.glb",
+      "kind": "model",
+      "license": "CC-BY-4.0",
+      "author": "Shopify",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/MaterialsVariantsShoe",
+      "tags": [
+        "sneaker",
+        "shoe",
+        "product",
+        "fashion",
+        "ecommerce",
+        "pbr"
+      ],
+      "bytes": 1166924,
+      "description": "Photoreal sneaker for product showcases (default colourway; textures 1k). Bounding box ≈ 0.30 × 0.15 × 0.12 (w × h × d, glTF units = metres, Y-up).",
+      "attribution": "\"Materials Variants Shoe\" by Shopify, CC BY 4.0 (via Khronos glTF Sample Assets)",
+      "pack": "glTF Sample Assets — MaterialsVariantsShoe",
+      "size": [
+        0.298,
+        0.153,
+        0.116
+      ],
+      "center": [
+        0.002,
+        0.076,
+        0.005
+      ],
+      "minY": -0.001,
+      "triangles": 22700
+    },
+    {
+      "id": "models/products/velvet-sofa.glb",
+      "path": "models/products/velvet-sofa.glb",
+      "kind": "model",
+      "license": "CC-BY-4.0",
+      "author": "Eric Chadwick (Wayfair, LLC)",
+      "source": "khronos-gltf-samples",
+      "sourceUrl": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/GlamVelvetSofa",
+      "tags": [
+        "sofa",
+        "couch",
+        "furniture",
+        "product",
+        "interior",
+        "velvet",
+        "sheen",
+        "pbr"
+      ],
+      "bytes": 654768,
+      "description": "Glam velvet sofa with sheen (textures 1k). Bounding box ≈ 2.2 × 0.79 × 1.0 (w × h × d, glTF units = metres, Y-up).",
+      "attribution": "\"Glam Velvet Sofa\" by Eric Chadwick / Wayfair, LLC, CC BY 4.0 (via Khronos glTF Sample Assets)",
+      "pack": "glTF Sample Assets — GlamVelvetSofa",
+      "size": [
+        2.188,
+        0.788,
+        1.023
+      ],
+      "center": [
+        -0.02,
+        0.394,
+        -0.116
+      ],
+      "minY": 0,
+      "triangles": 4196,
+      "extensions": [
+        "KHR_texture_transform",
+        "KHR_materials_sheen",
+        "KHR_materials_specular"
       ]
     },
     {
@@ -2801,6 +3081,38 @@
       "extensions": [
         "EXT_texture_webp"
       ]
+    },
+    {
+      "id": "models/props/alarm-clock.glb",
+      "path": "models/props/alarm-clock.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/alarm_clock_01",
+      "tags": [
+        "clock",
+        "alarm clock",
+        "time",
+        "retro",
+        "props",
+        "decor"
+      ],
+      "bytes": 1048872,
+      "description": "Retro twin-bell alarm clock (textures 1k). Bounding box ≈ 0.13 × 0.17 × 0.07 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — alarm_clock_01",
+      "size": [
+        0.132,
+        0.174,
+        0.067
+      ],
+      "center": [
+        0,
+        0.086,
+        0.009
+      ],
+      "minY": -0.001,
+      "triangles": 8985
     },
     {
       "id": "models/props/armchair.glb",
@@ -2901,6 +3213,37 @@
       ]
     },
     {
+      "id": "models/props/brass-vase.glb",
+      "path": "models/props/brass-vase.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/brass_vase_03",
+      "tags": [
+        "vase",
+        "brass",
+        "decor",
+        "interior",
+        "metal"
+      ],
+      "bytes": 428956,
+      "description": "Brass vase (textures 1k). Bounding box ≈ 0.08 × 0.20 × 0.08 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — brass_vase_03",
+      "size": [
+        0.083,
+        0.2,
+        0.083
+      ],
+      "center": [
+        0,
+        0.101,
+        0
+      ],
+      "minY": 0.001,
+      "triangles": 2616
+    },
+    {
       "id": "models/props/chest.glb",
       "path": "models/props/chest.glb",
       "kind": "model",
@@ -2933,6 +3276,37 @@
       "extensions": [
         "EXT_texture_webp"
       ]
+    },
+    {
+      "id": "models/props/coffee-table.glb",
+      "path": "models/props/coffee-table.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/coffee_table_round_01",
+      "tags": [
+        "table",
+        "coffee table",
+        "furniture",
+        "interior",
+        "wood"
+      ],
+      "bytes": 464592,
+      "description": "Round coffee table (textures 1k). Bounding box ≈ 1.3 × 0.49 × 1.3 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — coffee_table_round_01",
+      "size": [
+        1.301,
+        0.491,
+        1.301
+      ],
+      "center": [
+        0,
+        0.244,
+        0
+      ],
+      "minY": -0.001,
+      "triangles": 4044
     },
     {
       "id": "models/props/coin-stack.glb",
@@ -3227,6 +3601,139 @@
       "triangles": 264,
       "extensions": [
         "EXT_texture_webp"
+      ]
+    },
+    {
+      "id": "models/props/marble-bust.glb",
+      "path": "models/props/marble-bust.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/marble_bust_01",
+      "tags": [
+        "bust",
+        "statue",
+        "marble",
+        "sculpture",
+        "art",
+        "classical",
+        "decor"
+      ],
+      "bytes": 890656,
+      "description": "Classical marble bust (textures 1k). Bounding box ≈ 0.27 × 0.52 × 0.30 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — marble_bust_01",
+      "size": [
+        0.272,
+        0.515,
+        0.3
+      ],
+      "center": [
+        0.013,
+        0.258,
+        0.005
+      ],
+      "minY": 0,
+      "triangles": 17456
+    },
+    {
+      "id": "models/props/modern-armchair.glb",
+      "path": "models/props/modern-armchair.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/modern_arm_chair_01",
+      "tags": [
+        "armchair",
+        "chair",
+        "furniture",
+        "interior",
+        "office",
+        "modern"
+      ],
+      "bytes": 875060,
+      "description": "Modern armchair (textures 1k). Bounding box ≈ 0.82 × 1.0 × 0.99 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — modern_arm_chair_01",
+      "size": [
+        0.82,
+        1.023,
+        0.987
+      ],
+      "center": [
+        0.003,
+        0.512,
+        -0.082
+      ],
+      "minY": 0,
+      "triangles": 8916
+    },
+    {
+      "id": "models/props/potted-succulent.glb",
+      "path": "models/props/potted-succulent.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/potted_plant_04",
+      "tags": [
+        "plant",
+        "succulent",
+        "potted plant",
+        "interior",
+        "decor",
+        "nature"
+      ],
+      "bytes": 785284,
+      "description": "Potted succulent (photoscanned look; textures 1k). Bounding box ≈ 0.17 × 0.27 × 0.18 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — potted_plant_04",
+      "size": [
+        0.168,
+        0.267,
+        0.185
+      ],
+      "center": [
+        0,
+        0.134,
+        0.008
+      ],
+      "minY": 0,
+      "triangles": 8929
+    },
+    {
+      "id": "models/props/rubber-duck.glb",
+      "path": "models/props/rubber-duck.glb",
+      "kind": "model",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/rubber_duck_toy",
+      "tags": [
+        "rubber duck",
+        "duck",
+        "toy",
+        "bath",
+        "cute",
+        "props"
+      ],
+      "bytes": 252204,
+      "description": "Yellow rubber duck toy (textures 1k). Bounding box ≈ 0.21 × 0.29 × 0.30 (w × h × d, glTF units = metres, Y-up).",
+      "pack": "Poly Haven — rubber_duck_toy",
+      "size": [
+        0.214,
+        0.286,
+        0.3
+      ],
+      "center": [
+        0,
+        0.143,
+        0.004
+      ],
+      "minY": 0,
+      "triangles": 4288,
+      "extensions": [
+        "KHR_materials_specular",
+        "KHR_materials_ior"
       ]
     },
     {
@@ -4342,6 +4849,192 @@
       "map": "roughness"
     },
     {
+      "id": "hdri/beach.hdr",
+      "path": "hdri/beach.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/spiaggia_di_mondello",
+      "tags": [
+        "beach",
+        "sea",
+        "sunny",
+        "outdoor",
+        "summer",
+        "clear-sky",
+        "high-contrast"
+      ],
+      "bytes": 1533242,
+      "description": "Sunny Mediterranean beach — clear sky, strong sun, crisp shadows and blue reflections. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/beach.jpg is a small tonemapped preview.",
+      "format": "hdr",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/beach.jpg",
+      "path": "hdri/beach.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/spiaggia_di_mondello",
+      "tags": [
+        "beach",
+        "sea",
+        "sunny",
+        "outdoor",
+        "summer",
+        "clear-sky",
+        "high-contrast",
+        "ldr",
+        "preview"
+      ],
+      "bytes": 117805,
+      "description": "Sunny Mediterranean beach — clear sky, strong sun, crisp shadows and blue reflections. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/beach.hdr for lighting.",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/city.hdr",
+      "path": "hdri/city.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/potsdamer_platz",
+      "tags": [
+        "city",
+        "urban",
+        "street",
+        "outdoor",
+        "overcast",
+        "daylight"
+      ],
+      "bytes": 1540678,
+      "description": "Potsdamer Platz city street under an overcast sky — soft urban daylight with building reflections. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/city.jpg is a small tonemapped preview.",
+      "format": "hdr",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/city.jpg",
+      "path": "hdri/city.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/potsdamer_platz",
+      "tags": [
+        "city",
+        "urban",
+        "street",
+        "outdoor",
+        "overcast",
+        "daylight",
+        "ldr",
+        "preview"
+      ],
+      "bytes": 82977,
+      "description": "Potsdamer Platz city street under an overcast sky — soft urban daylight with building reflections. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/city.hdr for lighting.",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/forest.hdr",
+      "path": "hdri/forest.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/forest_slope",
+      "tags": [
+        "forest",
+        "nature",
+        "outdoor",
+        "trees",
+        "green",
+        "daylight"
+      ],
+      "bytes": 1911073,
+      "description": "Forest slope in soft daylight — green bounce light for nature, organic products and characters. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/forest.jpg is a small tonemapped preview.",
+      "format": "hdr",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/forest.jpg",
+      "path": "hdri/forest.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Andreas Mischok",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/forest_slope",
+      "tags": [
+        "forest",
+        "nature",
+        "outdoor",
+        "trees",
+        "green",
+        "daylight",
+        "ldr",
+        "preview"
+      ],
+      "bytes": 249339,
+      "description": "Forest slope in soft daylight — green bounce light for nature, organic products and characters. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/forest.hdr for lighting.",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/night-city.hdr",
+      "path": "hdri/night-city.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/shanghai_bund",
+      "tags": [
+        "night",
+        "city",
+        "urban",
+        "neon",
+        "outdoor",
+        "lights"
+      ],
+      "bytes": 1640377,
+      "description": "Shanghai Bund at night — city lights and warm/cool neon reflections for night and cyberpunk scenes. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/night-city.jpg is a small tonemapped preview.",
+      "format": "hdr",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/night-city.jpg",
+      "path": "hdri/night-city.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Greg Zaal",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/shanghai_bund",
+      "tags": [
+        "night",
+        "city",
+        "urban",
+        "neon",
+        "outdoor",
+        "lights",
+        "ldr",
+        "preview"
+      ],
+      "bytes": 104699,
+      "description": "Shanghai Bund at night — city lights and warm/cool neon reflections for night and cyberpunk scenes. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/night-city.hdr for lighting.",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 512
+    },
+    {
       "id": "hdri/night.hdr",
       "path": "hdri/night.hdr",
       "kind": "hdri",
@@ -4426,6 +5119,52 @@
       "format": "jpeg",
       "width": 2048,
       "height": 1024
+    },
+    {
+      "id": "hdri/softbox.hdr",
+      "path": "hdri/softbox.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_08",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "photo-studio",
+        "neutral"
+      ],
+      "bytes": 1508872,
+      "description": "Photo studio with large soft boxes — clean, low-contrast product lighting with long soft highlights. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/softbox.jpg is a small tonemapped preview.",
+      "format": "hdr",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/softbox.jpg",
+      "path": "hdri/softbox.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/studio_small_08",
+      "tags": [
+        "studio",
+        "indoor",
+        "softbox",
+        "product",
+        "photo-studio",
+        "neutral",
+        "ldr",
+        "preview"
+      ],
+      "bytes": 51921,
+      "description": "Photo studio with large soft boxes — clean, low-contrast product lighting with long soft highlights. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/softbox.hdr for lighting.",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 512
     },
     {
       "id": "hdri/studio.hdr",
@@ -4516,84 +5255,256 @@
       "height": 1024
     },
     {
+      "id": "hdri/warehouse.hdr",
+      "path": "hdri/warehouse.hdr",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/empty_warehouse_01",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "indoor",
+        "urban",
+        "windows"
+      ],
+      "bytes": 1672140,
+      "description": "Empty industrial warehouse — skylights and window strips, gritty reflections for metal and cars. Radiance RGBE equirect 1024x512 (HDR) for image-based lighting and blurred backgrounds; hdri/warehouse.jpg is a small tonemapped preview.",
+      "format": "hdr",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "hdri/warehouse.jpg",
+      "path": "hdri/warehouse.jpg",
+      "kind": "hdri",
+      "license": "CC0-1.0",
+      "author": "Sergej Majboroda",
+      "source": "polyhaven",
+      "sourceUrl": "https://polyhaven.com/a/empty_warehouse_01",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "indoor",
+        "urban",
+        "windows",
+        "ldr",
+        "preview"
+      ],
+      "bytes": 124519,
+      "description": "Empty industrial warehouse — skylights and window strips, gritty reflections for metal and cars. Tonemapped LDR equirect preview 1024x512 (sRGB); use hdri/warehouse.hdr for lighting.",
+      "format": "jpeg",
+      "width": 1024,
+      "height": 512
+    },
+    {
+      "id": "fonts/anton.typeface.json",
+      "path": "fonts/anton.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2020 The Anton Project Authors (Vernon Adams)",
+      "source": "Anton",
+      "sourceUrl": "google/fonts `ofl/anton/Anton-Regular.ttf`",
+      "tags": [
+        "font",
+        "typeface",
+        "anton"
+      ],
+      "bytes": 82924,
+      "description": "Anton — three.js typeface JSON (catalog font \"anton\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/bebas-neue.typeface.json",
+      "path": "fonts/bebas-neue.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2019 The Bebas Neue Project Authors (Ryoichi Tsunekawa, Dharma Type)",
+      "source": "Bebas Neue",
+      "sourceUrl": "google/fonts `ofl/bebasneue/BebasNeue-Regular.ttf`",
+      "tags": [
+        "font",
+        "typeface",
+        "bebas-neue"
+      ],
+      "bytes": 85333,
+      "description": "Bebas Neue — three.js typeface JSON (catalog font \"bebas-neue\"); see fonts/LICENSES.md"
+    },
+    {
       "id": "fonts/display.typeface.json",
       "path": "fonts/display.typeface.json",
       "kind": "font",
       "license": "OFL-1.1",
-      "author": "© 2016 The Fredoka Project Authors, design Ben Nathan",
-      "source": "Fredoka (default instance of the variable font)",
-      "sourceUrl": "google/fonts `ofl/fredoka/Fredoka[wdth,wght].ttf`, converted with `scripts/convert-font.mjs` (TTFLoader algorithm)",
+      "author": "© 2016 The Fredoka Project Authors (Milena Brandão, Ben Nathan)",
+      "source": "Fredoka SemiBold",
+      "sourceUrl": "https://github.com/hafontia-zz/Fredoka (Fontsource `@fontsource/fredoka@5.1.0`)",
       "tags": [
         "font",
         "typeface",
         "display"
       ],
-      "bytes": 178685,
-      "description": "Fredoka (default instance of the variable font) — three.js typeface JSON (catalog font \"display\"); see fonts/LICENSES.md"
+      "bytes": 192654,
+      "description": "Fredoka SemiBold — three.js typeface JSON (catalog font \"display\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/inter-black.typeface.json",
+      "path": "fonts/inter-black.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2016 The Inter Project Authors (Rasmus Andersson)",
+      "source": "Inter Black",
+      "sourceUrl": "https://github.com/rsms/inter (Fontsource `@fontsource/inter@5.1.0`)",
+      "tags": [
+        "font",
+        "typeface",
+        "inter-black"
+      ],
+      "bytes": 126765,
+      "description": "Inter Black — three.js typeface JSON (catalog font \"inter-black\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/lobster.typeface.json",
+      "path": "fonts/lobster.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2010 The Lobster Project Authors (Pablo Impallari)",
+      "source": "Lobster",
+      "sourceUrl": "google/fonts `ofl/lobster/Lobster-Regular.ttf`",
+      "tags": [
+        "font",
+        "typeface",
+        "lobster"
+      ],
+      "bytes": 134128,
+      "description": "Lobster — three.js typeface JSON (catalog font \"lobster\"); see fonts/LICENSES.md"
     },
     {
       "id": "fonts/mono.typeface.json",
       "path": "fonts/mono.typeface.json",
       "kind": "font",
-      "license": "Apache-2.0",
-      "author": "© 2008 The Android Open Source Project",
-      "source": "Droid Sans Mono",
-      "sourceUrl": "three.js `examples/fonts/droid/droid_sans_mono_regular.typeface.json`",
+      "license": "OFL-1.1",
+      "author": "© 2020 The JetBrains Mono Project Authors (JetBrains)",
+      "source": "JetBrains Mono Bold",
+      "sourceUrl": "https://github.com/JetBrains/JetBrainsMono (Fontsource `@fontsource/jetbrains-mono@5.1.0`)",
       "tags": [
         "font",
         "typeface",
         "mono"
       ],
-      "bytes": 65991,
-      "description": "Droid Sans Mono — three.js typeface JSON (catalog font \"mono\"); see fonts/LICENSES.md"
+      "bytes": 94649,
+      "description": "JetBrains Mono Bold — three.js typeface JSON (catalog font \"mono\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/montserrat-extrabold.typeface.json",
+      "path": "fonts/montserrat-extrabold.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2011 The Montserrat Project Authors (Julieta Ulanovsky)",
+      "source": "Montserrat ExtraBold",
+      "sourceUrl": "https://github.com/JulietaUla/Montserrat (Fontsource `@fontsource/montserrat@5.1.0`)",
+      "tags": [
+        "font",
+        "typeface",
+        "montserrat-extrabold"
+      ],
+      "bytes": 140908,
+      "description": "Montserrat ExtraBold — three.js typeface JSON (catalog font \"montserrat-extrabold\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/pacifico.typeface.json",
+      "path": "fonts/pacifico.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2018 The Pacifico Project Authors (Vernon Adams, Jacques Le Bailly, Botjo Nikoltchev, Ani Petrova)",
+      "source": "Pacifico",
+      "sourceUrl": "google/fonts `ofl/pacifico/Pacifico-Regular.ttf`",
+      "tags": [
+        "font",
+        "typeface",
+        "pacifico"
+      ],
+      "bytes": 237038,
+      "description": "Pacifico — three.js typeface JSON (catalog font \"pacifico\"); see fonts/LICENSES.md"
     },
     {
       "id": "fonts/sans-bold.typeface.json",
       "path": "fonts/sans-bold.typeface.json",
       "kind": "font",
-      "license": "Apache-2.0",
-      "author": "© 2008 The Android Open Source Project (Ascender Corp.)",
-      "source": "Droid Sans Bold",
-      "sourceUrl": "three.js repository `examples/fonts/droid/droid_sans_bold.typeface.json`",
+      "license": "OFL-1.1",
+      "author": "© 2016 The Inter Project Authors (Rasmus Andersson)",
+      "source": "Inter Bold",
+      "sourceUrl": "https://github.com/rsms/inter (static instance via Fontsource `@fontsource/inter@5.1.0`, latin + latin-ext)",
       "tags": [
         "font",
         "typeface",
         "sans-bold"
       ],
-      "bytes": 117341,
-      "description": "Droid Sans Bold — three.js typeface JSON (catalog font \"sans-bold\"); see fonts/LICENSES.md"
+      "bytes": 128257,
+      "description": "Inter Bold — three.js typeface JSON (catalog font \"sans-bold\"); see fonts/LICENSES.md"
     },
     {
       "id": "fonts/sans.typeface.json",
       "path": "fonts/sans.typeface.json",
       "kind": "font",
-      "license": "Apache-2.0",
-      "author": "© 2008 The Android Open Source Project",
-      "source": "Droid Sans Regular",
-      "sourceUrl": "three.js `examples/fonts/droid/droid_sans_regular.typeface.json`",
+      "license": "OFL-1.1",
+      "author": "© 2016 The Inter Project Authors (Rasmus Andersson)",
+      "source": "Inter Regular",
+      "sourceUrl": "https://github.com/rsms/inter (Fontsource `@fontsource/inter@5.1.0`)",
       "tags": [
         "font",
         "typeface",
         "sans"
       ],
-      "bytes": 113815,
-      "description": "Droid Sans Regular — three.js typeface JSON (catalog font \"sans\"); see fonts/LICENSES.md"
+      "bytes": 126831,
+      "description": "Inter Regular — three.js typeface JSON (catalog font \"sans\"); see fonts/LICENSES.md"
     },
     {
       "id": "fonts/serif-bold.typeface.json",
       "path": "fonts/serif-bold.typeface.json",
       "kind": "font",
-      "license": "Apache-2.0",
-      "author": "© 2008 The Android Open Source Project",
-      "source": "Droid Serif Bold",
-      "sourceUrl": "three.js `examples/fonts/droid/droid_serif_bold.typeface.json`",
+      "license": "OFL-1.1",
+      "author": "© 2017 The Playfair Display Project Authors (Claus Eggers Sørensen)",
+      "source": "Playfair Display Bold",
+      "sourceUrl": "https://github.com/clauseggers/Playfair (Fontsource `@fontsource/playfair-display@5.1.0`)",
       "tags": [
         "font",
         "typeface",
         "serif-bold"
       ],
-      "bytes": 161763,
-      "description": "Droid Serif Bold — three.js typeface JSON (catalog font \"serif-bold\"); see fonts/LICENSES.md"
+      "bytes": 195698,
+      "description": "Playfair Display Bold — three.js typeface JSON (catalog font \"serif-bold\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/serif.typeface.json",
+      "path": "fonts/serif.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2017 The Playfair Display Project Authors (Claus Eggers Sørensen)",
+      "source": "Playfair Display Regular",
+      "sourceUrl": "https://github.com/clauseggers/Playfair (Fontsource `@fontsource/playfair-display@5.1.0`)",
+      "tags": [
+        "font",
+        "typeface",
+        "serif"
+      ],
+      "bytes": 190743,
+      "description": "Playfair Display Regular — three.js typeface JSON (catalog font \"serif\"); see fonts/LICENSES.md"
+    },
+    {
+      "id": "fonts/space-grotesk-bold.typeface.json",
+      "path": "fonts/space-grotesk-bold.typeface.json",
+      "kind": "font",
+      "license": "OFL-1.1",
+      "author": "© 2020 The Space Grotesk Project Authors (Florian Karsten)",
+      "source": "Space Grotesk Bold",
+      "sourceUrl": "https://github.com/floriankarsten/space-grotesk (Fontsource `@fontsource/space-grotesk@5.1.0`)",
+      "tags": [
+        "font",
+        "typeface",
+        "space-grotesk-bold"
+      ],
+      "bytes": 110165,
+      "description": "Space Grotesk Bold — three.js typeface JSON (catalog font \"space-grotesk-bold\"); see fonts/LICENSES.md"
     }
   ]
 }

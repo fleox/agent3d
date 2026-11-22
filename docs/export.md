@@ -1,78 +1,179 @@
-# Exports
+# Exports and media
 
-`agent3d export` turns a project into files for a website. The engine builds the files (`buildExport` in `src/ops/export.ts`, pure); the CLI, the Studio and the MCP `export` tool write them. Run `check` first: an export refuses scenes with validation errors and missing files.
+`agent3d export` turns a project into files for a website; `agent3d render` also writes stills, videos and animations. The engine builds export files (`buildExport` in `src/ops/export.ts`, pure); the CLI, the Studio and the MCP `export` tool write them. Run `check` first: an export refuses scenes with validation errors and missing files.
 
 | Format | Command | Output |
 |---|---|---|
-| `embed` (default) | `agent3d export` | Folder for any static site |
+| `embed` (default) | `agent3d export` | Folder for any static site (+ `EMBED.md`, framework wrappers) |
+| `zip` | `agent3d export --format zip` | The same folder as one `<name>-embed.zip` (to upload or send) |
 | `single-html` | `agent3d export --format single-html` | One self-contained `.html` file |
-| `poster` | `agent3d export --format poster [--time 2] [--image png]` | A still (`dist/poster.webp`), 2x pixel ratio |
-| `video` | `agent3d export --format video [--duration 8] [--fps 30]` | A WebM (`dist/video.webm`) recorded by headless Chrome |
+| `poster` | `agent3d export --format poster [--time 2] [--image png\|webp\|jpeg] [--quality high] [--transparent]` | A still (`dist/poster.webp`), 2× pixel ratio |
+| `video` | `agent3d export --format video [--out dist/promo.mp4] [--duration 8] [--fps 30]` | MP4 (H.264) when `--out` ends in `.mp4`, else WebM (VP9) |
+| `gif` | `agent3d export --format gif [--duration 4] [--fps 15]` | A looping animated GIF (`dist/animation.gif`) |
 
-Common options: `--out <path>` (default `<project>/dist/<format>`, or the file for poster / video), `--name <slug>` (scene folder / file name, default the project name), `--size WxH`, `--timeout <s>`, `--yes` (overwrite a non-empty output folder; without it the command prints a plan with the existing entries). `--no-poster` skips the poster of embed / single-html exports (no Chrome needed).
+Common options: `--out <path>` (default `<project>/dist/<format>`, or the file for poster / video / gif), `--name <slug>` (scene folder / file name, default the project name), `--size WxH`, `--timeout <s>`, `--yes` (overwrite a non-empty output folder; without it the command prints a plan with the existing entries).
+
+Embed / zip options:
+
+| Option | Effect |
+|---|---|
+| `--base-url <url>` | URL of the export folder as seen from the pages (default `./`): `/wp-content/uploads/agent3d/`, `https://cdn.example.com/3d/`. The snippet, wrappers and EMBED.md use it, so the snippet works from any page depth or another origin. |
+| `--cache-bust` | The runtime goes to `agent3d-runtime-<hash>/` (hash of its files) and the scene URL gets `?v=<hash>`: serve both with `Cache-Control: max-age=31536000, immutable`. Scenes exported with the same runtime share the folder. |
+| `--no-integrity` | No Subresource Integrity. By default the runtime `<script>` and its preloads carry `integrity="sha384-…"`. |
+| `--no-poster` | No poster / social image (no Chrome needed). The element then shows nothing before the first frame and has no fallback without WebGL. |
+| `--no-og` | No `og-image.png`. |
+| `--no-extras` | No `EMBED.md` and no `frameworks/`. |
+| `--optimize` | Optimised asset copies (see `docs/assets.md`). |
 
 ## `embed`
 
 ```
 dist/embed/
-  agent3d-runtime/agent3d-runtime.js   the runtime (ES module, ~80 KB) …
-  agent3d-runtime/chunks/*.js          … and its lazily loaded chunks (three.js, loaders, generators, post effects, game host)
+  agent3d-runtime/agent3d-runtime.js   the runtime entry (ES module) …
+  agent3d-runtime/chunks/*.js          … three.js and lazily loaded chunks (loaders, generators, post effects, game host)
   <name>/scene.json
   <name>/assets/…                      project assets + library assets used (assets/library/…)
   <name>/scripts/…                     game scripts
-  <name>/poster.webp                   first-frame fallback and reduced-motion still
+  <name>/poster.webp                   2× supersampled first frame: shown before load, without WebGL, when printing
+  <name>/og-image.png                  1200×630 social preview (the frame over a blurred copy of itself)
   <name>/CREDITS.txt                   licences that need attribution
-  index.html                           demo page (the snippet in context, credits)
+  index.html                           demo page (the snippet in context, og:image meta, credits)
   snippet.html                         what to paste into a page
+  head.html                            optional <link rel="modulepreload"> for every static runtime module
+  EMBED.md                             for the website owner: platforms, frameworks, data bindings, API, CSP
+  frameworks/react/Agent3DScene.tsx    React / Next.js client component (SSR-safe, typed)
+  frameworks/vue/Agent3DScene.vue      Vue 3 / Nuxt component
+  frameworks/svelte/Agent3DScene.svelte
+  frameworks/agent3d-scene.d.ts        element + event types (HTMLElementTagNameMap)
 ```
 
 Snippet:
 
 ```html
-<script type="module" src="./agent3d-runtime/agent3d-runtime.js"></script>
-<agent3d-scene src="./<name>/scene.json" poster="./<name>/poster.webp" aria-label="…"></agent3d-scene>
+<link rel="modulepreload" href="./agent3d-runtime/chunks/three.module-….js" integrity="sha384-…">
+<script type="module" src="./agent3d-runtime/agent3d-runtime.js" integrity="sha384-…"></script>
+<agent3d-scene src="./<name>/scene.json" aspect="4:1" role="img" aria-label="…">
+  <img slot="poster" src="./<name>/poster.webp" alt="…" width="1200" height="300" decoding="async" style="display:block;width:100%;height:auto">
+</agent3d-scene>
 ```
 
-- Paths are relative to the page; with pages at several depths, use root-absolute URLs (`/agent3d/<name>/scene.json`). Paths inside the scene resolve against the `scene.json` URL, and `library:` assets against `<scene dir>/assets/library/` (override with the `library-base` attribute).
-- Several scenes share one `agent3d-runtime/` folder. Re-upload it after updating Agent3D.
-- Browsers block module scripts on `file://`: opened by double-click, `index.html` shows the poster image and a note to serve the folder (`npx serve`, any static server). The `single-html` file works from `file://`.
-- The result's `sizes` separate the runtime from the scene's own weight (`sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`); the target's `budgetKb` applies to the latter.
+- The `modulepreload` fetches three.js (the big static dependency) in parallel with the entry instead of after it.
+- The `<img slot="poster">` is real markup: it shows (at the right aspect ratio, no layout shift) before the runtime has loaded, without JavaScript, without WebGL, from `file://` and when printing; the element fades it out after the first frame.
+- `aspect` reserves the scene's aspect ratio before `scene.json` is fetched.
+- Paths are relative to the page unless `--base-url` is given. Paths inside the scene resolve against the `scene.json` URL, and `library:` assets against `<scene dir>/assets/library/` (override with the `library-base` attribute).
+- Several scenes share one runtime folder. Re-upload it (and re-copy snippets: the integrity hash changes) after updating Agent3D.
+- Browsers block module scripts on `file://`: opened by double-click, `index.html` shows the poster and a note to serve the folder (`npx serve`, any static server). The `single-html` file works from `file://`.
+- The result's `sizes` separate the runtime from the scene's own weight (`sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`); the target's `budgetKb` applies to the latter. `head` lists every preload, `integrity` the entry's hash, `runtimeDir` the runtime folder.
 
 ## `single-html`
 
-One `<name>.html`: the single-file runtime as an inline module, the scene in `<script type="application/json">`, assets as data: URIs in `<script type="application/json" data-assets>`, scripts as `<script type="text/agent3d-script" data-path="…">`. About 2 MB before assets (the runtime is not split); a warning is raised above 5 MB. Use it to send a file, host a standalone page, or embed in an `<iframe>`.
+One `<name>.html`: the single-file runtime as an inline module, the scene in `<script type="application/json">`, assets as data: URIs in `<script type="application/json" data-assets>`, scripts as `<script type="text/agent3d-script" data-path="…">`. About 1.8 MB before assets (the runtime is not split); a warning is raised above 5 MB. Use it to send a file, host a standalone page, or embed in an `<iframe>` (Squarespace, Wix, Framer, Google Sites embed boxes).
 
 ## The `<agent3d-scene>` element
 
 | Attribute | Meaning |
 |---|---|
-| `src` | URL of `scene.json` |
-| `poster` | Image shown until the first frame, and as the fallback without WebGL |
+| `src` | URL of `scene.json` (or an inline `<script type="application/json">` child) |
+| `poster` / `<img slot="poster">` | Image until the first frame; fallback without WebGL, on errors and when printing |
+| `aspect` | `W:H` reserved before the scene loads; the scene's `target.aspect` wins once loaded |
+| `alt` | Text alternative of the poster fallback (default: `aria-label`) |
+| `autoplay="false"` | Load and show the first frame, play on `play()` |
+| `paused` | Paused while present; removing it resumes |
+| `loop="true\|false\|pingpong"` | Overrides `timeline.loop` |
+| `quality="low\|medium\|high\|auto"` | Pixel-ratio cap 1 / 1.5 / 2; `low` also drops antialiasing, shadows and post effects; `auto` picks from the device (cores, memory, Save-Data) |
+| `interactive="false"` | The canvas ignores the pointer (page scroll and clicks pass through) |
+| `data-*` | Data bindings (below) |
 | `library-base` | Base URL of `library:` assets (default `<scene dir>/assets/library/`) |
-| `aria-label` | Accessible label (written from `ariaLabel` / `title` by the export). When absent the element sets it from the scene; a label you write yourself is never overridden |
+| `aria-label` | Accessible label (written by the export from `ariaLabel` / `title`). When absent the element sets it from the scene; a label you write is never overridden |
 
-Behaviour: `display: block; width: 100%`, CSS `aspect-ratio` from `target.aspect` (or `target.height`, or `100vh` for fullscreen), `role="img"` (`role="application"` + `tabindex="0"` for games), lazy start when visible (the WebGL context is created then), pause off-screen, reduced-motion handling, pixel-ratio cap. Pages with many embeds stay under the browser's live-context cap: a non-game scene off-screen for 20 s, or the least recently seen off-screen one when 8 contexts are alive and another scene starts, frees its context and shows its last frame as an image; it rebuilds when it scrolls back into view. Events (bubbling): `agent3d-ready` (`detail.player`) and `agent3d-error` (`detail`: `{ code, message, path }`, codes such as `scene-load`, `asset-load`, `script-error`, `webgl-unavailable`).
+Behaviour: `display: block; width: 100%` and `aspect-ratio` (or `target.height`, or `100vh` for fullscreen) as `:host` styles, so page CSS on the element wins; `role="img"` (`role="application"` + `tabindex="0"` for games); lazy start when visible (the WebGL context is created then); pause off-screen and in background tabs; `prefers-reduced-motion` (still frame for banners / heroes); pixel-ratio cap; a thin loading bar after 400 ms (determinate from asset progress) — no layout shift. Pages with many embeds stay under the browser's live-context cap: a non-game scene off-screen for 20 s, or the least recently seen off-screen one when 8 contexts are alive and another scene starts, frees its context and shows its last frame as an image; it rebuilds when it scrolls back into view. A real WebGL context loss (GPU reset) is recovered (restore, or a fresh canvas after 3 s). Removing the element disposes everything (geometries, materials, textures, shadow maps, the context); re-inserting it remounts. When printing, the current frame (or the poster) is printed instead of the canvas.
 
-Programmatic use without the element:
+The element carries `status="loading|ready|error|unsupported"` (style hooks).
+
+JavaScript API:
+
+```js
+const el = document.querySelector("agent3d-scene");
+const player = await el.ready;      // after the first frame
+el.pause(); el.play(); await el.seek(2.5);
+await el.setData({ title: "Winter sale" });   // rebinds {data.*} placeholders
+el.data;                            // scene.data + data-* + setData
+el.trigger("start", { level: 2 });  // api.on("start") in the scene's scripts
+await el.reload();                  // re-fetch scene.json
+```
+
+DOM events (bubbling, composed):
+
+| Event | `detail` |
+|---|---|
+| `agent3d:ready` | `{ player }` |
+| `agent3d:error` | `{ code, message, path? }` — `scene-load`, `asset-load`, `script-error`, `webgl-unavailable`, `context-lost`, … |
+| `agent3d:event` | `{ name, payload }` — scripts' `api.emit`, HUD button actions, `trigger()` |
+| `agent3d:click` | `{ id, x, y }` — the object clicked (top-level or nearest interactive), `null` for the background; x / y in -1..1 |
+| `agent3d:progress` | `{ loaded, total }` — asset loading |
+
+`agent3d-ready` / `agent3d-error` are still dispatched for older pages.
+
+Styling: `agent3d-scene::part(poster)`, `::part(poster-image)`, `::part(loading)`, `::part(loading-bar)`, `::part(fallback)`; custom properties `--agent3d-background` (behind the canvas while loading), `--agent3d-loading-color` (default `currentColor`), `--agent3d-poster-fit` (`cover`), `--agent3d-fade` (`.4s`). Custom no-WebGL content: a child with `slot="fallback"`.
+
+### Data bindings
+
+Text objects' `text`, any object's `href`, the scene `title` / `ariaLabel` and HUD texts may contain `{data.key}` placeholders (`{data.a.b}` for nested keys, `{data.cta|Shop now}` for a fallback). Values come from `scene.data`, overridden by `data-*` attributes (`data-cta-label` → `ctaLabel`, `data-json='{"price": 9}'` merges an object) and `setData()`. The substitution runs on a copy of the scene before the world is built (`bindSceneData`, `src/runtime/data.ts`), so renders, exports and the Studio show the values from `scene.data`. Scripts read the merged values as `api.data`.
+
+```html
+<agent3d-scene src="./sale/scene.json" data-title="Summer sale" data-price="-30%"></agent3d-scene>
+```
+
+### Programmatic use without the element
 
 ```js
 import { mountScene } from "./agent3d-runtime/agent3d-runtime.js";
-const player = mountScene(document.querySelector("#stage"), scene, { assetBase: "/agent3d/my-banner/" });
+const player = mountScene(document.querySelector("#stage"), scene, {
+  assetBase: "/agent3d/my-banner/",
+  onEvent: (name, payload) => {}, onClick: (id, point) => {}, onProgress: (loaded, total) => {},
+});
 await player.ready;
 player.pause();
 ```
 
-`Player` (`src/runtime/api.ts`): `ready`, `play()`, `pause()`, `seek(t)`, `time()`, `update(scene)`, `resize()`, `stats()`, `inspect()`, `snapshot()`, `input`, `state()`, `dispose()`.
+`Player` (`src/runtime/api.ts`): `ready`, `play()`, `pause()`, `seek(t)`, `time()`, `update(scene)`, `resize()`, `stats()`, `inspect()`, `snapshot()`, `input`, `state()`, `emit()`, `dispose()`. `globalThis.Agent3D` = `{ mountScene, version, bindSceneData, liveContexts }`.
+
+## Frameworks and platforms
+
+`EMBED.md` (generated with the right URLs) covers: plain HTML and static hosts, WordPress (Custom HTML block + uploaded folder, `--base-url /wp-content/uploads/agent3d/`), Webflow (Embed element, files on your own host / CDN), Shopify (Custom Liquid section), Squarespace / Wix / Framer / Google Sites (single-html in an iframe), AgentCMS (the Agent3D scene block), React / Next.js (`frameworks/react/Agent3DScene.tsx`: `"use client"`, loads the runtime with a module script once, props for every attribute, `data` applied live, `onReady` / `onError` / `onSceneEvent` / `onSceneClick`), Vue / Nuxt (`isCustomElement`, `<ClientOnly>`), Svelte / SvelteKit, Angular (`CUSTOM_ELEMENTS_SCHEMA`). The `agent3d-publish` skill has step-by-step versions: `plugin/skills/agent3d-publish/references/integrations.md`.
 
 ## Content-Security-Policy
 
 | Export | Needs |
 |---|---|
-| embed | `script-src 'self'`, `connect-src 'self'`, `img-src 'self' blob:`; `style-src 'unsafe-inline'` when the scene has a HUD |
+| embed | `script-src 'self'`, `connect-src 'self'`, `img-src 'self' blob:`; `style-src 'unsafe-inline'` when the scene has a HUD; `script-src 'wasm-unsafe-eval'` when a model is meshopt-compressed (`assets optimize`, `export --optimize`) |
 | single-html | also `script-src 'unsafe-inline' blob:`, `connect-src data:`, `img-src data: blob:` |
 
-Why: the runtime is a module that imports its chunks; scene files (JSON, fonts, models, HDRIs, SVG, audio) are fetched; textures load as images and glTF embedded textures as blob: URLs; the HUD injects one `<style>`; single-html scene scripts are imported from blob: URLs. No `eval`, no third-party origin, no web fonts. Platform-specific integration (WordPress, AgentCMS, React, Next.js, Astro, Vue) is in the `agent3d-publish` skill: `plugin/skills/agent3d-publish/references/integrations.md`.
+Why: the runtime is a module that imports its chunks; scene files (JSON, fonts, models, HDRIs, SVG, audio) are fetched; textures load as images and glTF embedded textures as blob: URLs; the HUD injects one `<style>`; single-html scene scripts are imported from blob: URLs. The element's own styles are constructable stylesheets (`adoptedStyleSheets`), not subject to `style-src`. No `eval` / `new Function` (verified on the built runtime), no workers, no third-party origin, no web fonts. Integrity: the snippet's `integrity` works with `require-sri-for`-style policies; chunks loaded later by `import()` are same-origin files of the same folder.
 
-## Poster and video
+## Media from `render` and `export`
 
-Both use the headless render pipeline (deterministic time): the poster is the frame at `target.posterTime` (or `--time`), the video records `--duration` seconds (default: the timeline duration, else 5) at `--fps` with Chrome's MediaRecorder. Games render their attract mode (no input).
+Every frame is seeked exactly with the deterministic player, so any fps, duration and size work and nothing is dropped however slow the software renderer is.
+
+```bash
+agent3d render --video promo.mp4 --fps 30 --duration 6 --size 1920x1080 --quality high
+agent3d render --video promo.webm --duration 6            # VP9
+agent3d render --gif banner.gif --duration 4 --fps 15     # 640 px wide by default
+agent3d render --webp banner.webp --duration 4            # animated WebP (smaller, alpha)
+agent3d render --frames 2 --size 2400x600 --quality ultra --transparent   # alpha PNG still, 3× supersampled
+agent3d render --scroll 0.5 --frames 0                    # a scroll-driven scene half-way down the page
+```
+
+- **MP4**: H.264 High profile through WebCodecs in headless Chrome, muxed by `agent/render/mp4.ts` (fast start: plays while downloading). Google Chrome / Edge have the encoder; some Chromium builds don't — the error says to render a `.webm` instead.
+- **WebM**: VP9 through WebCodecs (key frame every 2 s); without WebCodecs, VP8 key frames taken from WebP stills.
+- **GIF**: pure-TS encoder (`agent/render/gif.ts`): one global median-cut palette, ordered dithering (stable across frames), frame differencing (unchanged pixels transparent, frames cropped to the changed rectangle), exact delays, infinite loop. Transparent scenes keep their alpha.
+- **Animated WebP**: WebP stills muxed into one file (`agent/render/webpAnim.ts`), alpha kept.
+- **`--quality`**: `draft` / `standard` render at 1×, `high` at 2× and `ultra` at 3× the pixel ratio, then downscale with a box filter in the page (supersampling), clamped to 4096 px per side.
+- **`--transparent`**: forces a transparent canvas (alpha PNG / GIF / WebP stills of a scene that has a background). Opaque formats (MP4, WebM, JPEG) draw transparent scenes over `--bg` (white by default).
+- **`--scroll p`**: uses `Player.setScrollProgress` when the runtime has it, else renders the time the deterministic player maps to that progress.
+- Video bitrate defaults from size × fps × quality (`--bitrate <Mbit/s>` overrides). Videos capture the WebGL canvas only (not the HUD).
+- AVIF posters: Chrome cannot encode AVIF from a canvas yet, so exports ship WebP posters (`posterAvif` is accepted by `buildExport` when a host can provide one).
+
+## Runtime size
+
+`dist/runtime` is built by `vite.runtime.config.ts` with full minification and the catalog's prose stripped (validation and docs keep it). What a page downloads before the first frame is the entry plus its static imports (three.js, catalog, materials, utilities): about 220 KB gzipped; everything else (loaders, post effects, generators, physics / HUD / audio, shader materials) is a lazy chunk loaded only by scenes that use it.

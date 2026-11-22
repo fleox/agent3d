@@ -7,6 +7,7 @@ import type { GeneratorImpl } from "../registry";
 import { fbm2D, noise2D, ridged2D } from "../random";
 import { generatorParams } from "./params";
 import { built, ramp, smoothstep } from "./geom";
+import { bakeDepth, createWaterMaterial } from "./waterMaterial";
 
 type Shape = "hills" | "mountains" | "island" | "dunes" | "canyon" | "flat";
 
@@ -208,27 +209,40 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
   mesh.castShadow = true;
   group.add(mesh);
 
-  let waterMat: THREE.MeshStandardMaterial | null = null;
+  let waterUniforms: { uTime: { value: number } } | null = null;
   if (water !== null && water > Math.min(...heights) - 1e-3) {
-    const wg = new THREE.PlaneGeometry(size, size, 40, 40);
+    const wres = lowpoly ? 40 : Math.min(160, Math.max(48, res));
+    const wg = new THREE.PlaneGeometry(size, size, wres, wres);
     wg.rotateX(-Math.PI / 2);
-    waterMat = new THREE.MeshStandardMaterial({ color: p.color("waterColor"), transparent: true, opacity: 0.8, roughness: 0.3, metalness: 0.05, flatShading: true, depthWrite: false });
-    const wm = new THREE.Mesh(wg, waterMat);
+    // Depth below each water vertex from the terrain heights (shore foam, depth colour).
+    bakeDepth(wg, water, (x, z) => heightAtFn(x, z));
+    const wc = p.color("waterColor");
+    const { material: wmat, uniforms } = createWaterMaterial({
+      deep: wc.clone().multiplyScalar(0.55),
+      shallow: wc.clone().lerp(new THREE.Color("#bff3ff"), 0.25),
+      foam: new THREE.Color("#ffffff"),
+      opacity: 0.88,
+      waveHeight: Math.min(0.05, height * 0.006 + 0.015),
+      waveSpeed: 1.2,
+      foamWidth: Math.max(0.05, Math.min(0.25, height * 0.012)),
+      ripples: 1,
+      flat: lowpoly,
+      depthRange: Math.max(0.3, height * 0.2),
+    });
+    waterUniforms = uniforms;
+    const wm = new THREE.Mesh(wg, wmat);
     wm.name = "terrain-water";
     wm.position.y = water;
     wm.receiveShadow = true;
     wm.renderOrder = 1;
     group.add(wm);
-    // Gentle vertex ripple (pure function of t).
-    const base = Float32Array.from((wg.getAttribute("position") as THREE.BufferAttribute).array as Float32Array);
-    group.userData.waterBase = base;
   }
   group.userData.waterLevel = water;
   group.userData.surface = "terrain";
   group.userData.size = size;
 
   // Exact height on the triangulated surface (matches the faceted mesh).
-  const heightAt = (x: number, z: number): number => {
+  function heightAtFn(x: number, z: number): number {
     const fx = (x + size / 2) / step;
     const fz = (z + size / 2) / step;
     const i = Math.min(res - 1, Math.max(0, Math.floor(fx)));
@@ -242,23 +256,14 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
     }
     // diagonal (i+1,j)-(i,j+1)
     return u + v < 1 ? h00 + (h10 - h00) * u + (h01v - h00) * v : h11 + (h01v - h11) * (1 - u) + (h10 - h11) * (1 - v);
-  };
+  }
+  const heightAt = heightAtFn;
 
-  const waterMesh = group.children[1] as THREE.Mesh | undefined;
-  const update = waterMesh
+  const update = waterUniforms
     ? (t: number) => {
-        const attr = waterMesh.geometry.getAttribute("position") as THREE.BufferAttribute;
-        const base = group.userData.waterBase as Float32Array;
-        const amp = Math.min(0.05, height * 0.006 + 0.015);
-        for (let k = 0; k < attr.count; k++) {
-          const x = base[k * 3]!, z = base[k * 3 + 2]!;
-          attr.setY(k, Math.sin(x * 0.7 + t * 1.3) * amp + Math.cos(z * 0.9 + t * 1.1) * amp * 0.7);
-        }
-        attr.needsUpdate = true;
-        waterMesh.geometry.computeVertexNormals();
+        waterUniforms!.uTime.value = t;
       }
     : undefined;
-  update?.(0);
 
   return built(group, { heightAt, update });
 };

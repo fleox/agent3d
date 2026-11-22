@@ -45,8 +45,13 @@ describe("buildExport", () => {
     expect(r.name).toBe("spring-sale");
     expect(Object.keys(r.files).sort()).toEqual(
       [
+        "EMBED.md",
         "agent3d-runtime/agent3d-runtime.js",
         "agent3d-runtime/chunks/postfx-abc.js",
+        "frameworks/agent3d-scene.d.ts",
+        "frameworks/react/Agent3DScene.tsx",
+        "frameworks/svelte/Agent3DScene.svelte",
+        "frameworks/vue/Agent3DScene.vue",
         "index.html",
         "snippet.html",
         "spring-sale/CREDITS.txt",
@@ -64,7 +69,10 @@ describe("buildExport", () => {
     const scene = JSON.parse(r.files["spring-sale/scene.json"] as string);
     expect(scene.objects.find((o: { id: string }) => o.id === "tree").src).toBe("assets/library/nature/pine-tree.glb");
     expect(JSON.stringify(scene)).not.toContain("library:");
-    expect(r.snippet).toBe('<script type="module" src="./agent3d-runtime/agent3d-runtime.js"></script>\n<agent3d-scene src="./spring-sale/scene.json" poster="./spring-sale/poster.png" aria-label="Spring Sale — animated 3D banner"></agent3d-scene>');
+    expect(r.integrity).toMatch(/^sha384-[A-Za-z0-9+/]+=*$/);
+    expect(r.snippet).toBe(
+      `<script type="module" src="./agent3d-runtime/agent3d-runtime.js" integrity="${r.integrity}"></script>\n<agent3d-scene src="./spring-sale/scene.json" aspect="4:1" role="img" aria-label="Spring Sale — animated 3D banner">\n  <img slot="poster" src="./spring-sale/poster.png" alt="Spring Sale — animated 3D banner" decoding="async" style="display:block;width:100%;height:auto">\n</agent3d-scene>`,
+    );
     const index = r.files["index.html"] as string;
     expect(index).toContain(r.snippet);
     expect(index).toContain("&lt;agent3d-scene");
@@ -72,11 +80,58 @@ describe("buildExport", () => {
     // file:// fallback: a visible note + the poster image (classic script, runs without a server).
     expect(index).toContain(FILE_PROTOCOL_NOTE.split(" — ")[0]);
     expect(index).toContain('location.protocol === "file:"');
-    expect(index).toContain('img.src = "./spring-sale/poster.png"');
     expect(r.credits.filter((c) => c.path.includes("pine-tree"))).toHaveLength(1);
     expect(r.entry).toBe("index.html");
     expect(r.sizes.assetsKb).toBeGreaterThanOrEqual(0);
     expect(r.issues.filter((i) => i.severity === "error")).toEqual([]);
+  });
+
+  it("emits wrappers, EMBED.md, preload hints, base URL and cache-busting", async () => {
+    const fs = await project();
+    const rt = {
+      files: {
+        "agent3d-runtime.js": enc.encode('import{a as b}from"./chunks/three-x.js";import"./chunks/util-y.js";const l=()=>import("./chunks/postfx-abc.js");'),
+        "chunks/three-x.js": enc.encode('import{u}from"./util-y.js";export const a=1;' + " ".repeat(120 * 1024)),
+        "chunks/util-y.js": enc.encode("export const u=1;"),
+        "chunks/postfx-abc.js": enc.encode("export default 1;"),
+      },
+    };
+    const r = await buildExport(fs, { format: "embed", runtime: rt, library, poster: new Uint8Array([0x52, 0x49]), posterSize: { width: 1200, height: 300 }, ogImage: new Uint8Array([0x89, 0x50]), baseUrl: "/static/3d", cacheBust: true });
+    expect(r.runtimeDir).toMatch(/^agent3d-runtime-[0-9a-f]{10}$/);
+    expect(r.files[`${r.runtimeDir}/chunks/three-x.js`]).toBeTruthy();
+    expect(r.head!.split("\n")).toHaveLength(2);
+    expect(r.head).toContain(`<link rel="modulepreload" href="/static/3d/${r.runtimeDir}/chunks/three-x.js" integrity="sha384-`);
+    expect(r.head).not.toContain("postfx");
+    expect(r.snippet).toContain("three-x.js");
+    expect(r.snippet).not.toContain("util-y.js");
+    expect(r.files["head.html"]).toContain("util-y.js");
+    expect(r.snippet).toContain(`src="/static/3d/${r.runtimeDir}/agent3d-runtime.js"`);
+    expect(r.snippet).toMatch(/src="\/static\/3d\/spring-sale\/scene\.json\?v=[0-9a-f]{10}"/);
+    expect(r.snippet).toContain('width="1200" height="300"');
+    expect(r.files["spring-sale/og-image.png"]).toBeTruthy();
+    expect(r.files["index.html"]).toContain('property="og:image"');
+    const react = r.files["frameworks/react/Agent3DScene.tsx"] as string;
+    expect(react.startsWith('"use client";')).toBe(true);
+    expect(react).toContain(`"/static/3d/${r.runtimeDir}/agent3d-runtime.js"`);
+    expect(r.files["EMBED.md"]).toContain("Content-Security-Policy");
+    expect(r.files["EMBED.md"]).toContain("WordPress");
+    expect(r.files["frameworks/agent3d-scene.d.ts"]).toContain('"agent3d-scene": Agent3DSceneElement');
+    await expect(buildExport(fs, { format: "embed", runtime: rt, library, baseUrl: "javascript:alert(1)" })).rejects.toMatchObject({ code: "invalid" });
+    const plain = await buildExport(fs, { format: "embed", runtime: rt, library, integrity: false, extras: false });
+    expect(plain.snippet).not.toContain("integrity");
+    expect(plain.files["EMBED.md"]).toBeUndefined();
+  });
+
+  it("zips the embed folder", async () => {
+    const fs = await project();
+    const r = await buildExport(fs, { format: "zip", runtime, library });
+    expect(Object.keys(r.files)).toEqual(["spring-sale-embed.zip"]);
+    const { readZip } = await import("./zip");
+    const files = await readZip(r.files["spring-sale-embed.zip"] as Uint8Array);
+    expect(Object.keys(files)).toContain("spring-sale/scene.json");
+    expect(Object.keys(files)).toContain("index.html");
+    expect(new TextDecoder().decode(files["agent3d-runtime/agent3d-runtime.js"])).toContain("export const x = 1");
+    expect(JSON.parse(new TextDecoder().decode(files["spring-sale/scene.json"])).title).toBe("Spring Sale");
   });
 
   it("builds a single self-contained html file", async () => {

@@ -10,6 +10,7 @@ import type { Backend, MutationResult, ToolInfo } from "./backend/types";
 import { Toaster, toast } from "./components/ui/Toast";
 import { t } from "./i18n";
 import { duplicateObject } from "./lib/patches";
+import { lightIndex } from "./lib/gizmo";
 import { urlParam } from "./lib/urlState";
 import { AssistantPanel } from "./assistant/AssistantPanel";
 import { BottomPanel } from "./panels/BottomPanel";
@@ -36,6 +37,11 @@ function initialUi(): UiState {
     device: device === "tablet" || device === "phone" ? (device as Device) : "desktop",
     helpers: true,
     interact: false,
+    gizmo: "translate",
+    space: "world",
+    snap: false,
+    view: urlParam("view") === "camera" ? "camera" : "editor",
+    lightSel: null,
     dialog: dialog === "export" || dialog === "render" || dialog === "shortcuts" ? dialog : null,
     flash: null,
     agentPulse: 0,
@@ -222,13 +228,44 @@ function useShortcutsImpl(api: EditorApi) {
           break;
         case "Escape":
           store.select(null);
+          ui.set({ lightSel: null });
           break;
         case "Delete":
-        case "Backspace":
+        case "Backspace": {
+          const ls = ui.get().lightSel;
           if (sel) {
             e.preventDefault();
             api.edit([{ op: "removeObject", id: sel }]);
+          } else if (ls && snap.scene) {
+            const i = lightIndex(snap.scene, ls.id);
+            if (i >= 0) {
+              e.preventDefault();
+              api.edit([{ op: "remove", path: `lights[${i}]` }]);
+              ui.set({ lightSel: null });
+            }
           }
+          break;
+        }
+        case "w":
+        case "e":
+        case "r":
+          ui.set({ gizmo: e.key === "w" ? "translate" : e.key === "e" ? "rotate" : "scale", interact: false });
+          break;
+        case "q":
+          ui.set({ interact: false });
+          break;
+        case "x":
+          ui.set((s) => ({ space: s.space === "world" ? "local" : "world" }));
+          break;
+        case "c":
+          ui.set((s) => ({ view: s.view === "editor" ? "camera" : "editor", interact: false }));
+          break;
+        case "g":
+          ui.set((s) => ({ helpers: !s.helpers }));
+          break;
+        case "f":
+          if (ui.get().view === "camera") ui.set({ view: "editor", interact: false });
+          player.sceneEditor?.frameSelection();
           break;
         case "h":
           if (sel && snap.scene) {

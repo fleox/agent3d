@@ -28,6 +28,8 @@ export function timelineTime(t: number, scene: SceneDoc | null): number {
 
 export class PlayerController {
   player: Player | null = null;
+  // The viewport's editor overlay (gizmos, editor camera) once loaded — src/runtime/editor/.
+  sceneEditor: import("../../runtime/editor/index").SceneEditor | null = null;
   issues: RuntimeIssue[] = [];
   playing = true;
   private latest: SceneDoc | null = null;
@@ -161,6 +163,8 @@ export class PlayerController {
   dispose(): void {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
+    this.sceneEditor?.dispose();
+    this.sceneEditor = null;
     this.player?.dispose();
     this.player = null;
   }

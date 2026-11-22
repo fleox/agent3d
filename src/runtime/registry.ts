@@ -63,6 +63,8 @@ export interface BehaviourContext {
   scroll(): number; // 0..1 progress of the embed through the viewport
   camera: THREE.Camera;
   rng: Rng;
+  // Another object of the scene by id (lookAt), or null.
+  find?(id: string): THREE.Object3D | null;
 }
 
 export interface BehaviourInstance {

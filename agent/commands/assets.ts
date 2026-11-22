@@ -35,12 +35,12 @@ const DIR_BY_KIND: Record<AssetEntry["kind"], string> = { model: "models", textu
 export const assetsCommand: Command = {
   name: "assets",
   usage: "assets <list|search|add|optimize|remove|library> [--project <dir>]",
-  summary: "Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (downscale textures, also inside .glb), remove, and browse the built-in library.",
+  summary: "Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (smart-size + WebP textures, meshopt .glb geometry), remove, and browse the built-in library.",
   subcommands: [
     { name: "list", usage: "assets list", summary: "The project's assets (path, kind, size on disk, source, licence). Read-only; `stale` lists manifest entries whose recorded size differs from the file." },
     { name: "search", usage: "assets search <query> [--kind model|texture|hdri] [--source polyhaven|ambientcg|kenney|quaternius|khronos]", summary: "Search free, account-less CC0 sources (network). Hits can be added with `assets add --hit '<json>'`." },
     { name: "add", usage: "assets add <file> [--kind <k>] [--path assets/…] [--license CC0-1.0] [--author <name>] | assets add <pack.zip> --source kenney|quaternius|local --license CC0-1.0 [--filter <word>]… [--name <pack>] | assets add --hit <json|@file> [--resolution 1k|512] [--max-size <px>]", summary: "Copy a local file into assets/, import a Kenney / Quaternius pack zip (only .glb/.gltf + textures, --filter keeps models whose path contains a word), or download a search hit (licence recorded in assets/manifest.json). Models return `bounds` (size w × h × d in model units + up-axis guess). --resolution below 1k (e.g. 512) downloads 1k and downscales (headless Chrome).", writes: true },
-    { name: "optimize", usage: "assets optimize [<path>…] [--all] [--max-size 1024] [--quality 80] [--yes]", summary: "Downscale / re-encode textures to cut the bundle size: .jpg / .png / .webp files (format and path kept) and the images embedded in .glb models (opaque PNGs become JPEG). Files only change when they get smaller; manifest sizes are refreshed. Lossy: prints a plan unless --yes. Needs headless Chrome.", writes: true, destructive: true },
+    { name: "optimize", usage: "assets optimize [<path>…] [--all] [--max-size <px>] [--format auto|webp|jpeg|png|keep] [--quality 80] [--compress meshopt|none] [--simplify <ratio>] [--simplify-error 0.01] [--dry-run] [--yes]", summary: "Make textures and models lighter. Textures (.jpg / .png / .webp files and the images inside .glb models) get the size the scene needs — computed per texture from the target, the object's size on screen, the camera distance and the texture role (reported with the reason; --max-size forces one size) — and are re-encoded as WebP by default (standalone files are renamed and scene references rewritten; models use EXT_texture_webp). .glb geometry is welded, reordered and meshopt-compressed (EXT_meshopt_compression, decoded by the runtime), optionally simplified (--simplify 0.5). Files only change when they get smaller. Lossy: prints the plan (sizes + reasons, no Chrome needed) unless --yes; --dry-run encodes everything and reports the real savings without writing. Textures need headless Chrome (geometry does not).", writes: true, destructive: true },
     { name: "remove", usage: "assets remove <path> [--yes]", summary: "Delete an asset and its manifest entry (plan + needsConfirmation unless --yes).", writes: true, destructive: true },
     { name: "library", usage: "assets library [--query <text>] [--kind <k>] [--limit 50] [--offset 0] [--all]", summary: 'Built-in CC0 assets shipped with Agent3D — reference them as "library:<id>" (no download). Shows animation clips and triangles of models; 50 results per page (`more: true` → next page with --offset, or --all).' },
   ],
@@ -56,8 +56,13 @@ export const assetsCommand: Command = {
     { name: "all", type: "boolean", description: "library: every match, no limit. optimize: every texture and .glb under assets/." },
     { name: "hit", type: "string", description: "add: a hit from `assets search` (JSON, @file or -)." },
     { name: "resolution", type: "string", description: "add --hit: texture / HDRI resolution (1k, 2k…; default 1k). Lower values (512, 256) download 1k and downscale to that size." },
-    { name: "max-size", type: "string", description: "optimize / add --hit: longest texture side in pixels (optimize default 1024; never upscales)." },
-    { name: "quality", type: "string", description: "optimize / add --hit: JPEG / WebP quality 1-100 (default 80)." },
+    { name: "max-size", type: "string", description: "optimize / add --hit: longest texture side in pixels, for every texture (optimize default: a smart size per texture from the scene; never upscales)." },
+    { name: "quality", type: "string", description: "optimize / add --hit: JPEG / WebP quality 1-100 (default 80; normal maps use at least 90)." },
+    { name: "format", type: "string", description: "optimize: texture output format — auto (default, WebP), webp, jpeg (images with alpha keep their format), png or keep." },
+    { name: "compress", type: "string", description: "optimize: .glb geometry compression — meshopt (default) or none." },
+    { name: "simplify", type: "string", description: "optimize: keep this fraction of each .glb mesh's triangles (e.g. 0.5), within --simplify-error." },
+    { name: "simplify-error", type: "string", description: "optimize --simplify: max deviation as a fraction of the mesh size (default 0.01)." },
+    { name: "dry-run", type: "boolean", description: "optimize: encode everything and report the savings, write nothing." },
     { name: "path", type: "string", description: "add: destination path in the project (default assets/<kind>/<file name>)." },
     { name: "license", type: "string", description: "add: the file's licence (SPDX id, e.g. CC0-1.0, CC-BY-4.0)." },
     { name: "author", type: "string", description: "add: author / attribution name." },
@@ -123,21 +128,48 @@ export const assetsCommand: Command = {
       return printResult(io, { asset: { ...entry, ...(bounds ? { bounds } : {}) } }, () => `Added ${entry.path}.${bounds ? ` Bounds ${bounds.size.join(" × ")} (w × h × d), up axis ${bounds.upAxis}.` : ""}`);
     }
     if (action === "optimize") {
-      const { optimizeAssets, optimizeTargets, DEFAULT_MAX_SIZE, DEFAULT_QUALITY } = await import("../../src/ops/optimize");
+      const { optimizeAssets, planOptimize } = await import("../../src/ops/optimize");
       const all = boolOpt(options, "all");
-      if (!rest.length && !all) usage("assets optimize needs paths or --all.", "e.g. agent3d assets optimize assets/textures/wood --max-size 512 --yes, or --all (`agent3d assets list` shows sizes).");
-      const paths = await expandPaths(fs, rest);
-      const maxSize = numOpt(options, "max-size") ?? DEFAULT_MAX_SIZE;
-      const quality = numOpt(options, "quality") ?? DEFAULT_QUALITY;
-      const { targets, skipped } = await optimizeTargets(fs, { paths, all });
-      if (!targets.length) return printResult(io, { files: [], skipped, beforeKb: 0, afterKb: 0, savedKb: 0, maxSize, quality }, () => `Nothing to optimise.${skipped.map((s) => `\n  ${s.path}: ${s.reason}`).join("")}`);
-      const sizes = await Promise.all(targets.map(async (t) => ({ path: t, kb: Math.round((await fs.size(t)) / 102.4) / 10 })));
-      if (!confirmOrPlan(io, options, { optimize: sizes, maxSize, quality, lossy: true }, () => `Re-encode ${targets.length} file(s) in place (max ${maxSize} px, quality ${quality}, lossy):\n${sizes.map((s) => `  ${s.path} (${s.kb} KB)`).join("\n")}`)) return;
-      const { withImageCodec } = await import("../render/imageCodec");
-      const r = await withImageCodec((codec) => optimizeAssets(fs, { paths: targets, maxSize, quality }, codec), { log });
-      r.skipped.unshift(...skipped);
+      if (!rest.length && !all) usage("assets optimize needs paths or --all.", "e.g. agent3d assets optimize --all (plan), then --yes; or a folder: agent3d assets optimize assets/textures/wood --yes (`agent3d assets list` shows sizes).");
+      const compressRaw = strOpt(options, "compress") ?? "meshopt";
+      if (!["meshopt", "none"].includes(compressRaw)) usage(`Unknown --compress "${compressRaw}".`, "Use --compress meshopt (default) or --compress none.");
+      const opts = {
+        paths: await expandPaths(fs, rest),
+        all,
+        maxSize: numOpt(options, "max-size"),
+        quality: numOpt(options, "quality"),
+        format: strOpt(options, "format") as never,
+        compress: compressRaw === "meshopt",
+        simplify: numOpt(options, "simplify"),
+        simplifyError: numOpt(options, "simplify-error"),
+        library: readLibraryIndex(),
+      };
+      const plan = await planOptimize(fs, opts);
+      if (!plan.entries.length) return printResult(io, { files: [], skipped: plan.skipped, beforeKb: 0, afterKb: 0, savedKb: 0, maxSize: plan.maxSize, quality: plan.quality, format: plan.format, compress: plan.compress }, () => `Nothing to optimise.${plan.skipped.map((s) => `\n  ${s.path}: ${s.reason}`).join("")}`);
+      const dryRun = boolOpt(options, "dry-run");
+      const humanPlan = () =>
+        [`Re-encode ${plan.entries.length} file(s) in place (lossy; ${plan.viewport.kind} canvas ≈ ${plan.viewport.width}x${plan.viewport.height} device px, format ${plan.format}, quality ${plan.quality}, geometry ${plan.compress ? "meshopt" : "kept"}):`, ...plan.entries.map((e) => `  ${e.path} (${e.kb} KB${e.width ? `, ${e.width}x${e.height}` : ""}) → max ${e.maxSize} px, ${e.format}${e.geometry ? `, geometry: ${e.geometry}` : ""}\n      why: ${e.reason}`), ...plan.skipped.map((s) => `! ${s.path}: ${s.reason}`)].join("\n");
+      if (!dryRun && !confirmOrPlan(io, options, { optimize: plan.entries, viewport: plan.viewport, maxSize: plan.maxSize, quality: plan.quality, format: plan.format, compress: plan.compress, skipped: plan.skipped, lossy: true, hint: "--dry-run reports the real savings without writing; --max-size forces one size." }, humanPlan)) return;
+      const needsCodec = plan.entries.some((e) => e.kind === "texture" || (e.images ?? 0) > 0);
+      const { findBrowser } = await import("../render/browser");
+      const run = (codec?: ImageCodec) => optimizeAssets(fs, { ...opts, paths: plan.entries.map((e) => e.path), all: false, dryRun }, codec);
+      let r;
+      if (needsCodec && findBrowser()) {
+        const { withImageCodec } = await import("../render/imageCodec");
+        r = await withImageCodec((codec) => run(codec), { log });
+      } else r = await run();
+      r.skipped.unshift(...plan.skipped);
       return printResult(io, r, () =>
-        [...r.files.map((f) => `${f.changed ? "✓" : "·"} ${f.path}  ${Math.round(f.beforeBytes / 1024)} KB → ${Math.round(f.afterBytes / 1024)} KB${f.images.length ? `\n${f.images.map((i) => `    ${i.name}: ${i.from} → ${i.to}${i.replaced ? "" : " (kept)"}`).join("\n")}` : ""}${f.note ? `  (${f.note})` : ""}`), ...r.skipped.map((s) => `! ${s.path}: ${s.reason}`), `Saved ${r.savedKb} KB (${r.beforeKb} → ${r.afterKb} KB).`].join("\n"),
+        [
+          ...r.files.map((f) => {
+            const head = `${f.changed ? (r.dryRun ? "~" : "✓") : "·"} ${f.path}${f.newPath ? ` → ${f.newPath}` : ""}  ${Math.round(f.beforeBytes / 1024)} KB → ${Math.round(f.afterBytes / 1024)} KB${f.maxSize ? `  (max ${f.maxSize} px: ${f.sizeReason})` : ""}`;
+            const imgs = f.images.map((i) => `    ${i.name}${i.role ? ` [${i.role}]` : ""}: ${i.from} → ${i.to}${i.replaced ? "" : " (kept)"}`);
+            const g = f.geometry ? [`    geometry: ${f.geometry.trianglesBefore} → ${f.geometry.trianglesAfter} triangles, ${f.geometry.verticesBefore} → ${f.geometry.verticesAfter} vertices${f.geometry.compressed ? ", meshopt" : ""}${f.geometry.filters.length ? ` (${f.geometry.filters.join(", ")})` : ""}`] : [];
+            return [head, ...imgs, ...g, ...(f.note ? [`    ${f.note}`] : [])].join("\n");
+          }),
+          ...r.skipped.map((s) => `! ${s.path}: ${s.reason}`),
+          `${r.dryRun ? "Would save" : "Saved"} ${r.savedKb} KB (${r.beforeKb} → ${r.afterKb} KB).${r.dryRun ? " Dry run: nothing written." : ""}`,
+        ].join("\n"),
       );
     }
     if (action === "remove") {

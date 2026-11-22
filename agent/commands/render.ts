@@ -17,8 +17,8 @@ const log = (m: string) => void process.stderr.write(`${m}\n`);
 
 export const renderCommand: Command = {
   name: "render",
-  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] [--project <dir>]",
-  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes and `state` shows the result (e.g. the score).",
+  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] | --video out.mp4|out.webm [--fps 30] [--duration 6] | --gif out.gif | --webp out.webp [--project <dir>]",
+  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size and return { path, format, codec, frames, fps, duration, size, bytes }.",
   writes: true,
   options: [
     PROJECT_OPTION,
@@ -34,10 +34,54 @@ export const renderCommand: Command = {
     { name: "isolate", type: "string", description: "Render only this object (behaviours, scripts, UI dropped), at the origin, auto-framed from the front (+Z) three-quarter view on a neutral background (default 800x800, 1 frame) — to check a model's orientation and size. Returns isolated { size, center }." },
     { name: "bg", type: "string", description: 'Background drawn under the frames: "checker", a CSS colour ("#fff", "rgb(…)", "white") or "none". Default: a checkerboard under the contact sheet of transparent scenes (frames keep their alpha).' },
     { name: "out", type: "string", description: "Output folder (default <project>/renders)." },
+    { name: "quality", type: "string", description: "Supersampling: draft / standard (1×, default), high (2×), ultra (3×) — rendered larger and downscaled for smoother edges and detail (clamped to 4096 px)." },
+    { name: "transparent", type: "boolean", description: "Render with a transparent canvas (alpha PNG / GIF / WebP) even if the scene has a background." },
+    { name: "scroll", type: "string", description: "Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page)." },
+    { name: "video", type: "string", description: "Render a video file instead of PNGs: .mp4 (H.264, needs Google Chrome) or .webm (VP9). Frame-exact; see --fps, --duration, --start, --size, --quality." },
+    { name: "gif", type: "string", description: "Render an animated GIF (looping, global palette, frame differencing; default 640 px wide, 15 fps)." },
+    { name: "webp", type: "string", description: "Render an animated WebP (smaller than GIF, alpha; default 800 px wide, 20 fps)." },
+    { name: "fps", type: "string", description: "Video / GIF / WebP frames per second (default 30 / 15 / 20, max 60)." },
+    { name: "duration", type: "string", description: "Video / GIF / WebP length in seconds (default the timeline duration, else 5)." },
+    { name: "start", type: "string", description: "Video / GIF / WebP start time in seconds (default 0)." },
+    { name: "bitrate", type: "string", description: "Video bitrate in Mbit/s (default from size, fps and --quality)." },
     TIMEOUT_OPTION,
+    { ...YES_OPTION, description: "--video / --gif / --webp: overwrite an existing file." },
   ],
   async run({ io, options }) {
     const fs = projectFs(options);
+    const { parseQuality } = await import("../render/render");
+    const quality = parseQuality(strOpt(options, "quality"));
+    const scroll = numOpt(options, "scroll");
+    const mediaOpts = (["video", "gif", "webp"] as const).filter((k) => strOpt(options, k) !== undefined);
+    if (mediaOpts.length > 1) usage("Use only one of --video, --gif, --webp per render.");
+    if (mediaOpts.length) {
+      const kind = mediaOpts[0];
+      const out = resolve(strOpt(options, kind)!);
+      const { renderMedia, mediaFormatFromPath } = await import("../render/render");
+      const format = kind === "video" ? mediaFormatFromPath(out) : kind;
+      if (kind === "video" && format !== "mp4" && format !== "webm") usage(`--video needs a .mp4 or .webm file name, got "${strOpt(options, kind)}".`, "e.g. --video renders/banner.mp4");
+      if (existsSync(out) && !confirmOrPlan(io, options, { overwrite: [out] }, () => `Overwrite ${out}`)) return;
+      const mbps = numOpt(options, "bitrate");
+      const r = await renderMedia({
+        projectDir: fs.root,
+        out,
+        format: format as "mp4" | "webm" | "gif" | "webp",
+        fps: numOpt(options, "fps"),
+        duration: numOpt(options, "duration"),
+        start: numOpt(options, "start"),
+        size: strOpt(options, "size"),
+        width: numOpt(options, "width"),
+        scale: numOpt(options, "scale"),
+        quality,
+        bg: strOpt(options, "bg"),
+        transparent: boolOpt(options, "transparent"),
+        bitrate: mbps === undefined ? undefined : mbps * 1e6,
+        timeoutMs: timeoutMs(options),
+        log,
+      });
+      const { data: _data, ...result } = r;
+      return printResult(io, { ...result, path: out }, () => `${r.format.toUpperCase()} ${r.duration}s @ ${r.fps} fps (${r.frames} frames, ${r.size.width}x${r.size.height}, ${r.codec}${r.supersampling > 1 ? `, ${r.supersampling}× supersampled` : ""}, ${Math.round(r.bytes / 1024)} KB, ${Math.round(r.ms / 1000)} s) → ${out}`);
+    }
     const capture = strOpt(options, "capture");
     if (capture && !["auto", "canvas", "page"].includes(capture)) usage(`--capture must be auto, canvas or page, got "${capture}".`);
     const { renderProject, parseInputScript } = await import("../render/render");
@@ -56,6 +100,9 @@ export const renderCommand: Command = {
       input,
       isolate: strOpt(options, "isolate"),
       bg: strOpt(options, "bg"),
+      quality,
+      transparent: boolOpt(options, "transparent"),
+      scroll,
       outDir: strOpt(options, "out") ? resolve(strOpt(options, "out")!) : undefined,
       timeoutMs: timeoutMs(options),
       log,
@@ -88,19 +135,28 @@ function dirNonEmpty(dir: string): string[] {
 
 export const exportCommand: Command = {
   name: "export",
-  usage: "export [--format embed|single-html|poster|video] [--out <path>] [--name <slug>] [--no-poster] [--yes] [--project <dir>]",
-  summary: "Export for a website: embed (Web Component + static files, default), single-html (one file), poster (still image), video (WebM). Overwriting a non-empty --out needs --yes.",
+  usage: "export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--yes] [--project <dir>]",
+  summary:
+    "Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Overwriting a non-empty --out needs --yes.",
   writes: true,
   options: [
     PROJECT_OPTION,
-    { name: "format", type: "string", description: "embed (default), single-html, poster or video." },
-    { name: "out", type: "string", description: "Output folder (embed / single-html: default <project>/dist/<format>) or file (poster / video: default <project>/dist/poster.webp, video.webm)." },
+    { name: "format", type: "string", description: "embed (default), zip, single-html, poster, video or gif." },
+    { name: "out", type: "string", description: "Output folder (embed / zip / single-html: default <project>/dist/<format>) or file (poster / video / gif: default <project>/dist/poster.webp, video.webm, animation.gif; a .mp4 --out renders H.264)." },
     { name: "name", type: "string", description: "Scene folder / file name in the export (default: the project name)." },
-    { name: "no-poster", type: "boolean", description: "embed / single-html: don't render a poster (no Chrome needed)." },
-    { name: "image", type: "string", description: "poster: webp (default) or png." },
+    { name: "base-url", type: "string", description: 'embed / zip: URL of the export folder as seen from the pages (default "./"), e.g. /wp-content/uploads/agent3d/ or https://cdn.example.com/3d/ — the snippet then works from any page.' },
+    { name: "cache-bust", type: "boolean", description: "embed / zip: versioned runtime folder (agent3d-runtime-<hash>/) and ?v=<hash> on the scene URL, so both can be cached for a year." },
+    { name: "no-integrity", type: "boolean", description: "embed / zip: no Subresource Integrity hash on the runtime <script> (default: integrity=\"sha384-…\")." },
+    { name: "no-extras", type: "boolean", description: "embed / zip: skip EMBED.md and frameworks/ (React / Vue / Svelte wrappers)." },
+    { name: "no-poster", type: "boolean", description: "embed / zip / single-html: don't render a poster nor og-image (no Chrome needed)." },
+    { name: "no-og", type: "boolean", description: "embed / zip: don't render the 1200×630 og-image.png social preview." },
+    { name: "optimize", type: "boolean", description: "embed / zip / single-html: export optimised copies of the assets (project and library) — textures at the size the scene needs (format kept), .glb geometry meshopt-compressed with WebP textures. The project is not modified. Textures need Chrome." },
+    { name: "image", type: "string", description: "poster: webp (default), png or jpeg." },
     { name: "time", type: "string", description: "poster: time in seconds (default target.posterTime)." },
-    { name: "duration", type: "string", description: "video: seconds (default the timeline duration, else 5)." },
-    { name: "fps", type: "string", description: "video: frames per second (default 30)." },
+    { name: "duration", type: "string", description: "video / gif: seconds (default the timeline duration, else 5)." },
+    { name: "fps", type: "string", description: "video / gif: frames per second (default 30 / 15)." },
+    { name: "quality", type: "string", description: "poster / video / gif: draft, standard (default), high (2× supersampling) or ultra (3×)." },
+    { name: "transparent", type: "boolean", description: "poster (png / webp) / gif: transparent background." },
     SIZE_OPTION,
     { name: "scale", type: "string", description: "poster: device pixel ratio (default 2)." },
     TIMEOUT_OPTION,
@@ -109,42 +165,79 @@ export const exportCommand: Command = {
   async run({ io, options }) {
     const fs = projectFs(options);
     const format = strOpt(options, "format") ?? "embed";
-    if (!["embed", "single-html", "poster", "video"].includes(format)) usage(`Unknown --format "${format}".`, "Use embed, single-html, poster or video.");
+    const FORMATS = ["embed", "zip", "single-html", "poster", "video", "gif"];
+    if (!FORMATS.includes(format)) usage(`Unknown --format "${format}".`, `Use ${FORMATS.join(", ")}.`);
     const outOpt = strOpt(options, "out");
+    const render = () => import("../render/render");
 
-    if (format === "poster" || format === "video") {
-      const image = (strOpt(options, "image") ?? (outOpt?.endsWith(".png") ? "png" : "webp")) as "webp" | "png";
-      if (!["webp", "png"].includes(image)) usage("--image must be webp or png.");
-      const out = resolve(outOpt ?? join(fs.root, "dist", format === "poster" ? `poster.${image}` : "video.webm"));
+    if (format === "poster" || format === "video" || format === "gif") {
+      const { parseQuality, mediaFormatFromPath } = await render();
+      const quality = parseQuality(strOpt(options, "quality"));
+      const image = (strOpt(options, "image") ?? (outOpt?.endsWith(".png") ? "png" : /\.jpe?g$/i.test(outOpt ?? "") ? "jpeg" : "webp")) as "webp" | "png" | "jpeg";
+      if (!["webp", "png", "jpeg"].includes(image)) usage("--image must be webp, png or jpeg.");
+      const out = resolve(outOpt ?? join(fs.root, "dist", format === "poster" ? `poster.${image === "jpeg" ? "jpg" : image}` : format === "gif" ? "animation.gif" : "video.webm"));
       if (existsSync(out) && !confirmOrPlan(io, options, { overwrite: [out] }, () => `Overwrite ${out}`)) return;
-      const render = await import("../render/render");
+      const r = await render();
       if (format === "poster") {
-        const r = await render.renderPoster({ projectDir: fs.root, format: image, size: strOpt(options, "size"), scale: numOpt(options, "scale") ?? 2, time: numOpt(options, "time"), timeoutMs: timeoutMs(options), log });
-        writeOutFile(out, r.bytes);
-        return printResult(io, { format, path: out, t: r.t, size: r.size, bytes: r.bytes.byteLength }, () => `Poster (t=${r.t}s) → ${out}`);
+        const p = await r.renderPoster({ projectDir: fs.root, format: image, size: strOpt(options, "size"), scale: numOpt(options, "scale") ?? 2, time: numOpt(options, "time"), quality, transparent: boolOpt(options, "transparent"), timeoutMs: timeoutMs(options), log });
+        writeOutFile(out, p.bytes);
+        return printResult(io, { format, path: out, t: p.t, size: p.size, bytes: p.bytes.byteLength, ...(p.supersampling > 1 ? { supersampling: p.supersampling } : {}) }, () => `Poster (t=${p.t}s) → ${out}`);
       }
-      const r = await render.renderVideo({ projectDir: fs.root, size: strOpt(options, "size"), duration: numOpt(options, "duration"), fps: numOpt(options, "fps"), timeoutMs: timeoutMs(options), log });
-      writeOutFile(out, r.bytes);
-      return printResult(io, { format, path: out, frames: r.frames, fps: r.fps, duration: r.duration, size: r.size, bytes: r.bytes.byteLength, ms: r.ms }, () => `Video ${r.duration}s @ ${r.fps} fps (${r.frames} frames, ${Math.round(r.bytes.byteLength / 1024)} KB) → ${out}`);
+      const media = format === "gif" ? "gif" : mediaFormatFromPath(out) === "mp4" ? "mp4" : "webm";
+      const m = await r.renderMedia({ projectDir: fs.root, out, format: media, size: strOpt(options, "size"), width: format === "video" && !strOpt(options, "size") ? 960 : undefined, duration: numOpt(options, "duration"), fps: numOpt(options, "fps"), quality, transparent: boolOpt(options, "transparent"), timeoutMs: timeoutMs(options), log });
+      return printResult(io, { format, path: out, codec: m.codec, frames: m.frames, fps: m.fps, duration: m.duration, size: m.size, bytes: m.bytes, ms: m.ms }, () => `${media.toUpperCase()} ${m.duration}s @ ${m.fps} fps (${m.frames} frames, ${m.codec}, ${Math.round(m.bytes / 1024)} KB) → ${out}`);
     }
 
     const out = resolve(outOpt ?? join(fs.root, "dist", format));
     const existing = dirNonEmpty(out);
     if (existing.length && !confirmOrPlan(io, options, { out, overwrite: true, existingEntries: existing.slice(0, 50) }, () => `${out} is not empty (${existing.length} entries): files with the same names are overwritten.`)) return;
     const warnings: string[] = [];
-    let poster: Uint8Array | undefined;
+    let images: { poster?: Uint8Array; posterSize?: { width: number; height: number }; og?: Uint8Array } = {};
     if (!boolOpt(options, "no-poster")) {
       try {
-        const { renderPoster } = await import("../render/render");
-        poster = (await renderPoster({ projectDir: fs.root, format: "webp", scale: 1, timeoutMs: timeoutMs(options), log })).bytes;
+        const { renderExportImages } = await render();
+        images = await renderExportImages({ projectDir: fs.root, og: format !== "single-html" && !boolOpt(options, "no-og"), timeoutMs: timeoutMs(options), log });
       } catch (e) {
         const err = e as CliError;
-        warnings.push(`No poster: ${err.message}${err.hint ? ` (${err.hint})` : ""} — the export works without it (no WebGL fallback image).`);
+        warnings.push(`No poster: ${err.message}${err.hint ? ` (${err.hint})` : ""} — the export works without it (no image before load / without WebGL).`);
       }
     }
-    const runtime = { files: readRuntimeFiles(format as "embed" | "single-html") };
+    const runtime = { files: readRuntimeFiles(format as "embed" | "single-html" | "zip") };
     const { buildExport } = await import("../../src/ops/export");
-    const r = await buildExport(fs, { format: format as "embed" | "single-html", name: strOpt(options, "name"), runtime, library: libraryProvider(), poster });
+    const { version } = (await import("../../package.json")).default;
+    // --optimize: buildExport reads optimised copies (src/ops/optimize.ts); nothing in the project changes.
+    let exportFs: typeof fs | import("../../src/core/fs").ProjectFs = fs;
+    let exportLibrary = libraryProvider();
+    let optimizeReport: (() => import("../../src/ops/optimize").ExportOptimizeReport) | undefined;
+    let closeCodec: (() => Promise<void>) | undefined;
+    if (boolOpt(options, "optimize")) {
+      const { optimizedExportSources } = await import("../../src/ops/optimize");
+      let codec: import("../../src/ops/optimize").ImageCodec | undefined;
+      if ((await import("../render/browser")).findBrowser()) {
+        const c = await (await import("../render/imageCodec")).openImageCodec({ log });
+        codec = c.codec;
+        closeCodec = c.close;
+      } else warnings.push("--optimize: no Chrome found, textures were not resized (geometry was compressed).");
+      const o = await optimizedExportSources(fs, exportLibrary, { codec });
+      exportFs = o.fs;
+      exportLibrary = o.library;
+      optimizeReport = o.report;
+    }
+    const r = await buildExport(exportFs, {
+      format: format as "embed" | "single-html" | "zip",
+      name: strOpt(options, "name"),
+      runtime,
+      library: exportLibrary,
+      poster: images.poster,
+      posterSize: images.posterSize,
+      ogImage: images.og,
+      baseUrl: strOpt(options, "base-url"),
+      cacheBust: boolOpt(options, "cache-bust"),
+      integrity: !boolOpt(options, "no-integrity"),
+      extras: !boolOpt(options, "no-extras"),
+      version,
+    }).finally(() => closeCodec?.());
+    const optimized = optimizeReport?.();
     const written: string[] = [];
     for (const [rel, data] of Object.entries(r.files)) {
       const abs = resolve(out, rel);
@@ -153,8 +246,18 @@ export const exportCommand: Command = {
       written.push(abs);
     }
     const entry = resolve(out, r.entry);
-    printResult(io, { format, out, entry, snippet: r.snippet, totalKb: r.totalKb, sizes: r.sizes, credits: r.credits, issues: r.issues, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) }, () =>
-      [`Exported ${format} → ${out} (${r.totalKb} KB, ${written.length} files)`, `Open: ${entry}`, "", "Paste in your page:", r.snippet, ...warnings.map((w) => `! ${w}`)].join("\n"),
+    printResult(
+      io,
+      { format, out, entry, snippet: r.snippet, ...(r.head ? { head: r.head } : {}), ...(r.integrity ? { integrity: r.integrity } : {}), ...(r.runtimeDir ? { runtimeDir: r.runtimeDir } : {}), totalKb: r.totalKb, sizes: r.sizes, ...(optimized ? { optimized } : {}), credits: r.credits, issues: r.issues, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) },
+      () =>
+        [
+          `Exported ${format} → ${out} (${r.totalKb} KB, ${written.length} files)`,
+          `Open: ${entry}`,
+          ...(optimized ? [`Optimised asset copies: ${optimized.beforeKb} → ${optimized.afterKb} KB (saved ${optimized.savedKb} KB; the project is unchanged).`] : []),
+          ...(format === "zip" ? [] : ["", "Paste in your page:", r.snippet]),
+          ...(format === "embed" ? ["", `How to publish it (WordPress, Webflow, Shopify, React, Vue…): ${resolve(out, "EMBED.md")}`] : []),
+          ...warnings.map((w) => `! ${w}`),
+        ].join("\n"),
     );
   },
 };
