@@ -142,7 +142,7 @@ export const en = {
     tris: "tris",
     calls: "draw calls",
     starting: "Starting…",
-    runtimeIssues: "{n} runtime issues",
+    runtimeIssues: "Runtime issues: {n}",
   },
   bottom: { timeline: "Timeline", json: "JSON", check: "Check", collapse: "Collapse panel", expand: "Expand panel" },
   timeline: {

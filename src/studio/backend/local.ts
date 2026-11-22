@@ -11,8 +11,10 @@ import type { TemplateInfo } from "../../ops/templates";
 import { PersistedFs, projectsDb } from "./idb";
 import { ToolCallError, type Backend, type Capabilities, type CreateOptions, type ProjectRef, type ToolInfo } from "./types";
 
+// Static hosting: put runtime/ and library/ next to the Studio. `npm run dev`
+// serves the repo root, so library/ and dist/runtime/ are found there too.
 const LIBRARY_BASE = "./library/";
-const RUNTIME_BASE = "./runtime/";
+const RUNTIME_BASES = ["./runtime/", "./dist/runtime/"];
 
 async function fetchBytes(url: string): Promise<Uint8Array | null> {
   try {
@@ -39,7 +41,10 @@ export class LocalBackend implements Backend {
 
   async init(): Promise<void> {
     // Export works only when the single-file runtime is served next to the Studio.
-    this.singleRuntime = await fetchBytes(`${RUNTIME_BASE}agent3d-runtime.single.js`);
+    for (const base of RUNTIME_BASES) {
+      this.singleRuntime = await fetchBytes(`${base}agent3d-runtime.single.js`);
+      if (this.singleRuntime) break;
+    }
     if (this.singleRuntime) this.capabilities = { render: false, exportFormats: ["single-html", "poster"], exportHint: "local" };
   }
 

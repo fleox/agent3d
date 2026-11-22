@@ -143,7 +143,7 @@ export const fr: Messages = {
     tris: "triangles",
     calls: "appels de rendu",
     starting: "Démarrage…",
-    runtimeIssues: "{n} problèmes d'exécution",
+    runtimeIssues: "Problèmes d'exécution : {n}",
   },
   bottom: { timeline: "Timeline", json: "JSON", check: "Vérification", collapse: "Replier le panneau", expand: "Déplier le panneau" },
   timeline: {

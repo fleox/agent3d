@@ -118,7 +118,10 @@ export function AssistantPanel() {
   useEffect(() => {
     conversations.set(convKey, conv);
   }, [conv, convKey]);
-  useEffect(() => endRef.current?.scrollIntoView({ block: "end" }), [conv.items.length]);
+  useEffect(() => {
+    // Block body: scrollIntoView returns a Promise in recent Chrome (not a valid effect cleanup).
+    void endRef.current?.scrollIntoView({ block: "end" });
+  }, [conv.items.length]);
   useEffect(() => () => abort.current?.abort(), []);
 
   const update = (fn: (items: Item[]) => Item[]) => setConv((c) => ({ ...c, items: fn(c.items) }));

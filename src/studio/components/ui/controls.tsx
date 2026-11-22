@@ -48,7 +48,9 @@ export function IconButton({ label, active, className, children, shortcut, ...re
 // Text input that commits on blur / Enter (Escape reverts).
 export function TextField({ value, onCommit, placeholder, className, multiline, mono, ariaLabel }: { value: string; onCommit(v: string): void; placeholder?: string; className?: string; multiline?: boolean; mono?: boolean; ariaLabel?: string }) {
   const [draft, setDraft] = useState(value);
-  useEffect(() => setDraft(value), [value]);
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
   const commit = () => draft !== value && onCommit(draft);
   const common = {
     value: draft,

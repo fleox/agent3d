@@ -113,11 +113,22 @@ export class RemoteBackend implements Backend {
     return `./api/templates/${encodeURIComponent(id)}/preview.png`;
   }
 
+  // Tools may return absolute paths inside the project (render_preview): make them relative.
+  private rel(path: string): string {
+    const dir = this.info.project?.dir;
+    if (dir && path.startsWith(`${dir}/`)) return path.slice(dir.length + 1);
+    const real = dir?.replace(/^\/private\//, "/");
+    if (real && path.startsWith(`${real}/`)) return path.slice(real.length + 1);
+    return path.replace(/^\.\//, "");
+  }
+
   async fileUrl(path: string): Promise<string> {
+    path = this.rel(path);
     return `${this.info.assetBase.replace(/\/?$/, "/")}${path.split("/").map(encodeURIComponent).join("/")}?v=${Date.now()}`;
   }
 
   async readFile(path: string): Promise<Uint8Array> {
+    path = this.rel(path);
     const res = await fetch(`./api/project/${path.split("/").map(encodeURIComponent).join("/")}`, { cache: "no-store" });
     if (!res.ok) throw new ToolCallError("notFound", `No file ${path}.`);
     return new Uint8Array(await res.arrayBuffer());

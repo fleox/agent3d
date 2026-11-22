@@ -28,7 +28,9 @@ export function NumberField({ value, onChange, label, labelClass, step, min, max
   const s = step ?? (integer ? 1 : Math.abs(value) >= 10 ? 0.1 : 0.01);
   const clamp = (n: number) => clampNumber({ min, max, type: integer ? "integer" : "number" }, n);
 
-  useEffect(() => setDraft(null), [value]);
+  useEffect(() => {
+    setDraft(null);
+  }, [value]);
 
   const commit = () => {
     if (draft === null) return;
