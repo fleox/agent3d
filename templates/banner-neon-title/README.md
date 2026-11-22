@@ -7,7 +7,7 @@ A 4:1 synthwave banner: a glowing neon 3D headline ("AFTER DARK"), flickering ne
 | Change | Where |
 |---|---|
 | Headline text | `objects#title.text` |
-| Headline colour | `objects#title.material.color` / `.emissive` (keep `emissiveIntensity` ≈ 0.4 — higher blows out under bloom) |
+| Headline colour | `objects#title.material.color` (a deep shade) / `.emissive` (the neon hue, `emissiveIntensity` ≈ 0.6). Keep the bloom `threshold` ≈ 0.9 and the `night` IBL: brighter faces or a white studio IBL wash the letters to pinkish white |
 | Grid colour | `objects#gridLong.material` and `objects#gridCross.material` |
 | Sun colours | `objects#sun.material.gradient` (bottom → top) |
 | Tube colours / shapes | `objects#tubeLeft`, `objects#tubeRight` (`geometry.points`) |
