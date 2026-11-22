@@ -14,17 +14,37 @@
   },
   "camera": {
     "type": "orthographic",
-    "zoom": 38,
-    "position": [30, 27.5, 30],
-    "target": [0, 2.5, 0],
+    "zoom": 34.5,
+    "position": [
+      30,
+      23.8,
+      30
+    ],
+    "target": [
+      0,
+      -1.2,
+      0
+    ],
     "near": 0.1,
     "far": 200,
     "controls": "orbit",
     "autoRotate": 3,
     "orbitZoom": false,
-    "orbitLimits": {"minPolar": 35, "maxPolar": 65}
+    "orbitLimits": {
+      "minPolar": 35,
+      "maxPolar": 65
+    }
   },
-  "environment": {"background": {"radial": ["#fff4e6", "#f3d9c4"]}, "lighting": "soft", "lightingIntensity": 0.7},
+  "environment": {
+    "background": {
+      "radial": [
+        "#fff4e6",
+        "#f3d9c4"
+      ]
+    },
+    "lighting": "soft",
+    "lightingIntensity": 0.7
+  },
   "lights": [
     {
       "id": "fill",
@@ -36,7 +56,11 @@
     {
       "id": "sun",
       "type": "directional",
-      "position": [18, 30, 10],
+      "position": [
+        18,
+        30,
+        10
+      ],
       "color": "#fff1dc",
       "intensity": 2.4,
       "castShadow": true
@@ -46,9 +70,23 @@
     {
       "id": "slab",
       "kind": "mesh",
-      "geometry": {"type": "roundedBox", "width": 26.6, "height": 2.4, "depth": 26.6, "radius": 0.4, "segments": 3},
-      "position": [0, -1.25, 0],
-      "material": {"preset": "clay", "color": "#e9d8c4"},
+      "geometry": {
+        "type": "roundedBox",
+        "width": 22.6,
+        "height": 2.4,
+        "depth": 22.6,
+        "radius": 0.4,
+        "segments": 3
+      },
+      "position": [
+        0,
+        -1.25,
+        0
+      ],
+      "material": {
+        "preset": "clay",
+        "color": "#e9d8c4"
+      },
       "receiveShadow": true
     },
     {
@@ -56,12 +94,19 @@
       "kind": "generator",
       "generator": "city",
       "params": {
-        "blocks": 4,
+        "blocks": 3,
         "blockSize": 4,
-        "street": 1.8,
+        "street": 2.2,
         "minHeight": 0.8,
-        "maxHeight": 6,
-        "colors": ["#f6bd9b", "#f7e3b5", "#a8d5c9", "#e9a6a6", "#c9b8e8", "#fdf3e7"],
+        "maxHeight": 5.5,
+        "colors": [
+          "#f6bd9b",
+          "#f7e3b5",
+          "#a8d5c9",
+          "#e9a6a6",
+          "#c9b8e8",
+          "#fdf3e7"
+        ],
         "windows": true,
         "windowColor": "#ffe6a8",
         "trees": true
@@ -74,22 +119,54 @@
       "id": "taxi",
       "kind": "model",
       "src": "library:models/vehicles/taxi.glb",
-      "fit": 1.25,
+      "fit": 1.8,
       "castShadow": true,
       "behaviours": [
         {
           "type": "path",
           "points": [
-            [-5.35, 0.02, -4.15],
-            [-4.15, 0.02, -5.35],
-            [4.15, 0.02, -5.35],
-            [5.35, 0.02, -4.15],
-            [5.35, 0.02, 4.15],
-            [4.15, 0.02, 5.35],
-            [-4.15, 0.02, 5.35],
-            [-5.35, 0.02, 4.15]
+            [
+              -2.55,
+              0.02,
+              -1.55
+            ],
+            [
+              -1.55,
+              0.02,
+              -2.55
+            ],
+            [
+              1.55,
+              0.02,
+              -2.55
+            ],
+            [
+              2.55,
+              0.02,
+              -1.55
+            ],
+            [
+              2.55,
+              0.02,
+              1.55
+            ],
+            [
+              1.55,
+              0.02,
+              2.55
+            ],
+            [
+              -1.55,
+              0.02,
+              2.55
+            ],
+            [
+              -2.55,
+              0.02,
+              1.55
+            ]
           ],
-          "duration": 9,
+          "duration": 8,
           "loop": true,
           "faceDirection": true
         }
@@ -99,22 +176,54 @@
       "id": "sedan",
       "kind": "model",
       "src": "library:models/vehicles/car.glb",
-      "fit": 1.25,
+      "fit": 1.8,
       "castShadow": true,
       "behaviours": [
         {
           "type": "path",
           "points": [
-            [5.35, 0.02, 4.15],
-            [4.15, 0.02, 5.35],
-            [-4.15, 0.02, 5.35],
-            [-5.35, 0.02, 4.15],
-            [-5.35, 0.02, -4.15],
-            [-4.15, 0.02, -5.35],
-            [4.15, 0.02, -5.35],
-            [5.35, 0.02, -4.15]
+            [
+              2.55,
+              0.02,
+              1.55
+            ],
+            [
+              1.55,
+              0.02,
+              2.55
+            ],
+            [
+              -1.55,
+              0.02,
+              2.55
+            ],
+            [
+              -2.55,
+              0.02,
+              1.55
+            ],
+            [
+              -2.55,
+              0.02,
+              -1.55
+            ],
+            [
+              -1.55,
+              0.02,
+              -2.55
+            ],
+            [
+              1.55,
+              0.02,
+              -2.55
+            ],
+            [
+              2.55,
+              0.02,
+              -1.55
+            ]
           ],
-          "duration": 9,
+          "duration": 8,
           "loop": true,
           "faceDirection": true
         }
@@ -124,22 +233,54 @@
       "id": "police",
       "kind": "model",
       "src": "library:models/vehicles/police-car.glb",
-      "fit": 1.25,
+      "fit": 1.8,
       "castShadow": true,
       "behaviours": [
         {
           "type": "path",
           "points": [
-            [-11.15, 0.02, -9.95],
-            [-9.95, 0.02, -11.15],
-            [9.95, 0.02, -11.15],
-            [11.15, 0.02, -9.95],
-            [11.15, 0.02, 9.95],
-            [9.95, 0.02, 11.15],
-            [-9.95, 0.02, 11.15],
-            [-11.15, 0.02, 9.95]
+            [
+              -8.75,
+              0.02,
+              -7.45
+            ],
+            [
+              -7.45,
+              0.02,
+              -8.75
+            ],
+            [
+              7.45,
+              0.02,
+              -8.75
+            ],
+            [
+              8.75,
+              0.02,
+              -7.45
+            ],
+            [
+              8.75,
+              0.02,
+              7.45
+            ],
+            [
+              7.45,
+              0.02,
+              8.75
+            ],
+            [
+              -7.45,
+              0.02,
+              8.75
+            ],
+            [
+              -8.75,
+              0.02,
+              7.45
+            ]
           ],
-          "duration": 18,
+          "duration": 16,
           "loop": true,
           "faceDirection": true
         }
@@ -149,22 +290,54 @@
       "id": "hatch",
       "kind": "model",
       "src": "library:models/vehicles/hatchback.glb",
-      "fit": 1.25,
+      "fit": 1.8,
       "castShadow": true,
       "behaviours": [
         {
           "type": "path",
           "points": [
-            [11.15, 0.02, -9.95],
-            [11.15, 0.02, 9.95],
-            [9.95, 0.02, 11.15],
-            [-9.95, 0.02, 11.15],
-            [-11.15, 0.02, 9.95],
-            [-11.15, 0.02, -9.95],
-            [-9.95, 0.02, -11.15],
-            [9.95, 0.02, -11.15]
+            [
+              8.75,
+              0.02,
+              -7.45
+            ],
+            [
+              8.75,
+              0.02,
+              7.45
+            ],
+            [
+              7.45,
+              0.02,
+              8.75
+            ],
+            [
+              -7.45,
+              0.02,
+              8.75
+            ],
+            [
+              -8.75,
+              0.02,
+              7.45
+            ],
+            [
+              -8.75,
+              0.02,
+              -7.45
+            ],
+            [
+              -7.45,
+              0.02,
+              -8.75
+            ],
+            [
+              7.45,
+              0.02,
+              -8.75
+            ]
           ],
-          "duration": 18,
+          "duration": 16,
           "loop": true,
           "faceDirection": true
         }
@@ -174,22 +347,54 @@
       "id": "truck",
       "kind": "model",
       "src": "library:models/vehicles/car.glb",
-      "fit": 1.25,
+      "fit": 1.8,
       "castShadow": true,
       "behaviours": [
         {
           "type": "path",
           "points": [
-            [-9.95, 0.02, 11.15],
-            [-11.15, 0.02, 9.95],
-            [-11.15, 0.02, -9.95],
-            [-9.95, 0.02, -11.15],
-            [9.95, 0.02, -11.15],
-            [11.15, 0.02, -9.95],
-            [11.15, 0.02, 9.95],
-            [9.95, 0.02, 11.15]
+            [
+              -7.45,
+              0.02,
+              8.75
+            ],
+            [
+              -8.75,
+              0.02,
+              7.45
+            ],
+            [
+              -8.75,
+              0.02,
+              -7.45
+            ],
+            [
+              -7.45,
+              0.02,
+              -8.75
+            ],
+            [
+              7.45,
+              0.02,
+              -8.75
+            ],
+            [
+              8.75,
+              0.02,
+              -7.45
+            ],
+            [
+              8.75,
+              0.02,
+              7.45
+            ],
+            [
+              7.45,
+              0.02,
+              8.75
+            ]
           ],
-          "duration": 18,
+          "duration": 16,
           "loop": true,
           "faceDirection": true
         }
