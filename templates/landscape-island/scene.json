@@ -7,7 +7,6 @@
   "target": {
     "kind": "hero",
     "aspect": "16:9",
-    "budgetKb": 300,
     "reducedMotion": "static",
     "posterTime": 0,
     "maxDpr": 2

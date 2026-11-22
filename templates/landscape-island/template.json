@@ -1,7 +1,7 @@
 {
   "id": "landscape-island",
   "title": "Low-poly island",
-  "description": "A procedural low-poly island in a turquoise sea: beaches, hills, forests, rocks, flowers, drifting clouds and a warm sky, slowly orbiting.",
+  "description": "A procedural low-poly island in a turquoise sea: beaches, hills, forests, rocks, flowers, drifting clouds and a warm sky, slowly orbiting. Behind a headline: set camera.autoRotate to 0 and shift the camera so the island leaves room for the text (see README).",
   "kind": "hero",
   "tags": [
     "landscape",

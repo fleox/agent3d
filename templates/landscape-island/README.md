@@ -13,5 +13,8 @@ A 16:9 procedural diorama, zero downloads: an island `terrain` (beach band, gras
 | Autumn | `objects#forest.params.leafColors: ["#d9822b", "#c0392b", "#f1c40f"]` |
 | Sky | `environment.background.sky` (`top`, `horizon`, `sun.direction`), keep `environment.fog.color` close to the horizon |
 | Turn speed | `camera.autoRotate` (0 = still) |
+| Room for a headline | the orbit sweeps the island across the whole frame: set `camera.autoRotate` to `0` (and `camera.controls` to `"none"` if the hero sits behind clickable HTML), then move `camera.target` sideways, e.g. `[-8, 1, 0]`, so the island sits on the right and the left half stays calm for the text |
 
 Scatter generators (`trees`, `rocks`, `flowers`) sit on the sibling terrain and avoid its `waterLevel` (keep the sea's y ≈ `waterLevel`).
+
+Budget: everything is procedural (0 KB of assets), so the hero's default 1500 KB budget applies; the cost is GPU time (triangles), which `check --render` measures.
