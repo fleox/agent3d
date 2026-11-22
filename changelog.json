@@ -1,0 +1,18 @@
+{
+  "versions": [
+    {
+      "version": "0.1.0",
+      "date": "2026-11-22",
+      "breaking": false,
+      "changes": [
+        "First release. Scenes are JSON (`scene.json`): targets (banner, hero, card, square, fullscreen, inline, game), camera and controls (orbit, parallax, scroll, follow), environments (gradients, sky, HDRI, fog, ground), lights, objects (meshes, 3D text, glTF models, SVG logos, generators, particles, instances), materials and shaders, behaviours, a keyframe timeline, post effects, physics, HUD, synth sounds and sandboxed game scripts.",
+        "The `agent3d` CLI: `new` (starters per target and templates), `scene get|summary|apply|patch|validate`, `object`, `timeline`, `catalog`, `templates`, `check` (validation, sandbox lint, budgets, framing, licences, web settings), `render` (headless Chrome, deterministic frames and contact sheets), `serve` (live preview), `studio`, `export` (embed, single-html, poster, video), `assets` (built-in CC0 library, Poly Haven / ambientCG / Khronos search and download, Kenney / Quaternius zip import), `tools`, `mcp`, `doctor`.",
+        "MCP server (`agent3d mcp`): the AI tool catalog plus `render_preview`, which returns the contact sheet as an image so multimodal clients can look at their work.",
+        "Built-in library of CC0 models, PBR textures, HDRIs and fonts, usable offline as `library:<id>`.",
+        "Runtime `<agent3d-scene>` Web Component: lazy start, pause off-screen, reduced motion, pixel ratio cap, poster fallback without WebGL, accessible label, responsive aspect ratio; no network calls to third parties.",
+        "Agent skills for Claude Code (`agent3d-create`, `agent3d-edit`, `agent3d-assets`, `agent3d-game`, `agent3d-publish`) and their Hermes Agent version with a Python wrapper; an AgentCMS plugin with an \"Agent3D scene\" editor block."
+      ],
+      "actions": []
+    }
+  ]
+}

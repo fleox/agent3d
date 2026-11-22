@@ -1,0 +1,24 @@
+{
+  "name": "agent3d-scene",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Embed 3D scenes made with Agent3D in AgentCMS posts and pages.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build && agentcms ext pack .",
+    "check": "agentcms ext check .",
+    "preview": "agentcms ext preview . --screenshots",
+    "serve": "agentcms ext preview . --serve",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@agent-cms/agentcms": "0.3.13",
+    "@tiptap/core": "^2.27.2",
+    "@tiptap/pm": "^2.27.2",
+    "@types/react": "^18.3.28",
+    "i18next": "^23.16.8",
+    "react-i18next": "^15.2.0",
+    "typescript": "^6.0.3",
+    "vite": "^6.4.3"
+  }
+}

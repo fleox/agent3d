@@ -1,0 +1,4 @@
+node_modules/
+dist/
+.preview/
+# agent3d-scene.zip is committed: it is what users install.

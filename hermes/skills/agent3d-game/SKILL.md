@@ -1,0 +1,98 @@
+---
+name: agent3d-game
+description: "Build a mini game or an interactive 3D experience for a web page with Agent3D scripts - a sandboxed ScriptApi (objects, input with keyboard, pointer and touch swipes, light physics and collisions, spawning and cloning, HUD with placeholders, synth sounds, best-score storage, events), game patterns (ready / play / over state machine, difficulty ramp, attract mode so screenshots show action), and testing through deterministic headless renders. Use when the user wants a playable game, a quiz-like interaction, a clickable 3D configurator or anything that needs logic beyond behaviours and timelines."
+version: 0.1.0
+author: Agent3D
+license: PolyForm-Noncommercial-1.0.0
+platforms: [macos, linux, windows]
+metadata:
+  hermes:
+    tags: [Agent3D, 3D, Games, Scripting, Interactive]
+    related_skills: [agent3d-create, agent3d-edit, agent3d-assets, agent3d-publish]
+---
+
+# Mini games with Agent3D
+
+A game is an ordinary scene (`target.kind: "game"`) plus **scripts**: ES modules listed in `scene.scripts`, each exporting a factory that gets the sandboxed `api` and returns lifecycle hooks. Everything else (objects, HUD, sounds, physics bodies, data) stays declarative in `scene.json`.
+
+**Language:** talk to the user in their language; keep commands, ids, code and files in English.
+
+Every command is `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
+
+## Running the commands (Hermes)
+
+Every `agent3d <command>` below runs through this skill's Python wrapper: `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py <command> …`. It adds `--json`, prints the CLI's JSON object (`{"ok": true, "data": …}` or `{"ok": false, "error": {code, message, hint}}`) and exits with the CLI's code. In the reference files, `python3 <skill dir>/scripts/agent3d.py` means the same command with this skill's directory.
+
+- **Requirements:** Python 3.9+ (stdlib only), **Node.js 22+** and, for renders, posters and videos, Google Chrome / Chromium / Edge. The Agent3D engine is the `@fleox/agent3d` npm package, fetched by `npx` on first use and pinned to the version of these skills. Without Node.js the wrapper answers `node-missing` with how to install it. `AGENT3D_CMD` overrides the engine command (e.g. `node /path/to/agent3d/dist/agent/agent3d.mjs` from a clone); `AGENT3D_CHROME` points at a browser binary.
+- **From Python:** `sys.path.insert(0, "${HERMES_SKILL_DIR}/scripts")`, then `from agent3d import run, patch, needs_confirmation, Agent3dError` — `run("scene", "summary", project="my-banner")` returns `data` and raises `Agent3dError(code, message, hint, details)` when `ok` is false (validation issues are in `details["issues"]`); `patch(ops, project=…)` sends patch ops on stdin.
+- **Plans:** a command that needs `--yes` and didn't get it writes nothing and answers `needsConfirmation: true` on `data` — test it with `needs_confirmation(data)`. Show the plan to the user before re-running with `--yes`.
+- **Looking at renders:** `render` returns PNG paths (`data.sheet`, `data.frames`). Open them with your vision / image tool; if you can't view images, rely on `data.inspect` and `check --render` and tell the user you couldn't check the look.
+- **Long-running commands** (`serve`, `studio`, `mcp`) need the user's own terminal: give them the command instead of running it.
+- **Helpers** in `${HERMES_SKILL_DIR}/scripts/` (each prints one JSON object; `--help` for options):
+  - `render_and_check.py`: Renders an Agent3D project headless (contact sheet + frames) and runs `check`, then prints the image paths to look at and a compact verdict.
+
+## Start
+
+```bash
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py new dodge --target game --title "Dodge" --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py scene summary --project dodge --json
+```
+
+The game starter has a player, coins with a `coin` tag, a follow camera, a score HUD, a coin sound and `scripts/game.js` (move with arrows / WASD, collect coins). A complete validated example (lane runner: lanes, spawning by cloning, difficulty ramp, best score, attract mode) is in skill `agent3d-create` → `references/recipes.md` ("Game"); patterns in [references/game-patterns.md](references/game-patterns.md); the full API in [references/script-api.md](references/script-api.md).
+
+## The script contract
+
+```js
+// scripts/game.js — no imports: everything comes from `api`.
+export default function (api) {
+  const player = api.get("player");
+  return {
+    start() { api.state.phase = "ready"; api.state.score = 0; },
+    update(dt, t) { /* every fixed step (default 1/60 s) */ },
+    onEvent(name, payload) { /* HUD button actions and api.emit() */ },
+    dispose() {},
+  };
+}
+```
+
+- `update(dt, t)` runs at a fixed step (`scene.physics.step`, default 1/60): the game is a pure function of time and input, so headless renders are reproducible.
+- `api.state` is shared with the HUD: `"text": "Score {score}"` interpolates it, `"visible": "phase == 'over'"` evaluates a small safe expression (comparisons, `&&`, `||`, `!`, strings, numbers).
+- `api.data` is `scene.data` (tuning, level layouts): keep numbers there so they can be patched without touching code.
+- Randomness: `api.random()` / `api.randomRange(a, b)` (seeded by `scene.seed`), never `Math.random()` (renders would differ every time).
+
+## Sandbox rules (`check` enforces them)
+
+Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `eval`, `Function`, `import` / `import()` / `import.meta`, `document`, `window`, `globalThis`, `self`, `localStorage` / `sessionStorage` / `indexedDB` / cookies, `parent`, `top`, `opener`, `postMessage`, `importScripts`, `navigator`, `location`, `Worker`. Use `api.storage` for the best score, `api.ui` for the HUD, `api.input` for keys and touch, `api.audio` for sounds. Words in strings and comments are not flagged; property names like `obj.parent` are fine.
+
+## Workflow
+
+1. Design the loop with the user in one paragraph: goal, controls (keyboard + touch), how you lose, what the score counts, how long a round lasts (30–90 s for a web page).
+2. Declare the scene: player and obstacle templates (hidden, with `tags` and a `body`), camera, HUD elements per phase, sounds (`catalog sounds`), `data` for tuning.
+3. Write the script (patterns below). Keep it under ~200 lines; one file is fine.
+4. Validate and lint: `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py check --project dodge --json` (sandbox errors carry the line: `scripts/game.js:12`).
+5. Render several moments and LOOK:
+   ```bash
+   python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project dodge --sheet --frames 0,2,4,6 --json
+   ```
+   Renders have no player input, so the game must show something on its own: an **attract mode** (an autopilot plays during the `ready` phase, behind the title and Play button). The HUD is captured because the scene has a `ui` (`--capture page` forces it). Check `data.issues` and `data.consoleErrors` for `script-error`.
+6. To test a state the autopilot doesn't reach (game over screen, high score), temporarily set the starting phase in `api.data` (e.g. `"startPhase": "over"`), render, then restore it.
+7. `check`, then `export` (skill `agent3d-publish`). Games export like any scene; the embed gets keyboard focus on click (`tabindex`, `role="application"`).
+
+## Game patterns in one screen
+
+- **Phases**: `ready` (title, Play button, attract mode) → `play` → `over` (score, Retry button). HUD elements use `visible` expressions on `phase`; buttons emit their `action` to `onEvent`.
+- **Input**: `api.input.pressed("ArrowLeft")` (went down this step) for discrete moves, `isDown` for continuous movement, `api.input.swipe()` for touch ("left" / "right" / "up" / "down"), `api.input.pointer` (normalised −1..1, `down`, `justPressed`), `api.input.pointerWorld()` for aiming on the ground plane. Always support both keyboard and touch.
+- **Spawning**: hide a template object (`"visible": false`), then `api.clone("block", { id, position })` (synchronous, cheap) and set `visible = true`; `obj.remove()` when it leaves the screen. Keep your own array of live clones.
+- **Collisions**: give objects a `body` (`static`, `dynamic`, `kinematic`, `trigger`; shape `box`, `sphere` or `auto`). `api.physics.overlaps(a, b)` for simple checks, `onCollision(handler)` for dynamic bodies, `raycast` for line of sight, `applyImpulse` for jumps.
+- **Difficulty ramp**: speed and spawn rate grow with time, clamped (`speed = Math.min(max, speed + dt * 0.4)`).
+- **Best score**: `api.storage.get("best")` / `api.storage.set("best", n)` (namespaced, never throws).
+- **Feedback**: `api.audio.play("hit")`, `api.camera.shake(0.3, 0.4)`, `api.ui.toast("+10", 1)`, `obj.setColor(...)`.
+- **Restart**: reset your own state in a function called from `onEvent("retry")`, or `api.restart()` to rebuild the scene from its definition.
+
+## Rules
+
+- No external code, no network, no DOM: only `api`. Tell the user when a request needs something the sandbox forbids (online leaderboards, analytics) and offer a local alternative (best score in storage).
+- Games must be playable on phones: touch swipes / taps for every control, big HUD buttons, no hover-only interactions.
+- Audio starts only after a user gesture (browser rule); the HUD shows a mute toggle. Keep sounds short and not too loud (`volume` 0.4–0.6).
+- Reduced motion: games default to `target.reducedMotion: "ignore"` (the player drives the motion); other kinds default to `static`. Don't set `static` on a game: it would freeze it.
+- Keep the first frame meaningful (attract mode) and `target.posterTime` on a frame with action: it is the poster and the reduced-motion still.

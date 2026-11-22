@@ -1,0 +1,14 @@
+{
+  "name": "agent3d",
+  "owner": { "name": "fleox" },
+  "description": "Agent3D — the 3D studio your AI agent can run: describe a scene as JSON, look at headless renders, export a self-contained embed for any website.",
+  "plugins": [
+    {
+      "name": "agent3d",
+      "source": "./plugin",
+      "description": "Skills to build 3D web elements from a brief (banners, heroes, characters, landscapes, products, mini games), edit them, find CC0 assets, write game scripts and publish the embed to plain HTML, WordPress, AgentCMS or React / Vue sites.",
+      "category": "design",
+      "tags": ["3d", "threejs", "webgl", "creative", "banner", "game", "web-component", "mcp"]
+    }
+  ]
+}

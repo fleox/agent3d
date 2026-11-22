@@ -38,8 +38,10 @@ src/
 agent/         `agent3d` CLI (Node ≥ 20, bundled to dist/agent/agent3d.mjs) — commands/, mcp/, render/ (CDP headless Chrome), serve, nodeFs
 library/       built-in CC0 assets shipped in the npm package (fonts/, models/, textures/, hdri/) + library/index.json (id, path, licence, author, tags)
 templates/     starter projects (folder per template: agent3d.json, scene.json, scripts/, template.json {id,title,description,kind,tags})
-plugin/skills/ Claude Code skills (single source)          hermes/  generated Python-agent skills
-docs/          user docs (docs/catalog.md generated)       scripts/  build / check scripts
+plugin/skills/ Claude Code skills (single source)          hermes/  generated Python-agent skills (+ python/ wrapper, tests/)
+integrations/agentcms/  AgentCMS plugin: "Agent3D scene" editor block (packed agent3d-scene.zip)
+docs/          user docs (catalog.md + cli.md reference generated)   scripts/  build / check scripts
+AGENTS.md      what must stay in sync (catalog, tools, skills, versions, Hermes, docs)
 ```
 
 ### Builds
@@ -167,6 +169,6 @@ Also: `agent3d export --format poster` (PNG/WebP still) and `--format video` (We
 | CLI | `agent/`, `vite.agent.config.ts`, `tsconfig.agent.json` |
 | Studio | `src/studio/`, `index.html`, `vite.config.ts`, tailwind / postcss |
 | Content | `templates/`, `library/` (except fonts), `examples/` |
-| Distribution | `plugin/`, `hermes/`, `.claude-plugin/`, `docs/`, `scripts/check-skills.mjs`, `scripts/build-hermes.mjs`, `README.md` |
+| Distribution | `plugin/`, `hermes/`, `.claude-plugin/`, `docs/` (except `catalog.md`, `studio-api.md`), `integrations/agentcms/`, `scripts/check-skills.mjs`, `scripts/build-hermes.mjs`, `scripts/build-cli-docs.mjs` (+ `cli-docs.mjs`, `cli-docs.test.ts`), `scripts/sync-version.mjs`, `scripts/write-version.mjs`, `README.md`, `AGENTS.md`, `changelog.json` |
 
 `src/core/types.ts`, `src/core/catalog.ts`, `src/runtime/api.ts`, `src/runtime/registry.ts` are **contracts**: change them only additively and say so in your report. `package.json` dependencies: ask the lead (no new runtime dependency besides `three` without a strong reason).
