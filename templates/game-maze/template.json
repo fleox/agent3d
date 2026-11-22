@@ -1,0 +1,18 @@
+{
+  "id": "game-maze",
+  "title": "Marble maze",
+  "description": "Playable marble maze: roll a glossy ball through a procedural maze to the glowing exit against the clock \u2014 physics walls, best time, keyboard + touch, self-solving attract mode.",
+  "kind": "game",
+  "tags": [
+    "game",
+    "maze",
+    "puzzle",
+    "ball",
+    "physics",
+    "timer",
+    "touch",
+    "keyboard",
+    "procedural"
+  ],
+  "aspect": "1:1"
+}
