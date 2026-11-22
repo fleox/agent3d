@@ -9,7 +9,8 @@
 //   speeds in deg/s). The runtime converts to radians.
 // - Colours are CSS strings: "#rrggbb", "#rgb", "rgb(…)", "hsl(…)" or a CSS name.
 // - Asset paths are relative to the project folder ("assets/fox.glb") or a
-//   built-in library id ("library:nature/pine-tree").
+//   built-in library ref: "library:" + the library index id, which is the path
+//   inside library/ ("library:models/nature/pine-tree.glb", "library:fonts/…").
 // - Time is in seconds.
 
 export type Vec2 = [number, number];
@@ -63,7 +64,8 @@ export interface TargetDef {
   // Max devicePixelRatio (default 2).
   maxDpr?: number;
   // What to do when the visitor prefers reduced motion: "static" freezes at
-  // `posterTime`, "slow" halves speeds, "ignore" plays normally. Default "static".
+  // `posterTime` (entrance behaviours such as `appear` shown finished), "slow"
+  // halves speeds, "ignore" plays normally. Default "static" ("ignore" for games).
   reducedMotion?: "static" | "slow" | "ignore";
   // Time (s) of the frame used for the poster / reduced-motion still. Default 0.
   posterTime?: number;
@@ -198,7 +200,7 @@ export interface TextObjectDef extends BaseObjectDef {
 
 export interface ModelObjectDef extends BaseObjectDef {
   kind: "model";
-  src: string; // .glb / .gltf project path or "library:<id>"
+  src: string; // .glb / .gltf project path or "library:<id>" (e.g. "library:models/nature/pine-tree.glb")
   // Fit the model so its largest dimension equals this size (units).
   fit?: number;
   // Move the model so its bounding box bottom-centre sits at the origin (default true).

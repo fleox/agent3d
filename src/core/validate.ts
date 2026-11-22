@@ -248,7 +248,7 @@ class V {
   assetPath(v: unknown, path: string, exts: readonly string[], what: string): boolean {
     if (v === undefined) return true;
     if (typeof v !== "string" || !v.trim()) {
-      this.error("type", path, `Expected an asset path string for ${what}, got ${show(v)}.`, 'Use a project path like "assets/models/fox.glb" or a library id like "library:nature/pine-tree".');
+      this.error("type", path, `Expected an asset path string for ${what}, got ${show(v)}.`, 'Use a project path like "assets/models/fox.glb" or a library id like "library:models/nature/pine-tree.glb".');
       return false;
     }
     const problem = assetPathProblem(v);
@@ -394,7 +394,7 @@ export function assetPathProblem(p: string): { message: string; hint: string } |
   if (isLibraryRef(p)) {
     const id = libraryId(p);
     if (!/^[a-z0-9][a-z0-9._/-]*$/i.test(id) || id.includes("..") || id.endsWith("/")) {
-      return { message: "library ids look like \"library:<folder>/<name>\".", hint: 'List valid ids with library_list (CLI: agent3d assets library), e.g. "library:nature/pine-tree".' };
+      return { message: "library ids look like \"library:<path in the library>\".", hint: 'List valid ids with library_list (CLI: agent3d assets library), e.g. "library:models/nature/pine-tree.glb".' };
     }
     return null;
   }

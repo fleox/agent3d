@@ -1,11 +1,11 @@
 // The built-in asset library (library/ in the npm package, library/index.json).
-// Scenes reference its assets as "library:<id>" (e.g. "library:nature/pine-tree").
+// Scenes reference its assets as "library:<id>" (e.g. "library:models/nature/pine-tree.glb").
 // The front door (CLI, Studio) loads the index and the bytes; ops only see these types.
 
 import type { AssetEntry } from "./types";
 
 export interface LibraryAsset {
-  id: string; // "nature/pine-tree" (referenced as "library:nature/pine-tree")
+  id: string; // path inside library/, e.g. "models/nature/pine-tree.glb" (referenced as "library:models/nature/pine-tree.glb")
   path: string; // file path inside library/ ("models/nature/pine-tree.glb")
   kind: AssetEntry["kind"];
   license: string; // "CC0-1.0", …

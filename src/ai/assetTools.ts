@@ -25,7 +25,7 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "library_list",
     description:
-      'Search the built-in asset library (shipped with Agent3D, works offline): models, textures, HDRIs. Use an asset directly in the scene as "library:<id>" (e.g. model src "library:nature/pine-tree") — no download, the export copies it. Prefer catalog generators / geometries (zero bytes) and the library before downloading assets.',
+      'Search the built-in asset library (shipped with Agent3D, works offline): models, textures, HDRIs. Use an asset directly in the scene as "library:<id>" (e.g. model src "library:models/nature/pine-tree.glb") — no download, the export copies it. Prefer catalog generators / geometries (zero bytes) and the library before downloading assets.',
     inputSchema: { type: "object", properties: { query: { type: "string", description: "Words, e.g. \"tree\", \"rock moss\"." }, kind: { type: "string", enum: KINDS }, limit: { type: "integer", minimum: 1, maximum: 200 } } },
     mutating: false,
     handler(ctx, input) {
