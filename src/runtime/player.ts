@@ -35,9 +35,38 @@ function aspectOf(scene: SceneDoc): number {
   return 16 / 9;
 }
 
+// WebGL context budget. Browsers cap live contexts (~16 in Chrome) and drop the
+// oldest one, blanking it. Players far off-screen give their context back:
+// after OFFSCREEN_RELEASE_MS out of view, or immediately (least recently seen
+// first) when a new player needs a context and MAX_LIVE_CONTEXTS are alive.
+// A released player shows its last frame as an image and rebuilds on re-entry.
+// Games, editors and deterministic (headless) players are never released.
+const MAX_LIVE_CONTEXTS = 8;
+const OFFSCREEN_RELEASE_MS = 20_000;
+const livePlayers = new Set<PlayerImpl>();
+
+function reclaimContexts(except: PlayerImpl): void {
+  while (livePlayers.size >= MAX_LIVE_CONTEXTS) {
+    let victim: PlayerImpl | null = null;
+    for (const p of livePlayers) if (p !== except && p.releasable() && (!victim || p.lastSeen < victim.lastSeen)) victim = p;
+    if (!victim) return;
+    victim.release();
+  }
+}
+
+/** Live WebGL contexts held by players on this page (tests / diagnostics). */
+export function liveContextCount(): number {
+  return livePlayers.size;
+}
+
 class PlayerImpl implements Player {
   scene: SceneDoc;
-  readonly canvas: HTMLCanvasElement;
+  canvas: HTMLCanvasElement;
+  lastSeen = 0;
+  private released = false;
+  private releaseTimer: ReturnType<typeof setTimeout> | null = null;
+  private placeholder: HTMLImageElement | null = null;
+  private readyCalled = false;
   ready: Promise<void>;
   readonly issues: RuntimeIssue[] = [];
   readonly input: Player["input"];
@@ -138,7 +167,11 @@ class PlayerImpl implements Player {
         (entries) => {
           const vis = entries.some((e) => e.isIntersecting);
           this.visible = vis;
+          this.lastSeen = performance.now();
+          if (this.releaseTimer) clearTimeout(this.releaseTimer);
+          this.releaseTimer = null;
           if (vis) this.start();
+          else if (this.releasable()) this.releaseTimer = setTimeout(() => this.release(), OFFSCREEN_RELEASE_MS);
           this.updateRunning();
         },
         { rootMargin: "200px 0px" },
@@ -186,8 +219,19 @@ class PlayerImpl implements Player {
   private start(): void {
     if (this.started || this.disposed) return;
     this.started = true;
+    reclaimContexts(this);
+    if (this.released) {
+      // The old canvas' context is lost for good: render into a fresh one,
+      // under the last-frame image until the rebuilt scene has drawn.
+      const fresh = this.container.ownerDocument.createElement("canvas");
+      fresh.style.cssText = this.canvas.style.cssText;
+      this.canvas.replaceWith(fresh);
+      this.canvas = fresh;
+      this.released = false;
+    }
     try {
       this.renderer = this.createRenderer();
+      livePlayers.add(this);
     } catch (err) {
       this.report({ code: "webgl-unavailable", message: `WebGL is not available: ${(err as Error).message}` });
       this.readyReject(new Error("webgl-unavailable"));
@@ -210,8 +254,11 @@ class PlayerImpl implements Player {
           this.playing = true;
           this.updateRunning();
         }
+        this.placeholder?.remove();
+        this.placeholder = null;
         this.readyResolve();
-        this.options.onReady?.(this);
+        if (!this.readyCalled) this.options.onReady?.(this);
+        this.readyCalled = true;
       })
       .catch((err: Error) => {
         this.report({ code: "build-error", message: err.message });
@@ -452,6 +499,51 @@ class PlayerImpl implements Player {
     };
   }
 
+  // ─── Context release ─────────────────────────────────────────────────
+
+  releasable(): boolean {
+    return !!this.renderer && !!this.world && !this.game && !this.deterministic && !this.options.editor && !this.visible && !this.disposed && !this.released && !needsGame(this.scene);
+  }
+
+  // Give the WebGL context back: keep the last frame as an image, free every
+  // GPU resource and lose the context. start() rebuilds on re-entry (time and
+  // timeline position carry on; scenes are a function of time).
+  release(): void {
+    if (!this.releasable()) return;
+    if (this.releaseTimer) clearTimeout(this.releaseTimer);
+    this.releaseTimer = null;
+    let still = "";
+    try {
+      this.render();
+      still = this.canvas.toDataURL("image/webp", 0.85);
+    } catch {
+      /* tainted / lost: no placeholder */
+    }
+    if (still && still.length > 32) {
+      const img = this.container.ownerDocument.createElement("img");
+      img.alt = "";
+      img.setAttribute("aria-hidden", "true");
+      img.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;";
+      img.src = still;
+      this.placeholder?.remove();
+      this.placeholder = img;
+      this.canvas.after(img);
+    }
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    this.postfx?.dispose();
+    this.postfx = null;
+    this.world?.dispose();
+    this.world = null;
+    this.renderer?.dispose();
+    this.renderer?.forceContextLoss();
+    this.renderer = null;
+    livePlayers.delete(this);
+    this.released = true;
+    this.started = false;
+    this.building = null;
+  }
+
   // ─── Public API ───────────────────────────────────────────────────────
 
   play(): void {
@@ -491,6 +583,7 @@ class PlayerImpl implements Player {
   async update(scene: SceneDoc): Promise<void> {
     await this.building;
     this.scene = scene;
+    if (!this.renderer) return; // not started / released: start() builds the new scene
     if (this.renderer) this.configureRenderer(this.renderer);
     this.game?.dispose();
     this.game = null;
@@ -605,6 +698,9 @@ class PlayerImpl implements Player {
     this.world?.dispose();
     this.renderer?.dispose();
     this.renderer?.forceContextLoss();
+    livePlayers.delete(this);
+    if (this.releaseTimer) clearTimeout(this.releaseTimer);
+    this.placeholder?.remove();
     this.canvas.remove();
   }
 }

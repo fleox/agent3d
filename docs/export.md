@@ -50,7 +50,7 @@ One `<name>.html`: the single-file runtime as an inline module, the scene in `<s
 | `library-base` | Base URL of `library:` assets (default `<scene dir>/assets/library/`) |
 | `aria-label` | Accessible label (written from `ariaLabel` / `title` by the export). When absent the element sets it from the scene; a label you write yourself is never overridden |
 
-Behaviour: `display: block; width: 100%`, CSS `aspect-ratio` from `target.aspect` (or `target.height`, or `100vh` for fullscreen), `role="img"` (`role="application"` + `tabindex="0"` for games), lazy start when visible, pause off-screen, reduced-motion handling, pixel-ratio cap. Events (bubbling): `agent3d-ready` (`detail.player`) and `agent3d-error` (`detail`: `{ code, message, path }`, codes such as `scene-load`, `asset-load`, `script-error`, `webgl-unavailable`).
+Behaviour: `display: block; width: 100%`, CSS `aspect-ratio` from `target.aspect` (or `target.height`, or `100vh` for fullscreen), `role="img"` (`role="application"` + `tabindex="0"` for games), lazy start when visible (the WebGL context is created then), pause off-screen, reduced-motion handling, pixel-ratio cap. Pages with many embeds stay under the browser's live-context cap: a non-game scene off-screen for 20 s, or the least recently seen off-screen one when 8 contexts are alive and another scene starts, frees its context and shows its last frame as an image; it rebuilds when it scrolls back into view. Events (bubbling): `agent3d-ready` (`detail.player`) and `agent3d-error` (`detail`: `{ code, message, path }`, codes such as `scene-load`, `asset-load`, `script-error`, `webgl-unavailable`).
 
 Programmatic use without the element:
 
