@@ -1,0 +1,54 @@
+{
+  "templates": {
+    "intro": "Each template was built by an AI agent (Claude) driving the Agent3D CLI: write scene.json, render headless, look at the PNGs, iterate, then `check --render`. Below each card is the brief that agent received. Every template agent also got the same quality bar:",
+    "shared": "Every template must pass `agent3d check --render` with no errors and no avoidable warnings, stay within its budget, and look GENUINELY STUNNING — like a premium agency landing-page hero (or a top indie game trailer still), not a tech demo. Render contact sheets over time (and with `--input` for games) and LOOK at the PNGs; iterate many times on composition, colour palette, lighting, typography and motion timing. Be your own harsh art director. Keep scenes web-sane: budgets, quality auto, reduced motion, ariaLabel, mobile framing (touch controls for games).",
+    "upgrade": "Upgrade this existing template to use the new v0.2 features (cinematic post-processing and looks, physical sky / light rigs / contact shadows / new materials and shaders, motion segments and interactions, kerned fonts and letter reveals, new generators and characters) — keep its id, improve its look substantially.",
+    "byId": {
+      "hero-sneaker-showcase": "hero-sneaker-showcase — library sneaker on a pedestal, softbox rig, contact shadows, product look, hover/click segments (rotate to detail views), openUrl CTA interaction, `{data.title}` / `{data.price}` bound text.",
+      "hero-saas-globe": "hero-saas-globe — globe generator with arcs between cities, dark premium UI palette, bloom, subtle parallax, headline space left for HTML (transparent or matching bg).",
+      "banner-liquid-chrome": "banner-liquid-chrome — liquidChrome / iridescent abstract hero banner with kerned bold title reveal, cinematic grading.",
+      "banner-aurora-night": "banner-aurora-night — aurora shader sky + crystals or galaxy + per-letter reveal title.",
+      "hero-perfume-luxury": "hero-perfume-luxury — glass bottle (lathe, transmission+attenuation), gold cap, marble pedestal, dark luxury environment where gems sparkle (diamond needs a high-contrast env), rack-focus camera shot, dof focusOn.",
+      "banner-data-bars": "banner-data-bars — bars3d with data-bound values and staggered grow, clean corporate look.",
+      "card-product-tilt": "card-product-tilt — tilt behaviour card with a 3D object popping out, glare-like highlight.",
+      "hero-floating-island": "hero-floating-island — dreamy floating island diorama with waterfall, clouds, birds/particles, gentle camera orbit, cinematic look.",
+      "character-mascot-hero": "character-mascot-hero — brand mascot (astronaut or fox) waving with eyes following the pointer, click → celebrate segment, speech/headline space.",
+      "landscape-night-galaxy": "landscape-night-galaxy — galaxy generator + crystals + fireflies, aurora, calm loop.",
+      "game-platformer": "game-platformer — side-view platformer using the physics character controller (moveCharacter/jump), moving kinematic platforms, coins, goal flag, touch controls, KayKit or generator character.",
+      "game-basket": "game-bowling or game-basket — physics toss game with drag/swipe to throw, score HUD, retry.",
+      "scene-cozy-room": "scene-cozy-room — isometric cozy room diorama with Poly Haven props (armchair, coffee table, succulent, lamp), warm area lights, contact shadows, gentle dust particles.",
+      "game-physics-playground": "Create one new template templates/game-physics-playground showing off the physics (e.g. click/tap to throw balls at a tower of blocks with nice lighting/materials). Then, in the template pass: polish it.",
+      "character-showcase": "UPGRADE: character-showcase (new character styles/expressions/animations).",
+      "landscape-island": "UPGRADE: landscape-island (consider floatingIsland).",
+      "landscape-valley-sunset": "UPGRADE: landscape-valley-sunset (physical golden-hour sky + height fog + new water).",
+      "hero-space-planet": "UPGRADE: hero-space-planet (fix its existing \"camera inside stars\" warning).",
+      "diorama-city": "UPGRADE: diorama-city.",
+      "game-coin-collector": "UPGRADE: game-coin-collector.",
+      "game-maze": "UPGRADE: game-maze.",
+      "game-runner": "UPGRADE: game-runner.",
+      "game-tap-targets": "UPGRADE: game-tap-targets.",
+      "banner-floating-shapes": "UPGRADE: banner-floating-shapes.",
+      "banner-gradient-blob": "UPGRADE: banner-gradient-blob.",
+      "banner-logo-extrude": "UPGRADE: banner-logo-extrude.",
+      "banner-neon-title": "UPGRADE: banner-neon-title.",
+      "banner-wave-grid": "UPGRADE: banner-wave-grid.",
+      "card-hover-3d": "UPGRADE: card-hover-3d.",
+      "hero-product-turntable": "UPGRADE: hero-product-turntable.",
+      "hero-scroll-story": "UPGRADE: hero-scroll-story."
+    }
+  },
+  "briefs": {
+    "intro": "Blind QA: an AI agent (Claude) played a client's agent. Its ONLY documentation was the Agent3D Claude Code skills (plugin/skills/) plus `help` / `catalog` output — no source code. It had to deliver each brief end to end (create, iterate with renders it looked at until premium, check, export) and score the result harshly. The scenes below are exactly as those agents left them, re-exported with the current runtime (after the QA findings were fixed).",
+    "shared": "You are a blind QA tester acting as an AI agent that a client uses to make 3D content for their website with Agent3D. Your ONLY documentation is the Claude Code skills in plugin/skills/ (start with agent3d-create/SKILL.md and follow its references) plus `help`/`catalog` output. Don't read src/ — you are testing whether the product + skills let an agent produce professional results. Deliver these briefs end to end as a real agent would: create, iterate with renders you LOOK at until it's genuinely premium, check, export. For each brief give a score /10 (visual result, ease from the skills, correctness). Be harsh and precise.",
+    "items": [
+      { "id": "maison-lune", "kind": "banner", "aspect": "4:1", "title": "Maison Lune — bakery banner", "brief": "A French bakery \"Maison Lune\": a 4:1 homepage banner, warm and appetising, with a croissant or pastries, the title \"Maison Lune\" and a subtle animation. Must be light (< 800 KB).", "scores": "Visual 7 · Ease 7 · Correctness 8" },
+      { "id": "nova-pay", "kind": "hero", "aspect": "16:9", "title": "Nova Pay — fintech hero", "brief": "A fintech startup \"Nova Pay\": a dark 16:9 hero with an abstract premium 3D visual on the right (glass/chrome/iridescent), left half free for HTML text, a gentle pointer interaction, and a reduced-motion-safe design.", "scores": "Visual 7 · Ease 6 · Correctness 8" },
+      { "id": "sneaker-hero", "kind": "hero", "aspect": "16:9", "title": "Sneaker brand — product hero", "brief": "A sneaker brand: a product hero with a 3D shoe, click to rotate to a detail view and a \"Shop\" CTA opening https://example.com/shop, with the product name bound to data so the site can change it via a data-* attribute. Also export an MP4 teaser (6 s) and a GIF.", "scores": "Visual 8.5 · Ease 8 · Correctness 7" },
+      { "id": "lake-hero", "kind": "hero", "aspect": "21:9", "title": "Travel agency — misty lake at sunrise", "brief": "A travel agency: a 21:9 landscape hero of a misty mountain lake at sunrise, cinematic, slowly drifting camera, birds. No people.", "scores": "Visual 6.5 · Ease 4 · Correctness 7 (built before the terrain basin / birds / mirror-water features it asked for were added)" },
+      { "id": "kids-mascot", "kind": "hero", "aspect": "16:9", "title": "Kids' coding school — mascot", "brief": "A kids' coding school: a friendly mascot character (their own colours: teal and orange) waving next to the headline \"Learn to code, have fun\", eyes following the mouse, celebration on click, cartoon style.", "scores": "Visual 8 · Ease 8 · Correctness 8" },
+      { "id": "arch-story", "kind": "hero", "aspect": "16:9", "title": "Architecture studio — scroll story", "brief": "An architecture studio: a scroll-driven story where the page scroll moves the camera around a stylised minimalist building (built from primitives or library assets) across 3 chapters with labels. Verify the scroll states with renders.", "scores": "Visual 6.5 · Ease 4 · Correctness 8 (built before camera-attached labels existed)", "scroll": true },
+      { "id": "brewery-toss", "kind": "game", "aspect": "16:9", "title": "Brewery — can toss mini game", "brief": "A brewery's promo mini game: tap/click to throw a ball at cans stacked on a bar counter, score, 30 s timer, best score saved, retry. Must work on mobile (touch). Prove playability with `render --input` runs (score increases, game over, retry).", "scores": "7 / 10" },
+      { "id": "neon-runner", "kind": "game", "aspect": "16:9", "title": "Sports brand — neon runner", "brief": "A small endless runner for a sports brand: 3 lanes, swipe or arrow keys, obstacles and collectibles, speed ramp. Brand colours: black, neon yellow.", "scores": "6 / 10 (road colours were not configurable yet — fixed since)" }
+    ]
+  }
+}

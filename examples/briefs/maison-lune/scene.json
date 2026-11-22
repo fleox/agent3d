@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "id": "maison-lune",
+  "title": "Maison Lune",
+  "ariaLabel": "Maison Lune, boulangerie and pâtisserie: a chocolate-brown 3D title between floating croissants, a pain au chocolat and a small golden crescent moon",
+  "target": {
+    "kind": "banner",
+    "aspect": "4:1",
+    "reducedMotion": "static",
+    "posterTime": 2.4
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [
+      0,
+      0,
+      12
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.3,
+      "smoothing": 0.92
+    }
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#fff4e4",
+        "#efcfa6"
+      ],
+      "center": [
+        0.5,
+        0.55
+      ],
+      "radius": 1,
+      "grain": 0.025
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.7,
+    "rig": {
+      "preset": "studio-3point",
+      "scale": 3,
+      "intensity": 1,
+      "color": "#fff1dc"
+    }
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "Maison Lune",
+      "font": "serif-bold",
+      "size": 1.2,
+      "depth": 0.22,
+      "position": [
+        0,
+        0.25,
+        0
+      ],
+      "bevel": 0.015,
+      "material": {
+        "type": "physical",
+        "color": "#43190a",
+        "roughness": 0.6,
+        "sheen": 0.25,
+        "sheenColor": "#ffcf9a"
+      },
+      "reveal": {
+        "effect": "rise",
+        "stagger": 0.05,
+        "duration": 0.7,
+        "delay": 0.2
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.05,
+          "speed": 0.25
+        }
+      ]
+    },
+    {
+      "id": "tagline",
+      "kind": "text",
+      "text": "BOULANGERIE  ·  PÂTISSERIE",
+      "font": "sans",
+      "size": 0.28,
+      "depth": 0,
+      "letterSpacing": 0.25,
+      "position": [
+        0,
+        -0.9,
+        0
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#7a3f15"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "fade",
+          "duration": 0.8,
+          "delay": 1.2
+        }
+      ]
+    },
+    {
+      "id": "moon",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 0.5,
+        "tube": 0.11,
+        "arc": 220,
+        "tubularSegments": 64,
+        "radialSegments": 16
+      },
+      "material": {
+        "preset": "gold"
+      },
+      "position": [
+        6.3,
+        1.45,
+        -0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        70
+      ],
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.08,
+          "speed": 0.2,
+          "phase": 0.3
+        }
+      ]
+    },
+    {
+      "id": "croissant-left",
+      "kind": "model",
+      "src": "library:models/food/croissant.glb",
+      "fit": 2.8,
+      "position": [
+        -8.7,
+        -0.4,
+        0
+      ],
+      "rotation": [
+        65,
+        20,
+        -12
+      ],
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.12,
+          "speed": 0.22
+        },
+        {
+          "type": "sway",
+          "angle": 6,
+          "speed": 0.15
+        }
+      ]
+    },
+    {
+      "id": "croissant-small",
+      "kind": "model",
+      "src": "library:models/food/croissant.glb",
+      "fit": 1.5,
+      "position": [
+        -7.4,
+        1.75,
+        -2.5
+      ],
+      "rotation": [
+        70,
+        -25,
+        20
+      ],
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.1,
+          "speed": 0.28,
+          "phase": 0.5
+        }
+      ]
+    },
+    {
+      "id": "pain-choc",
+      "kind": "model",
+      "src": "library:models/food/pain-au-chocolat.glb",
+      "fit": 2.7,
+      "position": [
+        8.6,
+        -0.3,
+        0
+      ],
+      "rotation": [
+        40,
+        -60,
+        10
+      ],
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.12,
+          "speed": 0.2,
+          "phase": 0.7
+        }
+      ]
+    },
+    {
+      "id": "flour",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 70,
+      "area": [
+        24,
+        6,
+        4
+      ],
+      "position": [
+        0,
+        0,
+        -1
+      ],
+      "size": 0.04,
+      "color": "#c98a4a"
+    }
+  ],
+  "postfx": [
+    {
+      "type": "grading",
+      "contrast": 1.05,
+      "saturation": 1.08,
+      "temperature": 0.08
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.25,
+      "offset": 1.2
+    }
+  ]
+}

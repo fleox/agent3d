@@ -1,0 +1,848 @@
+{
+  "version": 1,
+  "id": "arch-story",
+  "title": "Studio Nord — House on the hill",
+  "ariaLabel": "A minimalist concrete and glass house with a cantilevered upper floor; scrolling the page moves the camera around it across three chapters: Arrival, Light and material, The landscape",
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "reducedMotion": "static",
+    "posterTime": 0,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 35,
+    "position": [
+      7,
+      2.4,
+      11
+    ],
+    "target": [
+      -1.6,
+      1.6,
+      0.9
+    ]
+  },
+  "environment": {
+    "background": {
+      "gradient": [
+        "#e9e4dc",
+        "#f4f1ec",
+        "#dfe6ea"
+      ],
+      "angle": 0,
+      "grain": 0.02
+    },
+    "lighting": "soft",
+    "lightingIntensity": 0.55,
+    "rig": {
+      "preset": "golden-hour",
+      "scale": 3,
+      "intensity": 0.9,
+      "castShadow": true,
+      "color": "#fff6ec"
+    },
+    "contactShadows": {
+      "opacity": 0.55,
+      "blur": 2.2,
+      "y": 0.001,
+      "size": 24
+    },
+    "fog": {
+      "color": "#ece7e0",
+      "near": 14,
+      "far": 45
+    }
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "ground",
+      "kind": "mesh",
+      "geometry": {
+        "type": "circle",
+        "radius": 90,
+        "segments": 96
+      },
+      "rotation": [
+        -90,
+        0,
+        0
+      ],
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "material": {
+        "preset": "matte",
+        "color": "#e8e3dc",
+        "roughness": 1
+      },
+      "receiveShadow": true
+    },
+    {
+      "id": "house",
+      "kind": "group",
+      "children": [
+        {
+          "id": "plinth",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 7.4,
+            "height": 0.2,
+            "depth": 6
+          },
+          "position": [
+            0.2,
+            0.1,
+            0.6
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#cfc8be",
+            "roughness": 0.85,
+            "bumpMap": {
+              "procedural": "noise"
+            },
+            "bumpScale": 0.02,
+            "triplanar": 1
+          },
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        {
+          "id": "base",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 4.2,
+            "height": 1.3,
+            "depth": 2.8
+          },
+          "position": [
+            -0.8,
+            0.85,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#e4dfd8",
+            "roughness": 0.85,
+            "bumpMap": {
+              "procedural": "noise"
+            },
+            "bumpScale": 0.02,
+            "triplanar": 1
+          },
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        {
+          "id": "base-glass",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 2.2,
+            "height": 1.05,
+            "depth": 0.04
+          },
+          "position": [
+            -1.6,
+            0.8,
+            1.41
+          ],
+          "material": {
+            "type": "physical",
+            "color": "#1d2a33",
+            "roughness": 0.05,
+            "metalness": 0.2,
+            "clearcoat": 1
+          },
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "id": "glass-band",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 3.8,
+            "height": 0.12,
+            "depth": 2.6
+          },
+          "position": [
+            -0.6,
+            1.56,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#20262b",
+            "roughness": 0.85,
+            "bumpMap": {
+              "procedural": "noise"
+            },
+            "bumpScale": 0.02,
+            "triplanar": 1
+          },
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        {
+          "id": "upper",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 5.2,
+            "height": 1.05,
+            "depth": 2.5
+          },
+          "position": [
+            0.9,
+            2.15,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#f1ede7",
+            "roughness": 0.85,
+            "bumpMap": {
+              "procedural": "noise"
+            },
+            "bumpScale": 0.02,
+            "triplanar": 1
+          },
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        {
+          "id": "upper-glass",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 4.6,
+            "height": 0.8,
+            "depth": 0.04
+          },
+          "position": [
+            0.9,
+            2.15,
+            1.26
+          ],
+          "material": {
+            "type": "physical",
+            "color": "#1d2a33",
+            "roughness": 0.05,
+            "metalness": 0.2,
+            "clearcoat": 1
+          },
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "id": "roof",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 5.5,
+            "height": 0.08,
+            "depth": 2.8
+          },
+          "position": [
+            0.9,
+            2.72,
+            0
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#cfc8be",
+            "roughness": 0.85,
+            "bumpMap": {
+              "procedural": "noise"
+            },
+            "bumpScale": 0.02,
+            "triplanar": 1
+          },
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        {
+          "id": "slats",
+          "kind": "instances",
+          "geometry": {
+            "type": "box",
+            "width": 0.05,
+            "height": 0.95,
+            "depth": 0.07
+          },
+          "position": [
+            2.15,
+            2.15,
+            1.33
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#a9805a",
+            "roughness": 0.7
+          },
+          "layout": {
+            "type": "grid",
+            "count": [
+              18,
+              1,
+              1
+            ],
+            "spacing": [
+              0.13,
+              0,
+              0
+            ]
+          },
+          "castShadow": true
+        },
+        {
+          "id": "pilotis",
+          "kind": "instances",
+          "geometry": {
+            "type": "cylinder",
+            "radiusTop": 0.05,
+            "radiusBottom": 0.05,
+            "height": 1.4,
+            "segments": 16
+          },
+          "position": [
+            3.2,
+            0.9,
+            0
+          ],
+          "material": {
+            "preset": "brushedMetal",
+            "color": "#3a3f44"
+          },
+          "layout": {
+            "type": "grid",
+            "count": [
+              1,
+              1,
+              2
+            ],
+            "spacing": [
+              0,
+              0,
+              2
+            ]
+          },
+          "castShadow": true
+        },
+        {
+          "id": "pool",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 3,
+            "height": 0.03,
+            "depth": 1.3
+          },
+          "position": [
+            1.9,
+            0.215,
+            2.6
+          ],
+          "material": {
+            "preset": "water",
+            "color": "#3d5a66"
+          },
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "id": "step1",
+          "kind": "mesh",
+          "geometry": {
+            "type": "box",
+            "width": 1.2,
+            "height": 0.1,
+            "depth": 0.4
+          },
+          "position": [
+            -2.4,
+            0.05,
+            3.8
+          ],
+          "material": {
+            "preset": "matte",
+            "color": "#cfc8be",
+            "roughness": 0.85,
+            "bumpMap": {
+              "procedural": "noise"
+            },
+            "bumpScale": 0.02,
+            "triplanar": 1
+          },
+          "castShadow": true,
+          "receiveShadow": true
+        }
+      ]
+    },
+    {
+      "id": "trees",
+      "kind": "generator",
+      "generator": "trees",
+      "seed": 4,
+      "position": [
+        4.5,
+        0,
+        -4.5
+      ],
+      "castShadow": true,
+      "params": {
+        "count": 6,
+        "area": [
+          7,
+          0,
+          3
+        ],
+        "style": "round",
+        "leafColors": [
+          "#8c9c7c",
+          "#7b8c6d",
+          "#9aa889"
+        ],
+        "trunkColor": "#6b5a4a",
+        "minScale": 0.9,
+        "maxScale": 1.4,
+        "onTerrain": false,
+        "sway": true
+      }
+    },
+    {
+      "id": "ch1",
+      "kind": "group",
+      "position": [
+        2.829,
+        2.708,
+        9.264
+      ],
+      "rotation": [
+        -4.53,
+        40.33,
+        2.93
+      ],
+      "children": [
+        {
+          "id": "ch1-num",
+          "kind": "text",
+          "text": "01 — ARRIVAL",
+          "font": "sans",
+          "size": 0.055,
+          "depth": 0,
+          "position": [
+            0,
+            0.24,
+            0
+          ],
+          "align": "left",
+          "material": {
+            "type": "basic",
+            "color": "#8a6a4f",
+            "transparent": true,
+            "opacity": 1
+          }
+        },
+        {
+          "id": "ch1-title",
+          "kind": "text",
+          "text": "A house that steps lightly",
+          "font": "serif",
+          "size": 0.15,
+          "depth": 0,
+          "position": [
+            0,
+            0.09,
+            0
+          ],
+          "align": "left",
+          "material": {
+            "type": "basic",
+            "color": "#1f2326",
+            "transparent": true,
+            "opacity": 1
+          }
+        },
+        {
+          "id": "ch1-sub",
+          "kind": "text",
+          "text": "Concrete volumes resting on a thin plinth, the upper floor cantilevering towards the view.",
+          "font": "sans",
+          "size": 0.06,
+          "depth": 0,
+          "position": [
+            0,
+            -0.13,
+            0
+          ],
+          "align": "left",
+          "maxWidth": 1.9,
+          "material": {
+            "type": "basic",
+            "color": "#4a4f53",
+            "transparent": true,
+            "opacity": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ch2",
+      "kind": "group",
+      "position": [
+        4.08,
+        2.927,
+        6.244
+      ],
+      "rotation": [
+        -9.46,
+        60.74,
+        8.27
+      ],
+      "children": [
+        {
+          "id": "ch2-num",
+          "kind": "text",
+          "text": "02 — LIGHT & MATERIAL",
+          "font": "sans",
+          "size": 0.055,
+          "depth": 0,
+          "position": [
+            0,
+            0.24,
+            0
+          ],
+          "align": "left",
+          "material": {
+            "type": "basic",
+            "color": "#8a6a4f",
+            "transparent": true,
+            "opacity": 1
+          }
+        },
+        {
+          "id": "ch2-title",
+          "kind": "text",
+          "text": "Shadow as a material",
+          "font": "serif",
+          "size": 0.15,
+          "depth": 0,
+          "position": [
+            0,
+            0.09,
+            0
+          ],
+          "align": "left",
+          "material": {
+            "type": "basic",
+            "color": "#1f2326",
+            "transparent": true,
+            "opacity": 1
+          }
+        },
+        {
+          "id": "ch2-sub",
+          "kind": "text",
+          "text": "Oak slats filter the western sun across the glass of the living floor.",
+          "font": "sans",
+          "size": 0.06,
+          "depth": 0,
+          "position": [
+            0,
+            -0.13,
+            0
+          ],
+          "align": "left",
+          "maxWidth": 1.9,
+          "material": {
+            "type": "basic",
+            "color": "#4a4f53",
+            "transparent": true,
+            "opacity": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ch3",
+      "kind": "group",
+      "position": [
+        -7.167,
+        7.901,
+        4.502
+      ],
+      "rotation": [
+        -45,
+        -26.75,
+        -24.23
+      ],
+      "children": [
+        {
+          "id": "ch3-num",
+          "kind": "text",
+          "text": "03 — LANDSCAPE",
+          "font": "sans",
+          "size": 0.055,
+          "depth": 0,
+          "position": [
+            0,
+            0.24,
+            0
+          ],
+          "align": "left",
+          "material": {
+            "type": "basic",
+            "color": "#8a6a4f",
+            "transparent": true,
+            "opacity": 1
+          }
+        },
+        {
+          "id": "ch3-title",
+          "kind": "text",
+          "text": "Made for the hill",
+          "font": "serif",
+          "size": 0.15,
+          "depth": 0,
+          "position": [
+            0,
+            0.09,
+            0
+          ],
+          "align": "left",
+          "material": {
+            "type": "basic",
+            "color": "#1f2326",
+            "transparent": true,
+            "opacity": 1
+          }
+        },
+        {
+          "id": "ch3-sub",
+          "kind": "text",
+          "text": "Seen from above, the plan opens to the trees and the reflecting pool.",
+          "font": "sans",
+          "size": 0.06,
+          "depth": 0,
+          "position": [
+            0,
+            -0.13,
+            0
+          ],
+          "align": "left",
+          "maxWidth": 1.9,
+          "material": {
+            "type": "basic",
+            "color": "#4a4f53",
+            "transparent": true,
+            "opacity": 1
+          }
+        }
+      ]
+    }
+  ],
+  "timeline": {
+    "duration": 10,
+    "trigger": "scroll",
+    "loop": false,
+    "scroll": {
+      "start": "top top",
+      "end": "bottom top",
+      "smoothing": 0.85
+    },
+    "markers": {
+      "arrival": 1,
+      "material": 5,
+      "landscape": 9
+    },
+    "tracks": [
+      {
+        "target": "camera.position",
+        "ease": "inOutCubic",
+        "keys": [
+          [
+            0,
+            [
+              7,
+              2.4,
+              11
+            ]
+          ],
+          [
+            2.4,
+            [
+              7,
+              2.4,
+              11
+            ]
+          ],
+          [
+            4.2,
+            [
+              8.6,
+              2.7,
+              6.4
+            ]
+          ],
+          [
+            5.8,
+            [
+              8.6,
+              2.7,
+              6.4
+            ]
+          ],
+          [
+            7.8,
+            [
+              -7.5,
+              10,
+              8.5
+            ]
+          ],
+          [
+            10,
+            [
+              -7.5,
+              10,
+              8.5
+            ]
+          ]
+        ]
+      },
+      {
+        "target": "camera.target",
+        "ease": "inOutCubic",
+        "keys": [
+          [
+            0,
+            [
+              -1.6,
+              1.6,
+              0.9
+            ]
+          ],
+          [
+            2.4,
+            [
+              -1.6,
+              1.6,
+              0.9
+            ]
+          ],
+          [
+            4.2,
+            [
+              1,
+              2,
+              2.2
+            ]
+          ],
+          [
+            5.8,
+            [
+              1,
+              2,
+              2.2
+            ]
+          ],
+          [
+            7.8,
+            [
+              -0.8,
+              0.6,
+              -0.9
+            ]
+          ],
+          [
+            10,
+            [
+              -0.8,
+              0.6,
+              -0.9
+            ]
+          ]
+        ]
+      },
+      {
+        "target": "children:ch1.material.opacity",
+        "keys": [
+          [
+            0,
+            1
+          ],
+          [
+            2.6,
+            1
+          ],
+          [
+            3.2,
+            0
+          ]
+        ]
+      },
+      {
+        "target": "children:ch2.material.opacity",
+        "keys": [
+          [
+            0,
+            0
+          ],
+          [
+            3.8,
+            0
+          ],
+          [
+            4.6,
+            1
+          ],
+          [
+            6,
+            1
+          ],
+          [
+            6.6,
+            0
+          ]
+        ]
+      },
+      {
+        "target": "children:ch3.material.opacity",
+        "keys": [
+          [
+            0,
+            0
+          ],
+          [
+            7.8,
+            0
+          ],
+          [
+            8.6,
+            1
+          ],
+          [
+            10,
+            1
+          ]
+        ]
+      }
+    ]
+  },
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "cinematic",
+      "intensity": 0.6
+    }
+  ]
+}

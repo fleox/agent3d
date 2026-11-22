@@ -1,0 +1,1063 @@
+{
+  "version": 1,
+  "id": "lake-hero",
+  "title": "Misty mountain lake at sunrise",
+  "ariaLabel": "A calm mountain lake at sunrise, mist drifting over the water, pine forests and snowy peaks, a flock of birds crossing the sky",
+  "seed": 8,
+  "target": {
+    "kind": "hero",
+    "aspect": "21:9",
+    "reducedMotion": "static",
+    "posterTime": 3,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 38,
+    "position": [
+      0,
+      7,
+      40
+    ],
+    "target": [
+      0,
+      16,
+      -60
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.6,
+      "smoothing": 0.95
+    }
+  },
+  "environment": {
+    "background": {
+      "sky": {
+        "preset": "sunrise",
+        "sun": {
+          "elevation": 5,
+          "azimuth": 140
+        }
+      }
+    },
+    "fog": {
+      "color": "#e6cfd6",
+      "density": 0.012,
+      "height": 4,
+      "falloff": 0.35
+    }
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "range",
+      "kind": "group",
+      "position": [
+        0,
+        -6,
+        -250
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "children": [
+        {
+          "id": "range-terrain",
+          "kind": "generator",
+          "generator": "terrain",
+          "seed": 31,
+          "receiveShadow": true,
+          "params": {
+            "size": 240,
+            "resolution": 120,
+            "height": 95,
+            "scale": 1.6,
+            "shape": "mountains",
+            "lowpoly": false,
+            "palette": [
+              "#7d8471",
+              "#3f5a40",
+              "#2f4836",
+              "#6c6878",
+              "#f6f2f6"
+            ],
+            "waterLevel": null,
+            "snowLine": 0.55
+          }
+        }
+      ],
+      "scale": [
+        1.8,
+        1.3,
+        1
+      ]
+    },
+    {
+      "id": "mid",
+      "kind": "group",
+      "position": [
+        0,
+        -1,
+        -125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "children": [
+        {
+          "id": "mid-terrain",
+          "kind": "generator",
+          "generator": "terrain",
+          "seed": 44,
+          "receiveShadow": true,
+          "params": {
+            "size": 160,
+            "resolution": 70,
+            "height": 20,
+            "scale": 1.4,
+            "shape": "island",
+            "lowpoly": false,
+            "palette": [
+              "#6d7462",
+              "#3a5540",
+              "#2d4535",
+              "#40553f",
+              "#3a4c3c"
+            ],
+            "waterLevel": null,
+            "snowLine": 1
+          }
+        },
+        {
+          "id": "mid-pines",
+          "kind": "generator",
+          "generator": "trees",
+          "seed": 8,
+          "params": {
+            "count": 160,
+            "area": [
+              150,
+              0,
+              150
+            ],
+            "style": "pine",
+            "minScale": 1,
+            "maxScale": 1.8,
+            "leafColors": [
+              "#1f3a2c",
+              "#264634",
+              "#2f5039"
+            ],
+            "trunkColor": "#3b2c26",
+            "onTerrain": true,
+            "sway": false
+          }
+        }
+      ],
+      "scale": [
+        2.2,
+        1,
+        0.7
+      ]
+    },
+    {
+      "id": "left",
+      "kind": "group",
+      "position": [
+        -95,
+        -1,
+        -45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "children": [
+        {
+          "id": "left-terrain",
+          "kind": "generator",
+          "generator": "terrain",
+          "seed": 7,
+          "receiveShadow": true,
+          "params": {
+            "size": 150,
+            "resolution": 80,
+            "height": 34,
+            "scale": 1.4,
+            "shape": "island",
+            "lowpoly": false,
+            "palette": [
+              "#6d7462",
+              "#3a5540",
+              "#2d4535",
+              "#40553f",
+              "#3a4c3c"
+            ],
+            "waterLevel": null,
+            "snowLine": 1
+          }
+        },
+        {
+          "id": "left-pines",
+          "kind": "generator",
+          "generator": "trees",
+          "seed": 8,
+          "params": {
+            "count": 150,
+            "area": [
+              130,
+              0,
+              130
+            ],
+            "style": "pine",
+            "minScale": 1.2,
+            "maxScale": 2.4,
+            "leafColors": [
+              "#1f3a2c",
+              "#264634",
+              "#2f5039"
+            ],
+            "trunkColor": "#3b2c26",
+            "onTerrain": true,
+            "sway": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "right",
+      "kind": "group",
+      "position": [
+        115,
+        -1,
+        -70
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "children": [
+        {
+          "id": "right-terrain",
+          "kind": "generator",
+          "generator": "terrain",
+          "seed": 12,
+          "receiveShadow": true,
+          "params": {
+            "size": 170,
+            "resolution": 80,
+            "height": 42,
+            "scale": 1.4,
+            "shape": "island",
+            "lowpoly": false,
+            "palette": [
+              "#6d7462",
+              "#3a5540",
+              "#2d4535",
+              "#40553f",
+              "#3a4c3c"
+            ],
+            "waterLevel": null,
+            "snowLine": 1
+          }
+        },
+        {
+          "id": "right-pines",
+          "kind": "generator",
+          "generator": "trees",
+          "seed": 13,
+          "params": {
+            "count": 170,
+            "area": [
+              150,
+              0,
+              150
+            ],
+            "style": "pine",
+            "minScale": 1.2,
+            "maxScale": 2.4,
+            "leafColors": [
+              "#1f3a2c",
+              "#264634",
+              "#2f5039"
+            ],
+            "trunkColor": "#3b2c26",
+            "onTerrain": true,
+            "sway": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "lake",
+      "kind": "generator",
+      "generator": "water",
+      "position": [
+        0,
+        4,
+        -40
+      ],
+      "params": {
+        "size": 300,
+        "color": "#3b5675",
+        "shallowColor": "#9fb3c8",
+        "foamColor": "#f1e6ea",
+        "waveHeight": 0.02,
+        "waveSpeed": 0.3,
+        "foam": 0.2,
+        "ripples": 0.35,
+        "depthRange": 5,
+        "opacity": 0.96
+      }
+    },
+    {
+      "id": "flock",
+      "kind": "group",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "behaviours": [
+        {
+          "type": "path",
+          "points": [
+            [
+              -45,
+              24,
+              -25
+            ],
+            [
+              0,
+              27,
+              -15
+            ],
+            [
+              45,
+              23,
+              -30
+            ],
+            [
+              0,
+              21,
+              -50
+            ]
+          ],
+          "duration": 28,
+          "loop": true,
+          "faceDirection": true
+        }
+      ],
+      "children": [
+        {
+          "id": "b1",
+          "kind": "group",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "scale": 1.6,
+          "children": [
+            {
+              "id": "b1-body",
+              "kind": "mesh",
+              "geometry": {
+                "type": "capsule",
+                "radius": 0.06,
+                "length": 0.35
+              },
+              "rotation": [
+                90,
+                0,
+                0
+              ],
+              "material": {
+                "preset": "flat",
+                "color": "#2a2230"
+              }
+            },
+            {
+              "id": "b1-lw",
+              "kind": "group",
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.7000000000000002
+                }
+              ],
+              "children": [
+                {
+                  "id": "b1-lwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "b1-rw",
+              "kind": "group",
+              "scale": [
+                -1,
+                1,
+                1
+              ],
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.7000000000000002
+                }
+              ],
+              "children": [
+                {
+                  "id": "b1-rwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "group",
+          "position": [
+            -1.6,
+            -0.4,
+            1.4
+          ],
+          "scale": 1.4,
+          "children": [
+            {
+              "id": "b2-body",
+              "kind": "mesh",
+              "geometry": {
+                "type": "capsule",
+                "radius": 0.06,
+                "length": 0.35
+              },
+              "rotation": [
+                90,
+                0,
+                0
+              ],
+              "material": {
+                "preset": "flat",
+                "color": "#2a2230"
+              }
+            },
+            {
+              "id": "b2-lw",
+              "kind": "group",
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.8
+                }
+              ],
+              "children": [
+                {
+                  "id": "b2-lwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "b2-rw",
+              "kind": "group",
+              "scale": [
+                -1,
+                1,
+                1
+              ],
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.8
+                }
+              ],
+              "children": [
+                {
+                  "id": "b2-rwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "group",
+          "position": [
+            1.7,
+            -0.3,
+            1.6
+          ],
+          "scale": 1.5,
+          "children": [
+            {
+              "id": "b3-body",
+              "kind": "mesh",
+              "geometry": {
+                "type": "capsule",
+                "radius": 0.06,
+                "length": 0.35
+              },
+              "rotation": [
+                90,
+                0,
+                0
+              ],
+              "material": {
+                "preset": "flat",
+                "color": "#2a2230"
+              }
+            },
+            {
+              "id": "b3-lw",
+              "kind": "group",
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.6
+                }
+              ],
+              "children": [
+                {
+                  "id": "b3-lwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "b3-rw",
+              "kind": "group",
+              "scale": [
+                -1,
+                1,
+                1
+              ],
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.6
+                }
+              ],
+              "children": [
+                {
+                  "id": "b3-rwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "group",
+          "position": [
+            -3,
+            -0.9,
+            2.8
+          ],
+          "scale": 1.3,
+          "children": [
+            {
+              "id": "b4-body",
+              "kind": "mesh",
+              "geometry": {
+                "type": "capsule",
+                "radius": 0.06,
+                "length": 0.35
+              },
+              "rotation": [
+                90,
+                0,
+                0
+              ],
+              "material": {
+                "preset": "flat",
+                "color": "#2a2230"
+              }
+            },
+            {
+              "id": "b4-lw",
+              "kind": "group",
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.7000000000000002
+                }
+              ],
+              "children": [
+                {
+                  "id": "b4-lwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "b4-rw",
+              "kind": "group",
+              "scale": [
+                -1,
+                1,
+                1
+              ],
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.7000000000000002
+                }
+              ],
+              "children": [
+                {
+                  "id": "b4-rwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "group",
+          "position": [
+            3.2,
+            -0.7,
+            3
+          ],
+          "scale": 1.4,
+          "children": [
+            {
+              "id": "b5-body",
+              "kind": "mesh",
+              "geometry": {
+                "type": "capsule",
+                "radius": 0.06,
+                "length": 0.35
+              },
+              "rotation": [
+                90,
+                0,
+                0
+              ],
+              "material": {
+                "preset": "flat",
+                "color": "#2a2230"
+              }
+            },
+            {
+              "id": "b5-lw",
+              "kind": "group",
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.8
+                }
+              ],
+              "children": [
+                {
+                  "id": "b5-lwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "b5-rw",
+              "kind": "group",
+              "scale": [
+                -1,
+                1,
+                1
+              ],
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.8
+                }
+              ],
+              "children": [
+                {
+                  "id": "b5-rwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b6",
+          "kind": "group",
+          "position": [
+            -4.5,
+            -1.2,
+            4.2
+          ],
+          "scale": 1.2,
+          "children": [
+            {
+              "id": "b6-body",
+              "kind": "mesh",
+              "geometry": {
+                "type": "capsule",
+                "radius": 0.06,
+                "length": 0.35
+              },
+              "rotation": [
+                90,
+                0,
+                0
+              ],
+              "material": {
+                "preset": "flat",
+                "color": "#2a2230"
+              }
+            },
+            {
+              "id": "b6-lw",
+              "kind": "group",
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.6
+                }
+              ],
+              "children": [
+                {
+                  "id": "b6-lwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "b6-rw",
+              "kind": "group",
+              "scale": [
+                -1,
+                1,
+                1
+              ],
+              "behaviours": [
+                {
+                  "type": "sway",
+                  "axis": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "angle": 28,
+                  "speed": 1.6
+                }
+              ],
+              "children": [
+                {
+                  "id": "b6-rwm",
+                  "kind": "mesh",
+                  "geometry": {
+                    "type": "box",
+                    "width": 0.7,
+                    "height": 0.03,
+                    "depth": 0.22
+                  },
+                  "position": [
+                    0.35,
+                    0,
+                    0
+                  ],
+                  "material": {
+                    "preset": "flat",
+                    "color": "#2a2230"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "timeline": {
+    "duration": 14,
+    "loop": true,
+    "tracks": [
+      {
+        "target": "camera.position",
+        "keys": [
+          [
+            0,
+            [
+              -6,
+              7,
+              40
+            ]
+          ],
+          [
+            7,
+            [
+              6,
+              8,
+              37
+            ]
+          ],
+          [
+            14,
+            [
+              -6,
+              7,
+              40
+            ]
+          ]
+        ],
+        "ease": "inOutSine"
+      }
+    ]
+  },
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "cinematic",
+      "intensity": 0.8
+    },
+    {
+      "type": "grading",
+      "look": "warm",
+      "intensity": 0.25
+    }
+  ]
+}

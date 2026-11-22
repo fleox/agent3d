@@ -1,0 +1,523 @@
+{
+  "version": 1,
+  "id": "sneaker-hero",
+  "title": "Aero Run",
+  "ariaLabel": "Product hero: a sneaker spinning onto a studio pedestal, with its name, price and a Shop now button; click the shoe for a detail view",
+  "seed": 3,
+  "data": {
+    "title": "AERO RUN",
+    "tagline": "Engineered knit. Pure rebound.",
+    "price": "€139",
+    "cta": "Shop now",
+    "url": "https://example.com/shop"
+  },
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "budgetKb": 1500,
+    "reducedMotion": "static",
+    "posterTime": 2.4,
+    "maxDpr": 2,
+    "toneMapping": "neutral",
+    "exposure": 1
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [
+      -1.55,
+      0.35,
+      7.2
+    ],
+    "target": [
+      -1.55,
+      -0.15,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.25,
+      "smoothing": 0.93
+    },
+    "shots": [
+      {
+        "type": "move",
+        "at": 2.4,
+        "duration": 1.6,
+        "position": [
+          0.8,
+          0.05,
+          4.5
+        ],
+        "target": [
+          0.05,
+          -0.4,
+          0
+        ],
+        "ease": "inOutCubic"
+      }
+    ]
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#ff9a6b",
+        "#d9452f"
+      ],
+      "center": [
+        0.68,
+        0.56
+      ],
+      "radius": 0.85,
+      "grain": 0.03
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.9,
+    "rig": {
+      "preset": "softbox",
+      "intensity": 1.1,
+      "rotation": -20
+    },
+    "contactShadows": {
+      "opacity": 0.6,
+      "blur": 2.2,
+      "color": "#4a1006",
+      "y": -0.855,
+      "size": 3
+    }
+  },
+  "lights": [
+    {
+      "id": "rimWarm",
+      "type": "point",
+      "position": [
+        2.05,
+        1.6,
+        -2.2
+      ],
+      "color": "#ffd2a8",
+      "intensity": 18,
+      "distance": 9
+    }
+  ],
+  "objects": [
+    {
+      "id": "halo",
+      "kind": "mesh",
+      "geometry": {
+        "type": "circle",
+        "radius": 2,
+        "segments": 96
+      },
+      "position": [
+        0,
+        0.35,
+        -2.2
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#ffa47c"
+      }
+    },
+    {
+      "id": "pedestal",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.3,
+        "radiusBottom": 1.3,
+        "height": 0.5,
+        "segments": 96
+      },
+      "position": [
+        0,
+        -1.12,
+        0
+      ],
+      "material": {
+        "preset": "ceramic",
+        "color": "#ffd9c6"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.9,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "plinth",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.48,
+        "radiusBottom": 1.5,
+        "height": 0.08,
+        "segments": 96
+      },
+      "position": [
+        0,
+        -1.41,
+        0
+      ],
+      "material": {
+        "preset": "ceramic",
+        "color": "#c63a24"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.9,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "pedestalRing",
+      "kind": "mesh",
+      "geometry": {
+        "type": "torus",
+        "radius": 1.31,
+        "tube": 0.012,
+        "radialSegments": 8,
+        "tubularSegments": 160
+      },
+      "position": [
+        0,
+        -0.87,
+        0
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "material": {
+        "preset": "gold",
+        "roughness": 0.2
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.9,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "rig",
+      "kind": "group",
+      "position": [
+        0,
+        -0.86,
+        0
+      ],
+      "children": [
+        {
+          "id": "shoe",
+          "kind": "model",
+          "src": "library:models/products/sneaker.glb",
+          "fit": 2.35,
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "castShadow": true,
+          "behaviours": [
+            {
+              "type": "float",
+              "amplitude": 0.05,
+              "speed": 0.35
+            },
+            {
+              "type": "hoverLift",
+              "height": 0.12,
+              "tilt": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "{data.title|STRIDE RUNNER}",
+      "font": "inter-black",
+      "size": 0.36,
+      "depth": 0.03,
+      "letterSpacing": -0.01,
+      "align": "left",
+      "maxWidth": 3.2,
+      "lineHeight": 1.05,
+      "position": [
+        -4.7,
+        0.55,
+        0.3
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#fff6ef"
+      },
+      "reveal": {
+        "effect": "rise",
+        "stagger": 0.035,
+        "duration": 0.7,
+        "delay": 0.5
+      }
+    },
+    {
+      "id": "tagline",
+      "kind": "text",
+      "text": "{data.tagline|Featherlight knit. All-day bounce.}",
+      "font": "sans",
+      "size": 0.13,
+      "depth": 0,
+      "align": "left",
+      "position": [
+        -4.68,
+        0,
+        0.3
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#ffe3d4"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "fade",
+          "duration": 0.8,
+          "delay": 1.1,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "price",
+      "kind": "text",
+      "text": "{data.price|$149}",
+      "font": "inter-black",
+      "size": 0.3,
+      "depth": 0.04,
+      "align": "left",
+      "position": [
+        -4.69,
+        -0.5,
+        0.3
+      ],
+      "material": {
+        "type": "standard",
+        "color": "#16226b",
+        "roughness": 0.5
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7,
+          "delay": 1.25,
+          "ease": "outCubic"
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "kind": "group",
+      "position": [
+        -3.9,
+        -1.15,
+        0.3
+      ],
+      "href": "{data.url|#shop}",
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "scale",
+          "duration": 0.6,
+          "delay": 1.45
+        },
+        {
+          "type": "hoverScale",
+          "scale": 1.07
+        }
+      ],
+      "children": [
+        {
+          "id": "ctaPill",
+          "kind": "mesh",
+          "geometry": {
+            "type": "capsule",
+            "radius": 0.21,
+            "length": 1.15,
+            "segments": 24
+          },
+          "material": {
+            "type": "physical",
+            "color": "#14205a",
+            "roughness": 0.3,
+            "clearcoat": 1
+          },
+          "rotation": [
+            0,
+            0,
+            90
+          ],
+          "scale": [
+            1,
+            1,
+            0.35
+          ]
+        },
+        {
+          "id": "ctaLabel",
+          "kind": "text",
+          "text": "{data.cta|Shop now}",
+          "font": "inter-black",
+          "size": 0.12,
+          "depth": 0,
+          "position": [
+            0,
+            0,
+            0.08
+          ],
+          "material": {
+            "type": "basic",
+            "color": "#ffffff"
+          },
+          "letterSpacing": 0.01
+        }
+      ]
+    }
+  ],
+  "timeline": {
+    "duration": 4,
+    "loop": false,
+    "autoplay": "intro",
+    "markers": {
+      "ready": 2.4,
+      "detail": 4
+    },
+    "segments": {
+      "intro": [
+        0,
+        "ready"
+      ],
+      "detail": [
+        "ready",
+        "detail"
+      ]
+    },
+    "tracks": [
+      {
+        "target": "rig.rotation.y",
+        "keys": [
+          [
+            0,
+            -320
+          ],
+          [
+            2.2,
+            -28,
+            "outCubic"
+          ],
+          [
+            2.4,
+            -28
+          ],
+          [
+            4,
+            152,
+            "inOutCubic"
+          ]
+        ]
+      },
+      {
+        "target": "rig.position.y",
+        "keys": [
+          [
+            0,
+            1.6
+          ],
+          [
+            1.4,
+            -0.86,
+            "outBack"
+          ]
+        ]
+      },
+      {
+        "target": "rig.rotation.z",
+        "keys": [
+          [
+            0,
+            0
+          ],
+          [
+            2.4,
+            0
+          ],
+          [
+            3.2,
+            9,
+            "inOutSine"
+          ],
+          [
+            4,
+            0,
+            "inOutSine"
+          ]
+        ]
+      },
+      {
+        "target": "title,tagline,price,cta.position.x",
+        "keys": [
+          [
+            2.4,
+            "+=0"
+          ],
+          [
+            4,
+            "-=1.6",
+            "inOutCubic"
+          ]
+        ],
+        "stagger": 0
+      }
+    ]
+  },
+  "interactions": [
+    {
+      "on": "click",
+      "target": "shoe",
+      "do": [
+        {
+          "toggle": "detail"
+        }
+      ]
+    },
+    {
+      "on": "click",
+      "target": "cta",
+      "do": [
+        {
+          "emit": "cta-click"
+        }
+      ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "product"
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.55
+    }
+  ]
+}

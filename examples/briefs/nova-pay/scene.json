@@ -1,0 +1,265 @@
+{
+  "version": 1,
+  "id": "nova-pay",
+  "title": "Nova Pay hero",
+  "ariaLabel": "Decorative: an iridescent chrome ring and a glossy colour-shifting sphere slowly turning on a dark navy background",
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "reducedMotion": "static",
+    "posterTime": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 35,
+    "position": [
+      0,
+      0,
+      9.5
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ],
+    "controls": "parallax",
+    "parallax": {
+      "strength": 0.35,
+      "smoothing": 0.93
+    }
+  },
+  "environment": {
+    "background": {
+      "radial": [
+        "#1b1f4a",
+        "#05060f"
+      ],
+      "center": [
+        0.72,
+        0.5
+      ],
+      "radius": 0.85,
+      "grain": 0.03
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.45,
+    "rig": {
+      "preset": "rim",
+      "intensity": 1.2
+    }
+  },
+  "lights": [
+    {
+      "id": "accent-violet",
+      "type": "point",
+      "position": [
+        5.5,
+        2.5,
+        2
+      ],
+      "color": "#8b5cff",
+      "intensity": 30
+    },
+    {
+      "id": "accent-cyan",
+      "type": "point",
+      "position": [
+        0.5,
+        -2,
+        2.5
+      ],
+      "color": "#2ee6ff",
+      "intensity": 20
+    }
+  ],
+  "objects": [
+    {
+      "id": "sculpture",
+      "kind": "group",
+      "position": [
+        2.35,
+        0.05,
+        0
+      ],
+      "behaviours": [
+        {
+          "type": "followPointer",
+          "mode": "rotate",
+          "strength": 0.35,
+          "smoothing": 0.93
+        }
+      ],
+      "children": [
+        {
+          "id": "core",
+          "kind": "generator",
+          "generator": "blob",
+          "params": {
+            "radius": 1,
+            "noise": 0.08,
+            "speed": 0.2,
+            "detail": 64,
+            "colors": [
+              "#3b1fd1",
+              "#a43dff",
+              "#ff4fb8",
+              "#22d3ee"
+            ]
+          },
+          "behaviours": [
+            {
+              "type": "rotate",
+              "axis": [
+                0.2,
+                1,
+                0
+              ],
+              "speed": 8
+            }
+          ]
+        },
+        {
+          "id": "glass-ring",
+          "kind": "mesh",
+          "geometry": {
+            "type": "torus",
+            "radius": 1.8,
+            "tube": 0.22,
+            "radialSegments": 32,
+            "tubularSegments": 128
+          },
+          "material": {
+            "preset": "chromeGradient",
+            "gradient": [
+              "#5b6cff",
+              "#d9e1ff",
+              "#ff7ad9",
+              "#41e3ff"
+            ]
+          },
+          "rotation": [
+            68,
+            18,
+            0
+          ],
+          "behaviours": [
+            {
+              "type": "rotate",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "speed": 10
+            }
+          ]
+        },
+        {
+          "id": "chrome-orbit",
+          "kind": "mesh",
+          "geometry": {
+            "type": "torus",
+            "radius": 2.35,
+            "tube": 0.025,
+            "radialSegments": 12,
+            "tubularSegments": 200
+          },
+          "material": {
+            "preset": "chrome"
+          },
+          "rotation": [
+            78,
+            0,
+            -28
+          ],
+          "behaviours": [
+            {
+              "type": "rotate",
+              "axis": [
+                0,
+                1,
+                0
+              ],
+              "speed": -6
+            }
+          ]
+        },
+        {
+          "id": "bead-a",
+          "kind": "mesh",
+          "geometry": {
+            "type": "sphere",
+            "radius": 0.18,
+            "segments": 48
+          },
+          "material": {
+            "preset": "chrome"
+          },
+          "position": [
+            -1.9,
+            1.35,
+            0.6
+          ],
+          "behaviours": [
+            {
+              "type": "float",
+              "amplitude": 0.12,
+              "speed": 0.25
+            }
+          ]
+        },
+        {
+          "id": "bead-b",
+          "kind": "mesh",
+          "geometry": {
+            "type": "sphere",
+            "radius": 0.28,
+            "segments": 48
+          },
+          "material": {
+            "preset": "holographic"
+          },
+          "position": [
+            1.6,
+            -1.6,
+            0.9
+          ],
+          "behaviours": [
+            {
+              "type": "float",
+              "amplitude": 0.15,
+              "speed": 0.2,
+              "phase": 0.5
+            }
+          ]
+        }
+      ],
+      "scale": 0.95
+    },
+    {
+      "id": "specks",
+      "kind": "particles",
+      "preset": "stars",
+      "count": 120,
+      "area": [
+        18,
+        10,
+        6
+      ],
+      "position": [
+        2,
+        0,
+        -4
+      ],
+      "size": 0.03,
+      "color": "#9fb4ff"
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "cinematic",
+      "intensity": 0.7
+    }
+  ]
+}

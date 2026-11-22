@@ -7,12 +7,15 @@
 //     agent3d-runtime/      shared by every scene
 //     <id>/scene.json …     one folder per template (+ poster.webp)
 //     index.html            responsive gallery, each template live in <agent3d-scene>
+//     briefs/<id>/ + briefs.html   the blind-QA client briefs (examples/briefs/<id>/)
+//
+// examples/prompts.json holds the prompt shown under each card.
 //
 // Usage: node scripts/build-examples.mjs [--no-poster] [--only id,id]
 // Needs `npm run build:runtime && npm run build:agent` first (and Chrome for posters).
 
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +41,10 @@ function cli(argv) {
 }
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+const PROMPTS = JSON.parse(readFileSync(join(ROOT, "examples", "prompts.json"), "utf8"));
+const BRIEFS_DIR = join(ROOT, "examples", "briefs");
+const promptBlock = (label, text) => `<details class="prompt"><summary>${esc(label)}</summary><pre>${esc(text)}</pre></details>`;
 
 const templates = cli(["templates", "list"]).templates.filter((t) => !only || only.has(t.id));
 if (!templates.length) {
@@ -68,6 +75,21 @@ try {
     built.push({ ...t, poster, totalKb: res.totalKb });
     console.error(`✓ ${t.id} (${res.totalKb ?? "?"} KB, ${((Date.now() - started) / 1000).toFixed(1)} s)`);
   }
+  // Blind-QA briefs: copied to a temp project (export never touches examples/briefs/).
+  if (!only) {
+    for (const b of PROMPTS.briefs.items) {
+      const src = join(BRIEFS_DIR, b.id);
+      if (!existsSync(join(src, "scene.json"))) continue;
+      const proj = join(work, `brief-${b.id}`);
+      const out = join(work, `brief-${b.id}-export`);
+      cpSync(src, proj, { recursive: true });
+      cli(["export", "--project", proj, "--format", "embed", "--out", out, "--name", b.id, "--yes", ...(noPoster ? ["--no-poster"] : [])]);
+      cpSync(join(out, b.id), join(SITE, "briefs", b.id), { recursive: true });
+      b.poster = existsSync(join(SITE, "briefs", b.id, "poster.webp")) ? `./briefs/${b.id}/poster.webp` : null;
+      b.built = true;
+      console.error(`✓ brief ${b.id}`);
+    }
+  }
 } finally {
   rmSync(work, { recursive: true, force: true });
 }
@@ -88,6 +110,11 @@ const ratio = (aspect) => {
   return w / h;
 };
 
+const promptFor = (id) => {
+  const p = PROMPTS.templates.byId[id] ?? "";
+  return p.startsWith("UPGRADE:") ? `${PROMPTS.templates.upgrade}\n\n${p}` : p;
+};
+
 const cards = built
   .map((t) => {
     const wide = ratio(t.aspect) >= 2.5;
@@ -97,18 +124,19 @@ const cards = built
         <h2>${esc(t.title)}</h2>
         <p>${esc(t.description)}</p>
         <p class="tags"><span class="kind">${esc(t.kind)}</span><span>${esc(t.aspect)}</span><code>agent3d new my-site --template ${esc(t.id)}</code></p>
+        ${promptBlock("Prompt", promptFor(t.id))}
       </div>
     </article>`;
   })
   .join("\n");
 
-const html = `<!doctype html>
+const page = ({ title, description, heading, intro, body, nav }) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent3D templates</title>
-<meta name="description" content="Live gallery of the Agent3D starter templates: banners, heroes, landscapes, dioramas, characters, product cards and mini games.">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
 <style>
   :root { color-scheme: light dark; --bg: #f6f5f2; --fg: #17161c; --muted: #5d5a66; --card: #ffffff; --line: #e4e1ea; --accent: #6d4aff; }
   @media (prefers-color-scheme: dark) { :root { --bg: #0f0e14; --fg: #f2f0f7; --muted: #a29fae; --card: #1a1922; --line: #2a2834; --accent: #a48bff; } }
@@ -128,22 +156,66 @@ const html = `<!doctype html>
   .tags span { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
   .tags .kind { color: var(--accent); border-color: currentColor; }
   .tags code { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  nav { display: flex; gap: 16px; margin-bottom: 20px; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a[aria-current] { color: var(--accent); font-weight: 600; }
+  header details.prompt { margin-top: 14px; max-width: 820px; }
+  .prompt { margin-top: 12px; }
+  .prompt summary { cursor: pointer; font-size: 13px; color: var(--accent); }
+  .prompt pre { margin: 8px 0 0; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg); }
+  .score { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--accent); }
   footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 16px 40px; }
 </style>
 <script type="module" src="./agent3d-runtime/agent3d-runtime.js"></script>
 </head>
 <body>
   <header>
-    <h1>Agent3D templates</h1>
-    <p>${built.length} starter projects, each running live below (scenes start when scrolled into view and pause off-screen). Start one with <code>agent3d new my-site --template &lt;id&gt;</code>, then ask your agent to make it yours.</p>
+    <nav>${nav}</nav>
+    <h1>${esc(heading)}</h1>
+    ${intro}
   </header>
   <main>
-${cards}
+${body}
   </main>
   <footer>Built with <code>node scripts/build-examples.mjs</code> — self-contained, no CDN, no tracking.</footer>
 </body>
 </html>
 `;
+
+const nav = (cur) => [["index.html", "Templates"], ["briefs.html", "Blind-QA client briefs"]].map(([h, l]) => `<a href="./${h}"${h === cur ? ' aria-current="page"' : ""}>${l}</a>`).join("");
+const html = page({
+  title: "Agent3D templates",
+  description: "Live gallery of the Agent3D starter templates: banners, heroes, landscapes, dioramas, characters, product cards and mini games.",
+  heading: "Agent3D templates",
+  nav: nav("index.html"),
+  intro: `<p>${built.length} starter projects, each running live below (scenes start when scrolled into view and pause off-screen). Start one with <code>agent3d new my-site --template &lt;id&gt;</code>, then ask your agent to make it yours.</p>
+    <p style="margin-top:10px">${esc(PROMPTS.templates.intro)}</p>
+    ${promptBlock("Shared instructions given to every template agent", PROMPTS.templates.shared)}`,
+  body: cards,
+});
 writeFileSync(join(SITE, "index.html"), html);
+const briefs = PROMPTS.briefs.items.filter((b) => existsSync(join(SITE, "briefs", b.id, "scene.json")));
+if (briefs.length) {
+  const bcards = briefs
+    .map((b) => `    <article class="card${ratio(b.aspect) >= 2.5 ? " wide" : ""}" id="${esc(b.id)}">
+      <agent3d-scene src="./briefs/${esc(b.id)}/scene.json"${b.poster ?? existsSync(join(SITE, "briefs", b.id, "poster.webp")) ? ` poster="./briefs/${esc(b.id)}/poster.webp"` : ""}></agent3d-scene>
+      <div class="meta">
+        <h2>${esc(b.title)}</h2>
+        <p class="tags"><span class="kind">${esc(b.kind)}</span><span>${esc(b.aspect)}</span>${b.scroll ? "<span>scroll the page to drive it</span>" : ""}</p>
+        <span class="score">QA score: ${esc(b.scores)}</span>
+        ${promptBlock("Client brief (prompt)", b.brief)}
+      </div>
+    </article>`)
+    .join("\n");
+  writeFileSync(join(SITE, "briefs.html"), page({
+    title: "Agent3D blind-QA briefs",
+    description: "Client briefs delivered blind by an AI agent using only the Agent3D skills.",
+    heading: "Blind-QA client briefs",
+    nav: nav("briefs.html"),
+    intro: `<p>${esc(PROMPTS.briefs.intro)}</p>
+    ${promptBlock("Shared instructions given to the QA agents", PROMPTS.briefs.shared)}`,
+    body: bcards + (briefs.some((b) => b.scroll) ? '\n    <div style="height:60vh;grid-column:1/-1"></div>' : ""),
+  }));
+}
+
 const kb = (dir) => readdirSync(dir).reduce((s, f) => { const p = join(dir, f); const st = statSync(p); return s + (st.isDirectory() ? kb(p) : st.size); }, 0);
 console.error(`\nexamples/site/index.html — ${built.length} templates, ${(kb(SITE) / 1024 / 1024).toFixed(1)} MB in total`);

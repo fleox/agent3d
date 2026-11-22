@@ -1,0 +1,593 @@
+{
+  "version": 1,
+  "id": "brewery-toss",
+  "title": "Hopfield Can Toss",
+  "ariaLabel": "Hopfield Can Toss, a 30 second mini game: tap or click to throw a ball and knock the beer cans off the bar counter",
+  "target": {
+    "kind": "game",
+    "aspect": "16:9",
+    "reducedMotion": "ignore",
+    "posterTime": 2.2,
+    "quality": "auto"
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 42,
+    "position": [
+      0,
+      2.9,
+      8
+    ],
+    "target": [
+      0,
+      1.9,
+      0
+    ]
+  },
+  "environment": {
+    "background": {
+      "gradient": [
+        "#1a0f08",
+        "#3b2212",
+        "#5c3415"
+      ],
+      "angle": 0
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.5,
+    "rig": {
+      "preset": "studio-3point",
+      "intensity": 1
+    },
+    "shadows": {
+      "type": "pcf",
+      "softness": 3
+    },
+    "fog": {
+      "color": "#1a0f08",
+      "near": 14,
+      "far": 28
+    }
+  },
+  "lights": [
+    {
+      "id": "warm",
+      "type": "point",
+      "color": "#ffb35c",
+      "intensity": 18,
+      "position": [
+        0,
+        4.5,
+        2
+      ],
+      "distance": 14
+    }
+  ],
+  "objects": [
+    {
+      "id": "wall",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 24,
+        "height": 10,
+        "depth": 0.2
+      },
+      "position": [
+        0,
+        4,
+        -3
+      ],
+      "material": {
+        "preset": "matte",
+        "color": "#8a5a44",
+        "map": "library:textures/brick-color.jpg",
+        "normalMap": "library:textures/brick-normal.jpg",
+        "repeat": [
+          6,
+          2.5
+        ]
+      },
+      "receiveShadow": true
+    },
+    {
+      "id": "sign",
+      "kind": "text",
+      "text": "HOPFIELD",
+      "font": "bebas-neue",
+      "size": 0.9,
+      "depth": 0.05,
+      "position": [
+        0,
+        4.9,
+        -2.8
+      ],
+      "material": {
+        "preset": "neon",
+        "color": "#ffb347",
+        "emissive": "#ff9a1f",
+        "emissiveIntensity": 3
+      },
+      "behaviours": [
+        {
+          "type": "flicker",
+          "amount": 0.1,
+          "speed": 3
+        }
+      ]
+    },
+    {
+      "id": "counter",
+      "kind": "mesh",
+      "geometry": {
+        "type": "roundedBox",
+        "width": 7,
+        "height": 1.2,
+        "depth": 2.2,
+        "radius": 0.06
+      },
+      "position": [
+        0,
+        0.6,
+        0
+      ],
+      "material": {
+        "preset": "wood",
+        "color": "#ffffff",
+        "roughness": 0.75,
+        "clearcoat": 0,
+        "map": {
+          "procedural": "wood",
+          "colors": [
+            "#7a4520",
+            "#5a2f14",
+            "#3a1d0b"
+          ],
+          "rings": 40,
+          "grain": 0.8,
+          "scale": 3
+        },
+        "triplanar": 0.6
+      },
+      "receiveShadow": true,
+      "body": {
+        "type": "static"
+      }
+    },
+    {
+      "id": "floor",
+      "kind": "mesh",
+      "geometry": {
+        "type": "box",
+        "width": 40,
+        "height": 0.2,
+        "depth": 40
+      },
+      "position": [
+        0,
+        -0.1,
+        0
+      ],
+      "material": {
+        "preset": "matte",
+        "color": "#2b1a10"
+      },
+      "receiveShadow": true,
+      "body": {
+        "type": "static"
+      }
+    },
+    {
+      "id": "mugL",
+      "kind": "model",
+      "src": "library:models/food/mug.glb",
+      "scale": 1.1,
+      "position": [
+        -2.8,
+        1.2,
+        0.4
+      ],
+      "rotation": [
+        0,
+        30,
+        0
+      ]
+    },
+    {
+      "id": "mugR",
+      "kind": "model",
+      "src": "library:models/food/mug.glb",
+      "scale": 1.1,
+      "position": [
+        2.9,
+        1.2,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -25,
+        0
+      ]
+    },
+    {
+      "id": "can0",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.27,
+        "radiusBottom": 0.27,
+        "height": 0.78,
+        "segments": 32
+      },
+      "position": [
+        -0.6,
+        1.5999999999999999,
+        0
+      ],
+      "material": {
+        "preset": "carPaint",
+        "color": "#ffffff",
+        "map": {
+          "procedural": "stripes",
+          "colors": [
+            "#f5b700",
+            "#fff4e0"
+          ],
+          "count": 1,
+          "angle": 90,
+          "softness": 0
+        }
+      },
+      "castShadow": true,
+      "tags": [
+        "can"
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "cylinder",
+        "mass": 0.35,
+        "friction": 0.5,
+        "restitution": 0.1
+      }
+    },
+    {
+      "id": "can1",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.27,
+        "radiusBottom": 0.27,
+        "height": 0.78,
+        "segments": 32
+      },
+      "position": [
+        0,
+        1.5999999999999999,
+        0
+      ],
+      "material": {
+        "preset": "carPaint",
+        "color": "#ffffff",
+        "map": {
+          "procedural": "stripes",
+          "colors": [
+            "#f5b700",
+            "#fff4e0"
+          ],
+          "count": 1,
+          "angle": 90,
+          "softness": 0
+        }
+      },
+      "castShadow": true,
+      "tags": [
+        "can"
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "cylinder",
+        "mass": 0.35,
+        "friction": 0.5,
+        "restitution": 0.1
+      }
+    },
+    {
+      "id": "can2",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.27,
+        "radiusBottom": 0.27,
+        "height": 0.78,
+        "segments": 32
+      },
+      "position": [
+        0.6,
+        1.5999999999999999,
+        0
+      ],
+      "material": {
+        "preset": "carPaint",
+        "color": "#ffffff",
+        "map": {
+          "procedural": "stripes",
+          "colors": [
+            "#f5b700",
+            "#fff4e0"
+          ],
+          "count": 1,
+          "angle": 90,
+          "softness": 0
+        }
+      },
+      "castShadow": true,
+      "tags": [
+        "can"
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "cylinder",
+        "mass": 0.35,
+        "friction": 0.5,
+        "restitution": 0.1
+      }
+    },
+    {
+      "id": "can3",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.27,
+        "radiusBottom": 0.27,
+        "height": 0.78,
+        "segments": 32
+      },
+      "position": [
+        -0.3,
+        2.38,
+        0
+      ],
+      "material": {
+        "preset": "carPaint",
+        "color": "#ffffff",
+        "map": {
+          "procedural": "stripes",
+          "colors": [
+            "#1b998b",
+            "#fff4e0"
+          ],
+          "count": 1,
+          "angle": 90,
+          "softness": 0
+        }
+      },
+      "castShadow": true,
+      "tags": [
+        "can"
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "cylinder",
+        "mass": 0.35,
+        "friction": 0.5,
+        "restitution": 0.1
+      }
+    },
+    {
+      "id": "can4",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.27,
+        "radiusBottom": 0.27,
+        "height": 0.78,
+        "segments": 32
+      },
+      "position": [
+        0.3,
+        2.38,
+        0
+      ],
+      "material": {
+        "preset": "carPaint",
+        "color": "#ffffff",
+        "map": {
+          "procedural": "stripes",
+          "colors": [
+            "#1b998b",
+            "#fff4e0"
+          ],
+          "count": 1,
+          "angle": 90,
+          "softness": 0
+        }
+      },
+      "castShadow": true,
+      "tags": [
+        "can"
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "cylinder",
+        "mass": 0.35,
+        "friction": 0.5,
+        "restitution": 0.1
+      }
+    },
+    {
+      "id": "can5",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 0.27,
+        "radiusBottom": 0.27,
+        "height": 0.78,
+        "segments": 32
+      },
+      "position": [
+        0,
+        3.1599999999999997,
+        0
+      ],
+      "material": {
+        "preset": "carPaint",
+        "color": "#ffffff",
+        "map": {
+          "procedural": "stripes",
+          "colors": [
+            "#e84855",
+            "#fff4e0"
+          ],
+          "count": 1,
+          "angle": 90,
+          "softness": 0
+        }
+      },
+      "castShadow": true,
+      "tags": [
+        "can"
+      ],
+      "body": {
+        "type": "dynamic",
+        "shape": "cylinder",
+        "mass": 0.35,
+        "friction": 0.5,
+        "restitution": 0.1
+      }
+    },
+    {
+      "id": "ballProto",
+      "kind": "mesh",
+      "geometry": {
+        "type": "sphere",
+        "radius": 0.22
+      },
+      "position": [
+        0,
+        -5,
+        8
+      ],
+      "visible": false,
+      "material": {
+        "preset": "rubber",
+        "color": "#f4f1de"
+      },
+      "castShadow": true,
+      "body": {
+        "type": "dynamic",
+        "shape": "sphere",
+        "mass": 1.2,
+        "restitution": 0.4,
+        "ccd": true,
+        "sleep": false
+      }
+    }
+  ],
+  "scripts": [
+    "scripts/game.js"
+  ],
+  "physics": {
+    "gravity": [
+      0,
+      -9.81,
+      0
+    ],
+    "substeps": 2,
+    "iterations": 12
+  },
+  "ui": {
+    "elements": [
+      {
+        "id": "score",
+        "type": "text",
+        "text": "Score {score}",
+        "anchor": "top-left",
+        "style": "pill"
+      },
+      {
+        "id": "timer",
+        "type": "text",
+        "text": "Time {timeLeft}s",
+        "anchor": "bottom",
+        "style": "pill",
+        "visible": "phase == 'play'"
+      },
+      {
+        "id": "best",
+        "type": "text",
+        "text": "Best {best}",
+        "anchor": "top-right",
+        "style": "pill"
+      },
+      {
+        "id": "start",
+        "type": "button",
+        "text": "Tap to throw!",
+        "anchor": "bottom",
+        "action": "start",
+        "visible": "phase == 'ready'"
+      },
+      {
+        "id": "over",
+        "type": "text",
+        "text": "Time's up! {score} points",
+        "anchor": "center",
+        "style": "title",
+        "visible": "phase == 'over'"
+      },
+      {
+        "id": "retry",
+        "type": "button",
+        "text": "Retry",
+        "anchor": "bottom",
+        "action": "retry",
+        "visible": "phase == 'over'"
+      }
+    ],
+    "color": "#fff4e0",
+    "accent": "#f5b700"
+  },
+  "audio": {
+    "sounds": {
+      "throw": {
+        "preset": "whoosh",
+        "volume": 0.4
+      },
+      "hit": {
+        "preset": "hit",
+        "volume": 0.5
+      },
+      "point": {
+        "preset": "coin",
+        "volume": 0.45
+      },
+      "end": {
+        "preset": "win",
+        "volume": 0.5
+      }
+    }
+  },
+  "data": {
+    "launch": [
+      0,
+      1.8,
+      7
+    ],
+    "flight": 0.55,
+    "roundTime": 30,
+    "counterTop": 1.2
+  },
+  "seed": 7,
+  "postfx": [
+    {
+      "type": "bloom",
+      "strength": 0.7,
+      "threshold": 0.9,
+      "radius": 0.4
+    },
+    {
+      "type": "vignette",
+      "darkness": 0.35
+    }
+  ]
+}

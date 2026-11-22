@@ -1,0 +1,449 @@
+{
+  "version": 1,
+  "id": "kids-mascot",
+  "title": "Learn to code, have fun",
+  "ariaLabel": "A friendly teal and orange robot mascot waving next to the headline 'Learn to code, have fun'; its eyes follow the pointer and it celebrates with confetti when clicked",
+  "seed": 3,
+  "data": {},
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "reducedMotion": "static",
+    "posterTime": 2.2,
+    "maxDpr": 2,
+    "exposure": 0.95
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [
+      0,
+      1.9,
+      9.5
+    ],
+    "target": [
+      0,
+      1.45,
+      0
+    ],
+    "controls": "none"
+  },
+  "environment": {
+    "background": {
+      "meshGradient": [
+        "#ffe1bf",
+        "#bfeee7",
+        "#ffd2a6",
+        "#a9e6dd"
+      ],
+      "speed": 0.08,
+      "scale": 1,
+      "grain": 0.02
+    },
+    "lighting": "studio",
+    "lightingIntensity": 0.45,
+    "rig": {
+      "preset": "softbox",
+      "intensity": 0.75
+    },
+    "contactShadows": {
+      "opacity": 0.45,
+      "blur": 2.8,
+      "far": 0.8
+    }
+  },
+  "lights": [
+    {
+      "id": "rim",
+      "type": "directional",
+      "position": [
+        -4,
+        4,
+        -5
+      ],
+      "color": "#ffd2a8",
+      "intensity": 1.6
+    }
+  ],
+  "objects": [
+    {
+      "id": "disc",
+      "kind": "mesh",
+      "geometry": {
+        "type": "cylinder",
+        "radiusTop": 1.3,
+        "radiusBottom": 1.35,
+        "height": 0.22,
+        "segments": 64
+      },
+      "position": [
+        2.7,
+        0.11,
+        0
+      ],
+      "material": {
+        "preset": "mattePastel",
+        "color": "#ff8a1f"
+      },
+      "receiveShadow": true
+    },
+    {
+      "id": "mascot",
+      "kind": "group",
+      "position": [
+        2.7,
+        0.22,
+        0
+      ],
+      "rotation": [
+        0,
+        -14,
+        0
+      ],
+      "children": [
+        {
+          "id": "botWave",
+          "kind": "generator",
+          "generator": "character",
+          "params": {
+            "style": "robot",
+            "animation": "wave",
+            "expression": "happy",
+            "height": 2.7,
+            "eyesFollowPointer": true,
+            "shirt": "#2cc7b8",
+            "pants": "#169e92",
+            "accent": "#ff8a1f",
+            "shading": "smooth"
+          },
+          "castShadow": true
+        },
+        {
+          "id": "botParty",
+          "kind": "generator",
+          "generator": "character",
+          "visible": false,
+          "params": {
+            "style": "robot",
+            "animation": "celebrate",
+            "expression": "laugh",
+            "height": 2.7,
+            "eyesFollowPointer": true,
+            "shirt": "#2cc7b8",
+            "pants": "#169e92",
+            "accent": "#ff8a1f",
+            "shading": "smooth"
+          },
+          "castShadow": true
+        }
+      ],
+      "behaviours": [
+        {
+          "type": "hoverScale",
+          "scale": 1.05
+        }
+      ]
+    },
+    {
+      "id": "headline",
+      "kind": "text",
+      "text": "Learn to code,",
+      "font": "display",
+      "size": 0.5,
+      "depth": 0.14,
+      "bevel": 0.02,
+      "align": "center",
+      "position": [
+        -1.55,
+        2.35,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#0e9f92"
+      },
+      "outline": {
+        "width": 0.04,
+        "color": "#173a4a"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "rise",
+          "duration": 0.7
+        }
+      ]
+    },
+    {
+      "id": "tagline",
+      "kind": "text",
+      "text": "have fun!",
+      "font": "display",
+      "size": 0.72,
+      "depth": 0.16,
+      "bevel": 0.02,
+      "align": "center",
+      "position": [
+        -1.55,
+        1.35,
+        0
+      ],
+      "material": {
+        "preset": "plastic",
+        "color": "#ff8a1f"
+      },
+      "outline": {
+        "width": 0.045,
+        "color": "#173a4a"
+      },
+      "reveal": {
+        "effect": "scale",
+        "stagger": 0.05,
+        "duration": 0.6,
+        "delay": 0.6
+      },
+      "behaviours": [
+        {
+          "type": "float",
+          "amplitude": 0.05,
+          "speed": 0.3
+        }
+      ]
+    },
+    {
+      "id": "confetti",
+      "kind": "particles",
+      "preset": "confetti",
+      "count": 260,
+      "area": [
+        5,
+        4.5,
+        3
+      ],
+      "position": [
+        2.7,
+        2.8,
+        0
+      ],
+      "visible": false,
+      "color": [
+        "#12a89b",
+        "#ff8a1f",
+        "#ffd23f",
+        "#ffffff",
+        "#3ec7ff"
+      ]
+    },
+    {
+      "id": "sparkles",
+      "kind": "particles",
+      "preset": "magic",
+      "count": 50,
+      "area": [
+        3.5,
+        2.6,
+        2
+      ],
+      "position": [
+        2.7,
+        1.8,
+        0
+      ],
+      "color": [
+        "#ffe7b0",
+        "#c9fff6"
+      ],
+      "size": 0.1
+    }
+  ],
+  "timeline": {
+    "duration": 4.2,
+    "trigger": "manual",
+    "autoplay": false,
+    "segments": {
+      "celebrate": [
+        0,
+        4.2
+      ]
+    },
+    "tracks": [
+      {
+        "target": "botWave.visible",
+        "keys": [
+          [
+            0,
+            true
+          ],
+          [
+            0.02,
+            false,
+            "step"
+          ],
+          [
+            4,
+            false
+          ],
+          [
+            4.02,
+            true,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "botParty.visible",
+        "keys": [
+          [
+            0,
+            false
+          ],
+          [
+            0.02,
+            true,
+            "step"
+          ],
+          [
+            4,
+            true
+          ],
+          [
+            4.02,
+            false,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "confetti.visible",
+        "keys": [
+          [
+            0,
+            false
+          ],
+          [
+            0.02,
+            true,
+            "step"
+          ],
+          [
+            4,
+            true
+          ],
+          [
+            4.02,
+            false,
+            "step"
+          ]
+        ]
+      },
+      {
+        "target": "mascot.scale",
+        "keys": [
+          [
+            0,
+            1
+          ],
+          [
+            0.12,
+            0.9,
+            "outQuad"
+          ],
+          [
+            0.5,
+            1,
+            "outBack"
+          ],
+          [
+            4.2,
+            1
+          ]
+        ]
+      },
+      {
+        "target": "disc.material.color",
+        "keys": [
+          [
+            0,
+            "#ff8a1f"
+          ],
+          [
+            0.3,
+            "#12a89b",
+            "outCubic"
+          ],
+          [
+            3.6,
+            "#12a89b"
+          ],
+          [
+            4.2,
+            "#ff8a1f",
+            "inOutCubic"
+          ]
+        ]
+      },
+      {
+        "target": "children:tagline.position.y",
+        "keys": [
+          [
+            0,
+            "+=0"
+          ],
+          [
+            0.25,
+            "+=0.35",
+            "outQuad"
+          ],
+          [
+            0.55,
+            "+=0",
+            "outBounce"
+          ],
+          [
+            4.2,
+            "+=0"
+          ]
+        ],
+        "stagger": 0.06
+      }
+    ]
+  },
+  "interactions": [
+    {
+      "on": "click",
+      "target": "mascot",
+      "do": [
+        {
+          "play": "celebrate"
+        },
+        {
+          "emit": "mascot-click"
+        }
+      ]
+    },
+    {
+      "on": "click",
+      "target": "disc",
+      "do": [
+        {
+          "play": "celebrate"
+        },
+        {
+          "emit": "mascot-click"
+        }
+      ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "look",
+      "preset": "product",
+      "intensity": 0.6
+    },
+    {
+      "type": "bloom",
+      "threshold": 3,
+      "strength": 0.1
+    }
+  ]
+}

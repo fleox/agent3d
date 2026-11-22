@@ -1,0 +1,8 @@
+{
+  "name": "neon-runner",
+  "title": "Volt Runner",
+  "createdAt": "2026-11-22T16:09:43.849Z",
+  "updatedAt": "2026-11-22T16:13:38.329Z",
+  "template": "game-runner",
+  "agent3d": "0.1.0"
+}
