@@ -25,4 +25,4 @@ A playable 16:9 3D platformer ("Coin Rush"): the Kenney platformer hero (`librar
 | Hero | `objects#hero.src` — another animated library character; the script plays clips `idle`, `walk`, `jump` (rename them in `play(...)` calls for other models, e.g. robot: `Idle`, `Walking`, `Jump`) |
 | Texts / colours | `ui.elements`, `ui.accent`, `environment.background` |
 
-The round island's collision box is a 10 × 10 square (`objects#arena.body.size`), inscribed in the visual circle.
+The round island's floor body is a 13.6 × 13.6 square (`objects#arena.body.size`); the script keeps the hero inside a circle of radius `data.collector.radius` (5.9) so the whole visible island is walkable and its edge is a soft wall.

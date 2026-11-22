@@ -1,12 +1,13 @@
 // Coin collector — run and jump around a floating arena, grab every coin
 // before the timer runs out. Physics: the hero is a dynamic body, platforms
-// are static, coins are triggers.
+// are static, coins are triggers. The island is round: the hero is kept
+// inside data.collector.radius (the square floor body is larger).
 // Controls: arrows / WASD move, Space jumps; touch: hold a finger on the
 // side you want to go (relative to the screen centre), tap quickly to jump.
 // No input for a while → attract mode (the hero collects coins by itself).
 
 export default function (api) {
-  const cfg = Object.assign({ time: 45, speed: 5, jump: 7.2, fallY: -8 }, api.data.collector || {});
+  const cfg = Object.assign({ time: 45, speed: 5, jump: 7.2, fallY: -8, radius: 5.9 }, api.data.collector || {});
   const hero = api.get("hero");
   const coins = api.findByTag("coin");
   const spawn = hero ? [hero.position.x, hero.position.y, hero.position.z] : [0, 1, 0];
@@ -171,6 +172,14 @@ export default function (api) {
         hero.velocity.y = cfg.jump;
         jumpCooldown = 0.3;
         if (phase === "play") api.audio.play("jump");
+      }
+      // Round island: keep the hero inside a circle (the floor body is square).
+      const r = Math.hypot(hero.position.x, hero.position.z);
+      if (r > cfg.radius) {
+        const nx = hero.position.x / r, nz = hero.position.z / r;
+        hero.position.set(nx * cfg.radius, hero.position.y, nz * cfg.radius);
+        const out = hero.velocity.x * nx + hero.velocity.z * nz;
+        if (out > 0) hero.velocity.set(hero.velocity.x - out * nx, hero.velocity.y, hero.velocity.z - out * nz);
       }
       if (len > 0.1) hero.rotation.set(0, (Math.atan2(mx, mz) * 180) / Math.PI, 0);
       play(!onGround ? "jump" : len > 0.1 ? "walk" : "idle");
