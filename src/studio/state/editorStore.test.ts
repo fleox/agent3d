@@ -124,3 +124,13 @@ describe("EditorStore", () => {
     expect(store.getSnapshot().issues.some((i) => i.severity === "error")).toBe(true);
   });
 });
+
+describe("EditorStore op compaction", () => {
+  it("keeps only the last set on the same path while dragging", async () => {
+    const { store, calls } = setup();
+    for (let i = 0; i < 20; i++) store.edit([{ op: "set", path: "objects#box.position", value: [i, 0, 0] }], { coalesce: "drag" });
+    await store.flush();
+    expect(calls[0]).toMatchObject({ kind: "patch", ops: [{ op: "set", value: [19, 0, 0] }] });
+    expect((calls[0] as { ops: unknown[] }).ops).toHaveLength(1);
+  });
+});

@@ -108,10 +108,18 @@ export class EditorStore {
     const coalesce = opts.coalesce && this.lastCoalesce?.key === opts.coalesce && now - this.lastCoalesce.at < this.opts.coalesceMs;
     if (!coalesce) this.pushHistory(cur);
     this.lastCoalesce = opts.coalesce ? { key: opts.coalesce, at: now } : null;
-    this.pendingOps.push(...ops);
+    for (const op of ops) this.queue(op);
     this.setScene(next, "edit", { save: { state: "pending" }, ...(opts.select !== undefined ? { selection: opts.select } : {}) });
     this.schedule();
     return null;
+  }
+
+  // Drags produce many ops on the same path: keep only the last one.
+  private queue(op: PatchOp): void {
+    const last = this.pendingOps[this.pendingOps.length - 1];
+    if (last && last.op === "set" && op.op === "set" && last.path === op.path) this.pendingOps[this.pendingOps.length - 1] = op;
+    else if (last && last.op === "addTrack" && op.op === "addTrack" && last.track.target === op.track.target) this.pendingOps[this.pendingOps.length - 1] = op;
+    else this.pendingOps.push(op);
   }
 
   // Full document replacement (JSON editor): persisted with scene_apply.

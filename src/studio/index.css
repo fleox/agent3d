@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Studio tokens: graphite neutrals, periwinkle selection, amber keyframes,
+   mint for "the agent did this". */
+:root {
+  --ink-0: 16 18 23;
+  --ink-1: 23 26 32;
+  --ink-2: 31 35 43;
+  --ink-3: 40 45 55;
+  --ink-4: 52 58 70;
+  --line: 37 41 50;
+  --fg: 228 231 236;
+  --fg-muted: 152 160 174;
+  --fg-faint: 98 106 120;
+  --accent: 124 140 255;
+  --key: 242 182 84;
+  --agent: 79 209 165;
+  --danger: 242 109 109;
+  --warn: 240 163 94;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-0 font-sans text-sm text-fg antialiased;
+  overflow: hidden;
+  font-feature-settings: "tnum" 1;
+}
+
+*:focus-visible {
+  outline: 1.5px solid rgb(var(--accent));
+  outline-offset: 1px;
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.35);
+}
+
+/* Thin scrollbars that stay out of the way */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ink-4)) transparent;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.field {
+  @apply h-6 w-full min-w-0 rounded-[5px] border border-transparent bg-ink-2 px-1.5 text-sm text-fg outline-none transition-colors placeholder:text-fg-faint hover:border-line focus:border-accent/70 focus:bg-ink-1;
+}
+select.field {
+  @apply cursor-pointer appearance-none pr-5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23989fae' fill='none' stroke-width='1.2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+
+.viewport-stage {
+  background-color: rgb(12 14 18);
+  background-image: radial-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+@keyframes agent-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--agent) / 0.7), 0 0 0 1px rgb(var(--agent));
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(var(--agent) / 0), 0 0 0 1px rgb(var(--agent) / 0);
+  }
+}
+.agent-pulse {
+  animation: agent-pulse 1.4s ease-out 1;
+}
+@keyframes row-flash {
+  0% {
+    background: rgb(var(--agent) / 0.28);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.row-flash {
+  animation: row-flash 2.2s ease-out 1;
+}
+@keyframes toast-in {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}
+.toast-in {
+  animation: toast-in 160ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-pulse,
+  .row-flash,
+  .toast-in {
+    animation: none;
+  }
+}
