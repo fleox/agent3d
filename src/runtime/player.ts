@@ -111,13 +111,9 @@ class PlayerImpl implements Player {
       },
     };
 
-    try {
-      this.renderer = this.createRenderer();
-    } catch (err) {
-      this.report({ code: "webgl-unavailable", message: `WebGL is not available: ${(err as Error).message}` });
-      this.readyReject(new Error("webgl-unavailable"));
-      return;
-    }
+    // The WebGL context is created lazily in start(): browsers cap live
+    // contexts (~16 in Chrome) and drop the oldest, so a page with many lazy
+    // embeds (galleries, product grids) must not open one per element upfront.
     container.appendChild(this.canvas);
     this.inputBinding = bindInput(container, this.inputState, { game: scene.target?.kind === "game" });
     this.measure();
@@ -190,6 +186,15 @@ class PlayerImpl implements Player {
   private start(): void {
     if (this.started || this.disposed) return;
     this.started = true;
+    try {
+      this.renderer = this.createRenderer();
+    } catch (err) {
+      this.report({ code: "webgl-unavailable", message: `WebGL is not available: ${(err as Error).message}` });
+      this.readyReject(new Error("webgl-unavailable"));
+      return;
+    }
+    this.measure();
+    this.renderer.setSize(this.width, this.height, false);
     this.building = this.buildAll()
       .then(() => {
         if (this.disposed) return;

@@ -1,8 +1,8 @@
 {
   "id": "banner-neon-title",
   "title": "Neon title banner",
-  "description": "Chrome 3D headline over a synthwave grid with flickering neon tubes, bloom and rising sparks.",
+  "description": "Glowing neon 3D headline over a scrolling synthwave grid with flickering neon tubes, bloom and rising sparks.",
   "kind": "banner",
-  "tags": ["banner", "text", "neon", "chrome", "bloom", "synthwave", "sparks", "night"],
+  "tags": ["banner", "text", "neon", "bloom", "synthwave", "sparks", "night"],
   "aspect": "4:1"
 }

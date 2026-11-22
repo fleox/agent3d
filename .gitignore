@@ -4,3 +4,4 @@ dist
 *.log
 .agent3d-tmp
 coverage
+examples/site
