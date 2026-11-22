@@ -1,0 +1,315 @@
+{
+  "version": 1,
+  "id": "game-coin-collector",
+  "title": "Coin collector arena",
+  "ariaLabel": "Platformer mini game: move with the arrow keys or by holding a finger, jump with Space or a tap, collect all coins before time runs out",
+  "seed": 9,
+  "target": {"kind": "game", "aspect": "16:9", "budgetKb": 800, "reducedMotion": "ignore", "maxDpr": 2},
+  "camera": {
+    "type": "perspective",
+    "fov": 55,
+    "position": [0, 9, 12],
+    "target": [0, 0, 0],
+    "controls": "follow",
+    "follow": {"target": "hero", "offset": [0, 6.5, 8], "smoothing": 0.9}
+  },
+  "environment": {
+    "background": {"gradient": ["#a8e0ff", "#e8f7ff", "#fff6e0"], "angle": 180},
+    "lighting": "soft",
+    "lightingIntensity": 0.7,
+    "fog": {"color": "#e8f4ff", "near": 28, "far": 60}
+  },
+  "lights": [
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#ffffff",
+      "groundColor": "#8fb98a",
+      "intensity": 1
+    },
+    {"id": "sun", "type": "directional", "position": [6, 12, 6], "intensity": 2.2, "castShadow": true}
+  ],
+  "objects": [
+    {
+      "id": "arena",
+      "kind": "model",
+      "src": "library:models/platformer/platform-grass-round.glb",
+      "position": [0, 0, 0],
+      "scale": [2.8, 1.4, 2.8],
+      "tags": ["ground"],
+      "body": {"type": "static", "size": [10, 0.7, 10]},
+      "receiveShadow": true,
+      "castShadow": true
+    },
+    {
+      "id": "stepA",
+      "kind": "model",
+      "src": "library:models/platformer/platform-medium.glb",
+      "position": [-3.5, 1.9, -0.9],
+      "scale": 1,
+      "tags": ["ground"],
+      "body": {"type": "static"},
+      "receiveShadow": true,
+      "castShadow": true
+    },
+    {
+      "id": "stepB",
+      "kind": "model",
+      "src": "library:models/platformer/platform-medium.glb",
+      "position": [3.5, 2.1, 1.5],
+      "scale": 1,
+      "tags": ["ground"],
+      "body": {"type": "static"},
+      "receiveShadow": true,
+      "castShadow": true
+    },
+    {
+      "id": "tower",
+      "kind": "model",
+      "src": "library:models/platformer/platform.glb",
+      "position": [0, 3.2, -2.6],
+      "scale": 1,
+      "tags": ["ground"],
+      "body": {"type": "static"},
+      "receiveShadow": true,
+      "castShadow": true
+    },
+    {
+      "id": "flag",
+      "kind": "model",
+      "src": "library:models/platformer/flag.glb",
+      "fit": 1.6,
+      "position": [0.6, 3.75, -3.2]
+    },
+    {
+      "id": "hero",
+      "kind": "model",
+      "src": "library:models/characters/platformer-hero.glb",
+      "fit": 1.2,
+      "position": [0, 0.6, 2],
+      "animation": {"clip": "idle", "loop": true},
+      "tags": ["player"],
+      "body": {"type": "dynamic", "size": [0.7, 1.05, 0.6], "friction": 0, "restitution": 0},
+      "castShadow": true
+    },
+    {
+      "id": "coins",
+      "kind": "group",
+      "children": [
+        {
+          "id": "coin0",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [-3, 0.85, -3.6],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin1",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [2, 0.85, -3.6],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin2",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [-3, 0.85, 3.4],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin3",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [2.6, 0.85, 4.2],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin4",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [0, 0.85, -1.2],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin5",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [-4.4, 0.85, 2.2],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin6",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [4.4, 0.85, -2],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin7",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [-3.5, 2.8000000000000003, -1.5],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin8",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [3.5, 3.0, 1.5],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin9",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [0, 4.1, -2.6],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin10",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [-3.5, 2.8000000000000003, -0.3],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        },
+        {
+          "id": "coin11",
+          "kind": "model",
+          "src": "library:models/platformer/coin.glb",
+          "fit": 0.6,
+          "position": [3.5, 3.0, 0.3],
+          "tags": ["coin"],
+          "body": {"type": "trigger", "size": [0.8, 0.9, 0.8]},
+          "castShadow": true
+        }
+      ]
+    },
+    {
+      "id": "clouds",
+      "kind": "generator",
+      "generator": "clouds",
+      "params": {"count": 6, "area": [50, 4, 30], "height": -6, "speed": 0.2},
+      "position": [0, 0, -10],
+      "seed": 4
+    },
+    {
+      "id": "sparkles",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 60,
+      "area": [16, 6, 16],
+      "position": [0, 3, 0],
+      "color": "#fff3b0",
+      "size": 0.06
+    }
+  ],
+  "physics": {"gravity": [0, -18, 0], "step": 0.016666},
+  "scripts": ["scripts/collector.js"],
+  "data": {"collector": {"time": 45, "speed": 5, "jump": 9.5}},
+  "ui": {
+    "color": "#24324a",
+    "accent": "#ffb703",
+    "elements": [
+      {
+        "id": "coinsHud",
+        "type": "text",
+        "text": "Coins {coins}/{total}",
+        "anchor": "top-left",
+        "style": "pill"
+      },
+      {
+        "id": "timer",
+        "type": "text",
+        "text": "{time} s",
+        "anchor": "top",
+        "style": "pill",
+        "visible": "phase != 'attract'"
+      },
+      {"id": "timeBar", "type": "bar", "value": "timeBar", "anchor": "top", "visible": "phase == 'play'"},
+      {"id": "bestHud", "type": "text", "text": "Best {best}", "anchor": "top-right", "style": "pill"},
+      {
+        "id": "title",
+        "type": "text",
+        "text": "Coin Rush",
+        "anchor": "top",
+        "style": "title",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "hint",
+        "type": "text",
+        "text": "Arrows / WASD + Space — or hold & tap",
+        "anchor": "bottom",
+        "style": "subtitle",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "won",
+        "type": "text",
+        "text": "All coins! 🎉",
+        "anchor": "center",
+        "style": "title",
+        "visible": "phase == 'won'"
+      },
+      {
+        "id": "over",
+        "type": "text",
+        "text": "Time's up — {coins}/{total}",
+        "anchor": "center",
+        "style": "title",
+        "visible": "phase == 'over'"
+      },
+      {
+        "id": "retry",
+        "type": "button",
+        "text": "Play again",
+        "anchor": "bottom",
+        "action": "retry",
+        "visible": "phase == 'won' || phase == 'over'"
+      }
+    ]
+  },
+  "audio": {
+    "sounds": {
+      "coin": {"preset": "coin", "volume": 0.5},
+      "jump": {"preset": "jump", "volume": 0.4},
+      "win": {"preset": "win"},
+      "lose": {"preset": "lose"},
+      "click": {"preset": "click"}
+    }
+  }
+}
