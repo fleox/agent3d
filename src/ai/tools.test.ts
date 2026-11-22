@@ -133,4 +133,23 @@ describe("AI tool catalog", () => {
     const chk = (await callAiTool(c, "check", {})) as { issues: { code: string }[] };
     expect(chk.issues.map((i) => i.code)).toEqual(expect.arrayContaining(["out-of-view", "draw-calls"]));
   });
+
+  it("export renders a poster / video when the host can (and passes render_preview input through)", async () => {
+    const calls: unknown[] = [];
+    const host: ToolHost = {
+      media: async (o) => (calls.push(o), { bytes: new Uint8Array(2048), size: { width: 1200, height: 300 }, ...(o.format === "poster" ? { t: 1.5 } : { frames: 30, fps: 30, duration: 1 }) }),
+      render: async (o) => (calls.push(o), { dir: "/p", frames: [{ t: 0, path: "renders/a.png" }], state: { score: 2 }, issues: [], consoleErrors: [] }),
+    };
+    const c = await ctx(host);
+    const poster = await callAiTool(c, "export", { format: "poster", time: 2 });
+    expect(poster).toMatchObject({ format: "poster", path: "dist/poster.webp", t: 1.5, kb: 2 });
+    expect(await c.fs.exists("dist/poster.webp")).toBe(true);
+    expect(await callAiTool(c, "export", { format: "video", duration: 1, out: "dist/clip.webm" })).toMatchObject({ format: "video", path: "dist/clip.webm", frames: 30 });
+    expect(calls.slice(0, 2)).toEqual([expect.objectContaining({ format: "poster", time: 2, image: "webp" }), expect.objectContaining({ format: "video", duration: 1 })]);
+    await expect(callAiTool(c, "export", { format: "video", out: "video.webm" })).rejects.toMatchObject({ code: "invalid" });
+    await expect(callAiTool(await ctx({}), "export", { format: "poster" })).rejects.toMatchObject({ code: "invalid" });
+    const rp = await callAiTool(c, "render_preview", { frames: [0], input: [{ t: 0.1, key: "Space", hold: 0.2 }] });
+    expect(rp).toMatchObject({ dir: "/p", state: { score: 2 } });
+    expect(calls[2]).toMatchObject({ input: [{ t: 0.1, key: "Space", hold: 0.2 }] });
+  });
 });

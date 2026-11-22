@@ -43,6 +43,20 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
           },
         }
       : {}),
+    ...(fs
+      ? {
+          async media(opts) {
+            const render = await import("./render/render");
+            const log = (m: string) => void process.stderr.write(`${m}\n`);
+            if (opts.format === "poster") {
+              const r = await render.renderPoster({ projectDir: fs.root, format: opts.image ?? "webp", size: opts.size, scale: opts.size ? 1 : 2, time: opts.time, log });
+              return { bytes: r.bytes, t: r.t, size: { width: r.size.width, height: r.size.height } };
+            }
+            const r = await render.renderVideo({ projectDir: fs.root, size: opts.size, duration: opts.duration, fps: opts.fps, log });
+            return { bytes: r.bytes, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height } };
+          },
+        }
+      : {}),
     runtimeFiles: async (format) => readRuntimeFiles(format),
     library: libraryProvider(),
     templates: { index: readTemplatesIndex(), files: async (id) => readTemplateFiles(id) },

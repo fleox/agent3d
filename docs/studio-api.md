@@ -18,8 +18,12 @@ Owner: CLI (`agent/commands/serve.ts`). The Studio builds against this contract.
   (or no project), 500 other failures.
 - Project paths are POSIX, relative to the project root; `..`, absolute paths and symlinks
   leaving the folder are refused (400 `invalid-path`).
-- Started without a project (no `scene.json` in `--project` / cwd): `/api/info` returns
-  `project: null`, project routes return 404 `no-project`.
+- Started in a folder without a project (no `scene.json` in `--project` / cwd — the folder must
+  exist): the server still works on that folder. `/api/info` returns
+  `project: { dir, manifest: null, exists: false }`, `/project/` is mounted, and
+  `POST /api/tools/call` `project_create` creates the project there (the Studio's start screen).
+  `project: null` (and 404 `no-project` on project routes) only happens when the server is
+  started programmatically without a folder.
 
 ## Static mounts (what the runtime needs)
 
@@ -67,6 +71,11 @@ generators, particlePresets, postfx, fonts, sounds).
 ### `GET /api/templates`
 `{ "templates": [{ id, title, description, kind, tags }, …] }` from `templates/*/template.json`.
 
+### `GET /api/templates/<id>/preview.png`
+The template's gallery thumbnail (`templates/<folder>/preview.png`, `image/png`);
+404 `notFound` (JSON envelope) when the template is unknown or has no preview. `HEAD` works too.
+(`preview.png` is template metadata: it is not copied into projects created from the template.)
+
 ### `GET /api/tools`
 `{ "tools": [{ name, description, inputSchema, mutating }, …] }` — exactly
 `listAiTools(host)` (the MCP / `agent3d tools` catalog, including `render_preview`).
@@ -77,6 +86,15 @@ project's NodeFs with the Node host (headless render, runtime files, library, te
 → `{ "ok": true, "data": <tool result> }` or the error envelope (OpsError code / message /
 hint / details, e.g. `validation` with `details.issues`). Files the tool writes are not
 echoed back on `/api/events`.
+
+Paths in tool results are project-relative (`render_preview` returns `frames[].path` / `sheet`
+relative to the project folder, plus `dir`, its absolute path): fetch them with
+`GET /api/project/<path>` or `/project/<path>`.
+
+Media exports go through the same route (headless Chrome on the CLI host):
+`{ "name": "export", "input": { "format": "poster", "time": 2 } }` → `{ format, path: "dist/poster.webp", kb, size, t }`;
+`{ "name": "export", "input": { "format": "video", "duration": 6, "fps": 30, "size": "960x540" } }` →
+`{ format, path: "dist/video.webm", kb, size, frames, fps, duration }` (`out` picks another file under `dist/`).
 
 ### `GET /api/events` (Server-Sent Events)
 External changes to the project folder (another agent, an editor, `agent3d` in a terminal):

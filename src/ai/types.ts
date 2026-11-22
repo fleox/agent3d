@@ -53,9 +53,31 @@ export interface RenderResult {
   consoleErrors: string[];
 }
 
+export interface MediaOptions {
+  format: "poster" | "video";
+  // poster: "webp" (default) or "png"; time in seconds (default target.posterTime).
+  image?: "webp" | "png";
+  time?: number;
+  // video: seconds (default the timeline duration, else 5) and frames per second (default 30).
+  duration?: number;
+  fps?: number;
+  size?: string;
+}
+
+export interface MediaResult {
+  bytes: Uint8Array;
+  t?: number;
+  frames?: number;
+  fps?: number;
+  duration?: number;
+  size: { width: number; height: number };
+}
+
 export interface ToolHost {
   // Headless render (CLI / MCP only — needs Chrome). Enables `render_preview`.
   render?(opts: RenderOptions): Promise<RenderResult>;
+  // Poster still / WebM video (CLI / MCP / Studio API host — needs Chrome). Enables `export` formats poster and video.
+  media?(opts: MediaOptions): Promise<MediaResult>;
   // dist/runtime files for an export format (see RuntimeFiles in src/ops/export.ts).
   runtimeFiles?(format: ExportFormat): Promise<Record<string, Uint8Array>>;
   // The built-in asset library (library/index.json + bytes).

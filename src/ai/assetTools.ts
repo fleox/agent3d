@@ -98,19 +98,36 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "export",
     description:
-      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page) and snippet.html (paste into the page). "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Run check first; returns the snippet, sizes and budget warnings.',
+      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page) and snippet.html (paste into the page). "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Run check first; returns the snippet, sizes and budget warnings. When the host can render (CLI / MCP / Studio with Chrome): "poster" writes a still image (dist/poster.webp; `time`, `image`) and "video" a WebM (dist/video.webm; `duration`, `fps`, `size`), returning { path }.',
     inputSchema: {
       type: "object",
       properties: {
-        format: { type: "string", enum: ["embed", "single-html"], description: "Default embed." },
+        format: { type: "string", enum: ["embed", "single-html", "poster", "video"], description: "Default embed. poster / video need a host that can render (Chrome)." },
         name: { type: "string", description: "Folder / file name of the scene in the export (default: project name)." },
         outDir: { type: "string", description: 'Project-relative output folder (default "dist/<format>").' },
         poster: { type: "string", description: "Project path of a PNG/WebP still to use as poster (e.g. a frame from renders/)." },
+        out: { type: "string", description: 'poster / video: project-relative output file under dist/ (default "dist/poster.webp" / "dist/video.webm").' },
+        time: { type: "number", minimum: 0, description: "poster: time in seconds (default target.posterTime)." },
+        image: { type: "string", enum: ["webp", "png"], description: "poster: image format (default webp)." },
+        duration: { type: "number", minimum: 0.1, maximum: 120, description: "video: seconds (default the timeline duration, else 5)." },
+        fps: { type: "integer", minimum: 1, maximum: 60, description: "video: frames per second (default 30)." },
+        size: { type: "string", description: 'poster / video: pixel size "WxH" (default from the target aspect).' },
       },
     },
     mutating: true,
     async handler(ctx, input) {
-      const format = (optStr(input, "format") ?? "embed") as ExportFormat;
+      const requested = optStr(input, "format") ?? "embed";
+      if (requested === "poster" || requested === "video") {
+        if (!ctx.host?.media) throw new OpsError("invalid", `This host cannot render a ${requested}.`, `Export it with the CLI: agent3d export --format ${requested} (needs Chrome / Chromium).`);
+        const image = (optStr(input, "image") ?? (optStr(input, "out")?.endsWith(".png") ? "png" : "webp")) as "webp" | "png";
+        const out = (optStr(input, "out") ?? (requested === "poster" ? `dist/poster.${image}` : "dist/video.webm")).replace(/^\.?\//, "");
+        if (!out.startsWith("dist/")) throw new OpsError("invalid", `out must be under dist/ (got "${out}").`, `Use e.g. "dist/${requested === "poster" ? "poster.webp" : "video.webm"}".`);
+        const r = await ctx.host.media({ format: requested, image, time: num(input, "time"), duration: num(input, "duration"), fps: num(input, "fps"), size: optStr(input, "size") });
+        await ctx.fs.writeBytes(out, r.bytes);
+        return { format: requested, path: out, kb: Math.round(r.bytes.byteLength / 102.4) / 10, size: r.size, ...(r.t !== undefined ? { t: r.t } : {}), ...(r.frames !== undefined ? { frames: r.frames, fps: r.fps, duration: r.duration } : {}) };
+      }
+      const format = requested as ExportFormat;
+      if (format !== "embed" && format !== "single-html") throw new OpsError("invalid", `Unknown export format "${requested}".`, "Use embed, single-html, poster or video.");
       if (!ctx.host?.runtimeFiles) throw new OpsError("invalid", "This host cannot provide the runtime files.", "Export with the CLI: agent3d export --format " + format);
       const runtime = { files: await ctx.host.runtimeFiles(format) };
       const library = ctx.host.library ?? { index: { assets: [] }, read: async (id: string) => Promise.reject(new OpsError("notFound", `Library asset ${id} unavailable`)) };

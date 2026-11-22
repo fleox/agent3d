@@ -116,6 +116,44 @@ describe("studio API", () => {
   });
 });
 
+describe("studio API without a project / template previews", () => {
+  it("creates a project in an empty folder through project_create", async () => {
+    const empty = mkdtempSync(join(tmpdir(), "agent3d-studio-empty-"));
+    const s = await startStudioServer({ project: empty, studioRoot: join(root, "studio") });
+    try {
+      const info = JSON.parse((await http(s.port, "GET", "/api/info")).body);
+      expect(info.data.project).toMatchObject({ dir: expect.any(String), manifest: null, exists: false });
+      const r = JSON.parse((await http(s.port, "POST", "/api/tools/call", { body: JSON.stringify({ name: "project_create", input: { name: "fresh", target: "banner" } }) })).body);
+      expect(r.ok).toBe(true);
+      expect(JSON.parse((await http(s.port, "GET", "/api/info")).body).data.project).toMatchObject({ exists: true, manifest: { name: "fresh" } });
+      expect((await http(s.port, "GET", "/project/scene.json")).status).toBe(200);
+    } finally {
+      await s.stop();
+    }
+  });
+
+  it("serves templates/<id>/preview.png (404 when missing)", async () => {
+    const prev = process.env.AGENT3D_TEMPLATES;
+    const tpl = mkdtempSync(join(tmpdir(), "agent3d-templates-"));
+    mkdirSync(join(tpl, "neon-folder"), { recursive: true });
+    writeFileSync(join(tpl, "neon-folder", "template.json"), JSON.stringify({ id: "neon", title: "Neon", description: "x", kind: "banner", tags: [] }));
+    writeFileSync(join(tpl, "neon-folder", "preview.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    mkdirSync(join(tpl, "plain"), { recursive: true });
+    writeFileSync(join(tpl, "plain", "template.json"), JSON.stringify({ id: "plain", title: "Plain", description: "x", kind: "banner", tags: [] }));
+    process.env.AGENT3D_TEMPLATES = tpl;
+    try {
+      const ok = await http(studio.port, "GET", "/api/templates/neon/preview.png");
+      expect(ok.status).toBe(200);
+      expect(ok.type).toBe("image/png");
+      expect((await http(studio.port, "GET", "/api/templates/plain/preview.png")).status).toBe(404);
+      expect((await http(studio.port, "GET", "/api/templates/nope/preview.png")).status).toBe(404);
+    } finally {
+      if (prev === undefined) delete process.env.AGENT3D_TEMPLATES;
+      else process.env.AGENT3D_TEMPLATES = prev;
+    }
+  });
+});
+
 describe("serve (live preview)", () => {
   it("serves the preview page and the current scene", async () => {
     const page = await http(preview.port, "GET", "/");

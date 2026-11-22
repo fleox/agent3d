@@ -68,7 +68,7 @@ Exactly the AI tool catalog of `src/ai/tools.ts` (`agent3d tools list` prints th
 | `check` | | Validation, sandbox lint, budgets, framing, licences, web settings |
 | `assets_list`, `assets_search`, `library_list` | | Project assets, free CC0 sources (network), built-in library |
 | `assets_add` | yes | Download a search hit, or import a local file / Kenney / Quaternius zip |
-| `export` | yes | Embed or single-HTML export into the project |
+| `export` | yes | Embed or single-HTML export into the project; `poster` (still image) and `video` (WebM) into `dist/` when the host can render |
 | `render_preview` | | Headless render (frames + contact sheet) |
 
 Tool annotations carry `readOnlyHint` from `mutating`. Errors come back as tool results with `isError: true` and the engine's code, message, hint and details (validation issues).

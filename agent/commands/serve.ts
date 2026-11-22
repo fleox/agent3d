@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 import { CATALOG } from "../../src/core/catalog";
 import { callTool, listTools } from "../aiHost";
-import { readLibraryIndex, readTemplatesIndex } from "../host";
+import { readLibraryIndex, readTemplatesIndex, templatePreviewFile } from "../host";
 import { NodeFs } from "../nodeFs";
 import { CliError, printResult, toCliError } from "../output";
 import { libraryDir, readVersionInfo, runtimeBuilt, runtimeDir, studioDir } from "../paths";
@@ -224,6 +224,21 @@ export async function startStudioServer(opts: { project: string | null; port?: n
       if (url.pathname === "/api/catalog" && method === "GET") return sendJson(res, 200, { ok: true, data: CATALOG }), true;
       if (url.pathname === "/api/library" && method === "GET") return sendJson(res, 200, { ok: true, data: readLibraryIndex() }), true;
       if (url.pathname === "/api/templates" && method === "GET") return sendJson(res, 200, { ok: true, data: { templates: readTemplatesIndex() } }), true;
+      const preview = /^\/api\/templates\/([^/]+)\/preview\.png$/.exec(url.pathname);
+      if (preview && (method === "GET" || method === "HEAD")) {
+        let id = "";
+        try {
+          id = decodeURIComponent(preview[1]);
+        } catch {
+          /* bad encoding → 404 below */
+        }
+        const file = id ? templatePreviewFile(id) : null;
+        if (!file) return sendJson(res, 404, { ok: false, error: { code: "notFound", message: `No preview image for template "${id}".`, hint: "GET /api/templates lists the templates; not every template ships a preview.png." } }), true;
+        const bytes = readFileSync(file);
+        res.writeHead(200, { "content-type": "image/png", "cache-control": "no-cache", "x-content-type-options": "nosniff", "content-length": String(bytes.byteLength) });
+        res.end(method === "HEAD" ? undefined : bytes);
+        return true;
+      }
       if (url.pathname === "/api/tools" && method === "GET") return sendJson(res, 200, { ok: true, data: { tools: await listTools() } }), true;
       if (url.pathname === "/api/events" && method === "GET") return hub.attach(req, res), true;
       if (url.pathname === "/api/tools/call" && method === "POST") {
@@ -320,11 +335,12 @@ export const studioCommand: Command = {
     const studio = studioDir();
     if (!existsSync(join(studio, "index.html"))) throw new CliError("studio-missing", `The Studio build is missing (${studio}).`, "Use the npm package, or run `npm run build:studio` in a clone.");
     const dir = projectDir(options);
-    const project = existsSync(join(dir, "scene.json")) ? dir : null;
-    if (strOpt(options, "project") && !project) projectFs(options);
-    const server = await startStudioServer({ project, port: portOpt(options, 4320) });
+    if (!existsSync(dir)) throw new CliError("notFound", `The folder ${dir} does not exist.`, `Create it first (mkdir), or create a project with \`agent3d new ${dir}\`.`);
+    // A folder without scene.json still gets a NodeFs: the Studio's start screen creates the project there (project_create).
+    const exists = existsSync(join(dir, "scene.json"));
+    const server = await startStudioServer({ project: dir, port: portOpt(options, 4320) });
     const url = `http://localhost:${server.port}/`;
-    printResult(io, { url, project }, () => `Agent3D Studio${project ? ` — ${project}` : ""}\n${url}\nPress Ctrl+C to stop.`);
+    printResult(io, { url, project: dir, exists }, () => `Agent3D Studio — ${dir}${exists ? "" : " (no project yet: create one from the start screen)"}\n${url}\nPress Ctrl+C to stop.`);
     if (!boolOpt(options, "no-open")) openBrowser(url);
     await waitForSignal();
     await server.stop();

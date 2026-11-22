@@ -101,8 +101,16 @@ export function readTemplateFiles(id: string): Record<string, Uint8Array> {
   if (!t) throw new CliError("notFound", `Unknown template "${id}".`, `\`agent3d templates list\` lists them${index.length ? ` (${index.map((x) => x.id).join(", ")})` : ""}.`);
   const root = join(templatesDir(), folderOf(id));
   const files: Record<string, Uint8Array> = {};
-  for (const f of walkFiles(root)) if (f !== "template.json") files[f] = new Uint8Array(readFileSync(join(root, f)));
+  // template.json and the gallery preview image are template metadata, not project files.
+  for (const f of walkFiles(root)) if (f !== "template.json" && f !== "preview.png") files[f] = new Uint8Array(readFileSync(join(root, f)));
   return files;
+}
+
+// templates/<folder>/preview.png of a template id (gallery thumbnail), or null.
+export function templatePreviewFile(id: string): string | null {
+  if (!readTemplatesIndex().some((t) => t.id === id)) return null;
+  const file = join(templatesDir(), folderOf(id), "preview.png");
+  return existsSync(file) ? file : null;
 }
 
 function folderOf(id: string): string {
