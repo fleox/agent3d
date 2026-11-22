@@ -329,7 +329,7 @@ agent3d assets <list|search|add|remove|library> [--project <dir>]
 | `search` | `agent3d assets search <query> [--kind model\|texture\|hdri] [--source polyhaven\|ambientcg\|kenney\|quaternius\|khronos]` | Search free, account-less CC0 sources (network). Hits can be added with `assets add --hit '<json>'`. |
 | `add` | `agent3d assets add <file> [--kind <k>] [--path assets/…] [--license CC0-1.0] [--author <name>] \| assets add --hit <json\|@file> [--resolution 1k]` | Copy a local file into assets/, or download a search hit (licence recorded in assets/manifest.json). |
 | `remove` | `agent3d assets remove <path> [--yes]` | Delete an asset and its manifest entry (plan + needsConfirmation unless --yes). **Plan + `--yes`.** |
-| `library` | `agent3d assets library [--query <text>] [--kind <k>]` | Built-in CC0 assets shipped with Agent3D — reference them as "library:<id>" (no download). |
+| `library` | `agent3d assets library [--query <text>] [--kind <k>] [--limit 50] [--offset 0] [--all]` | Built-in CC0 assets shipped with Agent3D — reference them as "library:<id>" (no download). Shows animation clips and triangles of models; 50 results per page (`more: true` → next page with --offset, or --all). |
 
 | Option | Description |
 |---|---|
@@ -337,6 +337,9 @@ agent3d assets <list|search|add|remove|library> [--project <dir>]
 | `--kind <value>` | model, texture, hdri, audio, font, svg or other. |
 | `--source <value>` | search: one source only. |
 | `--query <value>` | search / library: text to look for. |
+| `--limit <value>` | library: results per page (default 50). |
+| `--offset <value>` | library: skip the first N results (paging). |
+| `--all` | library: every match, no limit. |
 | `--hit <value>` | add: a hit from `assets search` (JSON, @file or -). |
 | `--resolution <value>` | add --hit: texture / HDRI resolution (1k, 2k…; default 1k). |
 | `--path <value>` | add: destination path in the project (default assets/<kind>/<file name>). |

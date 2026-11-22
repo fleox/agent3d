@@ -16,6 +16,11 @@ export interface LibraryAsset {
   // Text to show when the licence requires attribution.
   attribution?: string;
   sourceUrl?: string;
+  // Models (scripts/build-library.mjs reads them from the GLB): animation clip
+  // names (play with `animation: { clip }`) and the triangle count.
+  animations?: string[];
+  triangles?: number;
+  skinned?: boolean;
 }
 
 export interface LibraryIndex {

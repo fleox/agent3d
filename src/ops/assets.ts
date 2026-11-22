@@ -262,18 +262,40 @@ function commonPrefix(paths: string[]): string {
 
 // ─── Built-in library ───────────────────────────────────────────────────
 
-export function listLibrary(index: LibraryIndex, filter: { query?: string; kind?: AssetEntry["kind"]; limit?: number } = {}): { assets: (Pick<LibraryAsset, "id" | "kind" | "license" | "tags" | "description"> & { ref: string; kb: number; author?: string })[]; total: number } {
+export const LIBRARY_DEFAULT_LIMIT = 50;
+
+// `limit` 0 = no limit (all matches); `offset` pages through the results.
+export function listLibrary(
+  index: LibraryIndex,
+  filter: { query?: string; kind?: AssetEntry["kind"]; limit?: number; offset?: number } = {},
+): { assets: (Pick<LibraryAsset, "id" | "kind" | "license" | "tags" | "description"> & { ref: string; kb: number; author?: string; animations?: string[]; triangles?: number })[]; total: number; offset: number; more: boolean } {
   let list = (index?.assets ?? []).filter((a) => !filter.kind || a.kind === filter.kind);
   if (filter.query?.trim()) {
     list = list
-      .map((a) => ({ a, s: score(filter.query!, { id: a.id, title: a.id.replace(/[/-]/g, " "), tags: a.tags, extra: a.description }) }))
+      .map((a) => ({ a, s: score(filter.query!, { id: a.id, title: a.id.replace(/[/-]/g, " "), tags: [...a.tags, ...(a.animations ?? [])], extra: a.description }) }))
       .filter((x) => x.s > 0)
       .sort((x, y) => y.s - x.s)
       .map((x) => x.a);
   }
   const total = list.length;
+  const offset = Math.max(0, Math.floor(filter.offset ?? 0));
+  const limit = filter.limit === 0 ? Infinity : Math.max(1, Math.floor(filter.limit ?? LIBRARY_DEFAULT_LIMIT));
+  const page = list.slice(offset, offset + limit);
   return {
     total,
-    assets: list.slice(0, filter.limit ?? 50).map((a) => ({ id: a.id, ref: `library:${a.id}`, kind: a.kind, license: a.license, ...(a.author ? { author: a.author } : {}), tags: a.tags, description: a.description, kb: KB(a.bytes) })),
+    offset,
+    more: offset + page.length < total,
+    assets: page.map((a) => ({
+      id: a.id,
+      ref: `library:${a.id}`,
+      kind: a.kind,
+      license: a.license,
+      ...(a.author ? { author: a.author } : {}),
+      tags: a.tags,
+      description: a.description,
+      kb: KB(a.bytes),
+      ...(a.animations?.length ? { animations: a.animations } : {}),
+      ...(typeof a.triangles === "number" ? { triangles: a.triangles } : {}),
+    })),
   };
 }

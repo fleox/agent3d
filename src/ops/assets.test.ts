@@ -168,4 +168,19 @@ describe("project assets", () => {
     expect(listLibrary(index, { query: "pine" }).assets).toEqual([{ id: "nature/pine-tree", ref: "library:nature/pine-tree", kind: "model", license: "CC0-1.0", tags: ["tree", "pine"], description: "Low-poly pine", kb: 20 }]);
     expect(listLibrary(index, { kind: "hdri" }).total).toBe(1);
   });
+
+  it("pages the library (limit, offset, 0 = all) and shows animation clips", () => {
+    const assets = Array.from({ length: 120 }, (_, i) => ({ id: `models/x/m${i}.glb`, path: `models/x/m${i}.glb`, kind: "model" as const, license: "CC0-1.0", tags: ["x"], bytes: 1024, description: "" }));
+    assets[3] = { ...assets[3], animations: ["Idle", "Walk"], triangles: 1200 } as (typeof assets)[number];
+    const index = { assets };
+    const first = listLibrary(index);
+    expect(first.assets.length).toBe(50);
+    expect(first).toMatchObject({ total: 120, offset: 0, more: true });
+    expect(first.assets[3]).toMatchObject({ animations: ["Idle", "Walk"], triangles: 1200 });
+    expect(listLibrary(index, { limit: 0 }).assets.length).toBe(120);
+    const last = listLibrary(index, { limit: 50, offset: 100 });
+    expect(last.assets.length).toBe(20);
+    expect(last.more).toBe(false);
+    expect(listLibrary(index, { query: "walk" }).assets.map((a) => a.id)).toEqual(["models/x/m3.glb"]);
+  });
 });

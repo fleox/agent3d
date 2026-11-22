@@ -25,13 +25,13 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "library_list",
     description:
-      'Search the built-in asset library (shipped with Agent3D, works offline): models, textures, HDRIs. Use an asset directly in the scene as "library:<id>" (e.g. model src "library:models/nature/pine-tree.glb") — no download, the export copies it. Prefer catalog generators / geometries (zero bytes) and the library before downloading assets.',
-    inputSchema: { type: "object", properties: { query: { type: "string", description: "Words, e.g. \"tree\", \"rock moss\"." }, kind: { type: "string", enum: KINDS }, limit: { type: "integer", minimum: 1, maximum: 200 } } },
+      'Search the built-in asset library (shipped with Agent3D, works offline): models, textures, HDRIs. Use an asset directly in the scene as "library:<id>" (e.g. model src "library:models/nature/pine-tree.glb") — no download, the export copies it. Models list their animation clip names (`animations`, play one with the model object animation { clip }) and triangles. 50 results per page: when `more` is true, call again with `offset`, or `limit: 0` for all. Prefer catalog generators / geometries (zero bytes) and the library before downloading assets.',
+    inputSchema: { type: "object", properties: { query: { type: "string", description: "Words, e.g. \"tree\", \"rock moss\"." }, kind: { type: "string", enum: KINDS }, limit: { type: "integer", minimum: 0, maximum: 500, description: "Results per page (default 50; 0 = all)." }, offset: { type: "integer", minimum: 0, description: "Skip the first N results (when the previous page returned more: true)." } } },
     mutating: false,
     handler(ctx, input) {
       const index = ctx.host?.library?.index;
       if (!index) return { total: 0, assets: [], hint: "The built-in library is not available in this host." };
-      return listLibrary(index, { query: optStr(input, "query"), kind: optStr(input, "kind") as AssetEntry["kind"] | undefined, limit: num(input, "limit") });
+      return listLibrary(index, { query: optStr(input, "query"), kind: optStr(input, "kind") as AssetEntry["kind"] | undefined, limit: num(input, "limit"), offset: num(input, "offset") });
     },
   },
   {

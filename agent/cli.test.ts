@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { COMMANDS } from "./commands";
 import { parseScalar, setPairs } from "./commands/util";
 import { cli, ok } from "./testing/cli";
+import { writeZipStored } from "../src/ops/zip";
 
 // The JSON contract agents rely on: exactly one {ok,data} / {ok:false,
 // error:{code,message,hint}} object on stdout, exit 2 for usage /
@@ -73,11 +74,44 @@ describe("CLI contract", () => {
     for (const c of r.body.data.checks) if (!c.ok && !c.optional) expect(c.hint).toBeTruthy();
   });
 
+  it("pages the built-in library and shows animation clips", async () => {
+    const first = await ok(["assets", "library"]);
+    expect(first.assets.length).toBeLessThanOrEqual(50);
+    if (first.total > 50) expect(first.more).toBe(true);
+    const all = await ok(["assets", "library", "--all"]);
+    expect(all.assets.length).toBe(all.total);
+    expect((await ok(["assets", "library", "--limit", "5", "--offset", "5"])).assets.map((a: { id: string }) => a.id)).toEqual(all.assets.slice(5, 10).map((a: { id: string }) => a.id));
+    const animated = all.assets.filter((a: { animations?: string[] }) => a.animations?.length);
+    expect(animated.length).toBeGreaterThan(0);
+  });
+
   it("documents the catalog", async () => {
     const sections = (await ok(["catalog"])).sections.map((s: { section: string }) => s.section);
     expect(sections).toEqual(expect.arrayContaining(["geometries", "behaviours", "generators"]));
     expect((await ok(["catalog", "geometries", "box"])).entry).toMatchObject({ id: "box" });
     expect((await cli(["catalog", "geometries", "boxx"])).body.error?.code).toBe("notFound");
+  });
+});
+
+describe("assets add <pack.zip>", () => {
+  it("imports a Kenney pack zip with --source, --license, repeated --filter and --name", async () => {
+    const dir = join(tmp(), "game");
+    await ok(["new", dir, "--target", "game"]);
+    const zip = join(tmp(), "kenney_platformer-kit.zip");
+    writeFileSync(
+      zip,
+      writeZipStored({
+        "kenney_platformer-kit/Models/GLB format/coin-gold.glb": new Uint8Array([1]),
+        "kenney_platformer-kit/Models/GLB format/flag.glb": new Uint8Array([2]),
+        "kenney_platformer-kit/Models/GLB format/tree.glb": new Uint8Array([3]),
+        "kenney_platformer-kit/Models/FBX format/coin-gold.fbx": new Uint8Array([4]),
+      }),
+    );
+    const r = await ok(["assets", "add", zip, "--source", "kenney", "--license", "CC0-1.0", "--filter", "coin", "--filter", "flag", "--name", "platformer", "--project", dir]);
+    expect(r.models.sort()).toEqual(["assets/models/platformer/coin-gold.glb", "assets/models/platformer/flag.glb"]);
+    const list = await ok(["assets", "list", "--project", dir]);
+    expect(list.assets.find((a: { path: string }) => a.path === "assets/models/platformer/flag.glb")).toMatchObject({ source: "kenney", license: "CC0-1.0", author: "Kenney" });
+    expect((await cli(["assets", "add", zip, "--source", "kenney", "--project", dir])).code).toBe(2);
   });
 });
 

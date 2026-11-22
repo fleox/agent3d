@@ -25,7 +25,7 @@ function curatedSource(id: "kenney" | "quaternius", title: string, packs: Curate
             tags: p.tags,
             downloads: {},
             manual: true,
-            note: `${p.description} No direct download: ask the user to download the pack zip from ${p.downloadPage ?? p.pageUrl}, then import it with \`agent3d assets add <file.zip> --source ${id}\` (only .glb/.gltf + textures are extracted; use --filter <word> to keep a few models).`,
+            note: `${p.description} No direct download: ask the user to download the pack zip from ${p.downloadPage ?? p.pageUrl}, then import it with \`agent3d assets add <file.zip> --source ${id} --license CC0-1.0 --filter <word>\` (AI tool: assets_add { file, source: "${id}", license: "CC0-1.0", filter: ["<word>"] }). Only .glb/.gltf + textures are extracted; --filter (repeatable) keeps the models whose path contains a word.`,
           } satisfies AssetHit,
         })),
         q.limit ?? 10,

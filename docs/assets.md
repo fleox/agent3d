@@ -9,7 +9,10 @@ Scenes reference assets by **project path** (`assets/models/bottle.glb`) or by *
 ```bash
 npx -y @fleox/agent3d@0.1.0 assets library --query tree --json
 npx -y @fleox/agent3d@0.1.0 assets library --kind hdri --json
+npx -y @fleox/agent3d@0.1.0 assets library --kind model --all --json
 ```
+
+Hits carry `ref`, `kind`, `kb`, `license`, `tags`, `description` and, for models, `triangles` and `animations` (clip names). 50 results per page: `--limit`, `--offset` (when `more` is true) or `--all` (the `library_list` tool takes `limit` — 0 for all — and `offset`).
 
 Everything is CC0 except the fonts (Apache-2.0 / OFL-1.1) and the Khronos fox (CC-BY 4.0 parts). Sources and per-file provenance: [`library/LICENSES.md`](../library/LICENSES.md) and `library/sources.json`.
 
@@ -40,10 +43,10 @@ Searched live, downloaded once into the project with their licence (`src/ops/sou
 ```bash
 npx -y @fleox/agent3d@0.1.0 assets search "wood planks" --kind texture --project my-scene --json
 npx -y @fleox/agent3d@0.1.0 assets add --hit @hit.json --resolution 1k --project my-scene --json
-npx -y @fleox/agent3d@0.1.0 tools call assets_add --input '{"file": "/path/kenney_pack.zip", "source": "kenney", "license": "CC0-1.0", "filter": ["tree"]}' --project my-scene --json
+npx -y @fleox/agent3d@0.1.0 assets add /path/kenney_pack.zip --source kenney --license CC0-1.0 --filter tree --project my-scene --json
 ```
 
-Texture downloads return a `suggestion.material` using the set (map, normalMap, roughnessMap). Per-source failures are reported in `errors` without failing the search. Tests never touch the network (sources take an injected `fetch`).
+Pack zips (Kenney, Quaternius): `assets add <file.zip> --source kenney|quaternius|local --license CC0-1.0 [--filter <word>]… [--name <pack>]` extracts only `.glb` / `.gltf` + textures into `assets/models/<name>/`. Texture downloads return a `suggestion.material` using the set (map, normalMap, roughnessMap). Per-source failures are reported in `errors` without failing the search. Tests never touch the network (sources take an injected `fetch`).
 
 ## Licences in checks and exports
 
