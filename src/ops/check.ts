@@ -10,6 +10,7 @@ import { closest } from "../core/suggest";
 import type { AssetEntry, AssetManifest, Issue, SceneDoc, TargetKind } from "../core/types";
 import { DEFAULT_BUDGET_KB, validateScene } from "../core/validate";
 import type { FrameStats, InspectResult } from "../runtime/api";
+import { GENERATORS } from "../core/catalog";
 import { DRAW_CALL_LIMIT, estimateTriangles, TRIANGLE_LIMIT } from "./budget";
 import { modelInfo } from "./gltf";
 import { KB, readJsonOr } from "./context";
@@ -258,7 +259,20 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
   walkObjects(scene.objects, (o) => {
     if (o.visible === false) hidden.add(o.id);
   });
-  const objs = inspect.objects.filter((o) => !hidden.has(o.id));
+  // Only objects declared in scene.json: runtime clones (api.clone / spawn
+  // in scripts) come and go by design.
+  const declared = new Set<string>();
+  // Scattered content (generators with an `area`: trees, rocks, grass,
+  // flowers, clouds…; particle systems) spreads past the frame edges by
+  // design: never "clipped".
+  const spread = new Set<string>();
+  const scatter = new Set(GENERATORS.filter((g) => g.params.some((p) => p.name === "area")).map((g) => g.id));
+  walkObjects(scene.objects, (o) => {
+    declared.add(o.id);
+    const def = o as { kind?: string; generator?: string };
+    if (def.kind === "particles" || (def.kind === "generator" && def.generator && scatter.has(def.generator))) spread.add(o.id);
+  });
+  const objs = inspect.objects.filter((o) => !hidden.has(o.id) && declared.has(o.id));
   const cam = `camera position ${JSON.stringify(inspect.camera.position)} looking at ${JSON.stringify(inspect.camera.target)}`;
   if (inspect.camera.insideObject) {
     issues.push({ severity: "warning", code: "camera-inside", path: `objects#${inspect.camera.insideObject}`, message: `The camera is inside "${inspect.camera.insideObject}" (${cam}).`, hint: `Move camera.position outside its bounding box, or scale / move "${inspect.camera.insideObject}".` });
@@ -270,7 +284,7 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
     const big = Math.max(...size) > 30;
     if (o.inView === "none") {
       issues.push({ severity: "warning", code: "out-of-view", path: `objects#${o.id}`, message: `"${o.id}" is completely outside the camera view (centre ${JSON.stringify(centre)}, size ${JSON.stringify(size)}; ${cam}).`, hint: `Move it toward camera.target, widen camera.fov / move the camera back, or set "visible": false if it is meant to enter later.` });
-    } else if (o.inView === "partial" && !big) {
+    } else if (o.inView === "partial" && !big && !spread.has(o.id)) {
       issues.push({ severity: "info", code: "clipped", path: `objects#${o.id}`, message: `"${o.id}" is clipped by the frame edges (centre ${JSON.stringify(centre)}, size ${JSON.stringify(size)}).`, hint: "If unintended, move it inward, scale it down or move the camera back. For wide banners, keep content within the central ~80% of the width." });
     }
   }

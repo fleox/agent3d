@@ -199,4 +199,22 @@ describe("checkProject", () => {
     const r = await checkProject(fs, { inspect });
     expect(codes(r.issues)).toContain("out-of-view");
   });
+
+  it("framing ignores runtime clones and never calls scattered content clipped", async () => {
+    const fs = await project();
+    const scene = await getScene(fs);
+    scene.objects.push({ id: "trees", kind: "generator", generator: "trees", params: { count: 10, area: [40, 0, 40] } } as never, { id: "dust", kind: "particles", preset: "dust" } as never);
+    const inspect: InspectResult = {
+      camera: { position: [0, 0, 12], target: [0, 0, 0] },
+      objects: [
+        { id: "title", min: [-3, -0.5, 0], max: [3, 0.5, 0.3], inView: "full", screenCoverage: 0.3 },
+        { id: "trees", min: [-20, 0, -20], max: [20, 4, 20], inView: "partial", screenCoverage: 0.5 },
+        { id: "dust", min: [-5, -5, -5], max: [5, 5, 5], inView: "partial", screenCoverage: 0.5 },
+        { id: "bug-clone-3", min: [9, 0, 0], max: [10, 1, 1], inView: "partial", screenCoverage: 0.01 },
+        { id: "bug-clone-4", min: [90, 0, 0], max: [91, 1, 1], inView: "none", screenCoverage: 0 },
+      ],
+    };
+    const issues = framingIssues(scene, inspect);
+    expect(issues.filter((i) => i.code === "clipped" || i.code === "out-of-view")).toEqual([]);
+  });
 });

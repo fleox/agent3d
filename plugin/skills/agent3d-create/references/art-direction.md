@@ -16,7 +16,7 @@ The visible width at the subject's depth is `2 × distance × tan(fov / 2) × as
 | game | 16:9 | fov 50–55, behind and above the player | | Keep the HUD corners free of important action |
 
 - The default banner title (`sans-bold`, size 1, "Golden Crust Bakery") is about 10.7 units wide: shorten the text, lower `size`, or move props further out.
-- `inspect.objects[].inView` = `partial` on a prop means it is cut by the frame. Particles spanning the whole frame are expected to be `partial` (the `clipped` info from `check --render` can be ignored for them).
+- `inspect.objects[].inView` = `partial` on a prop means it is cut by the frame. Particles and scattered generators (trees, rocks, grass, flowers, clouds) spanning the frame are expected to be `partial`: `check --render` never reports them as `clipped`, and it ignores objects created by scripts at run time (clones / spawns not in scene.json).
 - Phones: the embed keeps the aspect ratio, so a 4:1 banner is only ~95 px tall on a 390 px screen. Keep text big (title size ≥ 0.9 in a banner) or use a taller aspect for mobile (`target.height` or a second export). Render at `--size 390x98` to see it.
 
 ## Lighting recipes
