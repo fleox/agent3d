@@ -157,11 +157,14 @@ function game(text: string): ReturnType<typeof banner> & Pick<SceneDoc, "scripts
   };
 }
 
-export const STARTER_GAME_SCRIPT = `// Move the player with the arrow keys / WASD (or swipe); collect the coins.
+export const STARTER_GAME_SCRIPT = `// Move the player with the arrow keys / WASD, or swipe on a phone (the
+// player keeps going that way; tap to stop); collect the coins.
 // Scripts only get \`api\` (see ScriptApi in the Agent3D docs).
 export default function (api) {
   const player = api.get("player");
   const speed = 4;
+  const edge = 9.5; // stay on the 20 x 20 floor
+  let heading = null; // last swipe direction (touch)
   return {
     start() {
       api.state.score = 0;
@@ -172,8 +175,17 @@ export default function (api) {
       const right = api.input.isDown("ArrowRight") || api.input.isDown("KeyD");
       const up = api.input.isDown("ArrowUp") || api.input.isDown("KeyW");
       const down = api.input.isDown("ArrowDown") || api.input.isDown("KeyS");
-      player.position.x += ((right ? 1 : 0) - (left ? 1 : 0)) * speed * dt;
-      player.position.z += ((down ? 1 : 0) - (up ? 1 : 0)) * speed * dt;
+      const swipe = api.input.swipe();
+      if (swipe) heading = swipe;
+      else if (api.input.pointer.justPressed || left || right || up || down) heading = null;
+      let dx = (right ? 1 : 0) - (left ? 1 : 0);
+      let dz = (down ? 1 : 0) - (up ? 1 : 0);
+      if (heading) {
+        dx = heading === "right" ? 1 : heading === "left" ? -1 : 0;
+        dz = heading === "down" ? 1 : heading === "up" ? -1 : 0;
+      }
+      player.position.x = Math.max(-edge, Math.min(edge, player.position.x + dx * speed * dt));
+      player.position.z = Math.max(-edge, Math.min(edge, player.position.z + dz * speed * dt));
       for (const coin of api.findByTag("coin")) {
         if (coin.visible && api.physics.overlaps(player, coin)) {
           coin.visible = false;

@@ -65,38 +65,105 @@ export function frameTimes(scene: Pick<SceneDoc, "timeline" | "target"> | null, 
 // like Player.input.
 //   { "t": 0.5, "key": "ArrowRight", "down": true }     key down (down: false = key up)
 //   { "t": 0.5, "key": "Space", "hold": 0.3 }            down at t, up at t + hold
-//   { "t": 1, "click": [0, 0] }                          click (pointer press) at a point
-//   { "t": 1, "pointer": [0.5, -0.2] }                   move the pointer
+//   { "t": 1, "click": [0, 0] }                          click (pointer press + release) at a point
+//   { "t": 1, "pointer": [0.5, -0.2] }                   move the pointer (+ "down": true / false = press / release there)
+//   { "t": 1, "pointerDown": [0, 0] }                    press the pointer (held until pointerUp)
+//   { "t": 2, "pointerUp": [0.4, 0] }                    release it (or "pointerUp": true where it is)
+//   { "t": 1, "drag": { "from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4 } }   press, move (30 steps/s), release
+//   { "t": 1, "swipe": "left" }                          a swipe gesture: "left" | "right" | "up" | "down"
 
-export type InputEvent = { t: number; key: string; down: boolean } | { t: number; click: [number, number] } | { t: number; pointer: [number, number] };
+export type Point = [number, number];
+export type SwipeDirection = "left" | "right" | "up" | "down";
+export type InputEvent =
+  | { t: number; key: string; down: boolean }
+  | { t: number; click: Point }
+  | { t: number; pointer: Point; down?: boolean }
+  | { t: number; pointerDown: Point }
+  | { t: number; pointerUp: Point | null }
+  | { t: number; swipe: SwipeDirection };
 
-const pair = (v: unknown): v is [number, number] => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
+const pair = (v: unknown): v is Point => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
+const SWIPES: SwipeDirection[] = ["left", "right", "up", "down"];
+
+export const INPUT_SHAPES =
+  'Events: {"t": 0.5, "key": "ArrowRight", "down": true} | {"t": 0.5, "key": "Space", "hold": 0.3} | {"t": 1, "click": [0, 0]} | {"t": 1, "pointer": [0.5, -0.2], "down"?: true} | {"t": 1, "pointerDown": [0, 0]} | {"t": 2, "pointerUp": [0.4, 0]} | {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}} | {"t": 1, "swipe": "left"|"right"|"up"|"down"} (coordinates -1..1, y up; key = KeyboardEvent.code).';
+
+// Allowed fields per event kind (anything else is a usage error).
+const FIELDS: Record<string, string[]> = {
+  key: ["t", "key", "down", "hold"],
+  click: ["t", "click"],
+  pointer: ["t", "pointer", "down"],
+  pointerDown: ["t", "pointerDown"],
+  pointerUp: ["t", "pointerUp"],
+  drag: ["t", "drag"],
+  swipe: ["t", "swipe"],
+};
 
 export function parseInputScript(raw: unknown): InputEvent[] {
-  const bad = (i: number, why: string) =>
-    new CliError("usage", `--input event #${i}: ${why}.`, 'Events look like {"t": 0.5, "key": "ArrowRight", "down": true}, {"t": 0.5, "key": "Space", "hold": 0.3}, {"t": 1, "click": [0, 0]} or {"t": 1, "pointer": [0.5, -0.2]} (coordinates -1..1; key = KeyboardEvent.code).', 2);
-  if (!Array.isArray(raw)) throw new CliError("usage", "--input must be a JSON array of events.", 'e.g. --input \'[{"t": 0.5, "key": "ArrowRight", "hold": 1}]\' or --input @inputs.json', 2);
+  const bad = (i: number, why: string) => new CliError("usage", `--input event #${i}: ${why}.`, INPUT_SHAPES, 2);
+  if (!Array.isArray(raw)) throw new CliError("usage", "--input must be a JSON array of events.", `e.g. --input '[{"t": 0.5, "key": "ArrowRight", "hold": 1}]' or --input @inputs.json. ${INPUT_SHAPES}`, 2);
   const out: InputEvent[] = [];
   raw.forEach((e, i) => {
-    if (!e || typeof e !== "object") throw bad(i, "not an object");
+    if (!e || typeof e !== "object" || Array.isArray(e)) throw bad(i, "not an object");
     const ev = e as Record<string, unknown>;
     const t = ev.t;
     if (typeof t !== "number" || !Number.isFinite(t) || t < 0) throw bad(i, '"t" must be a time in seconds ≥ 0');
-    if (typeof ev.key === "string" && ev.key) {
+    const kind = Object.keys(FIELDS).find((k) => k in ev);
+    if (!kind) throw bad(i, `needs one of ${Object.keys(FIELDS).map((k) => `"${k}"`).join(", ")}`);
+    const extra = Object.keys(ev).filter((k) => !FIELDS[kind].includes(k));
+    if (extra.length) throw bad(i, `unknown field${extra.length > 1 ? "s" : ""} ${extra.map((k) => `"${k}"`).join(", ")} for a "${kind}" event (allowed: ${FIELDS[kind].join(", ")})`);
+    if (kind === "key") {
+      if (typeof ev.key !== "string" || !ev.key) throw bad(i, '"key" must be a KeyboardEvent.code, e.g. "ArrowLeft", "Space", "KeyA"');
       if (ev.hold !== undefined) {
         if (typeof ev.hold !== "number" || !(ev.hold > 0)) throw bad(i, '"hold" must be a duration in seconds > 0');
         out.push({ t, key: ev.key, down: true }, { t: t + ev.hold, key: ev.key, down: false });
       } else out.push({ t, key: ev.key, down: ev.down !== false });
-    } else if (ev.click !== undefined) {
+    } else if (kind === "click") {
       if (!pair(ev.click)) throw bad(i, '"click" must be [x, y] in -1..1');
       out.push({ t, click: ev.click });
-    } else if (ev.pointer !== undefined) {
+    } else if (kind === "pointer") {
       if (!pair(ev.pointer)) throw bad(i, '"pointer" must be [x, y] in -1..1');
-      out.push({ t, pointer: ev.pointer });
-    } else throw bad(i, 'needs "key", "click" or "pointer"');
+      if (ev.down !== undefined && typeof ev.down !== "boolean") throw bad(i, '"down" must be true (press) or false (release)');
+      out.push(ev.down === undefined ? { t, pointer: ev.pointer } : { t, pointer: ev.pointer, down: ev.down as boolean });
+    } else if (kind === "pointerDown") {
+      if (!pair(ev.pointerDown)) throw bad(i, '"pointerDown" must be [x, y] in -1..1');
+      out.push({ t, pointerDown: ev.pointerDown });
+    } else if (kind === "pointerUp") {
+      if (ev.pointerUp !== true && !pair(ev.pointerUp)) throw bad(i, '"pointerUp" must be [x, y] in -1..1 (or true: where the pointer is)');
+      out.push({ t, pointerUp: ev.pointerUp === true ? null : (ev.pointerUp as Point) });
+    } else if (kind === "drag") {
+      const d = ev.drag as Record<string, unknown> | null;
+      if (!d || typeof d !== "object" || !pair(d.from) || !pair(d.to)) throw bad(i, '"drag" must be {"from": [x, y], "to": [x, y], "duration"?: seconds}');
+      const unknown = Object.keys(d).filter((k) => !["from", "to", "duration"].includes(k));
+      if (unknown.length) throw bad(i, `unknown drag field${unknown.length > 1 ? "s" : ""} ${unknown.map((k) => `"${k}"`).join(", ")} (allowed: from, to, duration)`);
+      const duration = d.duration === undefined ? 0.3 : d.duration;
+      if (typeof duration !== "number" || !(duration > 0) || duration > 30) throw bad(i, '"drag.duration" must be seconds in (0, 30]');
+      const [from, to] = [d.from, d.to];
+      const steps = Math.max(1, Math.round(duration * 30));
+      out.push({ t, pointerDown: from });
+      for (let k = 1; k <= steps; k++) {
+        const f = k / steps;
+        out.push({ t: Math.round((t + duration * f) * 1e6) / 1e6, pointer: [from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f] });
+      }
+      out.push({ t: Math.round((t + duration) * 1e6) / 1e6, pointerUp: to });
+    } else {
+      if (typeof ev.swipe !== "string" || !SWIPES.includes(ev.swipe as SwipeDirection)) throw bad(i, '"swipe" must be "left", "right", "up" or "down"');
+      out.push({ t, swipe: ev.swipe as SwipeDirection });
+    }
   });
   // Stable sort by time (same-time events keep their order).
   return out.map((e, i) => ({ e, i })).sort((a, b) => a.e.t - b.e.t || a.i - b.i).map((x) => x.e);
+}
+
+// Player.input call(s) for one event.
+export function inputCall(ev: InputEvent): string {
+  const p = (pt: Point) => `${pt[0]}, ${pt[1]}`;
+  if ("key" in ev) return `i.key(${JSON.stringify(ev.key)}, ${ev.down})`;
+  if ("click" in ev) return `i.click(${p(ev.click)})`;
+  if ("pointerDown" in ev) return `(i.pointer(${p(ev.pointerDown)}), i.down?.(${p(ev.pointerDown)}))`;
+  if ("pointerUp" in ev) return ev.pointerUp ? `(i.pointer(${p(ev.pointerUp)}), i.up?.(${p(ev.pointerUp)}))` : "i.up?.()";
+  if ("swipe" in ev) return `i.swipe?.(${JSON.stringify(ev.swipe)})`;
+  return ev.down === undefined ? `i.pointer(${p(ev.pointer)})` : `(i.pointer(${p(ev.pointer)}), ${ev.down ? "i.down?.()" : "i.up?.()"})`;
 }
 
 // A project path relative to the project folder when inside it, else absolute.
@@ -292,8 +359,7 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
         await page.evaluate(`window.__agent3d.player.seek(${JSON.stringify(t)}).then(() => true)`, timeoutMs);
       },
       async input(ev) {
-        const call = "key" in ev ? `key(${JSON.stringify(ev.key)}, ${ev.down})` : "click" in ev ? `click(${ev.click[0]}, ${ev.click[1]})` : `pointer(${ev.pointer[0]}, ${ev.pointer[1]})`;
-        await page.evaluate(`(window.__agent3d.player.input.${call}, true)`, timeoutMs);
+        await page.evaluate(`((i) => (${inputCall(ev)}, true))(window.__agent3d.player.input)`, timeoutMs);
       },
       async info() {
         return (await page.evaluate<PageInfo>("window.__agent3dInfo()", timeoutMs)) ?? { stats: null, inspect: null, issues: [], state: null };

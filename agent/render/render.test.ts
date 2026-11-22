@@ -5,7 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { decodePng, pngVariance } from "./png";
 import { MINIMAL_SCENE, writeFakeDist } from "../testing/fakeRuntime";
 import { findBrowser } from "./browser";
-import { frameTimes, parseInputScript, projectPath, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
+import { CliError } from "../output";
+import { frameTimes, inputCall, parseInputScript, projectPath, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
 
 // The render pipeline (server → Chrome → CDP → page → PNG files) against a
 // stand-in runtime. Runs only when a Chromium-family browser is installed.
@@ -54,6 +55,41 @@ describe("render --input scripts and paths", () => {
     expect(() => parseInputScript([{ t: -1, key: "A" }])).toThrow(/#0/);
     expect(() => parseInputScript([{ t: 1, click: [0] }])).toThrow(/click/);
     expect(() => parseInputScript([{ t: 1 }])).toThrow(/key/);
+  });
+  it("parses pointer presses, drags and swipes; rejects unknown fields with the valid shapes", () => {
+    expect(parseInputScript([{ t: 1, pointerDown: [0, 0] }, { t: 2, pointerUp: true }, { t: 3, pointerUp: [0.5, 0] }, { t: 4, pointer: [0.1, 0.2], down: true }, { t: 5, swipe: "left" }])).toEqual([
+      { t: 1, pointerDown: [0, 0] },
+      { t: 2, pointerUp: null },
+      { t: 3, pointerUp: [0.5, 0] },
+      { t: 4, pointer: [0.1, 0.2], down: true },
+      { t: 5, swipe: "left" },
+    ]);
+    const drag = parseInputScript([{ t: 1, drag: { from: [-0.5, 0], to: [0.5, 0], duration: 0.1 } }]);
+    expect(drag[0]).toEqual({ t: 1, pointerDown: [-0.5, 0] });
+    expect(drag.at(-1)).toEqual({ t: 1.1, pointerUp: [0.5, 0] });
+    expect(drag.filter((e) => "pointer" in e)).toHaveLength(3);
+    expect(drag.at(-2)).toEqual({ t: 1.1, pointer: [0.5, 0] });
+    const err = (raw: unknown) => {
+      try {
+        parseInputScript(raw);
+      } catch (e) {
+        return e as CliError;
+      }
+      throw new Error("no error");
+    };
+    const unknown = err([{ t: 1, tap: [0, 0] }]);
+    expect(unknown.message).toMatch(/needs one of/);
+    expect(unknown.hint).toMatch(/swipe/);
+    expect(unknown.exitCode).toBe(2);
+    expect(err([{ t: 1, click: [0, 0], hold: 1 }]).message).toMatch(/unknown field "hold" for a "click" event/);
+    expect(err([{ t: 1, swipe: "diagonal" }]).message).toMatch(/swipe/);
+    expect(err([{ t: 1, drag: { from: [0, 0], to: [1, 0], speed: 2 } }]).message).toMatch(/unknown drag field "speed"/);
+  });
+  it("maps events to Player.input calls", () => {
+    expect(inputCall({ t: 0, swipe: "up" })).toBe('i.swipe?.("up")');
+    expect(inputCall({ t: 0, pointerDown: [0.5, 0] })).toBe("(i.pointer(0.5, 0), i.down?.(0.5, 0))");
+    expect(inputCall({ t: 0, pointerUp: null })).toBe("i.up?.()");
+    expect(inputCall({ t: 0, pointer: [0, 0], down: false })).toBe("(i.pointer(0, 0), i.up?.())");
   });
   it("returns project-relative paths when inside the project", () => {
     expect(projectPath("/p/proj", "/p/proj/renders/a.png")).toBe("renders/a.png");

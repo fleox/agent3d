@@ -52,6 +52,15 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     expect(played.frames.map((f: { t: number }) => f.t)).toEqual([0, 2]);
     expect(played.inputs).toBe(4);
     expect(played.state).toMatchObject({ score: 1 });
+    // Same path with swipes (the starter keeps the swipe heading; a tap stops).
+    const swiped = await ok(["render", "--project", dir, "--frames", "2", "--input", JSON.stringify([{ t: 0.1, swipe: "down" }, { t: 0.85, swipe: "right" }, { t: 1.35, click: [0, 0] }])]);
+    expect(swiped.state).toMatchObject({ score: 1 });
+    // A drag is a press, pointer moves and a release.
+    const dragged = await ok(["render", "--project", dir, "--frames", "1", "--input", JSON.stringify([{ t: 0.2, drag: { from: [-0.5, 0], to: [0.5, 0], duration: 0.3 } }])]);
+    expect(dragged.inputs).toBe(11);
+    const badInput = await cli(["render", "--project", dir, "--frames", "1", "--input", JSON.stringify([{ t: 0.2, tap: [0, 0] }])]);
+    expect(badInput.code).toBe(2);
+    expect(badInput.body.error?.hint).toContain("swipe");
   }, 120_000);
 
   it("keeps the exact background colour with post effects (not tone mapped)", async () => {

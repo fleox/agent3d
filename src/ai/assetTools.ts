@@ -185,7 +185,7 @@ export const ASSET_TOOLS: AiTool[] = [
 export const RENDER_TOOL: AiTool = {
   name: "render_preview",
   description:
-    "Render the scene headless (deterministic) and save PNG frames + a contact sheet into renders/. ALWAYS look at the returned image (sheet) after changes: check composition, framing (nothing cut at the edges of a wide banner), readability of text, colours and lighting, then fix with scene_patch and render again. Returns frame paths (relative to the project folder `dir`), render stats (triangles, draw calls), per-object inspect data (in view / clipped / screen coverage), the game `state` (api.state, e.g. the score), runtime issues and console errors. Games: `input` plays simulated keys / clicks while seeking, to test them headlessly. check reuses this data for framing / performance issues.",
+    "Render the scene headless (deterministic) and save PNG frames + a contact sheet into renders/. ALWAYS look at the returned image (sheet) after changes: check composition, framing (nothing cut at the edges of a wide banner), readability of text, colours and lighting, then fix with scene_patch and render again. Returns frame paths (relative to the project folder `dir`), render stats (triangles, draw calls), per-object inspect data (in view / clipped / screen coverage), the game `state` (api.state, e.g. the score), runtime issues and console errors. Games: `input` plays simulated keys / clicks / drags / swipes while seeking, to test them headlessly. check reuses this data for framing / performance issues.",
   inputSchema: {
     type: "object",
     properties: {
@@ -195,7 +195,7 @@ export const RENDER_TOOL: AiTool = {
       sheet: { type: "boolean", description: "Compose a contact sheet (default true)." },
       input: {
         type: "array",
-        description: 'Games: simulated input applied while seeking (frames render in time order). Events: {"t": 0.5, "key": "ArrowRight", "down": true} (down false = release), {"t": 0.5, "key": "Space", "hold": 0.3}, {"t": 1, "click": [0, 0]}, {"t": 1, "pointer": [0.5, -0.2]}. key = KeyboardEvent.code; coordinates are -1..1 (y up).',
+        description: 'Games: simulated input applied while seeking (frames render in time order). Events: {"t": 0.5, "key": "ArrowRight", "down": true} (down false = release), {"t": 0.5, "key": "Space", "hold": 0.3}, {"t": 1, "click": [0, 0]}, {"t": 1, "pointer": [0.5, -0.2], "down"?: true|false}, {"t": 1, "pointerDown": [0, 0]}, {"t": 2, "pointerUp": [0.4, 0] | true}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 1, "swipe": "left"|"right"|"up"|"down"}. key = KeyboardEvent.code; coordinates are -1..1 (y up). Unknown fields are rejected.',
         items: { type: "object", additionalProperties: true },
       },
     },

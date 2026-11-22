@@ -57,7 +57,7 @@ Generated from the CLI's own command list (`help --json`); `npm test` fails when
 | [`catalog`](#catalog) | What scenes can use, with parameters: geometries, materialPresets, shaders, behaviours, generators, particlePresets, postfx, fonts, sounds. No section → sections with counts; a section → its entries; an id → the full entry (params, defaults, ranges, example). |
 | [`templates`](#templates) | Starter projects (`agent3d new <dir> --template <id>`): list them, or show one (metadata + its scene summary). |
 | [`check`](#check) | Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles, KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok. |
-| [`render`](#render) | Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks and `state` shows the result (e.g. the score). |
+| [`render`](#render) | Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes and `state` shows the result (e.g. the score). |
 | [`serve`](#serve) | Live preview of the project on 127.0.0.1 (scene at its aspect ratio, play / pause, time scrubber): scene.json edits update the open page instantly, asset / script edits reload it. Runs until stopped (Ctrl+C). |
 | [`studio`](#studio) | Open the Studio (visual editor: viewport, outliner, inspector, timeline, catalog, templates, assistant) on this computer, editing the project folder through a local API. Runs until stopped (Ctrl+C). |
 | [`export`](#export) | Export for a website: embed (Web Component + static files, default), single-html (one file), poster (still image), video (WebM). Overwriting a non-empty --out needs --yes. |
@@ -239,7 +239,7 @@ agent3d check [--project <dir>] [--render]
 
 ### render
 
-Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks and `state` shows the result (e.g. the score).
+Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes and `state` shows the result (e.g. the score).
 
 ```
 agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--sheet] [--input <json|@file>] [--out renders/] [--project <dir>]
@@ -256,7 +256,7 @@ agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--s
 | `--sheet` | Also compose a contact sheet (grid with time labels) — the one image to look at. |
 | `--cols <value>` | Contact sheet columns (default: from the aspect). |
 | `--capture <value>` | canvas (WebGL canvas only), page (includes the HUD / DOM overlays) or auto (page when the scene has a ui; default). |
-| `--input <value>` | Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2]}] (key = KeyboardEvent.code, coordinates -1..1). Frames render in time order. |
+| `--input <value>` | Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2], "down": true}, {"t": 4, "pointerUp": true}, {"t": 1, "pointerDown": [0, 0]}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 2, "swipe": "left"}] (key = KeyboardEvent.code, coordinates -1..1, y up; unknown fields are rejected). Frames render in time order. |
 | `--out <value>` | Output folder (default <project>/renders). |
 | `--timeout <value>` | Seconds to wait for the scene to load (default 60). |
 

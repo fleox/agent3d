@@ -37,7 +37,8 @@ export interface RenderOptions {
   // Output folder inside the project (default "renders/").
   out?: string;
   // Games: simulated input applied while seeking (frames render in time order):
-  // { t, key, down? | hold? } | { t, click: [x, y] } | { t, pointer: [x, y] } (coordinates -1..1).
+  // { t, key, down? | hold? } | { t, click: [x, y] } | { t, pointer: [x, y], down? } | { t, pointerDown: [x, y] }
+  // | { t, pointerUp: [x, y] | true } | { t, drag: { from, to, duration? } } | { t, swipe: "left"|"right"|"up"|"down" } (coordinates -1..1).
   input?: Record<string, unknown>[];
 }
 

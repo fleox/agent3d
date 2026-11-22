@@ -146,7 +146,11 @@ npx -y @fleox/agent3d@0.1.0 render --project my-game --frames 0,1,2 --input '[{"
 |---|---|
 | `{ "t": 0.5, "key": "ArrowRight", "down": true }` | key down (`down: false` = key up); `key` is a `KeyboardEvent.code` |
 | `{ "t": 0.5, "key": "Space", "hold": 0.3 }` | press at `t`, release at `t + hold` |
-| `{ "t": 1, "click": [0, 0] }` | pointer press at a canvas point (−1..1, y up) |
-| `{ "t": 1, "pointer": [0.5, -0.2] }` | move the pointer |
+| `{ "t": 1, "click": [0, 0] }` | click (press + release) at a canvas point (−1..1, y up): `api.input.pointer.justPressed`, object `onClick` |
+| `{ "t": 1, "pointer": [0.5, -0.2] }` | move the pointer (`"down": true` / `false` also presses / releases it there) |
+| `{ "t": 1, "pointerDown": [0, 0] }` | press the pointer and hold it (`api.input.pointer.down` stays true) |
+| `{ "t": 2, "pointerUp": [0.4, 0] }` | release it there (`"pointerUp": true`: where the pointer is) |
+| `{ "t": 1, "drag": { "from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4 } }` | press at `from`, move to `to` over `duration` s (default 0.3; 30 pointer moves per second), release |
+| `{ "t": 1, "swipe": "left" }` | a swipe gesture: `api.input.swipe()` returns `"left"` / `"right"` / `"up"` / `"down"` during the next step |
 
-`render_preview` (MCP) takes the same events as `input`. The `Player` API (`src/runtime/api.ts`) exposes the same `input.pointer/key/click` and `state()` for browser-based tests.
+An event with an unknown field (`{"t": 1, "tap": [0, 0]}`, `{"t": 1, "click": [0, 0], "hold": 1}`) is a usage error (exit 2) whose hint lists the valid shapes. `render_preview` (MCP) takes the same events as `input`. The `Player` API (`src/runtime/api.ts`) exposes the same `input.pointer/key/click/down/up/swipe` and `state()` for browser-based tests.
