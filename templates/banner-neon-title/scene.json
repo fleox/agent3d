@@ -91,32 +91,15 @@
       "position": [0, 0.35, 0],
       "material": {
         "type": "standard",
-        "color": "#ff7ae0",
+        "color": "#ff5fd2",
         "emissive": "#ff2fd0",
-        "emissiveIntensity": 0.55,
-        "roughness": 0.3,
+        "emissiveIntensity": 0.42,
+        "roughness": 0.35,
         "metalness": 0.3
       },
       "behaviours": [
         {"type": "appear", "effect": "rise", "duration": 1.2, "ease": "outCubic"},
         {"type": "float", "amplitude": 0.05, "speed": 0.35}
-      ]
-    },
-    {
-      "id": "glow",
-      "kind": "text",
-      "text": "AFTER DARK",
-      "font": "sans-bold",
-      "size": 1.05,
-      "depth": 0.02,
-      "bevel": 0,
-      "letterSpacing": 0.08,
-      "position": [0.09, 0.24, -0.35],
-      "material": {"preset": "neon", "color": "#22e6ff", "emissive": "#22e6ff", "emissiveIntensity": 0.9},
-      "behaviours": [
-        {"type": "appear", "effect": "fade", "duration": 1.6},
-        {"type": "float", "amplitude": 0.05, "speed": 0.35},
-        {"type": "flicker", "amount": 0.2, "speed": 5}
       ]
     },
     {
@@ -153,9 +136,9 @@
     {
       "id": "sun",
       "kind": "mesh",
-      "geometry": {"type": "circle", "radius": 5, "segments": 64},
-      "position": [0, 0.4, -22],
-      "material": {"type": "gradient", "gradient": ["#ff2fd6", "#ff7a45", "#ffd86b"]}
+      "geometry": {"type": "circle", "radius": 3.6, "segments": 64},
+      "position": [0, -0.6, -24],
+      "material": {"type": "gradient", "gradient": ["#7a1c6b", "#c2367a", "#ff7a59"]}
     },
     {
       "id": "sparks",
@@ -184,7 +167,6 @@
     "loop": true,
     "tracks": [
       {"target": "title.rotation.y", "keys": [[0, -5], [4, 5], [8, -5]], "ease": "inOutSine"},
-      {"target": "glow.rotation.y", "keys": [[0, -5], [4, 5], [8, -5]], "ease": "inOutSine"},
       {"target": "gridCross.position.z", "keys": [[0, -10], [8, -2]], "ease": "linear"}
     ]
   },
