@@ -75,7 +75,7 @@ Tool annotations carry `readOnlyHint` from `mutating`. Errors come back as tool 
 
 ### `render_preview` returns an image
 
-`render_preview` (`frames: [0, 1.5, 3]` or `count`, `size`, `sheet`) answers with two content blocks: a text block (JSON: sheet path, frame paths, stats, per-object `inspect`, runtime issues, console errors) **and an `image` block with the contact sheet** (`mimeType: "image/png"`, base64). Multimodal clients see the render directly and can judge framing, colours, text and motion, then fix with `scene_patch`. The same JSON is in `structuredContent`.
+`render_preview` (`frames: [0, 1.5, 3]` or `count`, `size`, `sheet`, and for games `input`: simulated keys / clicks, see [scripting.md](scripting.md#testing-scripts)) answers with two content blocks: a text block (JSON: `dir` — the project folder —, sheet and frame paths relative to it, game `state`, stats, per-object `inspect`, runtime issues, console errors) **and an `image` block with the contact sheet** (`mimeType: "image/png"`, base64). Multimodal clients see the render directly and can judge framing, colours, text and motion, then fix with `scene_patch`. The same JSON is in `structuredContent`.
 
 ## Resources
 

@@ -25,7 +25,7 @@ npx -y @fleox/agent3d@0.1.0 scene summary --project my-banner --json
 npx -y @fleox/agent3d@0.1.0 render --project my-banner --sheet --json
 ```
 
-Look at the sheet (Read the `data.sheet` PNG), then tell the user in two or three sentences what the scene contains (target and aspect, the main objects, the motion) before proposing changes. Read details on demand:
+Look at the sheet (Read the `data.sheet` PNG, relative to the project folder `data.dir`), then tell the user in two or three sentences what the scene contains (target and aspect, the main objects, the motion) before proposing changes. Read details on demand:
 
 ```bash
 npx -y @fleox/agent3d@0.1.0 object get title --project my-banner --json

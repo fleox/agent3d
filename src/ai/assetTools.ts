@@ -131,7 +131,7 @@ export const ASSET_TOOLS: AiTool[] = [
 export const RENDER_TOOL: AiTool = {
   name: "render_preview",
   description:
-    "Render the scene headless (deterministic) and save PNG frames + a contact sheet into renders/. ALWAYS look at the returned image (sheet) after changes: check composition, framing (nothing cut at the edges of a wide banner), readability of text, colours and lighting, then fix with scene_patch and render again. Returns frame paths, render stats (triangles, draw calls), per-object inspect data (in view / clipped / screen coverage), runtime issues and console errors. check reuses this data for framing / performance issues.",
+    "Render the scene headless (deterministic) and save PNG frames + a contact sheet into renders/. ALWAYS look at the returned image (sheet) after changes: check composition, framing (nothing cut at the edges of a wide banner), readability of text, colours and lighting, then fix with scene_patch and render again. Returns frame paths (relative to the project folder `dir`), render stats (triangles, draw calls), per-object inspect data (in view / clipped / screen coverage), the game `state` (api.state, e.g. the score), runtime issues and console errors. Games: `input` plays simulated keys / clicks while seeking, to test them headlessly. check reuses this data for framing / performance issues.",
   inputSchema: {
     type: "object",
     properties: {
@@ -139,6 +139,11 @@ export const RENDER_TOOL: AiTool = {
       count: { type: "integer", minimum: 1, maximum: 16, description: "Or N evenly spaced frames over the timeline." },
       size: { type: "string", description: 'Pixel size "WxH" (default 1200 wide at the target aspect).' },
       sheet: { type: "boolean", description: "Compose a contact sheet (default true)." },
+      input: {
+        type: "array",
+        description: 'Games: simulated input applied while seeking (frames render in time order). Events: {"t": 0.5, "key": "ArrowRight", "down": true} (down false = release), {"t": 0.5, "key": "Space", "hold": 0.3}, {"t": 1, "click": [0, 0]}, {"t": 1, "pointer": [0.5, -0.2]}. key = KeyboardEvent.code; coordinates are -1..1 (y up).',
+        items: { type: "object", additionalProperties: true },
+      },
     },
   },
   mutating: false,
@@ -149,11 +154,14 @@ export const RENDER_TOOL: AiTool = {
       count: num(input, "count"),
       size: optStr(input, "size"),
       sheet: typeof input.sheet === "boolean" ? input.sheet : true,
+      ...(Array.isArray(input.input) ? { input: input.input as Record<string, unknown>[] } : {}),
     });
     lastRender.set(ctx.fs, { stats: r.stats, inspect: r.inspect });
     return {
+      ...(r.dir ? { dir: r.dir } : {}),
       sheet: r.sheet,
       frames: r.frames,
+      ...(r.state && Object.keys(r.state).length ? { state: r.state } : {}),
       stats: r.stats,
       ...(r.inspect ? { inspect: { camera: r.inspect.camera, objects: r.inspect.objects.map((o) => ({ id: o.id, inView: o.inView, coverage: Math.round(o.screenCoverage * 1000) / 1000 })) } } : {}),
       ...compactIssues(r.issues, 30),

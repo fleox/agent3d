@@ -3,7 +3,7 @@ import { join, relative, resolve, sep } from "node:path";
 import { libraryProvider, readRuntimeFiles } from "../host";
 import { CliError, printResult } from "../output";
 import type { Command } from "./types";
-import { boolOpt, confirmOrPlan, numOpt, PROJECT_OPTION, projectFs, strOpt, usage, writeOutFile, YES_OPTION } from "./util";
+import { boolOpt, confirmOrPlan, jsonOpt, numOpt, PROJECT_OPTION, projectFs, strOpt, usage, writeOutFile, YES_OPTION } from "./util";
 
 const SIZE_OPTION = { name: "size", type: "string" as const, description: "Viewport WIDTHxHEIGHT in CSS pixels (default: width 1200 at the target aspect)." };
 const TIMEOUT_OPTION = { name: "timeout", type: "string" as const, description: "Seconds to wait for the scene to load (default 60)." };
@@ -17,8 +17,8 @@ const log = (m: string) => void process.stderr.write(`${m}\n`);
 
 export const renderCommand: Command = {
   name: "render",
-  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--sheet] [--out renders/] [--project <dir>]",
-  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { frames: [{ t, path }], sheet?, stats, inspect, issues, consoleErrors }.",
+  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--sheet] [--input <json|@file>] [--out renders/] [--project <dir>]",
+  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks and `state` shows the result (e.g. the score).",
   writes: true,
   options: [
     PROJECT_OPTION,
@@ -30,6 +30,7 @@ export const renderCommand: Command = {
     { name: "sheet", type: "boolean", description: "Also compose a contact sheet (grid with time labels) — the one image to look at." },
     { name: "cols", type: "string", description: "Contact sheet columns (default: from the aspect)." },
     { name: "capture", type: "string", description: "canvas (WebGL canvas only), page (includes the HUD / DOM overlays) or auto (page when the scene has a ui; default)." },
+    { name: "input", type: "string", description: 'Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2]}] (key = KeyboardEvent.code, coordinates -1..1). Frames render in time order.' },
     { name: "out", type: "string", description: "Output folder (default <project>/renders)." },
     TIMEOUT_OPTION,
   ],
@@ -37,7 +38,9 @@ export const renderCommand: Command = {
     const fs = projectFs(options);
     const capture = strOpt(options, "capture");
     if (capture && !["auto", "canvas", "page"].includes(capture)) usage(`--capture must be auto, canvas or page, got "${capture}".`);
-    const { renderProject } = await import("../render/render");
+    const { renderProject, parseInputScript } = await import("../render/render");
+    const rawInput = strOpt(options, "input") !== undefined ? jsonOpt(options, "input", `--input '[{"t": 0.5, "key": "ArrowRight", "hold": 1}]' or --input @inputs.json`) : undefined;
+    const input = rawInput === undefined ? undefined : parseInputScript(rawInput);
     const r = await renderProject({
       projectDir: fs.root,
       frames: strOpt(options, "frames"),
@@ -48,6 +51,7 @@ export const renderCommand: Command = {
       sheet: boolOpt(options, "sheet"),
       cols: numOpt(options, "cols"),
       capture: capture as "auto" | "canvas" | "page" | undefined,
+      input,
       outDir: strOpt(options, "out") ? resolve(strOpt(options, "out")!) : undefined,
       timeoutMs: timeoutMs(options),
       log,
@@ -61,8 +65,9 @@ export const renderCommand: Command = {
     ];
     printResult(io, { ...r, ...(hints.length ? { hints } : {}) }, () =>
       [
-        ...r.frames.map((f) => `t=${f.t}s  ${f.path}`),
-        ...(r.sheet ? [`sheet   ${r.sheet}`] : []),
+        ...r.frames.map((f) => `t=${f.t}s  ${resolve(r.dir, f.path)}`),
+        ...(r.sheet ? [`sheet   ${resolve(r.dir, r.sheet)}`] : []),
+        ...(r.state && Object.keys(r.state).length ? [`state   ${JSON.stringify(r.state)}`] : []),
         `${r.size.width}x${r.size.height}@${r.size.deviceScaleFactor}x · ${r.stats?.triangles ?? "?"} triangles · ${r.stats?.drawCalls ?? "?"} draw calls · ${r.timings.totalMs} ms`,
         ...hints,
       ].join("\n"),

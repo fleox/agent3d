@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import type { SceneDoc } from "../../src/core/types";
 import type { FrameStats, InspectResult, RuntimeIssue } from "../../src/runtime/api";
 import { CliError } from "../output";
@@ -59,6 +59,52 @@ export function frameTimes(scene: Pick<SceneDoc, "timeline" | "target"> | null, 
   return Array.from({ length: count }, (_, i) => Math.round(i * step * 1000) / 1000);
 }
 
+// ─── Simulated input (games) ────────────────────────────────────────────
+// `render --input` script: events applied during deterministic seeking, in
+// time order. Coordinates are normalised canvas coordinates (-1..1, y up),
+// like Player.input.
+//   { "t": 0.5, "key": "ArrowRight", "down": true }     key down (down: false = key up)
+//   { "t": 0.5, "key": "Space", "hold": 0.3 }            down at t, up at t + hold
+//   { "t": 1, "click": [0, 0] }                          click (pointer press) at a point
+//   { "t": 1, "pointer": [0.5, -0.2] }                   move the pointer
+
+export type InputEvent = { t: number; key: string; down: boolean } | { t: number; click: [number, number] } | { t: number; pointer: [number, number] };
+
+const pair = (v: unknown): v is [number, number] => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
+
+export function parseInputScript(raw: unknown): InputEvent[] {
+  const bad = (i: number, why: string) =>
+    new CliError("usage", `--input event #${i}: ${why}.`, 'Events look like {"t": 0.5, "key": "ArrowRight", "down": true}, {"t": 0.5, "key": "Space", "hold": 0.3}, {"t": 1, "click": [0, 0]} or {"t": 1, "pointer": [0.5, -0.2]} (coordinates -1..1; key = KeyboardEvent.code).', 2);
+  if (!Array.isArray(raw)) throw new CliError("usage", "--input must be a JSON array of events.", 'e.g. --input \'[{"t": 0.5, "key": "ArrowRight", "hold": 1}]\' or --input @inputs.json', 2);
+  const out: InputEvent[] = [];
+  raw.forEach((e, i) => {
+    if (!e || typeof e !== "object") throw bad(i, "not an object");
+    const ev = e as Record<string, unknown>;
+    const t = ev.t;
+    if (typeof t !== "number" || !Number.isFinite(t) || t < 0) throw bad(i, '"t" must be a time in seconds ≥ 0');
+    if (typeof ev.key === "string" && ev.key) {
+      if (ev.hold !== undefined) {
+        if (typeof ev.hold !== "number" || !(ev.hold > 0)) throw bad(i, '"hold" must be a duration in seconds > 0');
+        out.push({ t, key: ev.key, down: true }, { t: t + ev.hold, key: ev.key, down: false });
+      } else out.push({ t, key: ev.key, down: ev.down !== false });
+    } else if (ev.click !== undefined) {
+      if (!pair(ev.click)) throw bad(i, '"click" must be [x, y] in -1..1');
+      out.push({ t, click: ev.click });
+    } else if (ev.pointer !== undefined) {
+      if (!pair(ev.pointer)) throw bad(i, '"pointer" must be [x, y] in -1..1');
+      out.push({ t, pointer: ev.pointer });
+    } else throw bad(i, 'needs "key", "click" or "pointer"');
+  });
+  // Stable sort by time (same-time events keep their order).
+  return out.map((e, i) => ({ e, i })).sort((a, b) => a.e.t - b.e.t || a.i - b.i).map((x) => x.e);
+}
+
+// A project path relative to the project folder when inside it, else absolute.
+export function projectPath(projectDir: string, abs: string): string {
+  const rel = relative(resolve(projectDir), abs);
+  return rel && !rel.startsWith("..") && !isAbsolute(rel) ? rel.split("\\").join("/") : abs;
+}
+
 export interface PageInfo {
   stats: FrameStats | null;
   inspect: InspectResult | null;
@@ -77,6 +123,9 @@ export interface RenderSession {
   // seek(t) + screenshot of the whole page (includes the HUD / DOM overlays).
   screenshot(t: number, format?: "png" | "webp", quality?: number): Promise<Uint8Array>;
   sheet(frames: Uint8Array[], labels: string[], cols?: number): Promise<Uint8Array>;
+  // seek(t) without capturing (to apply input events in between).
+  seek(t: number): Promise<void>;
+  input(ev: InputEvent): Promise<void>;
   info(): Promise<PageInfo>;
   close(): Promise<void>;
 }
@@ -239,6 +288,13 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
         if (r.exceptionDetails) throw new CliError("render-failed", "Could not compose the contact sheet.", "Render without --sheet, or with fewer frames.");
         return dataUrlBytes(r.result.value, "the contact sheet");
       },
+      async seek(t) {
+        await page.evaluate(`window.__agent3d.player.seek(${JSON.stringify(t)}).then(() => true)`, timeoutMs);
+      },
+      async input(ev) {
+        const call = "key" in ev ? `key(${JSON.stringify(ev.key)}, ${ev.down})` : "click" in ev ? `click(${ev.click[0]}, ${ev.click[1]})` : `pointer(${ev.pointer[0]}, ${ev.pointer[1]})`;
+        await page.evaluate(`(window.__agent3d.player.input.${call}, true)`, timeoutMs);
+      },
       async info() {
         return (await page.evaluate<PageInfo>("window.__agent3dInfo()", timeoutMs)) ?? { stats: null, inspect: null, issues: [], state: null };
       },
@@ -270,17 +326,25 @@ export interface RenderOptions {
   cols?: number;
   outDir?: string; // default <project>/renders
   capture?: "auto" | "canvas" | "page";
+  // Simulated input applied while seeking (frames are then rendered in time order).
+  input?: InputEvent[];
   timeoutMs?: number;
   log?: (msg: string) => void;
 }
 
 export interface RenderResult {
+  // Paths relative to the project folder (`dir`), absolute when --out is outside it.
+  dir: string;
   frames: { t: number; path: string }[];
   sheet?: string;
   size: { width: number; height: number; deviceScaleFactor: number };
   capture: "canvas" | "page";
   stats: FrameStats | null;
   inspect: InspectResult | null;
+  // Script-visible game state (api.state) after the last frame — e.g. { score: 3 }.
+  state: Record<string, unknown> | null;
+  // Input events applied (render --input).
+  inputs?: number;
   issues: RuntimeIssue[];
   consoleErrors: string[];
   browser: { name: string; path: string };
@@ -296,14 +360,24 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
   const t0 = Date.now();
   const scene = opts.scene ?? readScene(opts.projectDir);
   const viewport = viewportFor(scene, { size: opts.size, width: opts.width, scale: opts.scale });
-  const times = frameTimes(scene, { frames: opts.frames, count: opts.count });
+  const inputs = opts.input ?? [];
+  let times = frameTimes(scene, { frames: opts.frames, count: opts.count });
+  // Seeking backwards restarts the game: with inputs, render in time order.
+  if (inputs.length) times = [...times].sort((a, b) => a - b);
   const capture = !opts.capture || opts.capture === "auto" ? (scene.ui?.elements?.length ? "page" : "canvas") : opts.capture;
   const outDir = resolve(opts.outDir ?? join(opts.projectDir, "renders"));
   const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, timeoutMs: opts.timeoutMs, log: opts.log });
   try {
     const tf = Date.now();
     const shots: Uint8Array[] = [];
-    for (const t of times) shots.push(capture === "page" ? await session.screenshot(t) : await session.frame(t));
+    let next = 0;
+    for (const t of times) {
+      for (; next < inputs.length && inputs[next].t <= t + 1e-9; next++) {
+        await session.seek(inputs[next].t);
+        await session.input(inputs[next]);
+      }
+      shots.push(capture === "page" ? await session.screenshot(t) : await session.frame(t));
+    }
     const framesMs = Date.now() - tf;
     const info = await session.info();
     mkdirSync(outDir, { recursive: true });
@@ -319,13 +393,17 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
       sheet = join(outDir, `${stamp}-sheet.png`);
       writeFileSync(sheet, bytes);
     }
+    const projectDir = resolve(opts.projectDir);
     return {
-      frames,
-      ...(sheet ? { sheet } : {}),
+      dir: projectDir,
+      frames: frames.map((f) => ({ t: f.t, path: projectPath(projectDir, f.path) })),
+      ...(sheet ? { sheet: projectPath(projectDir, sheet) } : {}),
       size: viewport,
       capture,
       stats: info.stats,
       inspect: info.inspect,
+      state: info.state ?? null,
+      ...(inputs.length ? { inputs: inputs.length } : {}),
       issues: info.issues ?? [],
       consoleErrors: session.consoleErrors,
       browser: { name: session.browser.name, path: session.browser.path },

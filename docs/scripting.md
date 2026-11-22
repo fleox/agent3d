@@ -134,4 +134,19 @@ npx -y @fleox/agent3d@0.1.0 check --project my-game --json
 npx -y @fleox/agent3d@0.1.0 render --project my-game --sheet --frames 0,2,4,6 --json
 ```
 
-Renders have no input: give the game an attract mode (an autopilot during the `ready` phase) so frames show action, and read `issues` / `consoleErrors` of the render for script errors. The `Player` API (`src/runtime/api.ts`) also exposes `input.pointer/key/click` and `state()` for browser-based tests.
+Plain renders have no input: give the game an attract mode (an autopilot during the `ready` phase) so frames show action, and read `issues` / `consoleErrors` of the render for script errors. The render result also carries `state` (the script's `api.state` after the last frame).
+
+To play the game headlessly, pass a script of simulated input with `--input` (JSON array, `@file` or `-`); events are applied while seeking, in time order, and the frames are rendered in time order:
+
+```bash
+npx -y @fleox/agent3d@0.1.0 render --project my-game --frames 0,1,2 --input '[{"t": 0.2, "key": "ArrowRight", "hold": 0.8}, {"t": 1.2, "click": [0, 0]}]' --json
+```
+
+| Event | Meaning |
+|---|---|
+| `{ "t": 0.5, "key": "ArrowRight", "down": true }` | key down (`down: false` = key up); `key` is a `KeyboardEvent.code` |
+| `{ "t": 0.5, "key": "Space", "hold": 0.3 }` | press at `t`, release at `t + hold` |
+| `{ "t": 1, "click": [0, 0] }` | pointer press at a canvas point (−1..1, y up) |
+| `{ "t": 1, "pointer": [0.5, -0.2] }` | move the pointer |
+
+`render_preview` (MCP) takes the same events as `input`. The `Player` API (`src/runtime/api.ts`) exposes the same `input.pointer/key/click` and `state()` for browser-based tests.

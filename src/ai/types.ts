@@ -35,13 +35,20 @@ export interface RenderOptions {
   sheet?: boolean;
   // Output folder inside the project (default "renders/").
   out?: string;
+  // Games: simulated input applied while seeking (frames render in time order):
+  // { t, key, down? | hold? } | { t, click: [x, y] } | { t, pointer: [x, y] } (coordinates -1..1).
+  input?: Record<string, unknown>[];
 }
 
 export interface RenderResult {
+  // Absolute project folder; frame / sheet paths are relative to it.
+  dir?: string;
   frames: { t: number; path: string }[];
   sheet?: string;
   stats?: FrameStats;
   inspect?: InspectResult;
+  // Script-visible game state (api.state) after the last frame.
+  state?: Record<string, unknown> | null;
   issues: Issue[];
   consoleErrors: string[];
 }

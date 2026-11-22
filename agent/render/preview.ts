@@ -53,7 +53,9 @@ window.__agent3dSheet = async (urls, labels, cols) => {
   cv.height = rows * cellH + (rows + 1) * gap;
   const g = cv.getContext("2d");
   g.fillStyle = "#1b1b1f"; g.fillRect(0, 0, cv.width, cv.height);
-  const fs = Math.max(12, Math.round(cellH / 14));
+  // Small, semi-transparent time label in the bottom-left corner: the top
+  // corners are where HUDs (score, lives) usually sit.
+  const fs = Math.max(10, Math.round(Math.min(cellH, cellW * 0.6) / 24));
   g.font = "600 " + fs + "px system-ui, -apple-system, Segoe UI, sans-serif";
   g.textBaseline = "middle";
   imgs.forEach((img, i) => {
@@ -62,8 +64,10 @@ window.__agent3dSheet = async (urls, labels, cols) => {
     const label = labels[i] || "";
     if (label) {
       const tw = g.measureText(label).width;
-      g.fillStyle = "rgba(0,0,0,0.65)"; g.fillRect(x, y, tw + fs, fs * 1.6);
-      g.fillStyle = "#fff"; g.fillText(label, x + fs / 2, y + fs * 0.8);
+      const pad = Math.round(fs * 0.45), bh = Math.round(fs * 1.5), m = Math.round(fs * 0.4);
+      const bx = x + m, by = y + cellH - m - bh;
+      g.fillStyle = "rgba(0,0,0,0.42)"; g.fillRect(bx, by, tw + pad * 2, bh);
+      g.fillStyle = "rgba(255,255,255,0.85)"; g.fillText(label, bx + pad, by + bh / 2);
     }
   });
   return cv.toDataURL("image/png");

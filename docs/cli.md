@@ -57,7 +57,7 @@ Generated from the CLI's own command list (`help --json`); `npm test` fails when
 | [`catalog`](#catalog) | What scenes can use, with parameters: geometries, materialPresets, shaders, behaviours, generators, particlePresets, postfx, fonts, sounds. No section → sections with counts; a section → its entries; an id → the full entry (params, defaults, ranges, example). |
 | [`templates`](#templates) | Starter projects (`agent3d new <dir> --template <id>`): list them, or show one (metadata + its scene summary). |
 | [`check`](#check) | Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles, KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok. |
-| [`render`](#render) | Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { frames: [{ t, path }], sheet?, stats, inspect, issues, consoleErrors }. |
+| [`render`](#render) | Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks and `state` shows the result (e.g. the score). |
 | [`serve`](#serve) | Live preview of the project on 127.0.0.1 (scene at its aspect ratio, play / pause, time scrubber): scene.json edits update the open page instantly, asset / script edits reload it. Runs until stopped (Ctrl+C). |
 | [`studio`](#studio) | Open the Studio (visual editor: viewport, outliner, inspector, timeline, catalog, templates, assistant) on this computer, editing the project folder through a local API. Runs until stopped (Ctrl+C). |
 | [`export`](#export) | Export for a website: embed (Web Component + static files, default), single-html (one file), poster (still image), video (WebM). Overwriting a non-empty --out needs --yes. |
@@ -239,10 +239,10 @@ agent3d check [--project <dir>] [--render]
 
 ### render
 
-Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { frames: [{ t, path }], sheet?, stats, inspect, issues, consoleErrors }.
+Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks and `state` shows the result (e.g. the score).
 
 ```
-agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--sheet] [--out renders/] [--project <dir>]
+agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--sheet] [--input <json|@file>] [--out renders/] [--project <dir>]
 ```
 
 | Option | Description |
@@ -256,6 +256,7 @@ agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--s
 | `--sheet` | Also compose a contact sheet (grid with time labels) — the one image to look at. |
 | `--cols <value>` | Contact sheet columns (default: from the aspect). |
 | `--capture <value>` | canvas (WebGL canvas only), page (includes the HUD / DOM overlays) or auto (page when the scene has a ui; default). |
+| `--input <value>` | Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2]}] (key = KeyboardEvent.code, coordinates -1..1). Frames render in time order. |
 | `--out <value>` | Output folder (default <project>/renders). |
 | `--timeout <value>` | Seconds to wait for the scene to load (default 60). |
 
@@ -327,7 +328,7 @@ agent3d assets <list|search|add|remove|library> [--project <dir>]
 |---|---|---|
 | `list` | `agent3d assets list` | The project's assets (path, kind, size, source, licence). |
 | `search` | `agent3d assets search <query> [--kind model\|texture\|hdri] [--source polyhaven\|ambientcg\|kenney\|quaternius\|khronos]` | Search free, account-less CC0 sources (network). Hits can be added with `assets add --hit '<json>'`. |
-| `add` | `agent3d assets add <file> [--kind <k>] [--path assets/…] [--license CC0-1.0] [--author <name>] \| assets add --hit <json\|@file> [--resolution 1k]` | Copy a local file into assets/, or download a search hit (licence recorded in assets/manifest.json). |
+| `add` | `agent3d assets add <file> [--kind <k>] [--path assets/…] [--license CC0-1.0] [--author <name>] \| assets add <pack.zip> --source kenney\|quaternius\|local --license CC0-1.0 [--filter <word>]… [--name <pack>] \| assets add --hit <json\|@file> [--resolution 1k]` | Copy a local file into assets/, import a Kenney / Quaternius pack zip (only .glb/.gltf + textures, --filter keeps models whose path contains a word), or download a search hit (licence recorded in assets/manifest.json). |
 | `remove` | `agent3d assets remove <path> [--yes]` | Delete an asset and its manifest entry (plan + needsConfirmation unless --yes). **Plan + `--yes`.** |
 | `library` | `agent3d assets library [--query <text>] [--kind <k>] [--limit 50] [--offset 0] [--all]` | Built-in CC0 assets shipped with Agent3D — reference them as "library:<id>" (no download). Shows animation clips and triangles of models; 50 results per page (`more: true` → next page with --offset, or --all). |
 
@@ -335,7 +336,9 @@ agent3d assets <list|search|add|remove|library> [--project <dir>]
 |---|---|
 | `--project <value>` | Project folder (default: the current directory). |
 | `--kind <value>` | model, texture, hdri, audio, font, svg or other. |
-| `--source <value>` | search: one source only. |
+| `--source <value>` | search: one source only. add: where the file / pack comes from (kenney, quaternius, local — default local). |
+| `--filter <value>` (repeatable) | add <pack.zip>: only import models whose path contains this word (repeatable: --filter coin --filter flag). |
+| `--name <value>` | add <pack.zip>: folder name under assets/models/ (default: the zip name). |
 | `--query <value>` | search / library: text to look for. |
 | `--limit <value>` | library: results per page (default 50). |
 | `--offset <value>` | library: skip the first N results (paging). |

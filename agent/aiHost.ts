@@ -36,9 +36,10 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
               size: opts.size,
               sheet: opts.sheet ?? true,
               outDir: opts.out ? fs.resolve(opts.out) : undefined,
+              input: opts.input ? (await import("./render/render")).parseInputScript(opts.input) : undefined,
               log: (m) => void process.stderr.write(`${m}\n`),
             });
-            return { frames: r.frames, ...(r.sheet ? { sheet: r.sheet } : {}), ...(r.stats ? { stats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}), issues: r.issues.map(runtimeIssueToIssue), consoleErrors: r.consoleErrors };
+            return { dir: r.dir, frames: r.frames, ...(r.sheet ? { sheet: r.sheet } : {}), ...(r.stats ? { stats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}), state: r.state, issues: r.issues.map(runtimeIssueToIssue), consoleErrors: r.consoleErrors };
           },
         }
       : {}),
@@ -68,13 +69,14 @@ export async function callTool(fs: NodeFs, name: string, input: Record<string, u
 }
 
 // render_preview → the contact sheet (or the first frame) as base64 PNG.
-export function previewImages(name: string, result: unknown): { data: string; mimeType: string }[] {
+// Paths are relative to the result's `dir` (the project folder), else to `root`.
+export function previewImages(name: string, result: unknown, root = "."): { data: string; mimeType: string }[] {
   if (name !== "render_preview" || !result || typeof result !== "object") return [];
-  const r = result as { sheet?: string; frames?: { path: string }[] };
+  const r = result as { dir?: string; sheet?: string; frames?: { path: string }[] };
   const file = r.sheet ?? r.frames?.[0]?.path;
   if (!file) return [];
   try {
-    return [{ data: readFileSync(file).toString("base64"), mimeType: "image/png" }];
+    return [{ data: readFileSync(resolve(r.dir ?? root, file)).toString("base64"), mimeType: "image/png" }];
   } catch {
     return [];
   }

@@ -59,7 +59,7 @@ First run on a machine: `npx -y @fleox/agent3d@0.1.0 doctor --json` checks Node,
    ```bash
    npx -y @fleox/agent3d@0.1.0 render --project bakery-banner --sheet --count 4 --json
    ```
-   Then open `data.sheet` (a PNG contact sheet with time labels) with the Read tool and judge it like an art director:
+   Then open `data.sheet` (a PNG contact sheet with time labels; paths are relative to the project folder `data.dir`) with the Read tool and judge it like an art director:
    - **Framing at the aspect ratio**: nothing important cut at the edges; the subject reads at a glance; wide banners keep content in the central ~80% of the width.
    - **Composition**: a clear focal point, balanced weight, room left for HTML text if the page needs it.
    - **Text**: spelled right, readable (contrast with the background), not overlapped by props.

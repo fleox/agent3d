@@ -59,7 +59,7 @@ export function mcpOptions(fs: NodeFs, readOnly: boolean, tools: Awaited<ReturnT
     version: readVersionInfo().version,
     instructions: `Agent3D — the 3D studio for web pages (project: ${fs.root}). A scene is JSON (scene.json): call scene_summary first, catalog_get to learn geometries / materials / behaviours / generators and their parameters, scene_patch for edits (validated; issues come back with JSON paths and hints), then render_preview to LOOK at the result (contact sheet image) and fix framing, colours and motion before export. Confirm destructive changes (scene_apply replacing objects, object_remove, export over a folder) with the user first.`,
     call: (name: string, input: Record<string, unknown>) => callTool(fs, name, input),
-    images: async (name: string, result: unknown) => previewImages(name, result),
+    images: async (name: string, result: unknown) => previewImages(name, result, fs.root),
     resources: [
       { uri: "agent3d://scene", name: "scene", title: "Scene", description: "The project's scene.json (SceneDoc).", mimeType: "application/json", read: async () => JSON.parse(await fs.readText("scene.json")) },
       {

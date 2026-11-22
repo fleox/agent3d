@@ -1,11 +1,11 @@
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { decodePng, pngVariance } from "./png";
 import { MINIMAL_SCENE, writeFakeDist } from "../testing/fakeRuntime";
 import { findBrowser } from "./browser";
-import { frameTimes, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
+import { frameTimes, parseInputScript, projectPath, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
 
 // The render pipeline (server → Chrome → CDP → page → PNG files) against a
 // stand-in runtime. Runs only when a Chromium-family browser is installed.
@@ -41,18 +41,39 @@ describe("viewport and frame times", () => {
   });
 });
 
+describe("render --input scripts and paths", () => {
+  it("parses, expands hold and sorts events by time", () => {
+    expect(parseInputScript([{ t: 1, click: [0, 0] }, { t: 0.5, key: "Space", hold: 0.3 }, { t: 0.2, pointer: [0.5, -0.2] }, { t: 0.5, key: "KeyA", down: false }])).toEqual([
+      { t: 0.2, pointer: [0.5, -0.2] },
+      { t: 0.5, key: "Space", down: true },
+      { t: 0.5, key: "KeyA", down: false },
+      { t: 0.8, key: "Space", down: false },
+      { t: 1, click: [0, 0] },
+    ]);
+    expect(() => parseInputScript({})).toThrow(/JSON array/);
+    expect(() => parseInputScript([{ t: -1, key: "A" }])).toThrow(/#0/);
+    expect(() => parseInputScript([{ t: 1, click: [0] }])).toThrow(/click/);
+    expect(() => parseInputScript([{ t: 1 }])).toThrow(/key/);
+  });
+  it("returns project-relative paths when inside the project", () => {
+    expect(projectPath("/p/proj", "/p/proj/renders/a.png")).toBe("renders/a.png");
+    expect(projectPath("/p/proj", "/tmp/out/a.png")).toBe("/tmp/out/a.png");
+  });
+});
+
 describe.skipIf(!browser)("headless render (stand-in runtime)", () => {
   it("renders frames + a contact sheet that are not blank", async () => {
     const r = await renderProject({ projectDir: project, count: 4, sheet: true });
     expect(r.frames).toHaveLength(4);
+    expect(r.frames[0].path.startsWith("renders/")).toBe(true);
     expect(r.stats).toMatchObject({ triangles: 2 });
     expect(r.inspect?.objects[0].id).toBe("box");
-    const png = decodePng(readFileSync(r.frames[1].path));
+    const png = decodePng(readFileSync(resolve(r.dir, r.frames[1].path)));
     expect([png.width, png.height]).toEqual([1200, 300]);
     expect(pngVariance(png).distinct).toBeGreaterThan(1);
     // Frames differ over time (the square moves).
-    expect(readFileSync(r.frames[0].path).equals(readFileSync(r.frames[2].path))).toBe(false);
-    const sheet = decodePng(readFileSync(r.sheet!));
+    expect(readFileSync(resolve(r.dir, r.frames[0].path)).equals(readFileSync(resolve(r.dir, r.frames[2].path)))).toBe(false);
+    const sheet = decodePng(readFileSync(resolve(r.dir, r.sheet!)));
     expect(sheet.height).toBeGreaterThan(4 * 300 * (sheet.width / 1216) * 0.9);
     expect(pngVariance(sheet).stddev).toBeGreaterThan(5);
     expect(r.timings.totalMs).toBeGreaterThan(0);
@@ -60,7 +81,7 @@ describe.skipIf(!browser)("headless render (stand-in runtime)", () => {
 
   it("captures the page and renders a poster and a WebM video", async () => {
     const page = await renderProject({ projectDir: project, frames: "1", capture: "page", size: "400x200" });
-    expect(decodePng(readFileSync(page.frames[0].path))).toMatchObject({ width: 400, height: 200 });
+    expect(decodePng(readFileSync(resolve(page.dir, page.frames[0].path)))).toMatchObject({ width: 400, height: 200 });
     const poster = await renderPoster({ projectDir: project, format: "webp" });
     expect(Buffer.from(poster.bytes).toString("ascii", 8, 12)).toBe("WEBP");
     const video = await renderVideo({ projectDir: project, duration: 1, fps: 10, size: "320x80" });

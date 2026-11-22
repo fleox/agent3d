@@ -31,7 +31,7 @@ Agent3D is a 3D studio with **no server of its own**. Four front doors share one
 
 ## The render loop
 
-`agent3d render` → local HTTP server (runtime, library, project) → headless Chrome (`--headless=new`, SwiftShader WebGL) → preview page mounts the scene with `deterministic: true` → for each time `player.seek(t)` + `snapshot()` → optional contact sheet composed in the page → PNGs + `{ frames, sheet, stats, inspect, issues, consoleErrors }`. Deterministic mode makes every frame a pure function of (scene, assets, time): timelines, behaviours, particles and game scripts (fixed step, seeded RNG) replay identically. This is what lets an agent look at its work and iterate.
+`agent3d render` → local HTTP server (runtime, library, project) → headless Chrome (`--headless=new`, SwiftShader WebGL) → preview page mounts the scene with `deterministic: true` → for each time `player.seek(t)` + `snapshot()` → optional contact sheet composed in the page → PNGs + `{ dir, frames, sheet, state, stats, inspect, issues, consoleErrors }` (paths relative to the project folder `dir`). `--input` applies a script of simulated keys / clicks between seeks, so games can be played headlessly. Deterministic mode makes every frame a pure function of (scene, assets, time): timelines, behaviours, particles and game scripts (fixed step, seeded RNG) replay identically. This is what lets an agent look at its work and iterate.
 
 ## Why no server
 

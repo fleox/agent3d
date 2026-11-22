@@ -144,8 +144,8 @@ Also: `agent3d export --format poster` (PNG/WebP still) and `--format video` (We
 1. starts a 127.0.0.1 HTTP server serving `dist/runtime`, the library and the project;
 2. launches the user's **installed Chrome / Chromium / Edge / Brave** (`agent/render/browser.ts` finds it; `AGENT3D_CHROME` overrides; none → hint to install Chrome or `npx playwright install chromium`) with `--headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --remote-debugging-port=0` and a temp profile;
 3. drives it with a hand-written CDP client over Node's global `WebSocket` (no puppeteer);
-4. the preview page mounts the scene with `deterministic: true`, sets `window.__agent3d`, then for each frame `player.seek(t)` + `snapshot()`; with `--sheet` composes a contact sheet (grid with time labels) in the page canvas;
-5. writes PNGs, returns `{ frames: [{ t, path }], sheet?, stats, inspect, issues, consoleErrors }` so the agent can *look* at the images and fix framing / budget problems.
+4. the preview page mounts the scene with `deterministic: true`, sets `window.__agent3d`, then for each frame `player.seek(t)` + `snapshot()`; with `--sheet` composes a contact sheet (grid with small time labels in each cell's bottom-left corner, clear of top HUDs) in the page canvas;
+5. writes PNGs, returns `{ dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors }` (paths relative to the project folder `dir`) so the agent can *look* at the images and fix framing / budget problems. `--input <json>` (games) applies simulated keys / clicks / pointer moves between seeks (`render_preview` `input`); `state` is `player.state()` after the last frame.
 
 ## CLI contract (mirror of agentcrm)
 

@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runtimeBuilt } from "./paths";
 import { findBrowser } from "./render/browser";
@@ -19,12 +19,12 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     await ok(["new", dir, "--target", "banner", "--title", "E2E"]);
     const r = await ok(["render", "--project", dir, "--count", "2", "--sheet"]);
     expect(r.frames).toHaveLength(2);
-    const png = decodePng(readFileSync(r.frames[0].path));
+    const png = decodePng(readFileSync(resolve(r.dir, r.frames[0].path)));
     expect([png.width, png.height]).toEqual([1200, 300]);
     const v = pngVariance(png);
     expect(v.distinct).toBeGreaterThan(20);
     expect(v.stddev).toBeGreaterThan(3);
-    expect(existsSync(r.sheet)).toBe(true);
+    expect(existsSync(resolve(r.dir, r.sheet))).toBe(true);
     expect(r.stats.triangles).toBeGreaterThan(0);
 
     const ex = await cli(["export", "--project", dir]);
@@ -33,5 +33,18 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     expect(ex.body.data.snippet).toContain("<agent3d-scene");
     // Exporting again over the folder needs --yes.
     expect((await ok(["export", "--project", dir])).needsConfirmation).toBe(true);
+  }, 120_000);
+
+  it("plays a game headlessly with --input and returns its state", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "game");
+    await ok(["new", dir, "--target", "game"]);
+    // The starter player walks down (+z) to z=3, then right to x=2: the third coin.
+    const input = JSON.stringify([{ t: 0.1, key: "ArrowDown", hold: 0.75 }, { t: 1, key: "ArrowRight", hold: 0.5 }]);
+    const idle = await ok(["render", "--project", dir, "--frames", "0,2"]);
+    expect(idle.state).toMatchObject({ score: 0 });
+    const played = await ok(["render", "--project", dir, "--frames", "2,0", "--input", input]);
+    expect(played.frames.map((f: { t: number }) => f.t)).toEqual([0, 2]);
+    expect(played.inputs).toBe(4);
+    expect(played.state).toMatchObject({ score: 1 });
   }, 120_000);
 });
