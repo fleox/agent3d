@@ -202,6 +202,7 @@
       "id": "flowers",
       "kind": "generator",
       "generator": "flowers",
+      "castShadow": false,
       "params": {
         "count": 260,
         "area": [

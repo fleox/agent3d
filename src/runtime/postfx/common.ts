@@ -123,6 +123,14 @@ export class GBuffer {
     const prevClear = renderer.getClearColor(new THREE.Color());
     const prevAlpha = renderer.getClearAlpha();
     const grounds: THREE.Mesh[] = [];
+    // Normals / depth never sample shadow maps: without this, every
+    // renderer.render() here re-draws every shadow caster for each
+    // shadow-casting light (autoUpdate), doubling the shadow cost of scenes with
+    // ao / dof / godrays / outline. The main pass renders them as before.
+    const sm = renderer.shadowMap;
+    const prevShadow = { auto: sm.autoUpdate, needs: sm.needsUpdate };
+    sm.autoUpdate = false;
+    sm.needsUpdate = false;
     withoutHelpers(scene, () => {
       scene.traverse((o) => {
         if (o.userData.ground && o.visible && (o as THREE.Mesh).isMesh) {
@@ -154,6 +162,8 @@ export class GBuffer {
       }
     });
     for (const g of grounds) g.visible = true;
+    sm.autoUpdate = prevShadow.auto;
+    sm.needsUpdate = prevShadow.needs;
     scene.overrideMaterial = prevOverride;
     renderer.setClearColor(prevClear, prevAlpha);
   }

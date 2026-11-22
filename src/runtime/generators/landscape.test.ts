@@ -92,6 +92,22 @@ describe("scatter on a snowy terrain", () => {
   });
 });
 
+describe("scatter with several terrains", () => {
+  it("uses the terrain under the scatterer, whatever the sibling order", () => {
+    // landscape-night-galaxy: a far ridge (y −4, z −62) and near hills (y −1.2, z −8); rocks at z −1.
+    const ridge = build("terrain", { shape: "mountains", size: 120, height: 20, waterLevel: null }, 2);
+    ridge.object.position.set(0, -4, -62);
+    const hills = build("terrain", { shape: "hills", size: 60, height: 2.2, waterLevel: null }, 3);
+    hills.object.position.set(0, -1.2, -8);
+    const placement = { position: [0, -1.2, -1] as [number, number, number], scale: [1, 1, 1] as [number, number, number] };
+    const expected = hills.heightAt!(0, 7) - 1.2 + 1.2; // hills-local (0, 7) → parent y → rocks-local y
+    for (const order of [[["ridge", ridge], ["hills", hills]], [["hills", hills], ["ridge", ridge]]] as [string, BuiltObject][][]) {
+      const ground = findGround({ ...makeCtx(1, new Map(order)), placement } as BuildContext)!;
+      expect(ground.height(0, 0)).toBeCloseTo(expected, 6);
+    }
+  });
+});
+
 describe("road restyling", () => {
   it("verge: false drops the verges; one curb colour = solid curbs", () => {
     const full = triangles(build("road", {}).object);

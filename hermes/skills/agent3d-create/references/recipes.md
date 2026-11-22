@@ -189,7 +189,7 @@ A low-poly valley at golden hour: a mirror lake on the valley floor, pine forest
 - The lake: `waterPlane: false` drops the terrain's own plane while `waterLevel` still shapes the shore and keeps trees out of it; the `water` object sits at `y = waterLevel`. `"reflections": true` makes it a mirror (keep `waveHeight` / `ripples` low); it renders the scene a second time each frame (half resolution on the `medium` tier, off on `low`), so the forest is 180 pines and the terrain 88 cells to stay at ~140 k triangles per frame, under the hero aim.
 - `snowHeight` caps everything above an absolute altitude with the last palette colour; trees stay below it. Terrain, water and scatter generators (`trees`, `rocks`, `grass`, `flowers` with `onTerrain`) share one `position`: keep them at the origin and move the camera instead.
 - `birds` is one instanced draw call: `drift` with `formation: "v"` crosses the sky along `heading` (keep `area` x wider than the view); `orbit` circles, `path` follows `points`. Dark birds read against a bright sky. (Particle presets such as `fireflies` are glowing dots, not birds.)
-- Height fog (`height`, `falloff`) fills the valley while peaks stay crisp; density 0.005–0.02 for a hero, more reads as smog. No `look` here: `cinematic` adds an AO pre-pass that pushes the triangles per frame over the aim; bloom + grading + vignette cost no geometry pass.
+- Height fog (`height`, `falloff`) fills the valley while peaks stay crisp; density 0.005–0.02 for a hero, more reads as smog. No `look` here: `cinematic` adds an AO pre-pass (one more geometry pass per frame plus a costly GPU pass) that a wide view from afar barely shows; bloom + grading + vignette cost no geometry pass.
 - Knobs: `sun.elevation` (3–12 for golden hour), terrain `seed` / `height` / `palette`, tree `count`, the flock `heading` and `count`.
 
 ## Neon title (16:9): rect panel lights, volumetric spot, bloom
@@ -393,7 +393,7 @@ A soft drifting gradient with glossy shapes on the sides and an outlined headlin
 - `meshGradient` gives the Stripe-like background for zero bytes; `grain` hides banding.
 - Light text on a light gradient needs an `outline` (or a dark text colour) to read; avoid bloom here: white text glows into the background.
 - Props at abs(x) 7.6–8.8 stay outside the title (visible width ≈ 25.8 at z 0 with this camera).
-- Transmission presets (`soapBubble`, `glass`, `jelly`, `diamond`) render the scene a second time behind them: a soap bubble here doubled the triangles per frame past the banner aim (50 k), so the sphere is `pearl`.
+- Transmission presets (`soapBubble`, `glass`, `jelly`, `diamond`) render the scene a second time behind them: a soap bubble here doubled the triangles per frame for a sphere that reads the same, so it is `pearl`.
 - Knobs: the 5 gradient colours, `speed` (0 = still), `chromeGradient` ramps, `pearl` / `mattePastel` presets.
 
 ## Letter-reveal headline (16:9)

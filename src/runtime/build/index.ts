@@ -134,6 +134,7 @@ export class World {
       const rootFor = (o: ObjectDef): THREE.Object3D => (o.attach === "camera" ? this.camera : this.scene);
       if (objs.some((o) => o.attach === "camera")) this.scene.add(this.camera);
       await Promise.all(objs.filter((o) => o.kind === "generator" && o.generator === "terrain").map((o) => this.addObject(o, rootFor(o), undefined, siblings)));
+      declarationOrder(siblings, objs);
       await Promise.all(objs.filter((o) => !(o.kind === "generator" && o.generator === "terrain")).map((o) => this.addObject(o, rootFor(o), undefined, siblings)));
       // Keep declaration order in the scene graph.
       const order = new Map(objs.map((o, i) => [o.id, i]));
@@ -142,6 +143,7 @@ export class World {
       this.env = await envP;
       for (const o of this.env.objects) this.scene.add(o);
       await lightsP;
+      this.canonicalOrder(def);
       if (editor) {
         const grid = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
         grid.userData.helper = true;
@@ -193,6 +195,41 @@ export class World {
       }
       this.fitShadows();
     }
+  }
+
+  // Objects and lights build concurrently (models, fonts, textures load in
+  // parallel), so `entries` and nested scene-graph children are first filled in
+  // load-completion order — which varies run to run. Everything that iterates
+  // them (findByTag, physics body creation and solver order, behaviours, the
+  // render list) must see declaration order or deterministic renders diverge
+  // (e.g. a script indexing findByTag() results). Reorder both: lights, then
+  // objects depth-first as declared (text letters right after their owner);
+  // entries not in the document keep their relative order at the end.
+  private canonicalOrder(def: SceneDoc): void {
+    const old = this.entries;
+    const next = new Map<string, WorldEntry>();
+    const put = (id: string) => {
+      const e = old.get(id);
+      if (e && !next.has(id)) next.set(id, e);
+    };
+    (def.lights ?? []).forEach((l, i) => put(l.id ?? `light${i}`));
+    const walk = (objs: ObjectDef[]) => {
+      for (const o of objs) {
+        put(o.id);
+        const prefix = `${o.id}/`;
+        for (const id of old.keys()) if (id.startsWith(prefix) && old.get(id)!.parentId === o.id) put(id);
+        if (!o.children?.length) continue;
+        const parent = old.get(o.id)?.object;
+        if (parent) {
+          const order = new Map(o.children.map((c, i) => [c.id, i]));
+          parent.children.sort((a, b) => (order.get(a.userData.a3dId) ?? -1) - (order.get(b.userData.a3dId) ?? -1));
+        }
+        walk(o.children);
+      }
+    };
+    walk(def.objects ?? []);
+    for (const [id, e] of old) if (!next.has(id)) next.set(id, e);
+    this.entries = next;
   }
 
   // object.material on a generator (catalog entry with `material`): replaces
@@ -400,6 +437,7 @@ export class World {
       const sib = new Map<string, BuiltObject>();
       const kids = def.children;
       await Promise.all(kids.filter((k) => k.kind === "generator" && k.generator === "terrain").map((k) => this.addObject(k, object, def.id, sib)));
+      declarationOrder(sib, kids);
       await Promise.all(kids.filter((k) => !(k.kind === "generator" && k.generator === "terrain")).map((k) => this.addObject(k, object, def.id, sib)));
     }
     return entry;
@@ -597,4 +635,14 @@ export class World {
     this.scene.traverse((o) => (o as THREE.DirectionalLight).shadow?.dispose?.());
     this.entries.clear();
   }
+}
+
+// Terrains build in parallel: their sibling map (what "onTerrain" scatterers
+// search) must not depend on which one finished first.
+function declarationOrder(siblings: Map<string, BuiltObject>, defs: ObjectDef[]): void {
+  const entries = [...siblings.entries()];
+  const order = new Map(defs.map((d, i) => [d.id, i]));
+  entries.sort((a, b) => (order.get(a[0]) ?? Infinity) - (order.get(b[0]) ?? Infinity));
+  siblings.clear();
+  for (const [k, v] of entries) siblings.set(k, v);
 }

@@ -929,7 +929,7 @@ Spiral galaxy of soft additive stars: logarithmic arms, warm bulge, star-forming
 
 ### `bars3d`
 
-3D bar chart from data (row or grid) with rounded / box / cylinder bars, colour ramp by value / row / column, base plate and an eased staggered grow entrance (or a looping wave). Dashboards, stats, fintech heroes. _Cost: ~data*12+~200 triangles._
+3D bar chart from data (row or grid) with rounded / box / cylinder bars, colour ramp by value / row / column, base plate and an eased staggered grow entrance (or a looping wave). Dashboards, stats, fintech heroes. _Cost: ~dataCells*1000+~600 triangles._
 
 **`material` override** (object-level `"material": { … }`): Every bar (per-bar colours are kept as instance colours).
 

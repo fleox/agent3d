@@ -128,7 +128,7 @@ Fundamentals:
 - **Camera**: perspective fov 30–40 for banners and products (less distortion), 45–55 for landscapes and games. Wide banner: fov 30, z 12. Hero 16:9: fov 35, z 9. Card 1:1: fov 32, z 5.5–7.
 - **Motion for web pages**: slow and loopable. Float amplitude 0.05–0.2 at 0.2–0.4 cycles/s, rotations 10–20 deg/s, timeline loops of 6–10 s that end where they start (`[[0,-5],[4,5],[8,-5]]`). Parallax strength 0.3–0.5. Keep `target.reducedMotion` at `static` (the default) for banners, and make `posterTime` a frame where everything is visible (after every `appear` / `reveal` delay + duration; reduced-motion visitors see them finished anyway, but the exported poster does not).
 - **Post effects** with restraint: no film grain, chromatic aberration, glitch or ascii on brand work unless asked; `ao` and `dof` are expensive (never on games: `check` warns).
-- **Budgets** (the `check` budget is per target): banners and cards stay under ~50 k triangles and a few hundred KB of assets; heroes ~150 k; games ~200 k. Prefer generators, primitives, procedural textures and the built-in library over large models; textures at 1k, then `assets optimize`.
+- **Budgets** (the `check` budget is per target): triangles are counted per frame with every pass (shadow maps, AO pre-pass): banners and cards stay under ~150 k and a few hundred KB of assets; heroes ~400 k; games ~300 k (`references/art-direction.md` → Performance budgets). Prefer generators, primitives, procedural textures and the built-in library over large models; textures at 1k, then `assets optimize`.
 
 ## Rules
 

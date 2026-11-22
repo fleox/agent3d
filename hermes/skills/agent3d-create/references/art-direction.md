@@ -129,12 +129,14 @@ Too bright? Lower `environment.lightingIntensity` first (IBL adds up with every 
 
 | Target | KB budget (assets + scripts + scene, runtime excluded) | Triangle limit in `check` | Aim for |
 |---|---|---|---|
-| banner | 600 | 500 k | ≤ 50 k triangles |
-| card | 400 | 400 k | ≤ 50 k |
-| square / inline | 600 | 500 k | ≤ 80 k |
-| hero | 1500 | 1 M | ≤ 150 k |
-| fullscreen | 4000 | 2 M | ≤ 300 k |
-| game | 4000 | 2 M | ≤ 200 k per frame, draw calls < 150 per frame (`check` warns above 150 and names the causes) |
+| banner | 600 | 500 k | ≤ 150 k triangles per frame |
+| card | 400 | 400 k | ≤ 150 k |
+| square / inline | 600 | 500 k | ≤ 250 k |
+| hero | 1500 | 1 M | ≤ 400 k |
+| fullscreen | 4000 | 2 M | ≤ 600 k |
+| game | 4000 | 2 M | ≤ 300 k per frame, draw calls < 150 per frame (`check` warns above 150 and names the causes) |
+
+Why these numbers: a mid-range phone GPU (Adreno 6xx / Mali-G57 class) sustains roughly 1–1.5 M lit triangles per frame at 60 fps in WebGL. An embed takes a fraction of that so the page (and any other scene on it) stays smooth: a strip banner or a card ~10 %, the one hero of a page ~⅓, a fullscreen piece ~½, a game less than a hero (it must hold 60 fps while scripts and physics use the CPU). They are per-frame totals: geometry × passes. A hero with one shadow light and the `cinematic` look draws its geometry ~3× (main + shadow map + AO pre-pass), so ~130 k triangles of geometry is the hero aim. To get under an aim without changing the look, in this order: `castShadow: false` on what casts no visible shadow (water, distant scatter, tiny props, objects far from the ground); drop the AO pre-pass where it adds little (wide landscapes seen from afar, flat UI-like banners): replace the `look` with the effects it expands to minus `ao` (`agent3d catalog postfx look` lists each preset's stack); lower generator detail that is invisible at the framing (terrain `resolution`, scatter `count` beyond the fog, `segments`); split / outlined text costs a mesh (and its triangles) per letter, twice with an outline.
 
 - The shared runtime (`agent3d-runtime/`, loaded lazily in chunks: only what the scene uses is fetched) is not counted: it is downloaded once per site and cached.
 - `check` estimates triangles from catalog cost formulas, measured glyph costs (a bevelled serif headline costs far more than a flat sans one) and model counts, then per frame (`budget.estimatedFrameTriangles`, `budget.passes`: each shadow-casting light, `ao` / `dof` / `godrays` / `outline` and `contactShadows` re-draw the scene or its casters); `check --render` and `render` report the real counts (`stats.triangles`, `stats.drawCalls`), which include every pass. The GPU side is `budget.gpu` (post-processing passes per frame).

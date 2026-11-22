@@ -317,7 +317,7 @@ export const GENERATORS: CatalogEntry[] = [
     id: "bars3d",
     description: "3D bar chart from data (row or grid) with rounded / box / cylinder bars, colour ramp by value / row / column, base plate and an eased staggered grow entrance (or a looping wave). Dashboards, stats, fintech heroes.",
     params: [{ name: "data", type: "array", description: "Values: [3, 5, 8] (one row) or [[3, 5], [4, 7]] (grid: rows go back in depth). Items may be { \"value\": n }.", default: [3, 5, 4, 7, 6, 9, 8] }, n("barWidth", "Bar width.", 0.6, 0.01), n("gap", "Gap between bars.", 0.25, 0), n("maxHeight", "Height of the largest value.", 3, 0.01), cs("colors", "Colour ramp (value) or palette (row / column).", ["#93c5fd", "#6366f1", "#c026d3"]), e("colorBy", "What picks the colour.", ["value", "row", "column"], "value"), e("shape", "Bar shape.", ["rounded", "box", "cylinder"], "rounded"), e("animation", "grow = staggered entrance from t = 0; wave = looping ripple.", ["grow", "wave", "none"], "grow"), n("duration", "Grow duration (s).", 1.6, 0.01), b("base", "Base plate.", true), c("baseColor", "Base plate colour.", "#eef2ff")],
-    cost: "data*12+~200",
+    cost: "dataCells*1000+~600",
     material: "Every bar (per-bar colours are kept as instance colours).",
   },
   {

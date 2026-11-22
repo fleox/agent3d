@@ -230,9 +230,11 @@
   },
   "postfx": [
     {
-      "type": "look",
-      "preset": "cinematic",
-      "intensity": 0.5
+      "type": "bloom",
+      "strength": 0.125,
+      "radius": 0.6,
+      "threshold": 2.2,
+      "smoothing": 0.4
     },
     {
       "type": "godrays",
@@ -245,6 +247,19 @@
       "intensity": 0.15,
       "saturation": 1.15,
       "contrast": 1.08
+    },
+    {
+      "type": "vignette",
+      "offset": 1,
+      "darkness": 0.375
+    },
+    {
+      "type": "film",
+      "intensity": 0.03
+    },
+    {
+      "type": "taa",
+      "samples": 8
     }
   ]
 }

@@ -20,7 +20,7 @@ import { TimelineController } from "./timeline/controller";
 import { InteractionRunner, safeUrl } from "./timeline/interactions";
 import { scrollProgressFor } from "./timeline/scroll";
 import { toColor } from "./util";
-import { refineInView } from "./inspectView";
+import { cameraInside, refineInView } from "./inspectView";
 
 const TONE_MAPPING: Record<string, THREE.ToneMapping> = {
   none: THREE.NoToneMapping,
@@ -993,7 +993,7 @@ class PlayerImpl implements Player {
       if (inView === "partial" && !e.particles) inView = refineInView(e.object, frustum) ?? inView;
       const cx0 = Math.max(-1, minX), cx1 = Math.min(1, maxX), cy0 = Math.max(-1, minY), cy1 = Math.min(1, maxY);
       const coverage = inView === "none" || box.containsPoint(camPos) ? (box.containsPoint(camPos) ? 1 : 0) : Math.max(0, cx1 - cx0) * Math.max(0, cy1 - cy0) / 4;
-      if (!insideObject && e.kind !== "particles" && box.containsPoint(camPos)) insideObject = e.id;
+      if (!insideObject && e.kind !== "particles" && box.containsPoint(camPos) && (e.kind !== "generator" || cameraInside(e.object, camPos, (e.def as { generator?: string }).generator === "terrain" && e.built?.heightAt ? { heightAt: e.built.heightAt } : "parts"))) insideObject = e.id;
       out.objects.push({
         id: e.id,
         min: [box.min.x, box.min.y, box.min.z],

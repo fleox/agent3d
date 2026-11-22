@@ -166,3 +166,28 @@ describe("godrays sampling", () => {
     expect(p.compMat.uniforms.tNormal.value).toBeInstanceOf(THREE.Texture);
   });
 });
+
+describe("GBuffer pre-pass", () => {
+  it("never re-renders shadow maps (the main pass does) and restores the shadow flags", () => {
+    const shadowMap = { autoUpdate: true, needsUpdate: true };
+    const seen: boolean[] = [];
+    const renderer = {
+      shadowMap,
+      autoClear: true,
+      getClearColor: (c: THREE.Color) => c.set(0),
+      getClearAlpha: () => 1,
+      setClearColor: () => undefined,
+      setRenderTarget: () => undefined,
+      clear: () => undefined,
+      render: () => void seen.push(shadowMap.autoUpdate || shadowMap.needsUpdate),
+    } as unknown as THREE.WebGLRenderer;
+    const scene = new THREE.Scene();
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.MeshStandardMaterial());
+    ground.userData.ground = true;
+    scene.add(ground);
+    new GBuffer(64, 32).ensure(renderer, scene, new THREE.PerspectiveCamera(), 1);
+    expect(seen).toEqual([false, false]); // objects + ground draws, no shadow update in either
+    expect(shadowMap).toEqual({ autoUpdate: true, needsUpdate: true });
+  });
+});

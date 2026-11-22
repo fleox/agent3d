@@ -233,7 +233,9 @@
         "attenuationDistance": 0.55,
         "specularIntensity": 1,
         "clearcoat": 1,
-        "envMapIntensity": 1.6
+        "envMapIntensity": 1.6,
+        "emissive": "#c0601a",
+        "emissiveIntensity": 0.5
       },
       "scale": 0.82
     },

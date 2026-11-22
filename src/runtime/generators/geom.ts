@@ -145,7 +145,22 @@ export interface Ground {
 
 export function findGround(ctx: BuildContext): Ground | null {
   const all = [...ctx.siblings.values()].filter((s) => s.heightAt && s.object.userData.surface !== "water");
-  all.sort((a, b) => (b.object.userData.surface === "terrain" ? 1 : 0) - (a.object.userData.surface === "terrain" ? 1 : 0));
+  // Several terrains (far ridge + near hills): the one under the scatterer's
+  // position wins (the smallest when they overlap), terrains before other
+  // surfaces; siblings are in declaration order, so ties are stable.
+  const at = ctx.placement?.position ?? [0, 0, 0];
+  const footprint = (s: (typeof all)[number]): number => {
+    const size = s.object.userData.size;
+    if (typeof size !== "number") return Infinity;
+    const o = s.object.position, sc = s.object.scale;
+    const hx = (size / 2) * Math.abs(sc.x || 1), hz = (size / 2) * Math.abs(sc.z || 1);
+    return Math.abs(at[0] - o.x) <= hx && Math.abs(at[2] - o.z) <= hz ? hx * hz : -1;
+  };
+  const rank = (s: (typeof all)[number]) => {
+    const f = footprint(s);
+    return (f < 0 ? 2 : 0) + (s.object.userData.surface === "terrain" ? 0 : 1) + (f > 0 && Number.isFinite(f) ? f / 1e9 : 0.5);
+  };
+  all.sort((a, b) => rank(a) - rank(b));
   for (const s of all) {
     if (!s.heightAt) continue;
     // Scatter points are local to the scatterer (placed at ctx.placement in the

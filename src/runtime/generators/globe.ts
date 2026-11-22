@@ -110,7 +110,7 @@ export const globe: GeneratorImpl = (raw, ctx) => {
     dirs.push(d);
     colors.push(land ? dotColor : oceanDots);
   }
-  const dotGeo = new THREE.CircleGeometry(dotSize * radius * 0.0105, 8);
+  const dotGeo = new THREE.CircleGeometry(dotSize * radius * 0.0105, 6); // hexagons: dots are a few px wide
   const dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const dots = new THREE.InstancedMesh(dotGeo, dotMat, Math.max(1, dirs.length));
   dots.name = "globe-dots";

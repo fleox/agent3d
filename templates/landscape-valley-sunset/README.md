@@ -1,6 +1,6 @@
 # Mountain valley at sunset
 
-A 21:9 golden-hour landscape, fully procedural (0 KB of assets): a low-poly `terrain` (shape `valley`: forested walls, a snowy range closing the far end, borders sinking smoothly with the default `edgeFalloff`) with snow above an absolute `snowHeight`, an animated `water` lake on the valley floor (the terrain's own plane is off with `waterPlane: false`; `waterLevel` still shapes the shore and keeps trees out of the water), 520 swaying pines sharing the terrain's position (they stay below the snow), pink clouds and fireflies near the camera. The light comes from a **physical sky** (`preset: "golden-hour"`, sun 5° up at the right edge of the frame) which also adds the matching warm sun light and sky lighting; **height fog** fills the valley while peaks and sky stay clear. A `cinematic` look, soft `godrays` and a light warm grade finish it. The camera drifts on a 14 s loop and follows the pointer (parallax).
+A 21:9 golden-hour landscape, fully procedural (0 KB of assets): a low-poly `terrain` (shape `valley`: forested walls, a snowy range closing the far end, borders sinking smoothly with the default `edgeFalloff`) with snow above an absolute `snowHeight`, an animated `water` lake on the valley floor (the terrain's own plane is off with `waterPlane: false`; `waterLevel` still shapes the shore and keeps trees out of the water), 520 swaying pines sharing the terrain's position (they stay below the snow), pink clouds and fireflies near the camera. The light comes from a **physical sky** (`preset: "golden-hour"`, sun 5° up at the right edge of the frame) which also adds the matching warm sun light and sky lighting; **height fog** fills the valley while peaks and sky stay clear. The `cinematic` look's effects minus its AO (a wide view from afar has no contact creases for it to shade; the godrays keep the scene pre-pass), soft `godrays` and a light warm grade finish it. The camera drifts on a 14 s loop and follows the pointer (parallax).
 
 ## What to tweak
 
@@ -17,4 +17,4 @@ A 21:9 golden-hour landscape, fully procedural (0 KB of assets): a low-poly `ter
 | Light shafts | `postfx` `godrays.intensity` (0 = off) |
 | Motion | `timeline` camera keys, `camera.parallax.strength` |
 
-Budget 300 KB (nothing downloaded). About 150 k triangles (estimate; more with the shadow pass) (pines, water, shadow pass): lower `objects#pines.params.count` for weak devices; `quality: auto` drops the AO of the cinematic look on low-end GPUs.
+Budget 300 KB (nothing downloaded). About 360 k triangles per frame measured with `check --render` (main pass ~145 k: pines, terrain, water; plus the sun's shadow map and the godrays pre-pass), under the hero aim (400 k): lower `objects#pines.params.count` for weak devices.

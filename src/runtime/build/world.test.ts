@@ -96,3 +96,28 @@ describe("deterministic seek grid", () => {
     expect(a.angleTo(b)).toBeLessThan(1e-4);
   });
 });
+
+describe("build order", () => {
+  it("entries and nested children follow declaration order, not load-completion order", async () => {
+    // Generators resolve after a delay that decreases with declaration order,
+    // so the last declared finishes first (like models / fonts loading in parallel).
+    const s = defaultScene({ id: "order", kind: "banner" });
+    s.environment = { background: "#ffffff" };
+    const ids = ["a", "b", "c", "d", "e"];
+    const gen = (i: number) => ({ id: ids[i], kind: "generator", generator: "rocks", position: [i, 0, 0], tags: ["coin"] });
+    s.objects = [
+      { id: "level", kind: "group", children: ids.map((_, i) => gen(i)) },
+      { id: "last", kind: "generator", generator: "rocks", position: [9, 0, 0], tags: ["coin"] },
+    ] as never;
+    const ctx = ctxFor(s);
+    ctx.generators = async () =>
+      ({
+        rocks: (_p: unknown, b: { placement: { position: number[] } }) =>
+          new Promise((res) => setTimeout(() => res({ object: new THREE.Group() }), (10 - b.placement.position[0]) * 3)),
+      }) as never;
+    const w = await World.create(s, ctx, 1, null);
+    expect([...w.entries.values()].filter((e) => e.kind !== "light").map((e) => e.id)).toEqual(["level", ...ids, "last"]);
+    const level = w.entries.get("level")!.object;
+    expect(level.children.map((c) => c.userData.a3dId)).toEqual(ids);
+  });
+});

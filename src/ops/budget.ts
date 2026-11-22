@@ -68,10 +68,13 @@ export function evalCost(formula: string, vars: Record<string, number>): number 
 function paramVars(entry: CatalogEntry, params: Record<string, unknown>): Record<string, number> {
   const vars: Record<string, number> = {};
   for (const p of entry.params) {
-    const v = params[p.name];
+    const v = params[p.name] !== undefined ? params[p.name] : p.default;
     if (typeof v === "number") vars[p.name] = v;
-    else if (Array.isArray(v)) vars[p.name] = v.length;
-    else if (typeof p.default === "number") vars[p.name] = p.default;
+    else if (Array.isArray(v)) {
+      vars[p.name] = v.length;
+      // `<name>Cells`: leaf items of a nested array (bars3d grid data [[…], […]]).
+      vars[`${p.name}Cells`] = v.reduce((a: number, x) => a + (Array.isArray(x) ? x.length : 1), 0);
+    }
   }
   return vars;
 }
@@ -210,16 +213,25 @@ export function frameTriangles(scene: Pick<SceneDoc, "objects" | "lights" | "env
 }
 
 // "Aim for" per kind (the table in plugin/skills/agent3d-create/references/art-direction.md —
-// keep both in sync): triangles per frame, all passes, that keep a page fast on a mid-range
-// phone. check warns above it with runtime stats (info on the estimate); TRIANGLE_LIMIT is the ceiling.
+// keep both in sync): triangles per frame, ALL passes (main + one re-draw of the casters per
+// shadow-casting light + the ao / dof / godrays / outline pre-pass + contact shadows +
+// transmission / mirror re-renders), that keep a page fast on a mid-range phone.
+// Calibration (0.2.0, measured with `check --render` on the 31 templates): a mid-range phone
+// GPU (Adreno 6xx / Mali-G57 class) sustains roughly 1–1.5 M lit triangles per frame at 60 fps
+// in WebGL; an embed should take a fraction of that, leaving the page (and other scenes) room:
+// a strip banner or a card ~10 %, a square / inline block more, the one hero of a page ~1/3,
+// a fullscreen piece ~half, a game less than a hero (60 fps sustained + scripts / physics CPU).
+// A typical premium hero (one shadow light + the cinematic look) triples its geometry:
+// 130 k of geometry is ~400 k per frame. check warns above it with runtime stats (info on the
+// estimate); TRIANGLE_LIMIT is the ceiling.
 export const TRIANGLE_AIM: Record<string, number> = {
-  banner: 50_000,
-  card: 50_000,
-  square: 80_000,
-  inline: 80_000,
-  hero: 150_000,
-  fullscreen: 300_000,
-  game: 200_000,
+  banner: 150_000,
+  card: 150_000,
+  square: 250_000,
+  inline: 250_000,
+  hero: 400_000,
+  fullscreen: 600_000,
+  game: 300_000,
 };
 
 // Triangle ceilings per target kind (estimate and runtime stats).
