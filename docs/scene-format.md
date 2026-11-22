@@ -111,7 +111,7 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
 - `background`: a colour; `"transparent"`; `{ "gradient": [colours], "angle": deg }` (0 = bottom → top); `{ "radial": [centre, edge] }`; `{ "sky": { "top", "horizon", "bottom", "sun": { "direction", "color", "size" } | false, "stars": count } }`; `{ "hdri": path, "blur": 0..1 }`.
 - `lighting` (image-based lighting for reflections): `studio`, `soft`, `sunset`, `night`, `neutral`, `none`, or `{ "hdri": path, "intensity": n }`. `lightingIntensity` scales it.
 - `fog`: linear `{ color, near, far }` or exponential `{ color, density }`.
-- `ground`: a plane at `y` (`size`, `color`, `roughness`, `grid`, `shadowOnly` to only catch shadows so objects sit on the page).
+- `ground`: a plane at `y` (`size`, `color`, `roughness`, `grid`, `shadowOnly` to only catch shadows so objects sit on the page — those shadows fade out toward the plane's edges and the last ~15 % before the canvas edges, so they never end in a hard cut; a smaller `size` keeps them closer to the object).
 
 ## Lights
 

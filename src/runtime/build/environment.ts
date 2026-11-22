@@ -190,6 +190,31 @@ function fadingGroundMaterial(color: THREE.Color, roughness: number): THREE.Mate
   return mat;
 }
 
+// Shadow catcher (ground.shadowOnly) whose shadows fade out radially toward
+// the plane's edges and toward the canvas edges, so a shadow never ends in
+// a hard cut in transparent embeds (where the page shows around it).
+export const SHADOW_FADE = { radial: [0.25, 0.5], screenEdge: 0.15 } as const;
+function fadingShadowMaterial(color: THREE.Color): THREE.Material {
+  const mat = new THREE.ShadowMaterial({ opacity: 0.28, color });
+  mat.onBeforeCompile = (shader) => {
+    shader.vertexShader =
+      "varying vec2 vShadowUv;\nvarying vec4 vShadowClip;\n" + shader.vertexShader.replace("#include <project_vertex>", "#include <project_vertex>\n\tvShadowUv = uv;\n\tvShadowClip = gl_Position;");
+    shader.fragmentShader =
+      "varying vec2 vShadowUv;\nvarying vec4 vShadowClip;\n" +
+      shader.fragmentShader.replace(
+        "#include <tonemapping_fragment>",
+        `{
+\t\tvec2 ndc = vShadowClip.xy / max(vShadowClip.w, 1e-5);
+\t\tfloat edge = 1.0 - max(abs(ndc.x), abs(ndc.y));
+\t\tgl_FragColor.a *= (1.0 - smoothstep(${SHADOW_FADE.radial[0].toFixed(2)}, ${SHADOW_FADE.radial[1].toFixed(2)}, length(vShadowUv - 0.5))) * smoothstep(0.0, ${SHADOW_FADE.screenEdge.toFixed(2)}, edge);
+\t}
+\t#include <tonemapping_fragment>`,
+      );
+  };
+  mat.customProgramCacheKey = () => "agent3d-shadow-catcher";
+  return mat;
+}
+
 export async function buildEnvironment(env: EnvironmentDef, scene: THREE.Scene, camera: THREE.Camera, transparent: boolean, ctx: RuntimeContext): Promise<BuiltEnvironment> {
   const objects: THREE.Object3D[] = [];
   const disposables: { dispose(): void }[] = [];
@@ -277,7 +302,7 @@ export async function buildEnvironment(env: EnvironmentDef, scene: THREE.Scene, 
     const size = num(g.size, 60);
     const y = num(g.y, 0);
     const mat = g.shadowOnly
-      ? new THREE.ShadowMaterial({ opacity: 0.28, color: toColor(g.color ?? "#000000") })
+      ? fadingShadowMaterial(toColor(g.color ?? "#000000"))
       : fadingGroundMaterial(toColor(g.color ?? "#d9d9d9"), num(g.roughness, 0.9));
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
     plane.rotation.x = -Math.PI / 2;
