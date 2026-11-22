@@ -496,7 +496,7 @@
         "id": "title",
         "type": "text",
         "text": "Lane Dash",
-        "anchor": "center",
+        "anchor": "top",
         "style": "title",
         "visible": "phase == 'attract'"
       },
