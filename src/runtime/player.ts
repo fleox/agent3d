@@ -138,6 +138,21 @@ class PlayerImpl implements Player {
         self.inputState.pointer.justPressed = true;
         self.inputState.clicks.push({ x: px, y: py });
       },
+      down(x, y) {
+        const p = self.inputState.pointer;
+        if (x !== undefined && y !== undefined) (p.x = x), (p.y = y);
+        p.inside = true;
+        p.justPressed = !p.down;
+        p.down = true;
+      },
+      up(x, y) {
+        const p = self.inputState.pointer;
+        if (x !== undefined && y !== undefined) (p.x = x), (p.y = y);
+        p.down = false;
+      },
+      swipe(direction) {
+        self.inputState.swipe = direction;
+      },
     };
 
     // The WebGL context is created lazily in start(): browsers cap live

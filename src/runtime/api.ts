@@ -67,6 +67,10 @@ export interface Player {
     pointer(x: number, y: number): void; // normalised -1..1
     key(code: string, down: boolean): void;
     click(x?: number, y?: number): void;
+    // Press / release the pointer (drags: down, pointer moves, up) and swipe gestures.
+    down?(x?: number, y?: number): void;
+    up?(x?: number, y?: number): void;
+    swipe?(direction: "left" | "right" | "up" | "down"): void;
   };
   // Script-visible state (games): read by tests / render.
   state(): Record<string, unknown>;
