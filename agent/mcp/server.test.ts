@@ -1,6 +1,6 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { createMcpServer, serveStdio, type JsonRpcResponse, type McpTool } from "./server";
+import { createMcpServer, isRefusal, serveStdio, type JsonRpcResponse, type McpTool } from "./server";
 
 // MCP over an in-process stdio pair: handshake, tools/list (annotations,
 // read-only mode), tools/call (structured result + text + image blocks,
@@ -30,6 +30,7 @@ function setup(readOnly = false) {
         err.hint = "List ids with object_list.";
         throw err;
       }
+      if (name === "scene_patch") return { status: "refused", applied: false, counts: { errors: 1, warnings: 0, infos: 0 }, issues: [{ severity: "error", code: "x", path: "objects#a", message: "Bad" }] };
       if (name === "render_preview") return { frames: [{ t: 0, path: "/tmp/x.png" }], sheet: "/tmp/sheet.png" };
       return { objects: 1, input };
     },
@@ -82,6 +83,13 @@ describe("MCP server", () => {
     const failed = (await t.request("tools/call", { name: "object_remove", arguments: { id: "nope" } })).result as { isError: boolean; structuredContent: { error: { code: string; hint: string } } };
     expect(failed.isError).toBe(true);
     expect(failed.structuredContent.error).toMatchObject({ code: "notFound", hint: expect.stringContaining("object_list") });
+
+    // A refusal (nothing written, validation errors) is an error result carrying the issues.
+    const refused = (await t.request("tools/call", { name: "scene_patch", arguments: {} })).result as { isError: boolean; structuredContent: { status: string } };
+    expect(refused.isError).toBe(true);
+    expect(refused.structuredContent.status).toBe("refused");
+    expect(isRefusal({ status: "applied", applied: true })).toBe(false);
+    expect(isRefusal({ ok: false, counts: { errors: 2 } })).toBe(false); // scene_validate / check report, not a refusal
 
     expect((await t.request("tools/call", { name: "nope" })).error).toMatchObject({ code: -32602 });
     expect((await t.request("frobnicate")).error).toMatchObject({ code: -32601 });

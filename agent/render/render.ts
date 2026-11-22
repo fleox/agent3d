@@ -190,6 +190,8 @@ export interface RenderSession {
   // seek(t) + screenshot of the whole page (includes the HUD / DOM overlays).
   screenshot(t: number, format?: "png" | "webp", quality?: number): Promise<Uint8Array>;
   sheet(frames: Uint8Array[], labels: string[], cols?: number): Promise<Uint8Array>;
+  // A PNG scaled down to maxWidth CSS pixels (unchanged when narrower).
+  scale(png: Uint8Array, maxWidth: number): Promise<Uint8Array>;
   // seek(t) without capturing (to apply input events in between).
   seek(t: number): Promise<void>;
   input(ev: InputEvent): Promise<void>;
@@ -355,6 +357,28 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
         if (r.exceptionDetails) throw new CliError("render-failed", "Could not compose the contact sheet.", "Render without --sheet, or with fewer frames.");
         return dataUrlBytes(r.result.value, "the contact sheet");
       },
+      async scale(png, maxWidth) {
+        const r = await page.send<{ result: { value?: unknown }; exceptionDetails?: unknown }>(
+          "Runtime.callFunctionOn",
+          {
+            functionDeclaration: `async function (u, w) {
+              const img = new Image(); img.src = u; await img.decode();
+              if (img.naturalWidth <= w) return null;
+              const h = Math.max(1, Math.round(img.naturalHeight * w / img.naturalWidth));
+              const c = document.createElement("canvas"); c.width = w; c.height = h;
+              const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, w, h);
+              return c.toDataURL("image/png");
+            }`,
+            objectId: await globalObjectId(page),
+            arguments: [{ value: `data:image/png;base64,${b64(png)}` }, { value: Math.round(maxWidth) }],
+            awaitPromise: true,
+            returnByValue: true,
+          },
+          timeoutMs,
+        );
+        if (r.exceptionDetails || !r.result.value) return png;
+        return dataUrlBytes(r.result.value, "the preview");
+      },
       async seek(t) {
         await page.evaluate(`window.__agent3d.player.seek(${JSON.stringify(t)}).then(() => true)`, timeoutMs);
       },
@@ -394,6 +418,8 @@ export interface RenderOptions {
   capture?: "auto" | "canvas" | "page";
   // Simulated input applied while seeking (frames are then rendered in time order).
   input?: InputEvent[];
+  // Also write `<stamp>-preview.png`: the sheet (or first frame) at most this wide (MCP image block).
+  previewWidth?: number;
   timeoutMs?: number;
   log?: (msg: string) => void;
 }
@@ -403,6 +429,8 @@ export interface RenderResult {
   dir: string;
   frames: { t: number; path: string }[];
   sheet?: string;
+  // Down-scaled copy of the sheet / first frame (previewWidth), when it was wider.
+  preview?: string;
   size: { width: number; height: number; deviceScaleFactor: number };
   capture: "canvas" | "page";
   stats: FrameStats | null;
@@ -459,11 +487,21 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
       sheet = join(outDir, `${stamp}-sheet.png`);
       writeFileSync(sheet, bytes);
     }
+    let preview: string | undefined;
+    if (opts.previewWidth && opts.previewWidth > 0) {
+      const src = sheet ? readFileSync(sheet) : shots[0];
+      const small = await session.scale(src, opts.previewWidth);
+      if (small !== src) {
+        preview = join(outDir, `${stamp}-preview.png`);
+        writeFileSync(preview, small);
+      }
+    }
     const projectDir = resolve(opts.projectDir);
     return {
       dir: projectDir,
       frames: frames.map((f) => ({ t: f.t, path: projectPath(projectDir, f.path) })),
       ...(sheet ? { sheet: projectPath(projectDir, sheet) } : {}),
+      ...(preview ? { preview: projectPath(projectDir, preview) } : {}),
       size: viewport,
       capture,
       stats: info.stats,

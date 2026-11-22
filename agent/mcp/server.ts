@@ -75,6 +75,15 @@ function toolAnnotations(tool: McpTool) {
   };
 }
 
+// A result that says nothing was done because the input was rejected
+// (scene_apply / scene_patch / object_* with validation errors: status
+// "refused") is an error for MCP clients, with the issues in the result.
+export function isRefusal(result: unknown): boolean {
+  if (!result || typeof result !== "object") return false;
+  const r = result as { status?: unknown; applied?: unknown; counts?: { errors?: unknown } };
+  return r.status === "refused" || (r.applied === false && typeof r.counts?.errors === "number" && r.counts.errors > 0);
+}
+
 export function createMcpServer(opts: McpServerOptions) {
   const all = (): McpTool[] => (typeof opts.tools === "function" ? opts.tools() : opts.tools);
   const visible = (): McpTool[] => all().filter((t) => !(opts.readOnly && t.mutating));
@@ -98,7 +107,7 @@ export function createMcpServer(opts: McpServerOptions) {
       return ok(id, {
         content: [{ type: "text", text: JSON.stringify(result ?? null, null, 2) }, ...images.map((img) => ({ type: "image", data: img.data, mimeType: img.mimeType }))],
         structuredContent: structured,
-        isError: false,
+        isError: isRefusal(result),
       });
     } catch (err) {
       // Tool failures are results (the model reads them), not protocol errors.

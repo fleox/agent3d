@@ -72,11 +72,11 @@ Exactly the AI tool catalog of `src/ai/tools.ts` (`agent3d tools list` prints th
 | `export` | yes | Embed or single-HTML export into the project; `poster` (still image) and `video` (WebM) into `dist/` when the host can render |
 | `render_preview` | | Headless render (frames + contact sheet) |
 
-Tool annotations carry `readOnlyHint` from `mutating`. Errors come back as tool results with `isError: true` and the engine's code, message, hint and details (validation issues).
+Tool annotations carry `readOnlyHint` from `mutating`. Errors come back as tool results with `isError: true` and the engine's code, message, hint and details (validation issues). Refusals are errors too: a mutating tool that wrote nothing because of validation errors (`status: "refused"`, `applied: false` with `counts.errors > 0`) returns its normal result (plan, issues with hints) with `isError: true`. Reports such as `scene_validate` and `check` are not refusals (`isError: false`, read `ok` / `counts`).
 
 ### `render_preview` returns an image
 
-`render_preview` (`frames: [0, 1.5, 3]` or `count`, `size`, `sheet`, and for games `input`: simulated keys / clicks, see [scripting.md](scripting.md#testing-scripts)) answers with two content blocks: a text block (JSON: `dir` — the project folder —, sheet and frame paths relative to it, game `state`, stats, per-object `inspect`, runtime issues, console errors) **and an `image` block with the contact sheet** (`mimeType: "image/png"`, base64). Multimodal clients see the render directly and can judge framing, colours, text and motion, then fix with `scene_patch`. The same JSON is in `structuredContent`.
+`render_preview` (`frames: [0, 1.5, 3]` or `count`, `size`, `sheet`, and for games `input`: simulated keys / clicks, see [scripting.md](scripting.md#testing-scripts)) answers with two content blocks: a text block (JSON: `dir` — the project folder —, sheet and frame paths relative to it, game `state`, stats, per-object `inspect`, runtime issues, console errors) **and an `image` block with the contact sheet** (`mimeType: "image/png"`, base64), scaled down to `maxWidth` pixels (default 800, `0` = full size) to save context — the full-size sheet and frames stay on disk (`sheet`, `frames`; the scaled copy is `preview`). Multimodal clients see the render directly and can judge framing, colours, text and motion, then fix with `scene_patch`. The same JSON is in `structuredContent`.
 
 ## Resources
 

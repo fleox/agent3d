@@ -193,6 +193,7 @@ export const RENDER_TOOL: AiTool = {
       count: { type: "integer", minimum: 1, maximum: 16, description: "Or N evenly spaced frames over the timeline." },
       size: { type: "string", description: 'Pixel size "WxH" (default 1200 wide at the target aspect).' },
       sheet: { type: "boolean", description: "Compose a contact sheet (default true)." },
+      maxWidth: { type: "integer", minimum: 0, maximum: 4096, description: "Width in pixels of the image returned to the client (MCP image block): the sheet / first frame is scaled down to it to save context (default 800; 0 = full size). Full-size PNGs stay on disk (sheet, frames)." },
       input: {
         type: "array",
         description: 'Games: simulated input applied while seeking (frames render in time order). Events: {"t": 0.5, "key": "ArrowRight", "down": true} (down false = release), {"t": 0.5, "key": "Space", "hold": 0.3}, {"t": 1, "click": [0, 0]}, {"t": 1, "pointer": [0.5, -0.2], "down"?: true|false}, {"t": 1, "pointerDown": [0, 0]}, {"t": 2, "pointerUp": [0.4, 0] | true}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 1, "swipe": "left"|"right"|"up"|"down"}. key = KeyboardEvent.code; coordinates are -1..1 (y up). Unknown fields are rejected.',
@@ -208,12 +209,14 @@ export const RENDER_TOOL: AiTool = {
       count: num(input, "count"),
       size: optStr(input, "size"),
       sheet: typeof input.sheet === "boolean" ? input.sheet : true,
+      previewWidth: num(input, "maxWidth") ?? 800,
       ...(Array.isArray(input.input) ? { input: input.input as Record<string, unknown>[] } : {}),
     });
     lastRender.set(ctx.fs, { stats: r.stats, inspect: r.inspect });
     return {
       ...(r.dir ? { dir: r.dir } : {}),
       sheet: r.sheet,
+      ...(r.preview ? { preview: r.preview } : {}),
       frames: r.frames,
       ...(r.state && Object.keys(r.state).length ? { state: r.state } : {}),
       stats: r.stats,
