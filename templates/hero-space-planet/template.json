@@ -1,0 +1,17 @@
+{
+  "id": "hero-space-planet",
+  "title": "Space planet hero",
+  "description": "Cinematic 21:9 space hero: a ringed planet with glowing atmosphere, an orbiting moon, twinkling starfield, nebula dust and bloom, drifting with the pointer.",
+  "kind": "hero",
+  "tags": [
+    "hero",
+    "space",
+    "planet",
+    "rings",
+    "stars",
+    "bloom",
+    "cinematic",
+    "dark"
+  ],
+  "aspect": "21:9"
+}

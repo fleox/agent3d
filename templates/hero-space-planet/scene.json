@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "id": "hero-space-planet",
+  "title": "Space planet hero",
+  "ariaLabel": "A ringed planet slowly turning in deep space with a small moon",
+  "seed": 42,
+  "target": {
+    "kind": "hero",
+    "aspect": "21:9",
+    "budgetKb": 300,
+    "reducedMotion": "static",
+    "posterTime": 4,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [0, 1.0, 15],
+    "target": [0, 0, 0],
+    "controls": "parallax",
+    "parallax": {"strength": 0.7, "smoothing": 0.95}
+  },
+  "environment": {"background": {"radial": ["#11163a", "#02030a"]}, "lighting": "night", "lightingIntensity": 0.4},
+  "lights": [
+    {"id": "sun", "type": "directional", "position": [-8, 3, 5], "intensity": 3, "color": "#fff1dc"},
+    {"id": "ambient", "type": "ambient", "intensity": 0.08, "color": "#7c8cff"},
+    {
+      "id": "bounce",
+      "type": "point",
+      "position": [8, -2, 2],
+      "color": "#5b6cff",
+      "intensity": 20,
+      "distance": 20
+    }
+  ],
+  "objects": [
+    {
+      "id": "stars",
+      "kind": "generator",
+      "generator": "starfield",
+      "params": {"count": 4000, "radius": 70, "size": 0.22, "twinkle": true}
+    },
+    {
+      "id": "planet",
+      "kind": "generator",
+      "generator": "planet",
+      "params": {
+        "radius": 1.8,
+        "palette": ["#1d4e89", "#4caf8a", "#b08968", "#f1f5f9"],
+        "landAmount": 0.42,
+        "rings": true,
+        "ringColor": "#e9c891",
+        "atmosphere": true,
+        "atmosphereColor": "#7cc6ff",
+        "detail": 5,
+        "spin": 8
+      },
+      "position": [3.4, 0, 0],
+      "rotation": [10, 0, -16]
+    },
+    {
+      "id": "moonPivot",
+      "kind": "group",
+      "position": [3.4, 0, 0],
+      "rotation": [10, 0, -12],
+      "behaviours": [{"type": "rotate", "axis": [0, 1, 0], "speed": 14}],
+      "children": [
+        {
+          "id": "moon",
+          "kind": "mesh",
+          "geometry": {"type": "icosahedron", "radius": 0.3, "detail": 3},
+          "position": [4.2, 0, 0],
+          "material": {"preset": "lowpoly", "color": "#c9c4bd", "roughness": 1}
+        }
+      ]
+    },
+    {
+      "id": "nebula",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 260,
+      "area": [34, 12, 10],
+      "position": [0, 0, -8],
+      "color": ["#8b5cf6", "#38bdf8", "#f472b6"],
+      "size": 0.09,
+      "opacity": 0.45,
+      "blending": "additive"
+    },
+    {
+      "id": "comet",
+      "kind": "mesh",
+      "geometry": {"type": "sphere", "radius": 0.05, "segments": 12, "heightSegments": 8},
+      "material": {"preset": "neon", "color": "#bfe3ff", "emissive": "#bfe3ff", "emissiveIntensity": 6},
+      "behaviours": [
+        {
+          "type": "path",
+          "points": [[-16, 6, -10], [-4, 3, -6], [10, 0, -4], [22, -3, -8]],
+          "duration": 12,
+          "loop": true
+        }
+      ]
+    }
+  ],
+  "timeline": {
+    "duration": 12,
+    "loop": true,
+    "tracks": [
+      {
+        "target": "camera.position",
+        "keys": [[0, [0, 1.0, 15]], [6, [-0.6, 0.7, 14.4]], [12, [0, 1.0, 15]]],
+        "ease": "inOutSine"
+      }
+    ]
+  },
+  "postfx": [
+    {"type": "bloom", "strength": 0.8, "radius": 0.6, "threshold": 0.85},
+    {"type": "vignette", "darkness": 1.1}
+  ]
+}
