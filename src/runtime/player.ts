@@ -317,7 +317,7 @@ class PlayerImpl implements Player {
       const loop = (now: number) => {
         this.raf = requestAnimationFrame(loop);
         // The first rAF timestamp can be earlier than performance.now() at start:
-        // never step backwards (time below 0 would keep \`appear\` hidden).
+        // never step backwards (time below 0 would keep `appear` hidden).
         const dt = Math.min(Math.max((now - this.lastNow) / 1000, 0), 0.1);
         this.lastNow = now;
         if (dt > 0) this.fps = this.fps ? this.fps * 0.9 + (1 / dt) * 0.1 : 1 / dt;
