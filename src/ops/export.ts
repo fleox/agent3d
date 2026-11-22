@@ -200,15 +200,17 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     for (const [p, b] of assetFiles) out[`${name}/${p}`] = b;
     for (const [p, s] of scriptFiles) out[`${name}/${p}`] = s;
     let posterAttr = "";
+    let posterPath: string | undefined;
     if (opts.poster) {
       const { ext } = posterInfo(opts.poster);
       out[`${name}/poster.${ext}`] = opts.poster;
       posterAttr = ` poster="./${name}/poster.${ext}"`;
+      posterPath = `./${name}/poster.${ext}`;
     }
     snippet = `<script type="module" src="./agent3d-runtime/${runtimeEntry}"></script>\n<agent3d-scene src="./${name}/scene.json"${posterAttr} aria-label="${escapeHtml(label)}"></agent3d-scene>`;
     out["snippet.html"] = `${snippet}\n`;
     if (credits.length) out[`${name}/CREDITS.txt`] = creditsText(scene.title, credits);
-    out["index.html"] = demoPage({ title: scene.title, description: scene.description, snippet, credits, sizeStyle });
+    out["index.html"] = demoPage({ title: scene.title, description: scene.description, snippet, credits, sizeStyle, poster: posterPath });
     entry = "index.html";
   } else {
     const runtimeJs = new TextDecoder().decode(opts.runtime.files[runtimeEntry]);
@@ -270,7 +272,22 @@ function creditsHtml(credits: ExportCredit[]): string {
   return `<section class="credits"><h2>Credits &amp; licences</h2><ul>${credits.map((c) => `<li>${escapeHtml(creditLine(c))}</li>`).join("")}</ul></section>`;
 }
 
-function demoPage(p: { title: string; description?: string; snippet: string; credits: ExportCredit[]; sizeStyle: string }): string {
+// Opened from file://, browsers block module scripts: the demo page then
+// shows the poster and says to use a web server (classic inline script, so
+// it runs from file:// too).
+export const FILE_PROTOCOL_NOTE = "Open this page through a web server (file:// blocks module scripts) — e.g. npx serve";
+
+function fileProtocolScript(poster?: string): string {
+  return `<script>
+if (location.protocol === "file:") {
+  var note = document.getElementById("a3d-file-note");
+  if (note) note.hidden = false;
+  ${poster ? `document.querySelectorAll("agent3d-scene").forEach(function (el) { var img = document.createElement("img"); img.src = ${JSON.stringify(poster)}; img.alt = el.getAttribute("aria-label") || ""; img.style.cssText = "display:block;width:100%;height:100%;object-fit:cover"; el.appendChild(img); });` : ""}
+}
+</script>`;
+}
+
+function demoPage(p: { title: string; description?: string; snippet: string; credits: ExportCredit[]; sizeStyle: string; poster?: string }): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -291,15 +308,19 @@ function demoPage(p: { title: string; description?: string; snippet: string; cre
   pre { background: var(--code); color: #e6e6e6; padding: 16px; border-radius: 10px; overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
   .credits ul { padding-left: 20px; color: var(--muted); font-size: .92rem; }
   footer { margin-top: 40px; color: var(--muted); font-size: .85rem; }
+  .file-note { margin: 0 0 16px; padding: 12px 16px; border-radius: 10px; background: #fff3cd; color: #5c4400; font-weight: 600; }
+  .file-note code { font-weight: 700; }
 </style>
 </head>
 <body>
 <main>
 <h1>${escapeHtml(p.title)}</h1>
 <p class="lead">${escapeHtml(p.description ?? "A 3D element made with Agent3D. Paste the snippet below into any page of this site.")}</p>
+<p class="file-note" id="a3d-file-note" role="status" hidden>Open this page through a web server (file:// blocks module scripts) — e.g. <code>npx serve</code> in this folder, then open the address it prints.${p.poster ? " Showing the poster image meanwhile." : ""}</p>
 <div class="stage">
 ${p.snippet}
 </div>
+${fileProtocolScript(p.poster)}
 <h2>Embed snippet</h2>
 <pre><code>${escapeHtml(p.snippet)}</code></pre>
 <p>Upload this whole folder to your static site; the paths in the snippet are relative to the page that includes it. Several scenes can share the same <code>agent3d-runtime/</code> folder.</p>

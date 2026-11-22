@@ -61,7 +61,7 @@ npx -y @fleox/agent3d@0.1.0 export --format video --duration 8 --fps 30 --size 1
 
 Step-by-step per platform (plain HTML, WordPress, AgentCMS, React / Next.js, Astro, Vue / Nuxt, Svelte, static hosts and CDNs): [references/integrations.md](references/integrations.md). In short:
 
-- **Plain HTML / static hosts** (Netlify, GitHub Pages, Cloudflare Pages, S3): copy the export folder next to the page, paste the snippet. Open `index.html` of the export through a local server (`npx -y @fleox/agent3d@0.1.0 serve --project my-banner` previews the project; module scripts don't run from `file://`).
+- **Plain HTML / static hosts** (Netlify, GitHub Pages, Cloudflare Pages, S3): copy the export folder next to the page, paste the snippet. Open `index.html` of the export through a local server (`npx -y @fleox/agent3d@0.1.0 serve --project my-banner` previews the project; module scripts don't run from `file://`: opened that way, the demo page only shows the poster and a note asking for a web server).
 - **WordPress**: upload the export folder to the server (SFTP / the host's file manager, e.g. `wp-content/uploads/agent3d/`), then a **Custom HTML** block with the snippet using root-absolute URLs. The media library refuses `.js` / `.json` files.
 - **AgentCMS**: install the **Agent3D scene** plugin (`integrations/agentcms/agent3d-scene.zip` in the Agent3D repository): it uploads an export folder from its settings page and adds an "Agent3D scene" editor block.
 - **React / Next.js / Astro / Vue**: load the runtime on the client only, render `<agent3d-scene>` as a plain custom element (details and TypeScript typing in the reference).

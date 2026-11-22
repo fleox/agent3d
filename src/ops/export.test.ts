@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../core/fs";
 import type { LibraryProvider } from "../core/library";
 import { addAsset } from "./assets";
-import { buildExport } from "./export";
+import { FILE_PROTOCOL_NOTE, buildExport } from "./export";
 import { createProject } from "./project";
 import { patchScene } from "./scene";
 
@@ -69,6 +69,10 @@ describe("buildExport", () => {
     expect(index).toContain(r.snippet);
     expect(index).toContain("&lt;agent3d-scene");
     expect(index).toContain("Someone");
+    // file:// fallback: a visible note + the poster image (classic script, runs without a server).
+    expect(index).toContain(FILE_PROTOCOL_NOTE.split(" — ")[0]);
+    expect(index).toContain('location.protocol === "file:"');
+    expect(index).toContain('img.src = "./spring-sale/poster.png"');
     expect(r.credits.filter((c) => c.path.includes("pine-tree"))).toHaveLength(1);
     expect(r.entry).toBe("index.html");
     expect(r.sizes.assetsKb).toBeGreaterThanOrEqual(0);

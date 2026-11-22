@@ -35,6 +35,7 @@ Snippet:
 
 - Paths are relative to the page; with pages at several depths, use root-absolute URLs (`/agent3d/<name>/scene.json`). Paths inside the scene resolve against the `scene.json` URL, and `library:` assets against `<scene dir>/assets/library/` (override with the `library-base` attribute).
 - Several scenes share one `agent3d-runtime/` folder. Re-upload it after updating Agent3D.
+- Browsers block module scripts on `file://`: opened by double-click, `index.html` shows the poster image and a note to serve the folder (`npx serve`, any static server). The `single-html` file works from `file://`.
 - The result's `sizes` separate the runtime from the scene's own weight (`sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`); the target's `budgetKb` applies to the latter.
 
 ## `single-html`
