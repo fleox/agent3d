@@ -80,6 +80,8 @@ Light AABB / sphere physics, fixed step. Objects take part when they have a `bod
 
 Declared in `scene.ui.elements` (`type` text, button or bar; `anchor` top-left … bottom-right; `style` plain, pill, title, subtitle). Text placeholders `{key}` read `api.state.key`; `visible` takes a boolean, a state key or an expression (`"phase == 'over'"`, `"lives > 0 && !paused"`); a bar's `value` names a state key holding 0..1; a button's `action` is the event name sent to `onEvent`. `scene.ui.color` / `accent` / `font` (system font stacks only) theme it.
 
+Layout and phones: the HUD is a 3 × 3 grid (top / middle / bottom rows × left / centre / right columns), so anchors in the same row never overlap: the centre column takes at most 56 % of the width (the whole row when that row has no side anchor) and long texts wrap. The mute button sits under the bottom-right elements. Font sizes, paddings, bars and buttons follow the embed size (CSS container units, `min(width, height)`-aware) between a readable minimum (11–12 px, title 20 px) and their desktop size (title 44 px). Limits: a narrow embed (≈ 360 px) leaves ~80 px per side column, so keep side texts short (`Score 3`, `♥♥♥`) and put long sentences in a centre anchor; several elements in one anchor stack vertically and can still reach the next row on very short embeds. Render at phone size to check (`render --size 360x640`).
+
 | Member | Description |
 |---|---|
 | `api.state` | Shared state object (HUD, tests). Write plain values |

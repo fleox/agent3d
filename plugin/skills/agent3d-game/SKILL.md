@@ -83,7 +83,7 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
 ## Rules
 
 - No external code, no network, no DOM: only `api`. Tell the user when a request needs something the sandbox forbids (online leaderboards, analytics) and offer a local alternative (best score in storage).
-- Games must be playable on phones: touch swipes / taps for every control, big HUD buttons, no hover-only interactions.
+- Games must be playable on phones: touch swipes / taps for every control, big HUD buttons, no hover-only interactions. The HUD scales with the embed and anchors in one row never overlap (3 × 3 grid; side columns get ~80 px on a 360 px phone): keep side texts short, put sentences in `top` / `center` / `bottom`, and check with `render --size 360x640`.
 - Audio starts only after a user gesture (browser rule); the HUD shows a mute toggle. Keep sounds short and not too loud (`volume` 0.4–0.6).
 - Reduced motion: games default to `target.reducedMotion: "ignore"` (the player drives the motion); other kinds default to `static`. Don't set `static` on a game: it would freeze it.
 - Keep the first frame meaningful (attract mode) and `target.posterTime` on a frame with action: it is the poster and the reduced-motion still.

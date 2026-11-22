@@ -44,4 +44,35 @@ describe("HUD", () => {
     hud.dispose();
     expect(container.querySelector(".a3d-hud")).toBeNull();
   });
+
+  it("lays anchors out on a 3 × 3 grid (no overlaps) and stacks the mute button in the bottom-right zone", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const hud = createHud(
+      container,
+      {
+        elements: [
+          { id: "a", type: "text", text: "Left", anchor: "bottom-left" },
+          { id: "b", type: "button", text: "Play", action: "play", anchor: "bottom" },
+          { id: "c", type: "text", text: "Best 3", anchor: "bottom-right" },
+          { id: "d", type: "text", text: "Game over", anchor: "center", style: "title" },
+        ],
+      },
+      () => undefined,
+    );
+    const zone = (anchor: string) => container.querySelector(`.a3d-zone[data-anchor="${anchor}"]`) as HTMLElement;
+    expect([zone("bottom-left").style.gridRow, zone("bottom-left").style.gridColumn]).toEqual(["3", "1"]);
+    expect([zone("bottom").style.gridRow, zone("bottom").style.gridColumn]).toEqual(["3", "2"]);
+    expect([zone("bottom-right").style.gridRow, zone("bottom-right").style.gridColumn]).toEqual(["3", "3"]);
+    // Alone in its row, the centre anchor spans it.
+    expect(zone("center").style.gridColumn).toMatch(/^1 ?\/ ?-1$/);
+    const css = container.querySelector(".a3d-hud style")!.textContent!;
+    expect(css).toContain("container-type:size");
+    expect(css).toMatch(/\.a3d-title\{font-size:44px;font-size:clamp\(20px,min\(7cqw/);
+    hud.setMuteButton(false, () => undefined);
+    const mute = container.querySelector(".a3d-mute")!;
+    expect(mute.parentElement).toBe(zone("bottom-right"));
+    expect(mute.previousElementSibling?.getAttribute("data-id")).toBe("c");
+    hud.dispose();
+  });
 });
