@@ -16,7 +16,15 @@ The package is published to npm as [`@fleox/agent3d`](https://www.npmjs.com/pack
    npm run check:skills && npm run check:hermes
    ```
    Commit `plugin`, `hermes`, `.claude-plugin`, `docs`, `README.md`, `changelog.json` with the version bump.
-5. `npm publish` (`prepublishOnly` runs typecheck, tests, build and `check:skills`), then push the tag.
+5. Push the commit and the tag: `git push && git push --tags`. The **Release** workflow (`.github/workflows/release.yml`) runs every check, smoke-tests the packed tarball, publishes to npm with provenance through **npm trusted publishing** (OIDC — no npm token is stored in GitHub) and creates the GitHub Release from the `changelog.json` entry. It is idempotent: a version already on npm is skipped.
+
+Every push to `main` and every pull request also runs the **CI** workflow (`.github/workflows/ci.yml`): typecheck, build, tests (render e2e with the runner's Chrome), skills, Hermes, CLI docs, library index, CLI smoke test, `npm pack --dry-run`.
+
+### One-time setup (already done for 0.2.0)
+
+- The first version (0.2.0) was published by hand: npm only allows trusted publishing on an existing package.
+- On npmjs.com → package `@fleox/agent3d` → **Settings → Trusted Publisher**: GitHub Actions, organization/user `fleox`, repository `agent3d`, workflow file `release.yml`, no environment.
+- Manual fallback: `npm publish` from a clean `main` (`prepublishOnly` runs typecheck, tests, build and `check:skills`).
 
 The package ships `dist/agent`, `dist/runtime`, `dist/studio`, `library`, `templates`, `plugin`, `changelog.json`, `README.md`, `LICENSE`.
 
