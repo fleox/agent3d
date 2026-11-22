@@ -175,7 +175,7 @@ export class CdpSession implements CdpTarget {
 
   // Runtime.evaluate with awaitPromise + returnByValue; page exceptions
   // become errors.
-  async evaluate<T = unknown>(expression: string, timeoutMs = 60_000): Promise<T> {
+  async evaluate<T = unknown>(expression: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
     const r = await this.send<{ result: { value?: unknown }; exceptionDetails?: { text?: string; exception?: { description?: string } } }>(
       "Runtime.evaluate",
       { expression, awaitPromise: true, returnByValue: true },

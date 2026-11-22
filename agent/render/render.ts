@@ -306,7 +306,7 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
     throw new CliError("runtime-missing", `The runtime build is missing (${join(runtimeDir(), "agent3d-runtime.js")}).`, "Use the npm package (it ships dist/runtime), or run `npm run build:runtime` in a clone. AGENT3D_DIST can point at another dist/ folder.");
   const browserInfo = requireBrowser();
   const scene = opts.scene ?? readScene(opts.projectDir);
-  const timeoutMs = opts.timeoutMs ?? 60_000;
+  const timeoutMs = opts.timeoutMs ?? (Number(process.env.AGENT3D_CDP_TIMEOUT_MS) || 60_000);
   const log = opts.log ?? (() => undefined);
   const t0 = Date.now();
   const html = previewHtml({ pixelRatio: opts.viewport.deviceScaleFactor, transparent: !!scene.target?.transparent, reducedMotion: !!opts.reducedMotion });
