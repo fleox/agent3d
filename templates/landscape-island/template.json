@@ -1,0 +1,18 @@
+{
+  "id": "landscape-island",
+  "title": "Low-poly island",
+  "description": "A procedural low-poly island in a turquoise sea: beaches, hills, forests, rocks, flowers, drifting clouds and a warm sky, slowly orbiting.",
+  "kind": "hero",
+  "tags": [
+    "landscape",
+    "island",
+    "nature",
+    "lowpoly",
+    "terrain",
+    "water",
+    "trees",
+    "procedural",
+    "orbit"
+  ],
+  "aspect": "16:9"
+}

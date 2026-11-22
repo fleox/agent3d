@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "id": "landscape-island",
+  "title": "Low-poly island",
+  "ariaLabel": "A small green low-poly island with trees and beaches in a turquoise sea",
+  "seed": 21,
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "budgetKb": 300,
+    "reducedMotion": "static",
+    "posterTime": 0,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 38,
+    "position": [26, 16, 28],
+    "target": [0, 1, 0],
+    "controls": "orbit",
+    "autoRotate": 4,
+    "orbitZoom": true,
+    "orbitLimits": {"minDistance": 18, "maxDistance": 55, "maxPolar": 80}
+  },
+  "environment": {
+    "background": {
+      "sky": {
+        "top": "#4a8fe0",
+        "horizon": "#dcecf5",
+        "bottom": "#7cc4e6",
+        "sun": {"direction": [0.6, 0.3, 0.4], "color": "#fff1d6", "size": 1}
+      }
+    },
+    "lighting": "sunset",
+    "lightingIntensity": 0.6,
+    "fog": {"color": "#cfe3ef", "near": 50, "far": 120}
+  },
+  "lights": [
+    {
+      "id": "sky",
+      "type": "hemisphere",
+      "skyColor": "#d6ecff",
+      "groundColor": "#6b7b4a",
+      "intensity": 0.9
+    },
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [20, 22, 14],
+      "color": "#ffe6c4",
+      "intensity": 2.4,
+      "castShadow": true
+    }
+  ],
+  "objects": [
+    {
+      "id": "island",
+      "kind": "generator",
+      "generator": "terrain",
+      "params": {
+        "size": 44,
+        "resolution": 90,
+        "height": 7,
+        "scale": 1.1,
+        "shape": "island",
+        "palette": ["#f1d9a6", "#8cc06a", "#4f9a4a", "#8a7a6a", "#ffffff"],
+        "lowpoly": true,
+        "waterLevel": 0.7,
+        "waterColor": "#1aa0b8"
+      },
+      "seed": 9,
+      "receiveShadow": true
+    },
+    {
+      "id": "sea",
+      "kind": "generator",
+      "generator": "water",
+      "params": {
+        "size": 160,
+        "color": "#0e7fb0",
+        "shallowColor": "#4fd6d0",
+        "waveHeight": 0.12,
+        "waveSpeed": 0.8,
+        "opacity": 1
+      },
+      "position": [0, 0.74, 0]
+    },
+    {
+      "id": "forest",
+      "kind": "generator",
+      "generator": "trees",
+      "params": {
+        "count": 80,
+        "area": [30, 0, 30],
+        "style": "mixed",
+        "minScale": 0.6,
+        "maxScale": 1.2,
+        "leafColors": ["#2f7d3a", "#3f9a45", "#6cb85a"],
+        "onTerrain": true,
+        "sway": true
+      },
+      "seed": 4,
+      "castShadow": true
+    },
+    {
+      "id": "palms",
+      "kind": "generator",
+      "generator": "trees",
+      "params": {
+        "count": 14,
+        "area": [36, 0, 36],
+        "style": "palm",
+        "minScale": 0.7,
+        "maxScale": 1.0,
+        "onTerrain": true
+      },
+      "seed": 12,
+      "castShadow": true
+    },
+    {
+      "id": "rocks",
+      "kind": "generator",
+      "generator": "rocks",
+      "params": {
+        "count": 25,
+        "area": [36, 0, 36],
+        "minSize": 0.3,
+        "maxSize": 1.2,
+        "colors": ["#9a948c", "#80796f", "#b5aea4"],
+        "onTerrain": true
+      },
+      "seed": 5,
+      "castShadow": true
+    },
+    {
+      "id": "flowers",
+      "kind": "generator",
+      "generator": "flowers",
+      "params": {"count": 260, "area": [30, 0, 30], "onTerrain": true},
+      "seed": 6
+    },
+    {
+      "id": "clouds",
+      "kind": "generator",
+      "generator": "clouds",
+      "params": {"count": 7, "area": [50, 3, 50], "height": 10, "speed": 0.25},
+      "seed": 3
+    }
+  ],
+  "timeline": {
+    "duration": 16,
+    "loop": true,
+    "tracks": [{"target": "sun.intensity", "keys": [[0, 2.4], [8, 2.6], [16, 2.4]], "ease": "inOutSine"}]
+  }
+}
