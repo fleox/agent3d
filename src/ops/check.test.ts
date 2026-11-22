@@ -1,7 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../core/fs";
 import type { InspectResult } from "../runtime/api";
-import { evalCost, estimateTriangles, geometryTriangles } from "./budget";
+import { evalCost, estimateTriangles, geometryTriangles, textTriangles } from "./budget";
+import { gltfInfo, modelInfo } from "./gltf";
+
+function makeGlb(json: unknown): Uint8Array {
+  let text = JSON.stringify(json);
+  while (text.length % 4) text += " ";
+  const body = new TextEncoder().encode(text);
+  const out = new Uint8Array(20 + body.length);
+  const v = new DataView(out.buffer);
+  v.setUint32(0, 0x46546c67, true);
+  v.setUint32(4, 2, true);
+  v.setUint32(8, out.length, true);
+  v.setUint32(12, body.length, true);
+  v.setUint32(16, 0x4e4f534a, true);
+  out.set(body, 20);
+  return out;
+}
 import { checkProject, framingIssues } from "./check";
 import { addAsset } from "./assets";
 import { createProject } from "./project";
@@ -78,11 +94,29 @@ describe("budget", () => {
         { id: "h", kind: "mesh", geometry: { type: "sphere" }, visible: false },
       ],
     });
-    expect(est.byObject.find((o) => o.id === "t")!.triangles).toBe(5 * 300);
+    expect(est.byObject.find((o) => o.id === "t")!.triangles).toBe(5 * 80 * 16);
     expect(est.byObject.find((o) => o.id === "i")!.triangles).toBe(1200);
     expect(est.byObject.find((o) => o.id === "g")!.triangles).toBe(20000);
     expect(est.byObject.find((o) => o.id === "h")).toBeUndefined();
-    expect(est.total).toBe(1500 + 1200 + 20000 + 100);
+    expect(est.total).toBe(6400 + 1200 + 20000 + 100);
+  });
+  it("estimates text per glyph like the runtime (font, flat, extruded, bevel)", () => {
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0 })).toBe(800); // measured 783
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0.3, bevel: 0 })).toBe(3200); // measured 3150
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "sans-bold", depth: 0.3, bevel: 0.03 })).toBe(12800); // measured 12666
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "display", depth: 0.3 })).toBe(26400); // measured 26838
+    expect(textTriangles({ text: "ABCDEFGHIJ", font: "mono", depth: 0 })).toBe(400); // measured 375
+  });
+  it("counts model triangles from the library index and GLB files", () => {
+    const est = estimateTriangles({ objects: [{ id: "m", kind: "model", src: "library:models/x.glb" }, { id: "n", kind: "model", src: "assets/unknown.glb" }] }, { models: (src) => (src === "library:models/x.glb" ? 1234 : undefined) });
+    expect(est.byObject).toEqual([{ id: "m", triangles: 1234 }]);
+  });
+  it("parses GLB / glTF JSON triangle counts and clips", () => {
+    const json = { scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0, children: [1] }, { mesh: 1 }], meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }, { primitives: [{ attributes: { POSITION: 0 } }, { attributes: { POSITION: 0 }, mode: 5 }] }], accessors: [{ count: 30 }, { count: 300 }], animations: [{ name: "Idle" }, {}] };
+    expect(gltfInfo(json)).toEqual({ triangles: 100 + 10 + 28, animations: ["Idle", "clip1"] });
+    expect(modelInfo("a.glb", makeGlb(json))!.triangles).toBe(138);
+    expect(modelInfo("a.gltf", new TextEncoder().encode(JSON.stringify(json)))!.triangles).toBe(138);
+    expect(modelInfo("a.glb", new Uint8Array(4))).toBeNull();
   });
 });
 
@@ -94,6 +128,21 @@ describe("checkProject", () => {
     expect(r.counts.warnings).toBe(0);
     expect(r.budget.budgetKb).toBe(600);
     expect(r.budget.estimatedTriangles).toBeGreaterThan(0);
+  });
+
+  it("counts library and project model triangles; prefers runtime stats after a render", async () => {
+    const fs = await project();
+    const glb = makeGlb({ scenes: [{ nodes: [0] }], nodes: [{ mesh: 0 }], meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }], accessors: [{ count: 10 }, { count: 3000 }] });
+    await addAsset(fs, { path: "assets/models/box.glb", bytes: glb, source: "local", license: "CC0-1.0" });
+    const scene = await getScene(fs);
+    scene.objects.push({ id: "box", kind: "model", src: "assets/models/box.glb" }, { id: "pine", kind: "model", src: "library:models/nature/pine-tree.glb" });
+    await fs.writeText("scene.json", JSON.stringify(scene));
+    const library = { assets: [{ id: "models/nature/pine-tree.glb", path: "models/nature/pine-tree.glb", kind: "model" as const, license: "CC0-1.0", tags: [], bytes: 5000, description: "Pine", triangles: 4321 }] };
+    const r = await checkProject(fs, { library });
+    expect(r.budget.heaviestObjects).toEqual(expect.arrayContaining([{ id: "pine", triangles: 4321 }, { id: "box", triangles: 1000 }]));
+    expect(r.budget).toMatchObject({ trianglesSource: "estimate", triangles: r.budget.estimatedTriangles });
+    const measured = await checkProject(fs, { library, runtimeStats: { triangles: 99999, drawCalls: 10, geometries: 5, textures: 1 } });
+    expect(measured.budget).toMatchObject({ trianglesSource: "runtime", triangles: 99999, runtimeTriangles: 99999, estimatedTriangles: r.budget.estimatedTriangles });
   });
 
   it("game starter script passes the lint", async () => {

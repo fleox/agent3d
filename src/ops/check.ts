@@ -11,6 +11,7 @@ import type { AssetEntry, AssetManifest, Issue, SceneDoc, TargetKind } from "../
 import { DEFAULT_BUDGET_KB, validateScene } from "../core/validate";
 import type { FrameStats, InspectResult } from "../runtime/api";
 import { DRAW_CALL_LIMIT, estimateTriangles, TRIANGLE_LIMIT } from "./budget";
+import { modelInfo } from "./gltf";
 import { KB, readJsonOr } from "./context";
 import { ASSET_MANIFEST_FILE, readSceneFile, SCENE_FILE } from "./project";
 import { collectAssetRefs, gltfDependencies } from "./refs";
@@ -38,7 +39,14 @@ export interface CheckReport {
   issues: Issue[];
   counts: { errors: number; warnings: number; infos: number };
   budget: {
+    // Geometry triangles drawn once (catalog cost formulas, measured glyph costs,
+    // model triangle counts from the library index / the GLB). The runtime
+    // counts every pass (shadow maps, post effects): with a render, `triangles`
+    // is the measured number and `trianglesSource` "runtime".
     estimatedTriangles: number;
+    runtimeTriangles?: number;
+    triangles: number;
+    trianglesSource: "estimate" | "runtime";
     heaviestObjects: { id: string; triangles: number }[];
     assetsKb: number;
     scriptsKb: number;
@@ -141,7 +149,18 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
   }
 
   // ── Budget ──
-  const tris = estimateTriangles(scene);
+  const modelTris = new Map<string, number>();
+  for (const ref of collectAssetRefs(scene)) {
+    if (ref.kind !== "model" || modelTris.has(ref.path)) continue;
+    if (isLibraryRef(ref.path)) {
+      const t = opts.library ? findLibraryAsset(opts.library, libraryId(ref.path))?.triangles : undefined;
+      if (typeof t === "number") modelTris.set(ref.path, t);
+    } else if (/\.(glb|gltf)$/i.test(ref.path) && (await fs.exists(ref.path))) {
+      const info = modelInfo(ref.path, await fs.readBytes(ref.path));
+      if (info) modelTris.set(ref.path, info.triangles);
+    }
+  }
+  const tris = estimateTriangles(scene, { models: (src) => modelTris.get(src) });
   const sceneBytes = (await fs.exists(SCENE_FILE)) ? await fs.size(SCENE_FILE) : 0;
   const budgetKb = scene.target?.budgetKb ?? DEFAULT_BUDGET_KB[kind] ?? 600;
   const totalKb = KB(assetBytes + scriptBytes + sceneBytes);
@@ -155,7 +174,8 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
     });
   }
   const triLimit = TRIANGLE_LIMIT[kind] ?? 500_000;
-  if (tris.total > triLimit) {
+  // A render measured the real number (all passes): it supersedes the estimate.
+  if (tris.total > triLimit && !opts.runtimeStats) {
     issues.push({
       severity: "warning",
       code: "triangles",
@@ -172,7 +192,14 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
   if (opts.runtimeStats) {
     const st = opts.runtimeStats;
     if (st.drawCalls > DRAW_CALL_LIMIT) issues.push({ severity: "warning", code: "draw-calls", path: "objects", message: `${st.drawCalls} draw calls per frame (limit ${DRAW_CALL_LIMIT}).`, hint: 'Merge repeated meshes into an "instances" object, group static decoration into fewer meshes, reduce particles systems and post effects.' });
-    if (st.triangles > triLimit) issues.push({ severity: "warning", code: "triangles", path: "objects", message: `The runtime renders ${st.triangles.toLocaleString("en-US")} triangles per frame (limit ${triLimit.toLocaleString("en-US")} for a ${kind}).`, hint: "Lower geometry segments / generator resolution or counts, and use lighter models (decimate them)." });
+    if (st.triangles > triLimit)
+      issues.push({
+        severity: "warning",
+        code: "triangles",
+        path: tris.byObject[0] ? `objects#${tris.byObject[0].id}` : "objects",
+        message: `The runtime renders ${st.triangles.toLocaleString("en-US")} triangles per frame, all passes included (limit ${triLimit.toLocaleString("en-US")} for a ${kind}; geometry estimate ~${tris.total.toLocaleString("en-US")}).`,
+        hint: `Heaviest: ${tris.byObject.slice(0, 3).map((o) => `${o.id} (~${o.triangles.toLocaleString("en-US")})`).join(", ") || "n/a"}. Lower geometry segments / generator resolution or counts, use lighter models (decimate them); shadow-casting lights re-draw every caster (castShadow only where it shows).`,
+      });
     if (st.textures > 24) issues.push({ severity: "info", code: "textures", path: "objects", message: `${st.textures} textures in GPU memory.`, hint: "Share textures between materials and prefer 1k maps for web embeds." });
     if (st.fps !== undefined && st.fps < 30) issues.push({ severity: "warning", code: "fps", path: "target", message: `Measured ${Math.round(st.fps)} fps in the headless render.`, hint: "Headless rendering is slower than a real GPU, but simplify if it drops below ~20: fewer post effects, lower maxDpr, fewer shadows." });
   }
@@ -196,6 +223,9 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
     counts,
     budget: {
       estimatedTriangles: tris.total,
+      ...(opts.runtimeStats ? { runtimeTriangles: opts.runtimeStats.triangles } : {}),
+      triangles: opts.runtimeStats ? opts.runtimeStats.triangles : tris.total,
+      trianglesSource: opts.runtimeStats ? "runtime" : "estimate",
       heaviestObjects: tris.byObject.slice(0, 5),
       assetsKb: KB(assetBytes),
       scriptsKb: KB(scriptBytes),

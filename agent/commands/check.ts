@@ -25,7 +25,7 @@ export const checkCommand: Command = {
       [
         report.ok ? "Check passed." : "Check failed.",
         ...report.issues.map((i) => `  ${i.severity === "error" ? "✗" : i.severity === "warning" ? "!" : "·"} ${i.code} ${i.path}: ${i.message}${i.hint ? ` (${i.hint})` : ""}`),
-        `Budget: ~${report.budget.estimatedTriangles} triangles, assets ${report.budget.assetsKb} KB, scripts ${report.budget.scriptsKb} KB / ${report.budget.budgetKb} KB (runtime ${report.budget.runtimeKb} KB)`,
+        `Budget: ~${report.budget.triangles} triangles (${report.budget.trianglesSource === "runtime" ? `measured, all passes; geometry estimate ~${report.budget.estimatedTriangles}` : "estimate"}), assets ${report.budget.assetsKb} KB, scripts ${report.budget.scriptsKb} KB / ${report.budget.budgetKb} KB (runtime ${report.budget.runtimeKb} KB)`,
         ...(report.licences.length ? ["Attribution needed:", ...report.licences.map((l) => `  ${l.path}: ${l.license} — ${l.attribution}`)] : []),
       ].join("\n"),
     );

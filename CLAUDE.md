@@ -98,8 +98,8 @@ normalizeScene(scene): SceneDoc              // structural defaults only (versio
 defaultScene({ id?, title?, kind?, aspect? }): SceneDoc   // minimal valid scene;  DEFAULT_ASPECT, DEFAULT_BUDGET_KB per kind
 // check.ts
 checkProject(fs, opts?: { runtimeStats?: FrameStats; inspect?: InspectResult; library?: LibraryIndex; runtimeKb?: number }): Promise<CheckReport>
-  // CheckReport { ok, issues, counts, budget: { estimatedTriangles, heaviestObjects, assetsKb, scriptsKb, sceneKb, totalKb, budgetKb, runtimeKb }, licences: { path, license, author?, attribution }[] }
-  // validation + missing assets (incl. .gltf buffers/images) / scripts + script sandbox lint (scriptLint.ts: lintScript(source, path)) + triangle (budget.ts, catalog `cost` formulas) and KB budgets
+  // CheckReport { ok, issues, counts, budget: { estimatedTriangles, runtimeTriangles?, triangles, trianglesSource: "estimate"|"runtime", heaviestObjects, assetsKb, scriptsKb, sceneKb, totalKb, budgetKb, runtimeKb }, licences: { path, license, author?, attribution }[] }
+  // validation + missing assets (incl. .gltf buffers/images) / scripts + script sandbox lint (scriptLint.ts: lintScript(source, path)) + triangle (budget.ts: catalog `cost` formulas, measured per-glyph text costs, model triangles from the library index / GLB JSON via gltf.ts; runtime stats win when given — they count every pass) and KB budgets
   // + framing (framingIssues(scene, inspect)) + runtime perf (draw calls > 150, triangles per kind) + licences needing attribution + web (ariaLabel, reducedMotion, lazy, maxDpr)
 // assets.ts (+ sources/: polyhaven, ambientcg, khronos = live APIs; kenney, quaternius = curated indexes, manual zip download)
 listAssets(fs): Promise<{ assets: (AssetEntry & { exists, usedBy })[]; totalKb }>

@@ -90,18 +90,34 @@ function instanceCount(layout: unknown): number {
   return typeof l.count === "number" ? l.count : 0;
 }
 
-export const TRIS_PER_TEXT_CHAR = 300;
+// 3D text, measured with the runtime (render stats of "ABCDEFGHIJ", size 1,
+// curveSegments 6): triangles per glyph of a flat (depth 0) face. Extruding
+// adds the side walls (×4); the bevel (on by default when depth > 0) ×16.
+export const TRIS_PER_GLYPH: Record<string, number> = { "sans-bold": 80, sans: 80, mono: 40, "serif-bold": 165, display: 165 };
+export const TRIS_PER_GLYPH_DEFAULT = 100;
 
-export function objectTriangles(o: ObjectDef): number {
+export function textTriangles(o: { text?: unknown; font?: unknown; depth?: unknown; bevel?: unknown }): number {
+  const chars = String(o.text ?? "").replace(/\s/g, "").length;
+  const face = TRIS_PER_GLYPH[typeof o.font === "string" ? o.font : "sans-bold"] ?? TRIS_PER_GLYPH_DEFAULT;
+  const depth = typeof o.depth === "number" ? o.depth : 0.2;
+  const bevel = depth > 0 && (typeof o.bevel === "number" ? o.bevel : 0.02) > 0;
+  return Math.round(chars * face * (depth <= 0 ? 1 : bevel ? 16 : 4));
+}
+
+// Triangles of a model file by its `src` (library index / parsed GLB), when known.
+export type ModelTriangles = (src: string) => number | undefined;
+
+export function objectTriangles(o: ObjectDef, models?: ModelTriangles): number {
   switch (o.kind) {
     case "mesh":
       return geometryTriangles(o.geometry);
     case "instances":
       return geometryTriangles(o.geometry) * instanceCount(o.layout);
-    case "text": {
-      const chars = String(o.text ?? "").replace(/\s/g, "").length;
-      const flat = o.depth === 0;
-      return Math.round(chars * TRIS_PER_TEXT_CHAR * (flat ? 0.35 : 1));
+    case "text":
+      return textTriangles(o as unknown as Record<string, unknown>);
+    case "model": {
+      const src = (o as { src?: unknown }).src;
+      return typeof src === "string" ? (models?.(src) ?? 0) : 0;
     }
     case "generator": {
       const entry = typeof o.generator === "string" ? catalogEntry("generators", o.generator) : undefined;
@@ -112,7 +128,7 @@ export function objectTriangles(o: ObjectDef): number {
     case "svg":
       return 2000;
     default:
-      return 0; // groups; models are measured by their file size (assets) and the runtime stats
+      return 0; // groups
   }
 }
 
@@ -121,11 +137,15 @@ export interface TriangleEstimate {
   byObject: { id: string; triangles: number }[];
 }
 
-export function estimateTriangles(scene: Pick<SceneDoc, "objects">): TriangleEstimate {
+// Geometry triangles drawn once per frame. The runtime's stats count every
+// render pass (shadow maps re-draw casters per shadow-casting light, post
+// effects add full-screen quads), so measured numbers are higher: `check
+// --render` prefers them.
+export function estimateTriangles(scene: Pick<SceneDoc, "objects">, opts: { models?: ModelTriangles } = {}): TriangleEstimate {
   const byObject: { id: string; triangles: number }[] = [];
   walkObjects(scene.objects, (o) => {
     if (o.visible === false) return false;
-    const t = objectTriangles(o);
+    const t = objectTriangles(o, opts.models);
     if (t) byObject.push({ id: o.id, triangles: t });
   });
   byObject.sort((a, b) => b.triangles - a.triangles);
