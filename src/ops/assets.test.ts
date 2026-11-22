@@ -40,6 +40,23 @@ const polyhavenRoutes = {
 };
 
 describe("asset sources (stubbed fetch)", () => {
+  it("ranks Poly Haven by name / tags / categories, not descriptions", async () => {
+    const models = {
+      modern_arm_chair_01: { name: "Modern Arm Chair 01", type: 2, tags: ["wood", "chair", "wooden"], categories: ["furniture", "seating"], description: "Modern wooden armchair with warm oak frame." },
+      wine_barrel_01: { name: "Wine Barrel 01", type: 2, tags: ["barrel", "wine"], categories: ["containers"], description: "Barrel with worn oak staves." },
+      tree_small_02: { name: "Tree Small 02", type: 2, tags: ["oak", "nature", "plant"], categories: ["nature"] },
+      oak_tree_01: { name: "Oak Tree 01", type: 2, tags: ["tree", "nature"], categories: ["nature", "plants"] },
+      island_tree_03: { name: "Island Tree 03", type: 2, tags: ["palm", "trees"], categories: ["nature"] },
+    };
+    const fetch = stubFetch({ [`${PH}/assets?t=models`]: models });
+    const oak = await searchAssets({ query: "oak", kind: "model", source: "polyhaven" }, fetch);
+    expect(oak.map((h) => h.id)).toEqual(["oak_tree_01", "tree_small_02"]);
+    // plural / singular and one typo still match by name or tag
+    expect((await searchAssets({ query: "trees", kind: "model", source: "polyhaven" }, fetch)).map((h) => h.id).slice(0, 2)).toEqual(expect.arrayContaining(["oak_tree_01", "tree_small_02"]));
+    expect((await searchAssets({ query: "barel", kind: "model", source: "polyhaven" }, fetch)).map((h) => h.id)).toEqual(["wine_barrel_01"]);
+    expect(await searchAssets({ query: "frame", kind: "model", source: "polyhaven" }, fetch)).toEqual([]);
+  });
+
   it("searches Poly Haven and downloads an HDRI", async () => {
     const fs = new MemoryFs();
     await createProject(fs, { name: "p" });

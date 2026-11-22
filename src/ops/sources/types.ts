@@ -81,23 +81,57 @@ export async function fetchBytes(fetch: FetchLike, url: string): Promise<Uint8Ar
   return new Uint8Array(await res.arrayBuffer());
 }
 
-// Relevance score of a text against query words (0 = no match).
-export function score(query: string, fields: { title?: string; id?: string; tags?: string[]; extra?: string }): number {
+// Levenshtein distance ≤ 1 (one insertion, deletion or substitution).
+function nearlyEqual(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  let j = 0;
+  let edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      i++;
+      j++;
+      continue;
+    }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++;
+    else if (b.length > a.length) j++;
+    else {
+      i++;
+      j++;
+    }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+}
+
+const singular = (w: string) => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w);
+
+// Relevance score of a text against query words (0 = no match). Per word:
+// exact title/id word 5 > exact tag 4 > title prefix 3 > tag prefix 2 >
+// fuzzy (one typo, words ≥ 4 letters) or description prefix 1. Every word
+// must match somewhere. `strict` ignores the description (`extra`): sources
+// with rich prose descriptions (Poly Haven) otherwise rank a chair "with a warm
+// oak frame" for "oak".
+export function score(query: string, fields: { title?: string; id?: string; tags?: string[]; extra?: string }, opts: { strict?: boolean } = {}): number {
   const words = query.toLowerCase().split(/[\s,]+/).filter(Boolean);
   if (!words.length) return 1;
   const title = `${fields.title ?? ""} ${fields.id ?? ""}`.toLowerCase();
   const tags = (fields.tags ?? []).map((t) => t.toLowerCase());
-  const extra = (fields.extra ?? "").toLowerCase();
+  const extra = opts.strict ? "" : (fields.extra ?? "").toLowerCase();
   let total = 0;
-  const titleWords = title.split(/[\s_\-/]+/);
-  const tagWords = tags.flatMap((t) => t.split(/[\s_\-/]+/));
-  const extraWords = extra.split(/[^a-z0-9]+/);
-  for (const w of words) {
+  const titleWords = title.split(/[\s_\-/]+/).filter(Boolean);
+  const tagWords = tags.flatMap((t) => t.split(/[\s_\-/]+/)).filter(Boolean);
+  const extraWords = extra.split(/[^a-z0-9]+/).filter(Boolean);
+  for (const raw of words) {
+    const w = singular(raw);
+    const eq = (t: string) => t === raw || singular(t) === w;
     let s = 0;
-    if (titleWords.includes(w)) s = 5;
+    if (titleWords.some(eq)) s = 5;
     else if (titleWords.some((t) => t.startsWith(w))) s = 3;
-    if (tags.includes(w)) s = Math.max(s, 4);
-    else if (tagWords.some((t) => t === w || t.startsWith(w))) s = Math.max(s, 2);
+    if (tags.some(eq)) s = Math.max(s, 4);
+    else if (tagWords.some((t) => eq(t) || t.startsWith(w))) s = Math.max(s, 2);
+    if (!s && w.length >= 4 && [...titleWords, ...tagWords].some((t) => t.length >= 4 && nearlyEqual(singular(t), w))) s = 1;
     if (!s && extraWords.some((t) => t.startsWith(w))) s = 1;
     if (!s) return 0; // every word must match somewhere
     total += s;

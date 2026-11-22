@@ -35,7 +35,8 @@ export const polyhaven: AssetSource = {
       if (!t) continue;
       const list = await fetchJson<Record<string, PhAsset>>(fetch, `${API}/assets?t=${t}`);
       for (const [id, a] of Object.entries(list)) {
-        const s = score(q.query, { id, title: a.name, tags: [...(a.tags ?? []), ...(a.categories ?? [])], extra: a.description });
+        // Name, tags and categories only: descriptions mention materials ("oak frame") and would rank chairs for "oak".
+        const s = score(q.query, { id, title: a.name, tags: [...(a.tags ?? []), ...(a.categories ?? [])] }, { strict: true });
         if (!s) continue;
         const k = kindOfType(a.type ?? (kind === "hdri" ? 0 : kind === "texture" ? 1 : 2));
         results.push({
