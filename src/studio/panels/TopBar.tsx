@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { Bot, Camera, ChevronLeft, CircleAlert, Cloud, HardDrive, Keyboard, Loader2, Pause, Play, Redo2, ShieldCheck, Undo2, Upload } from "lucide-react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { Button, IconButton } from "../components/ui/controls";
 import { useI18n } from "../i18n";
 import { useEditor, useSnapshot, useUi } from "../state/context";
@@ -80,12 +80,38 @@ function shortPath(p: string | null): string {
   return parts.length > 2 ? `…/${parts.slice(-2).join("/")}` : p;
 }
 
+// The Agent3D mark (.github/assets/logo.svg, simplified for small sizes — same
+// drawing as index.html's favicon): dark rounded tile, white isometric cube, blue dot.
 export function Logo({ size = 20 }: { size?: number }) {
+  const id = useId().replace(/:/g, "");
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className="shrink-0">
-      <path d="M16 3 28 10v12L16 29 4 22V10z" fill="rgb(var(--accent))" />
-      <path d="M16 3v26M4 10l12 7 12-7" stroke="rgb(var(--ink-1))" strokeWidth="2" fill="none" />
-      <circle cx="16" cy="17" r="3" fill="rgb(var(--agent))" />
+      <defs>
+        <linearGradient id={`${id}bg`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2a2a30" />
+          <stop offset="1" stopColor="#0c0c0f" />
+        </linearGradient>
+        <linearGradient id={`${id}dot`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#7aa5ff" />
+          <stop offset="1" stopColor="#3d6bff" />
+        </linearGradient>
+        <radialGradient id={`${id}glow`} cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#598bff" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#598bff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect width="32" height="32" rx="7.5" fill={`url(#${id}bg)`} />
+      <rect x="0.5" y="0.5" width="31" height="31" rx="7" fill="none" stroke="#ffffff" strokeOpacity="0.12" />
+      <circle cx="16" cy="16.6" r="5" fill={`url(#${id}glow)`} />
+      <path
+        d="M16 8L23.45 12.3L23.45 20.9L16 25.2L8.55 20.9L8.55 12.3ZM12.62 14.65L8.55 12.3M19.38 14.65L23.45 12.3M16 20.5L16 25.2"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="16" cy="16.6" r="2.2" fill={`url(#${id}dot)`} />
     </svg>
   );
 }

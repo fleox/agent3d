@@ -111,7 +111,7 @@ export class World {
     return w;
   }
 
-  private async build(aspect: number, dom: HTMLElement | null, editor: boolean): Promise<void> {
+  private async build(aspect: number, dom: HTMLElement | null, _editor: boolean): Promise<void> {
     const { def, ctx } = this;
     {
       this.camera = createCamera(def.camera, aspect);
@@ -144,11 +144,6 @@ export class World {
       for (const o of this.env.objects) this.scene.add(o);
       await lightsP;
       this.canonicalOrder(def);
-      if (editor) {
-        const grid = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
-        grid.userData.helper = true;
-        this.scene.add(grid, Object.assign(new THREE.AxesHelper(1.5), { userData: { helper: true } }));
-      }
 
       this.motionHost = {
         object: (id) => this.entries.get(id)?.object ?? null,

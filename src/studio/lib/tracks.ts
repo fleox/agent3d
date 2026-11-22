@@ -94,8 +94,12 @@ export function snapTime(t: number, step = 0.05, free = false): number {
   return free ? round(t) : round(Math.round(t / step) * step);
 }
 
-// Ruler ticks for a duration: a step that gives 6–16 major ticks.
-export function rulerStep(duration: number): number {
-  for (const s of [0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60]) if (duration / s <= 16) return s;
-  return 120;
+// Ruler label step for a duration drawn over `widthPx` pixels: the smallest
+// "nice" step that keeps labels at least `minPx` apart (and at most 16 of them).
+export const RULER_STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600] as const;
+export function rulerStep(duration: number, widthPx = Infinity, minPx = 48): number {
+  const d = duration > 0 ? duration : 1;
+  const pxPerSec = Number.isFinite(widthPx) && widthPx > 0 ? widthPx / d : Infinity;
+  for (const s of RULER_STEPS) if (d / s <= 16 && s * pxPerSec >= minPx) return s;
+  return RULER_STEPS[RULER_STEPS.length - 1];
 }

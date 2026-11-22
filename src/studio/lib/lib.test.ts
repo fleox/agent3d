@@ -104,6 +104,22 @@ describe("timeline helpers", () => {
     expect(snapTime(1.234)).toBe(1.25);
     expect(rulerStep(4)).toBe(0.25);
   });
+  it("picks the ruler label step from the pixel width", () => {
+    // 4 s over ~1000 px: 0.25 s = 62 px ok; over 500 px it would be 31 px → 0.5 s.
+    expect(rulerStep(4, 1000)).toBe(0.25);
+    expect(rulerStep(4, 500)).toBe(0.5);
+    expect(rulerStep(4, 300)).toBe(1);
+    expect(rulerStep(4, 120)).toBe(2);
+    expect(rulerStep(10, 1000)).toBe(1);
+    expect(rulerStep(60, 1000)).toBe(5);
+    expect(rulerStep(1, 2000)).toBe(0.1);
+    expect(rulerStep(0, 800)).toBeGreaterThan(0);
+    for (const [d, w] of [[4, 1000], [7, 640], [30, 900], [600, 1200]] as const) {
+      const s = rulerStep(d, w);
+      expect((s / d) * w).toBeGreaterThanOrEqual(48);
+      expect(d / s).toBeLessThanOrEqual(16);
+    }
+  });
 });
 
 import { pretty } from "./labels";

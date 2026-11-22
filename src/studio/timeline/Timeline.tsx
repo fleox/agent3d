@@ -78,7 +78,7 @@ export function Timeline() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const step = rulerStep(duration);
+  const step = rulerStep(duration, width);
   const ticks = useMemo(() => {
     const out: number[] = [];
     for (let x = 0; x <= duration + 1e-6; x += step) out.push(Number(x.toFixed(3)));

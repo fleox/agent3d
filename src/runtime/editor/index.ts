@@ -11,6 +11,7 @@ import { TransformControls } from "three/addons/controls/TransformControls.js";
 import type { EditorBridge } from "../api";
 import type { World, WorldEntry } from "../build/index";
 import { setCameraAspect } from "../build/camera";
+import { createEditorGrid, type EditorGrid } from "./grid";
 import { DEFAULT_SNAP, finishTransform, frameSphere, localFromWorld, type GizmoMode, type LocalTransform, type SnapSettings, type Vec3 } from "./math";
 
 export * from "./math";
@@ -91,6 +92,7 @@ export class SceneEditor {
   private view: EditorView = "editor";
   private enabled = true;
   private helpersOn = true;
+  private grid: EditorGrid = createEditorGrid();
   private dragStart: LocalTransform | null = null;
   private dragStartPoint: Vec3 | null = null;
   private dragged = false;
@@ -198,6 +200,7 @@ export class SceneEditor {
   }
   setHelpers(on: boolean): void {
     this.helpersOn = on;
+    this.applyHelpers();
     this.requestRender();
   }
 
@@ -337,6 +340,8 @@ export class SceneEditor {
     this.frustumFill.geometry.dispose();
     (this.frustumFill.material as THREE.Material).dispose();
     this.boxHelper.dispose();
+    this.grid.mesh.removeFromParent();
+    this.grid.dispose();
   }
 
   // ─── Internals ────────────────────────────────────────────────────────
@@ -365,6 +370,9 @@ export class SceneEditor {
     const w = this.bridge.world();
     this.world = w;
     if (!w) return;
+    // The editor grid (depth-tested, fades with distance and at grazing angles).
+    if (this.grid.mesh.parent !== w.scene) w.scene.add(this.grid.mesh);
+    this.applyHelpers();
     // The editor camera matches the scene camera's kind (perspective / orthographic).
     const wantOrtho = (w.camera as THREE.OrthographicCamera).isOrthographicCamera;
     const isOrtho = (this.editorCam as THREE.OrthographicCamera).isOrthographicCamera;
@@ -385,6 +393,17 @@ export class SceneEditor {
     this.buildLights(w);
     if (this.tc.dragging) this.tc.detach();
     this.updateAttachment();
+  }
+
+  // Editor-only helpers in the World scene (the floor grid). Applied before a
+  // render (draw() runs after the scene pass, too late for this frame), and
+  // never touches scene content tagged `helper` (a ground's own grid, contact shadows).
+  private applyHelpers(): void {
+    const w = this.world;
+    if (!w) return;
+    for (const o of w.scene.children) if (o.userData.editorHelper) o.visible = this.helpersOn;
+    const cam = this.editorCam;
+    this.grid.setFocusDistance(this.view === "editor" ? cam.position.distanceTo(this.orbit.target) : w.camera.position.distanceTo(w.rig.rest.target));
   }
 
   private clearLights(): void {
@@ -682,8 +701,7 @@ export class SceneEditor {
   private draw(r: THREE.WebGLRenderer, cam: THREE.Camera): void {
     const w = this.world;
     if (!w) return;
-    // Grid / axes helpers built by the World in editor mode.
-    for (const o of w.scene.children) if (o.userData.helper) o.visible = this.helpersOn;
+    this.applyHelpers();
     const editorView = this.view === "editor" && this.enabled;
     const camPos = new THREE.Vector3().setFromMatrixPosition(cam.matrixWorld);
     const ortho = (cam as THREE.OrthographicCamera).isOrthographicCamera;
