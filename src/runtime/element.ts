@@ -134,6 +134,8 @@ export class Agent3DSceneElement extends BaseElement {
     );
   }
 
+  private autoAriaLabel: string | null = null;
+
   private applySizing(scene: SceneDoc): void {
     const t = scene.target;
     if (t?.height) {
@@ -147,7 +149,12 @@ export class Agent3DSceneElement extends BaseElement {
     }
     const game = t?.kind === "game";
     this.setAttribute("role", game ? "application" : "img");
-    this.setAttribute("aria-label", scene.ariaLabel || scene.title || "3D scene");
+    // An author-provided aria-label wins; ours follows scene reloads.
+    const current = this.getAttribute("aria-label");
+    if (current === null || current === this.autoAriaLabel) {
+      this.autoAriaLabel = scene.ariaLabel || scene.title || "3D scene";
+      this.setAttribute("aria-label", this.autoAriaLabel);
+    }
     if (game && !this.hasAttribute("tabindex")) this.tabIndex = 0;
   }
 }

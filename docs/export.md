@@ -48,7 +48,7 @@ One `<name>.html`: the single-file runtime as an inline module, the scene in `<s
 | `src` | URL of `scene.json` |
 | `poster` | Image shown until the first frame, and as the fallback without WebGL |
 | `library-base` | Base URL of `library:` assets (default `<scene dir>/assets/library/`) |
-| `aria-label` | Accessible label (set from `ariaLabel` / `title` by the export) |
+| `aria-label` | Accessible label (written from `ariaLabel` / `title` by the export). When absent the element sets it from the scene; a label you write yourself is never overridden |
 
 Behaviour: `display: block; width: 100%`, CSS `aspect-ratio` from `target.aspect` (or `target.height`, or `100vh` for fullscreen), `role="img"` (`role="application"` + `tabindex="0"` for games), lazy start when visible, pause off-screen, reduced-motion handling, pixel-ratio cap. Events (bubbling): `agent3d-ready` (`detail.player`) and `agent3d-error` (`detail`: `{ code, message, path }`, codes such as `scene-load`, `asset-load`, `script-error`, `webgl-unavailable`).
 

@@ -316,7 +316,9 @@ class PlayerImpl implements Player {
       this.lastNow = performance.now();
       const loop = (now: number) => {
         this.raf = requestAnimationFrame(loop);
-        const dt = Math.min((now - this.lastNow) / 1000, 0.1);
+        // The first rAF timestamp can be earlier than performance.now() at start:
+        // never step backwards (time below 0 would keep \`appear\` hidden).
+        const dt = Math.min(Math.max((now - this.lastNow) / 1000, 0), 0.1);
         this.lastNow = now;
         if (dt > 0) this.fps = this.fps ? this.fps * 0.9 + (1 / dt) * 0.1 : 1 / dt;
         this.tick(dt * this.timeScale);
@@ -340,7 +342,8 @@ class PlayerImpl implements Player {
       });
       return;
     }
-    this.t += dt;
+    dt = Math.max(dt, 0);
+    this.t = Math.max(this.t + dt, 0);
     this.game?.advance(dt);
     this.frame(dt);
   }
