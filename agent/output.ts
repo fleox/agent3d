@@ -45,8 +45,60 @@ export function createIo(json: boolean): Io {
   };
 }
 
-export function printResult(io: Io, data: unknown, human: () => string): void {
-  if (io.json) io.out(JSON.stringify({ ok: true, data }));
+// Ops and AI-tool hints may name AI tools ("scene_summary"); on the CLI they
+// must name commands. Tool name → CLI command (the generic rule is
+// "a_b" → "agent3d a b"; these are the exceptions).
+const TOOL_COMMANDS: Record<string, string> = {
+  project_info: "agent3d info",
+  project_create: "agent3d new <dir>",
+  scene_get: "agent3d scene get",
+  scene_summary: "agent3d scene summary",
+  scene_apply: "agent3d scene apply",
+  scene_patch: "agent3d scene patch",
+  scene_validate: "agent3d scene validate",
+  object_add: "agent3d object add",
+  object_update: "agent3d object update",
+  object_remove: "agent3d object remove",
+  object_list: "agent3d object list",
+  timeline_set: "agent3d timeline set",
+  catalog_get: "agent3d catalog",
+  templates_list: "agent3d templates list",
+  assets_list: "agent3d assets list",
+  assets_search: "agent3d assets search",
+  assets_add: "agent3d assets add",
+  library_list: "agent3d assets library",
+  render_preview: "agent3d render",
+};
+const TOOL_NAMES = Object.keys(TOOL_COMMANDS).join("|");
+const TOOL_RE = new RegExp(`\\b(${TOOL_NAMES})\\b`, "g");
+// "library_list (CLI: agent3d assets library)" / "assets_add / `agent3d assets add`" → keep the CLI part only.
+const TOOLS_THEN_CLI = new RegExp(`\\b(?:${TOOL_NAMES})(?:\\s*[/+,]\\s*(?:${TOOL_NAMES}))*\\s*(?:\\(CLI:\\s*([^)]*)\\)|,\\s*CLI:\\s*([^)]*)|/\\s*(\`agent3d[^\`]*\`))`, "g");
+
+export function cliHint(text: string): string {
+  if (!TOOL_RE.test(text)) return text;
+  TOOL_RE.lastIndex = 0;
+  return text
+    .replace(TOOLS_THEN_CLI, (_m, a?: string, b?: string, c?: string) => {
+      const cli = (a ?? b ?? c ?? "").trim();
+      return cli.startsWith("`") ? cli : `\`${cli}\``;
+    })
+    .replace(TOOL_RE, (name: string) => `\`${TOOL_COMMANDS[name]}\``)
+    .replace(/``+/g, "`");
+}
+
+// Deep-rewrites every "hint" string of a result for the CLI.
+export function withCliHints<T>(data: T): T {
+  if (Array.isArray(data)) return data.map((v) => withCliHints(v)) as T;
+  if (!data || typeof data !== "object") return data;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data as Record<string, unknown>)) out[k] = k === "hint" && typeof v === "string" ? cliHint(v) : withCliHints(v);
+  return out as T;
+}
+
+// `opts.raw`: keep AI-tool hints untouched (`agent3d tools call` returns tool results as-is).
+export function printResult(io: Io, data: unknown, human: () => string, opts: { raw?: boolean } = {}): void {
+  const shown = opts.raw ? data : withCliHints(data);
+  if (io.json) io.out(JSON.stringify({ ok: true, data: shown }));
   else io.out(human());
 }
 
@@ -87,10 +139,12 @@ export function toCliError(error: unknown): CliError {
         new CliError("internal", error instanceof Error ? error.message : String(error), "Unexpected error. Retry once; if it persists, report it with the command and this output (`agent3d doctor` checks the setup).");
 }
 
+// CLI output: hints name commands (MCP and the Studio API keep tool names).
 export function printError(io: Io, error: unknown): number {
   const e = toCliError(error);
-  const details = e.details !== undefined ? { details: e.details } : {};
-  if (io.json) io.out(JSON.stringify({ ok: false, error: { code: e.code, message: e.message, ...(e.hint ? { hint: e.hint } : {}), ...details } }));
-  else io.err(`Error: ${e.message}${e.hint ? `\nHint: ${e.hint}` : ""}`);
+  const hint = e.hint ? cliHint(e.hint) : undefined;
+  const details = e.details !== undefined ? { details: withCliHints(e.details) } : {};
+  if (io.json) io.out(JSON.stringify({ ok: false, error: { code: e.code, message: e.message, ...(hint ? { hint } : {}), ...details } }));
+  else io.err(`Error: ${e.message}${hint ? `\nHint: ${hint}` : ""}`);
   return e.exitCode;
 }

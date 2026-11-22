@@ -27,7 +27,7 @@ export const toolsCommand: Command = {
       if (!tools.some((t) => t.name === name)) usage(`Unknown tool "${name}".`, `\`agent3d tools list\` lists them (${tools.map((t) => t.name).join(", ")}).`);
       const input = jsonObjectOpt(options, "input") ?? {};
       const result = await callTool(new NodeFs(projectDir(options)), name, input);
-      return printResult(io, { tool: name, result }, () => JSON.stringify(result ?? null, null, 2));
+      return printResult(io, { tool: name, result }, () => JSON.stringify(result ?? null, null, 2), { raw: true });
     }
     usage(`Unknown tools action "${action}".`, "Use list or call.");
   },
