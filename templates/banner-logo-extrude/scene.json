@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "id": "banner-logo-extrude",
+  "title": "Extruded logo banner",
+  "ariaLabel": "Northwind logo in 3D next to the words Northwind, ship faster",
+  "seed": 2,
+  "target": {
+    "kind": "banner",
+    "aspect": "4:1",
+    "budgetKb": 400,
+    "reducedMotion": "static",
+    "posterTime": 2,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 24,
+    "position": [0, 0.4, 14],
+    "target": [0, 0, 0],
+    "controls": "parallax",
+    "parallax": {"strength": 0.25, "smoothing": 0.94}
+  },
+  "environment": {"background": {"radial": ["#1e1b4b", "#0b0a1f"]}, "lighting": "studio", "lightingIntensity": 0.5},
+  "lights": [
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#c7d2fe",
+      "groundColor": "#1e1b4b",
+      "intensity": 0.7
+    },
+    {"id": "key", "type": "directional", "position": [3, 5, 8], "intensity": 2.2},
+    {
+      "id": "rimPink",
+      "type": "point",
+      "position": [-7, 1, -2],
+      "color": "#ec4899",
+      "intensity": 40,
+      "distance": 16
+    },
+    {
+      "id": "rimBlue",
+      "type": "point",
+      "position": [6, -1, -2],
+      "color": "#6366f1",
+      "intensity": 30,
+      "distance": 16
+    }
+  ],
+  "objects": [
+    {
+      "id": "logo",
+      "kind": "svg",
+      "src": "assets/logo.svg",
+      "size": 2.6,
+      "depth": 0.55,
+      "bevel": 0.06,
+      "position": [-4.1, 0, 0],
+      "href": "#",
+      "behaviours": [
+        {"type": "appear", "effect": "spin", "duration": 1.2, "ease": "outCubic"},
+        {"type": "followPointer", "mode": "rotate", "strength": 0.5, "smoothing": 0.9},
+        {"type": "spinOnClick", "trigger": "hover", "duration": 1},
+        {"type": "clickBounce", "amount": 0.2},
+        {"type": "float", "amplitude": 0.06, "speed": 0.4}
+      ]
+    },
+    {
+      "id": "wordmark",
+      "kind": "text",
+      "text": "Northwind",
+      "font": "sans-bold",
+      "size": 1.05,
+      "depth": 0.18,
+      "bevel": 0.02,
+      "align": "left",
+      "position": [-1.75, 0.25, 0],
+      "material": {"type": "standard", "color": "#e8ebff", "roughness": 0.45, "metalness": 0.1},
+      "behaviours": [{"type": "appear", "effect": "rise", "duration": 1, "ease": "outCubic", "delay": 0.2}]
+    },
+    {
+      "id": "tagline",
+      "kind": "text",
+      "text": "Ship faster. Sleep better.",
+      "font": "sans",
+      "size": 0.32,
+      "depth": 0.02,
+      "bevel": 0,
+      "align": "left",
+      "position": [-1.7, -0.85, 0],
+      "material": {"type": "standard", "color": "#a5b4fc", "roughness": 0.6},
+      "behaviours": [{"type": "appear", "effect": "fade", "duration": 1, "delay": 0.5}]
+    },
+    {
+      "id": "halo",
+      "kind": "mesh",
+      "geometry": {"type": "ring", "innerRadius": 1.75, "outerRadius": 1.8, "segments": 96},
+      "position": [-4.1, 0, -0.6],
+      "material": {"preset": "neon", "color": "#a855f7", "emissive": "#a855f7", "emissiveIntensity": 4},
+      "behaviours": [{"type": "pulse", "amount": 0.04, "speed": 0.5}]
+    },
+    {
+      "id": "dust",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 80,
+      "area": [24, 6, 6],
+      "color": "#c4b5fd",
+      "size": 0.03,
+      "opacity": 0.5
+    }
+  ],
+  "postfx": [{"type": "bloom", "strength": 0.5, "radius": 0.4, "threshold": 2}]
+}

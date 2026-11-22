@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Sample monogram "N" (three separate pieces so each keeps its colour). Replace with your own logo: filled paths only, no text/strokes. -->
+  <rect x="8" y="10" width="22" height="80" rx="11" fill="#6366f1"/>
+  <path d="M34 10 H50 Q54 10 55.5 14 L69 86 Q69.5 90 65 90 H49 Q45 90 44.2 86 L31 14 Q30.5 10 34 10 Z" fill="#a855f7"/>
+  <rect x="70" y="10" width="22" height="80" rx="11" fill="#ec4899"/>
+</svg>

@@ -1,0 +1,16 @@
+{
+  "id": "banner-logo-extrude",
+  "title": "Extruded logo banner",
+  "description": "Your SVG logo extruded into glossy 3D next to a wordmark: it tilts toward the pointer, spins when hovered and bounces on click.",
+  "kind": "banner",
+  "tags": [
+    "banner",
+    "logo",
+    "svg",
+    "brand",
+    "extrude",
+    "hover",
+    "interactive"
+  ],
+  "aspect": "4:1"
+}
