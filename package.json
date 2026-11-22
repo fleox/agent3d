@@ -62,5 +62,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fleox/agent3d.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
