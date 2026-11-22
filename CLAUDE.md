@@ -75,7 +75,7 @@ saveScene(fs, scene, opts?: { allowInvalid?: boolean }): Promise<{ issues: Issue
 // scene.ts
 getScene(fs): Promise<SceneDoc>
 summarizeScene(scene): SceneSummary          // { id, title, target, camera, background, lighting?, lights, objects: tree {id, kind, detail, position?, behaviours?, children?}, counts, timeline?, postfx?, scripts?, ui?, sounds? }
-diffScenes(before | null, after): ScenePlan  // { empty, objects: { added, removed, changed: {id, fields}[], moved: {id, from, to}[] }, sections: string[], summary }
+diffScenes(before | null, after): ScenePlan  // { empty, objects: { added, removed, changed: {id, fields}[], moved: {id, from, to, index}[] (parent changes + sibling reorders) }, sections: string[], summary }
 applyScene(fs, next: SceneDoc, { dryRun? }): Promise<{ plan: ScenePlan; issues: Issue[]; applied: boolean }>
   // full replace. Never throws on invalid scenes: errors → applied false (nothing written). Same input twice → plan.empty, no write.
 patchScene(fs, ops: PatchOp[], { dryRun? }): Promise<{ plan; issues; applied; scene }>

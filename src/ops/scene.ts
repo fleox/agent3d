@@ -118,7 +118,8 @@ export interface ScenePlan {
     added: string[];
     removed: string[];
     changed: { id: string; fields: string[] }[];
-    moved: { id: string; from: string | null; to: string | null }[];
+    // Parent changes and reorders among siblings (from === to); index = new position among its siblings.
+    moved: { id: string; from: string | null; to: string | null; index: number }[];
   };
   // Top-level sections (other than objects) that differ: "camera", "lights", "timeline", …
   sections: string[];
@@ -128,16 +129,56 @@ export interface ScenePlan {
 interface FlatEntry {
   object: Record<string, unknown>;
   parent: string | null;
+  index: number;
 }
 
 function flatMap(scene: Partial<SceneDoc> | null): Map<string, FlatEntry> {
   const map = new Map<string, FlatEntry>();
+  const counters = new Map<string | null, number>();
   walkObjects(scene?.objects, (o, parent) => {
+    const key = parent?.id ?? null;
+    const index = counters.get(key) ?? 0;
+    counters.set(key, index + 1);
     if (typeof o.id !== "string") return;
     const { children: _c, ...rest } = o as ObjectDef & { children?: unknown };
-    map.set(o.id, { object: rest as Record<string, unknown>, parent: parent?.id ?? null });
+    map.set(o.id, { object: rest as Record<string, unknown>, parent: key, index });
   });
   return map;
+}
+
+// Ids that changed place among siblings kept under the same parent: the ones
+// outside the longest subsequence whose relative order is unchanged.
+function reorderedIds(a: Map<string, FlatEntry>, b: Map<string, FlatEntry>): Set<string> {
+  const groups = new Map<string | null, string[]>();
+  for (const [id, nb] of b) {
+    const na = a.get(id);
+    if (!na || na.parent !== nb.parent) continue;
+    const list = groups.get(nb.parent) ?? [];
+    list.push(id);
+    groups.set(nb.parent, list);
+  }
+  const out = new Set<string>();
+  for (const ids of groups.values()) {
+    ids.sort((x, y) => b.get(x)!.index - b.get(y)!.index);
+    const seq = ids.map((id) => a.get(id)!.index);
+    // O(n²) LIS — sibling lists are small.
+    const len = seq.map(() => 1);
+    const prev = seq.map(() => -1);
+    for (let i = 0; i < seq.length; i++)
+      for (let j = 0; j < i; j++)
+        if (seq[j] < seq[i] && len[j] + 1 > len[i]) {
+          len[i] = len[j] + 1;
+          prev[i] = j;
+        }
+    let best = -1;
+    for (let i = 0; i < seq.length; i++) if (best < 0 || len[i] > len[best]) best = i;
+    const keep = new Set<number>();
+    for (let i = best; i >= 0; i = prev[i]) keep.add(i);
+    ids.forEach((id, i) => {
+      if (!keep.has(i)) out.add(id);
+    });
+  }
+  return out;
 }
 
 export function diffScenes(before: Partial<SceneDoc> | null, after: Partial<SceneDoc>): ScenePlan {
@@ -153,7 +194,11 @@ export function diffScenes(before: Partial<SceneDoc> | null, after: Partial<Scen
     const keys = new Set([...Object.keys(na.object), ...Object.keys(nb.object)]);
     const fields = [...keys].filter((k) => !deepEqual(na.object[k], nb.object[k])).sort();
     if (fields.length) changed.push({ id, fields });
-    if (na.parent !== nb.parent) moved.push({ id, from: na.parent, to: nb.parent });
+    if (na.parent !== nb.parent) moved.push({ id, from: na.parent, to: nb.parent, index: nb.index });
+  }
+  for (const id of reorderedIds(a, b)) {
+    const nb = b.get(id)!;
+    moved.push({ id, from: nb.parent, to: nb.parent, index: nb.index });
   }
   // Order changes among siblings (same ids, same parents, different order).
   const orderOf = (s: Partial<SceneDoc> | null) => {

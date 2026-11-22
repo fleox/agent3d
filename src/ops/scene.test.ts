@@ -144,7 +144,17 @@ describe("patchScene", () => {
     expect(s.objects.some((o) => o.id === "pill")).toBe(false);
     expect(s.postfx).toBeUndefined();
     expect(s.lights[0].intensity).toBe(1.2);
-    expect(r.plan.objects.moved).toEqual([{ id: "gem", from: null, to: "group" }]);
+    expect(r.plan.objects.moved).toEqual([{ id: "gem", from: null, to: "group", index: 2 }]);
+  });
+
+  it("reports a reorder-only moveObject in plan.moved", async () => {
+    const fs = await project();
+    const before = (await getScene(fs)).objects.map((o) => o.id);
+    const last = before[before.length - 1];
+    const r = await patchScene(fs, [{ op: "moveObject", id: last, index: 0 }], { dryRun: true });
+    expect(r.plan.empty).toBe(false);
+    expect(r.plan.objects.moved).toEqual([{ id: last, from: null, to: null, index: 0 }]);
+    expect(r.plan.summary).toContain("move 1");
   });
 
   it("is atomic: a failing op or invalid result writes nothing", async () => {
