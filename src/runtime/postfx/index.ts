@@ -1,6 +1,12 @@
-// Post-processing (loaded lazily only when scene.postfx is set): EffectComposer
-// with RenderPass → effects in the declared order → OutputPass (tone mapping +
-// sRGB). One factory per CATALOG.postfx id.
+// Post-processing (loaded lazily only when scene.postfx is set). One factory
+// per CATALOG.postfx id. Pipeline (EffectComposer):
+//   RenderPass (scene WITHOUT its background, transparent clear, HDR)
+//   → sanitize → HDR effects (outline, bloom, dof) in the declared order
+//   → BackgroundPass: tone mapping of the scene + the background composited
+//     under it untouched (exact CSS colour, like the non-postfx path, where
+//     three never tone maps a colour / sRGB background)
+//   → screen effects (vignette, film, chromatic, pixelate) in the declared order
+//   → OutputPass without tone mapping (sRGB only).
 
 import * as THREE from "three";
 import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
@@ -155,6 +161,126 @@ class ToonOutlinePass extends Pass {
   }
 }
 
+// Tone maps the scene (premultiplied, alpha = coverage) and composites the
+// scene background under it: out = tm(fg) + bg * (1 - a). The background is
+// rendered by three itself into its own target (colour, flat texture, equirect
+// / cube, blurriness and rotation all behave as without post effects); linear
+// (HDR) texture backgrounds are tone mapped, as three does on screen.
+const TONE_DEFINES: Partial<Record<THREE.ToneMapping, string>> = {
+  [THREE.LinearToneMapping]: "LINEAR_TONE_MAPPING",
+  [THREE.ReinhardToneMapping]: "REINHARD_TONE_MAPPING",
+  [THREE.CineonToneMapping]: "CINEON_TONE_MAPPING",
+  [THREE.ACESFilmicToneMapping]: "ACES_FILMIC_TONE_MAPPING",
+  [THREE.AgXToneMapping]: "AGX_TONE_MAPPING",
+  [THREE.NeutralToneMapping]: "NEUTRAL_TONE_MAPPING",
+  [THREE.CustomToneMapping]: "CUSTOM_TONE_MAPPING",
+};
+
+class BackgroundPass extends Pass {
+  private bgScene = new THREE.Scene();
+  private target: THREE.WebGLRenderTarget;
+  private quad: FullScreenQuad;
+  private mat: THREE.RawShaderMaterial;
+  private toneMapping: THREE.ToneMapping | null = null;
+  /** Clear colour / alpha of the renderer before the passes ran (no scene.background). */
+  clearColor = new THREE.Color(0, 0, 0);
+  clearAlpha = 0;
+  constructor(private scene: THREE.Scene, private camera: Cam, w: number, h: number) {
+    super();
+    this.target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType });
+    this.mat = new THREE.RawShaderMaterial({
+      uniforms: { tDiffuse: { value: null }, tBackground: { value: this.target.texture }, toneMappingExposure: { value: 1 }, uToneBg: { value: 0 } },
+      vertexShader: `precision highp float;
+        uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; attribute vec3 position; attribute vec2 uv; varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `precision highp float;
+        uniform sampler2D tDiffuse; uniform sampler2D tBackground; uniform float uToneBg;
+        #include <tonemapping_pars_fragment>
+        varying vec2 vUv;
+        vec3 tm(vec3 c) {
+          #if defined(LINEAR_TONE_MAPPING)
+            return LinearToneMapping(c);
+          #elif defined(REINHARD_TONE_MAPPING)
+            return ReinhardToneMapping(c);
+          #elif defined(CINEON_TONE_MAPPING)
+            return CineonToneMapping(c);
+          #elif defined(ACES_FILMIC_TONE_MAPPING)
+            return ACESFilmicToneMapping(c);
+          #elif defined(AGX_TONE_MAPPING)
+            return AgXToneMapping(c);
+          #elif defined(NEUTRAL_TONE_MAPPING)
+            return NeutralToneMapping(c);
+          #elif defined(CUSTOM_TONE_MAPPING)
+            return CustomToneMapping(c);
+          #else
+            return c;
+          #endif
+        }
+        void main() {
+          vec4 fg = texture2D(tDiffuse, vUv);
+          vec4 bg = texture2D(tBackground, vUv);
+          if (uToneBg > 0.5) bg.rgb = tm(bg.rgb);
+          float a = clamp(fg.a, 0.0, 1.0);
+          gl_FragColor = vec4(tm(fg.rgb) + bg.rgb * (1.0 - a), a + bg.a * (1.0 - a));
+        }`,
+    });
+    this.quad = new FullScreenQuad(this.mat);
+  }
+  override setSize(w: number, h: number): void {
+    this.target.setSize(w, h);
+  }
+  override render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget): void {
+    if (this.toneMapping !== renderer.toneMapping) {
+      this.toneMapping = renderer.toneMapping;
+      const def = TONE_DEFINES[renderer.toneMapping];
+      this.mat.defines = def ? { [def]: "" } : {};
+      this.mat.needsUpdate = true;
+    }
+    const bg = this.scene.background;
+    const bgs = this.bgScene;
+    bgs.background = bg;
+    bgs.backgroundBlurriness = this.scene.backgroundBlurriness;
+    bgs.backgroundIntensity = this.scene.backgroundIntensity;
+    bgs.backgroundRotation.copy(this.scene.backgroundRotation);
+    const prevClear = renderer.getClearColor(new THREE.Color());
+    const prevAlpha = renderer.getClearAlpha();
+    renderer.setClearColor(this.clearColor, this.clearAlpha);
+    renderer.setRenderTarget(this.target);
+    renderer.clear();
+    renderer.render(bgs, this.camera);
+    renderer.setClearColor(prevClear, prevAlpha);
+    bgs.background = null;
+    const u = this.mat.uniforms;
+    u.tDiffuse.value = readBuffer.texture;
+    u.toneMappingExposure.value = renderer.toneMappingExposure;
+    u.uToneBg.value = bg instanceof THREE.Texture && THREE.ColorManagement.getTransfer(bg.colorSpace) !== THREE.SRGBTransfer ? 1 : 0;
+    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+    if (this.clear) renderer.clear();
+    this.quad.render(renderer);
+  }
+  override dispose(): void {
+    this.target.dispose();
+    this.mat.dispose();
+    this.quad.dispose();
+  }
+}
+
+// sRGB conversion only (tone mapping already happened in BackgroundPass).
+class SrgbOutputPass extends OutputPass {
+  override render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget, deltaTime?: number, maskActive?: boolean): void {
+    const tm = renderer.toneMapping;
+    renderer.toneMapping = THREE.NoToneMapping;
+    try {
+      super.render(renderer, writeBuffer, readBuffer, deltaTime ?? 0, maskActive ?? false);
+    } finally {
+      renderer.toneMapping = tm;
+    }
+  }
+}
+
+// Effects that need the HDR, background-free image (before tone mapping).
+const HDR_EFFECTS = new Set(["outline", "bloom", "dof"]);
+
 // ─── Effect factories ──────────────────────────────────────────────────
 
 export const POSTFX_IMPLS: Record<string, (def: PostFxDef, ctx: PostFxContext) => EffectHandle> = {
@@ -214,7 +340,23 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
   const composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(pr);
   composer.setSize(ctx.width, ctx.height);
-  composer.addPass(new RenderPass(scene, camera));
+  // The scene renders without its background onto a transparent clear: the
+  // background is composited back, untouched, after tone mapping.
+  const renderPass = new RenderPass(scene, camera, null, new THREE.Color(0, 0, 0), 0);
+  const bgPass = new BackgroundPass(scene, camera, Math.max(1, ctx.width * pr), Math.max(1, ctx.height * pr));
+  const baseRender = renderPass.render.bind(renderPass);
+  renderPass.render = (...args: Parameters<typeof baseRender>) => {
+    const bg = scene.background;
+    bgPass.clearColor.copy(args[0].getClearColor(new THREE.Color()));
+    bgPass.clearAlpha = args[0].getClearAlpha();
+    scene.background = null;
+    try {
+      baseRender(...args);
+    } finally {
+      scene.background = bg;
+    }
+  };
+  composer.addPass(renderPass);
   // Degenerate normals (text bevels, extrusions) can produce NaN / Inf pixels in
   // the HDR target; bloom would spread one into a screen-wide white flash.
   const sanitize = new ShaderPass({
@@ -224,19 +366,23 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
   });
   composer.addPass(sanitize);
   const handles: EffectHandle[] = [];
-  // Outlines read the un-bloomed image: run them first.
+  // Outlines read the un-bloomed image: run them first. HDR effects run before
+  // tone mapping + background, screen effects after (they apply to the whole frame).
   const ordered = [...defs].sort((a, b) => (a.type === "outline" ? -1 : 0) - (b.type === "outline" ? -1 : 0));
-  for (const d of ordered) {
+  const add = (d: PostFxDef) => {
     const impl = POSTFX_IMPLS[d.type];
     if (!impl) {
       onUnknown(d.type);
-      continue;
+      return;
     }
     const h = impl(d, ctx);
     handles.push(h);
     composer.addPass(h.pass);
-  }
-  composer.addPass(new OutputPass());
+  };
+  for (const d of ordered) if (HDR_EFFECTS.has(d.type)) add(d);
+  composer.addPass(bgPass);
+  for (const d of ordered) if (!HDR_EFFECTS.has(d.type)) add(d);
+  composer.addPass(new SrgbOutputPass());
   return {
     render(t) {
       for (const h of handles) h.update?.(t);
@@ -250,6 +396,7 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
     },
     dispose() {
       for (const h of handles) h.pass.dispose();
+      bgPass.dispose();
       composer.dispose();
       rt.dispose();
     },

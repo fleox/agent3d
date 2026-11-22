@@ -1,10 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runtimeBuilt } from "./paths";
 import { findBrowser } from "./render/browser";
-import { decodePng, pngVariance } from "./render/png";
+import { decodePng, pngVariance, type DecodedPng } from "./render/png";
 import { cli, ok } from "./testing/cli";
 
 // End to end with the REAL runtime (dist/runtime, `npm run build:runtime`)
@@ -47,4 +47,41 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     expect(played.inputs).toBe(4);
     expect(played.state).toMatchObject({ score: 1 });
   }, 120_000);
+
+  it("keeps the exact background colour with post effects (not tone mapped)", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "bg");
+    await ok(["new", dir, "--target", "banner"]);
+    const pixel = (png: DecodedPng, x: number, y: number) => {
+      const i = (y * png.width + x) * png.channels;
+      return [png.pixels[i], png.pixels[i + 1], png.pixels[i + 2]];
+    };
+    const sample = async (background: unknown, postfx: unknown[] | undefined) => {
+      const scene = {
+        version: 1,
+        id: "bg",
+        target: { kind: "banner", aspect: "4:1" },
+        camera: { type: "perspective", fov: 35, position: [0, 0, 10], target: [0, 0, 0] },
+        environment: { background, lighting: "studio" },
+        lights: [{ id: "key", type: "directional", position: [2, 4, 5], intensity: 2 }],
+        // A bright emissive box at the left edge (bloom has something to do).
+        objects: [{ id: "box", kind: "mesh", geometry: { type: "box" }, position: [-12, 0, 0], material: { color: "#ffffff", emissive: "#ffffff", emissiveIntensity: 3 } }],
+        ...(postfx ? { postfx } : {}),
+      };
+      writeFileSync(join(dir, "scene.json"), JSON.stringify(scene));
+      const r = await ok(["render", "--project", dir, "--frames", "0"]);
+      const png = decodePng(readFileSync(resolve(r.dir, r.frames[0].path)));
+      return { centre: pixel(png, png.width / 2, png.height / 2), right: pixel(png, png.width - 300, 40) };
+    };
+    const close = (a: number[], b: number[]) => a.forEach((v, i) => expect(Math.abs(v - b[i])).toBeLessThanOrEqual(3));
+    const light = [0xf6, 0xee, 0xdd];
+    const plain = await sample("#f6eedd", undefined);
+    close(plain.centre, light);
+    close((await sample("#f6eedd", [{ type: "vignette" }])).centre, light);
+    close((await sample("#f6eedd", [{ type: "bloom", strength: 1, threshold: 0.5 }])).right, light);
+    // Gradients too: same pixels with and without post effects.
+    const grad = { gradient: ["#ffe3ee", "#d9ebff"], angle: 90 };
+    const g0 = await sample(grad, undefined);
+    const g1 = await sample(grad, [{ type: "bloom", strength: 0.6 }, { type: "vignette" }]);
+    close(g1.centre, g0.centre);
+  }, 180_000);
 });
