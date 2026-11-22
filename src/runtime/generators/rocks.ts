@@ -45,6 +45,7 @@ export const rocks: GeneratorImpl = (raw, ctx) => {
   }
   for (const g of variants) g.dispose();
   const mesh = new THREE.Mesh(b.build(), vertexColorMaterial({ flat: true, roughness: 0.95 }));
+  mesh.userData.materialTarget = true; // object.material override
   mesh.name = "rocks";
   mesh.castShadow = true;
   mesh.receiveShadow = true;

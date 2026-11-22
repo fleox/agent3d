@@ -108,6 +108,19 @@ describe("validateScene", () => {
     expect(at("objects#land.params.waterLevel")).toBeUndefined();
   });
 
+  it("accepts a material override on generators that support it, warns on the others", () => {
+    const s = base();
+    s.objects.push({ id: "blob", kind: "generator", generator: "blob", material: { type: "shader", shader: "gradientFlow" } });
+    s.objects.push({ id: "trees", kind: "generator", generator: "trees", material: { color: "#ff0000" } });
+    s.objects.push({ id: "rock", kind: "generator", generator: "rocks", material: { preset: "gld" } });
+    const iss = validateScene(s);
+    const at = (p: string) => iss.find((i) => i.path === p);
+    expect(at("objects#blob.material")).toBeUndefined();
+    expect(at("objects#trees.material")?.severity).toBe("warning");
+    expect(at("objects#trees.material")?.hint).toContain("blob");
+    expect(at("objects#rock.material.preset")?.severity).toBe("error");
+  });
+
   it("checks required params and point arrays", () => {
     const s = base();
     s.objects.push({ id: "vase", kind: "mesh", geometry: { type: "lathe" } });

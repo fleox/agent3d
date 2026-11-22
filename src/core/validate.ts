@@ -67,7 +67,7 @@ const OBJECT_KEYS: Record<(typeof OBJECT_KINDS)[number], string[]> = {
   text: ["text", "font", "size", "depth", "bevel", "align", "letterSpacing", "lineHeight", "material"],
   model: ["src", "fit", "center", "animation", "material"],
   group: [],
-  generator: ["generator", "params", "seed"],
+  generator: ["generator", "params", "seed", "material"],
   particles: ["preset", "count", "area", "size", "color", "speed", "direction", "spread", "lifetime", "opacity", "blending", "shape", "seed"],
   instances: ["geometry", "material", "layout", "colors"],
   svg: ["src", "size", "depth", "bevel", "material"],
@@ -737,6 +737,13 @@ function object(v: V, o: unknown, fallback: string) {
       if (o.params !== undefined && !isObj(o.params)) v.error("type", `${p}.params`, "params must be an object.");
       else if (entry) v.params("generators", entry, (o.params as Obj) ?? {}, `${p}.params`);
       v.number(o.seed, `${p}.seed`, { integer: true });
+      if (o.material !== undefined) {
+        material(v, o.material, `${p}.material`);
+        if (entry && !entry.material) {
+          const ok = CATALOG.generators.filter((g) => g.material).map((g) => g.id);
+          v.warn("ignored", `${p}.material`, `The "${entry.id}" generator ignores "material" (it uses its colour params).`, `Use its colour params (agent3d catalog generators ${entry.id}); material overrides work on: ${listOptions(ok)}.`);
+        }
+      }
       break;
     }
     case "particles":

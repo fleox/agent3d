@@ -97,6 +97,7 @@ export const planet: GeneratorImpl = (raw, ctx) => {
   group.name = "planet";
   const body = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85, metalness: 0 }));
   body.name = "planet-body";
+  body.userData.materialTarget = true; // object.material override
   body.castShadow = true;
   body.receiveShadow = true;
   // The globe spins around the rings' axis (tilted like the rings) so a

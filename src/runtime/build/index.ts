@@ -4,7 +4,7 @@
 
 import * as THREE from "three";
 import { GENERATORS } from "../../core/catalog";
-import type { LightDef, ObjectDef, SceneDoc } from "../../core/types";
+import type { LightDef, MaterialDef, ObjectDef, SceneDoc } from "../../core/types";
 import { BEHAVIOUR_IMPLS } from "../behaviours/index";
 import { createRunner, type BehaviourRunner } from "../behaviours/runner";
 import { createParticles, type ParticleSystem } from "../particles/index";
@@ -18,7 +18,7 @@ import { buildEnvironment, type BuiltEnvironment } from "./environment";
 import { buildGeometry } from "./geometry";
 import { buildInstances } from "./instances";
 import { buildLight, fitShadowCamera } from "./lights";
-import { createMaterial, fitGradient } from "./materials";
+import { createMaterial, fitGradient, resolveMaterialDef } from "./materials";
 import type { ModelAnimator } from "./model";
 
 export interface Rest {
@@ -142,6 +142,24 @@ export class World {
         }
       }
       this.fitShadows();
+    }
+  }
+
+  // object.material on a generator (catalog entry with `material`): replaces
+  // the material of its meshes tagged userData.materialTarget. A lit material
+  // without colour / map keeps the generator's vertex colours (palettes, ramps).
+  private async overrideGeneratorMaterial(root: THREE.Object3D, def: MaterialDef, ctx: RuntimeContext): Promise<void> {
+    const r = resolveMaterialDef(def);
+    const keepColors = r.type !== "shader" && r.type !== "normal" && r.type !== "gradient" && !r.color && !r.map;
+    const mat = await createMaterial(def, ctx, { vertexColors: keepColors });
+    const targets: THREE.Mesh[] = [];
+    root.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh && o.userData.materialTarget) targets.push(o as THREE.Mesh);
+    });
+    for (const m of targets) {
+      (m.material as THREE.Material).dispose();
+      m.material = mat;
+      fitGradient(mat, m.geometry);
     }
   }
 
@@ -271,6 +289,7 @@ export class World {
             this.updaters.push((t, dt) => up(t, dt));
           }
           siblings.set(def.id, built);
+          if (def.material && entry?.material) await this.overrideGeneratorMaterial(object, def.material, ctx);
           break;
         }
         default:

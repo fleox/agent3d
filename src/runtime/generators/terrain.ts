@@ -196,6 +196,7 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
   const group = new THREE.Group();
   group.name = "terrain";
   const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: lowpoly, roughness: 0.95, metalness: 0 }));
+  mesh.userData.materialTarget = true; // object.material override
   mesh.name = "terrain-ground";
   mesh.receiveShadow = true;
   mesh.castShadow = true;

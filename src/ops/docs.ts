@@ -31,6 +31,7 @@ function paramTable(params: ParamSpec[]): string {
 
 function entry(e: CatalogEntry, withParams: boolean): string {
   const parts = [`### \`${e.id}\`\n`, `${e.description}${e.cost ? ` _Cost: ~${e.cost.replace(/^~/, "")} triangles._` : ""}\n`];
+  if (e.material) parts.push(`**\`material\` override** (object-level \`"material": { … }\`): ${e.material}\n`);
   if (withParams) parts.push(paramTable(e.params));
   if (e.example) parts.push("```json\n" + JSON.stringify(e.example) + "\n```\n");
   return parts.join("\n");

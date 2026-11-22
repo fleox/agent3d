@@ -440,6 +440,8 @@ Procedural content, zero download: `{ "kind": "generator", "generator": "<id>", 
 
 Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes. _Cost: ~resolution^2*2 triangles._
 
+**`material` override** (object-level `"material": { … }`): The ground (not the water plane). Without colour / preset / map the palette bands are kept (e.g. { "roughness": 0.6, "flatShading": false }).
+
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `size` | number (0…∞) | `40` | Width/depth. |
@@ -472,6 +474,8 @@ Scattered stylised trees. _Cost: ~count*~150 triangles._
 ### `rocks`
 
 Scattered low-poly rocks. _Cost: ~count*80 triangles._
+
+**`material` override** (object-level `"material": { … }`): Every rock. Without colour / preset / map the per-rock colours are kept.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -568,6 +572,8 @@ Stylised low-poly character built from primitives, with procedural animations (i
 
 Small stylised planet with continents, optional rings and atmosphere. _Cost: ~20*4^detail triangles._
 
+**`material` override** (object-level `"material": { … }`): The globe surface (ocean + land; rings and atmosphere keep theirs). Without colour / preset / map the palette is kept.
+
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `radius` | number (0…∞) | `2` | Radius. |
@@ -595,6 +601,8 @@ Large sphere of stars around the scene (space backdrops). _Cost: ~count triangle
 ### `blob`
 
 Organic animated blob (noise-displaced sphere) — modern hero banners. _Cost: ~detail^2*2 triangles._
+
+**`material` override** (object-level `"material": { … }`): The whole blob; the morph keeps running with any material, shaders included (e.g. { "type": "shader", "shader": "gradientFlow" }, { "preset": "chrome" }). Without colour / preset / map the colour ramp is kept (e.g. { "type": "toon" }).
 
 | Param | Type | Default | Description |
 |---|---|---|---|

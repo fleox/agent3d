@@ -39,7 +39,7 @@ with `"environment": { "lighting": "studio" }` (or `{ "hdri": "library:hdri/stud
 
 **Soft pastel (characters, kids, friendly brands)**: `lighting: "soft"`, hemisphere white / tinted ground at 1, key 2–2.2 with shadows on a shadow-only ground, rim directional from behind in a warm tint at 1.5. Clay and toon materials.
 
-Too bright? Lower `environment.lightingIntensity` first (IBL adds up with every light), then point lights. A generator like `blob` is very reflective: point lights around 12 at distance 12 are plenty. Too flat? Raise the key and lower the fill; add a rim.
+Too bright? Lower `environment.lightingIntensity` first (IBL adds up with every light), then point lights. A generator like `blob` is very reflective: point lights around 12 at distance 12 are plenty (or give it its own look with an object-level `"material"`, e.g. `{ "type": "shader", "shader": "gradientFlow" }` — `agent3d catalog generators blob` lists what `material` overrides). Too flat? Raise the key and lower the fill; add a rim.
 
 ## Palettes
 

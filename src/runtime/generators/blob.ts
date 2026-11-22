@@ -1,7 +1,7 @@
 // Organic animated blob: a welded icosphere displaced on the CPU by 3D noise
 // each frame (pure function of t), so it works with ANY material the scene
 // assigns. Default: iridescent clearcoat physical material + soft vertex
-// colour gradient.
+// colour gradient. object.material replaces it (build/index.ts).
 
 import * as THREE from "three";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
@@ -50,6 +50,7 @@ export const blob: GeneratorImpl = (raw, ctx) => {
   });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = "blob";
+  mesh.userData.materialTarget = true; // object.material override (the CPU morph works with any material)
   mesh.castShadow = true;
   mesh.receiveShadow = true;
 

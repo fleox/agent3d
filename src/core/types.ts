@@ -219,6 +219,10 @@ export interface GeneratorObjectDef extends BaseObjectDef {
   generator: string; // catalog generator id: terrain, trees, rocks, water, clouds, city, character, grass, …
   params?: Record<string, unknown>;
   seed?: number;
+  // Material override for the generator's main surface (only generators whose
+  // catalog entry has `material`: blob, rocks, terrain, planet). Without
+  // a colour / preset / map, lit materials keep the generator's vertex colours.
+  material?: MaterialDef;
 }
 
 export interface ParticlesObjectDef extends BaseObjectDef {
