@@ -193,6 +193,8 @@ export const RENDER_TOOL: AiTool = {
       count: { type: "integer", minimum: 1, maximum: 16, description: "Or N evenly spaced frames over the timeline." },
       size: { type: "string", description: 'Pixel size "WxH" (default 1200 wide at the target aspect).' },
       sheet: { type: "boolean", description: "Compose a contact sheet (default true)." },
+      isolate: { type: "string", description: "Render only this object id, auto-framed from the front (+Z) three-quarter view on a neutral background — check a model's orientation / size after assets_add." },
+      bg: { type: "string", description: 'Background under the frames: "checker", a CSS colour or "none" (default: checkerboard under the sheet of transparent scenes).' },
       maxWidth: { type: "integer", minimum: 0, maximum: 4096, description: "Width in pixels of the image returned to the client (MCP image block): the sheet / first frame is scaled down to it to save context (default 800; 0 = full size). Full-size PNGs stay on disk (sheet, frames)." },
       input: {
         type: "array",
@@ -210,6 +212,8 @@ export const RENDER_TOOL: AiTool = {
       size: optStr(input, "size"),
       sheet: typeof input.sheet === "boolean" ? input.sheet : true,
       previewWidth: num(input, "maxWidth") ?? 800,
+      ...(optStr(input, "isolate") ? { isolate: optStr(input, "isolate") } : {}),
+      ...(optStr(input, "bg") ? { bg: optStr(input, "bg") } : {}),
       ...(Array.isArray(input.input) ? { input: input.input as Record<string, unknown>[] } : {}),
     });
     lastRender.set(ctx.fs, { stats: r.stats, inspect: r.inspect });
@@ -217,6 +221,7 @@ export const RENDER_TOOL: AiTool = {
       ...(r.dir ? { dir: r.dir } : {}),
       sheet: r.sheet,
       ...(r.preview ? { preview: r.preview } : {}),
+      ...(r.isolated ? { isolated: r.isolated } : {}),
       frames: r.frames,
       ...(r.state && Object.keys(r.state).length ? { state: r.state } : {}),
       stats: r.stats,

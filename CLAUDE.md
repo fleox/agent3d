@@ -140,7 +140,7 @@ Also: `agent3d export --format poster` (PNG/WebP still) and `--format video` (We
 
 ## Headless render (agent/render/)
 
-`agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--sheet] [--out renders/]` →
+`agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--sheet] [--isolate <id>] [--bg checker|<colour>|none] [--out renders/]` →
 1. starts a 127.0.0.1 HTTP server serving `dist/runtime`, the library and the project;
 2. launches the user's **installed Chrome / Chromium / Edge / Brave** (`agent/render/browser.ts` finds it; `AGENT3D_CHROME` overrides; none → hint to install Chrome or `npx playwright install chromium`) with `--headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --remote-debugging-port=0` and a temp profile;
 3. drives it with a hand-written CDP client over Node's global `WebSocket` (no puppeteer);

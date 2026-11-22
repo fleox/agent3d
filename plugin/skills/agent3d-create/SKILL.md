@@ -67,6 +67,11 @@ First run on a machine: `npx -y @fleox/agent3d@0.1.0 doctor --json` checks Node,
    - **Motion**: frames differ (something moves), but nothing jumps; the first frame is not empty (an `appear` behaviour hides objects at t = 0, so set `target.posterTime` after it).
    - Also read `data.issues`, `data.consoleErrors` and `data.inspect.objects` (each top-level object's `inView`: full / partial / none, and `screenCoverage`).
    - `--frames 0,2,4` picks exact times; `--size 390x700` simulates a phone-shaped container; `--scale 2` gives retina-sharp frames.
+   - `--isolate <objectId>` renders one object alone (no behaviours, scripts or UI), at the origin, auto-framed from the front three-quarter view (+Z front) on a neutral grey background, and returns `data.isolated.size`: the fastest way to check that a downloaded model faces +Z, stands upright and has a sensible size.
+     ```bash
+     npx -y @fleox/agent3d@0.1.0 render --project bakery-banner --isolate croissant-left --json
+     ```
+   - Transparent scenes (`target.transparent`): frames keep their alpha and the contact sheet gets a checkerboard behind them; `--bg "#ffffff"` (any CSS colour) previews the scene over the host page's colour, frames included; `--bg none` turns it off.
 6. **Fix and repeat** until it looks finished. Two or three iterations are normal; say what you changed and why.
 7. **Check** until there are no errors and no warnings:
    ```bash

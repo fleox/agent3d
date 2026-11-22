@@ -41,6 +41,19 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     expect(checks.find((c: { id: string }) => c.id === "render")).toMatchObject({ ok: true });
   }, 120_000);
 
+  it("render --isolate frames one object; --bg paints under transparent frames", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "iso");
+    await ok(["new", dir, "--target", "banner", "--title", "Iso"]);
+    const r = await ok(["render", "--project", dir, "--isolate", "title", "--size", "200x200"]);
+    expect(r.frames).toHaveLength(1);
+    expect(r.isolated).toMatchObject({ id: "title", size: expect.any(Array) });
+    expect(r.inspect.objects.map((o: { id: string }) => o.id)).toEqual(["title"]);
+    expect(r.inspect.objects[0].inView).toBe("full");
+    const bg = await ok(["render", "--project", dir, "--frames", "0", "--size", "200x100", "--bg", "#ff0000", "--isolate", "title"]);
+    const png = decodePng(readFileSync(resolve(bg.dir, bg.frames[0].path)));
+    expect(png.channels === 4 ? png.pixels[3] : 255).toBe(255);
+  }, 120_000);
+
   it("plays a game headlessly with --input and returns its state", async () => {
     const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "game");
     await ok(["new", dir, "--target", "game"]);

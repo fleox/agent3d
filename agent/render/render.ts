@@ -1,6 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
-import type { SceneDoc } from "../../src/core/types";
+import type { ObjectDef, SceneDoc } from "../../src/core/types";
+import { closest } from "../../src/core/suggest";
+import { findObject, walkObjects } from "../../src/ops/tree";
 import type { FrameStats, InspectResult, RuntimeIssue } from "../../src/runtime/api";
 import { CliError } from "../output";
 import { libraryDir, runtimeBuilt, runtimeDir } from "../paths";
@@ -189,7 +191,11 @@ export interface RenderSession {
   frame(t: number, type?: "image/png" | "image/webp", quality?: number): Promise<Uint8Array>;
   // seek(t) + screenshot of the whole page (includes the HUD / DOM overlays).
   screenshot(t: number, format?: "png" | "webp", quality?: number): Promise<Uint8Array>;
-  sheet(frames: Uint8Array[], labels: string[], cols?: number): Promise<Uint8Array>;
+  sheet(frames: Uint8Array[], labels: string[], cols?: number, bg?: string): Promise<Uint8Array>;
+  // A frame drawn over a background ("checker" or a CSS colour).
+  composite(png: Uint8Array, bg: string): Promise<Uint8Array>;
+  // Replace the mounted scene (player.update).
+  update(scene: SceneDoc): Promise<void>;
   // A PNG scaled down to maxWidth CSS pixels (unchanged when narrower).
   scale(png: Uint8Array, maxWidth: number): Promise<Uint8Array>;
   // seek(t) without capturing (to apply input events in between).
@@ -340,15 +346,15 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
         const r = await page.send<{ data: string }>("Page.captureScreenshot", { format, ...(quality !== undefined && format !== "png" ? { quality: Math.round(quality * 100) } : {}), fromSurface: true, captureBeyondViewport: false }, timeoutMs);
         return new Uint8Array(Buffer.from(r.data, "base64"));
       },
-      async sheet(frames, labels, cols) {
+      async sheet(frames, labels, cols, bg) {
         const urls = frames.map((f) => `data:image/png;base64,${b64(f)}`);
         const r = await page.send<{ result: { value?: unknown }; exceptionDetails?: unknown }>(
           "Runtime.callFunctionOn",
           {
-            functionDeclaration: "function (u, l, c) { return window.__agent3dSheet(u, l, c); }",
+            functionDeclaration: "function (u, l, c, b) { return window.__agent3dSheet(u, l, c, b); }",
             executionContextId: undefined,
             objectId: await globalObjectId(page),
-            arguments: [{ value: urls }, { value: labels }, { value: cols ?? 0 }],
+            arguments: [{ value: urls }, { value: labels }, { value: cols ?? 0 }, { value: bg ?? null }],
             awaitPromise: true,
             returnByValue: true,
           },
@@ -356,6 +362,18 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
         );
         if (r.exceptionDetails) throw new CliError("render-failed", "Could not compose the contact sheet.", "Render without --sheet, or with fewer frames.");
         return dataUrlBytes(r.result.value, "the contact sheet");
+      },
+      async composite(png, bg) {
+        const r = await page.send<{ result: { value?: unknown }; exceptionDetails?: unknown }>(
+          "Runtime.callFunctionOn",
+          { functionDeclaration: "function (u, b) { return window.__agent3dComposite(u, b); }", objectId: await globalObjectId(page), arguments: [{ value: `data:image/png;base64,${b64(png)}` }, { value: bg }], awaitPromise: true, returnByValue: true },
+          timeoutMs,
+        );
+        if (r.exceptionDetails) throw new CliError("render-failed", "Could not draw the frame over the background.", "Render without --bg.");
+        return dataUrlBytes(r.result.value, "the composited frame");
+      },
+      async update(next) {
+        await page.evaluate(`window.__agent3d.player.update(${JSON.stringify(next)}).then(() => true)`, timeoutMs);
       },
       async scale(png, maxWidth) {
         const r = await page.send<{ result: { value?: unknown }; exceptionDetails?: unknown }>(
@@ -420,6 +438,11 @@ export interface RenderOptions {
   input?: InputEvent[];
   // Also write `<stamp>-preview.png`: the sheet (or first frame) at most this wide (MCP image block).
   previewWidth?: number;
+  // Background drawn under the frames: "checker", a CSS colour or "none".
+  // Default: "checker" under the contact sheet of transparent scenes.
+  bg?: string;
+  // Render only this object, auto-framed, on a neutral background.
+  isolate?: string;
   timeoutMs?: number;
   log?: (msg: string) => void;
 }
@@ -429,6 +452,8 @@ export interface RenderResult {
   dir: string;
   frames: { t: number; path: string }[];
   sheet?: string;
+  // render --isolate: the object and the bounding box the camera framed.
+  isolated?: { id: string; size: [number, number, number]; center: [number, number, number]; note: string };
   // Down-scaled copy of the sheet / first frame (previewWidth), when it was wider.
   preview?: string;
   size: { width: number; height: number; deviceScaleFactor: number };
@@ -450,18 +475,93 @@ export function timestamp(d = new Date()): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
+// ─── render --isolate / --bg ────────────────────────────────────────────
+
+export function parseBg(bg: string | undefined): string | undefined {
+  if (bg === undefined) return undefined;
+  const v = bg.trim();
+  if (v === "checker" || v === "none") return v;
+  if (/^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v) || /^(rgb|rgba|hsl|hsla)\([^)]*\)$/i.test(v) || /^[a-z]{3,20}$/i.test(v)) return v;
+  throw new CliError("usage", `--bg must be "checker", "none" or a CSS colour, got "${bg}".`, 'e.g. --bg checker, --bg "#ffffff", --bg "rgb(20, 20, 30)", --bg white.', 2);
+}
+
+// The scene reduced to one object (scripts, UI, timeline, behaviours and
+// post effects dropped), at the origin, under neutral studio lights.
+export function isolateScene(scene: SceneDoc, id: string): SceneDoc {
+  const found = findObject(scene.objects, id);
+  if (!found) {
+    const ids: string[] = [];
+    walkObjects(scene.objects, (o) => void ids.push(o.id));
+    const s = closest(id, ids);
+    throw new CliError("notFound", `No object "${id}" to isolate.`, `${s ? `Did you mean "${s}"? ` : ""}\`agent3d object list\` lists the ids.`, 1);
+  }
+  const strip = (o: ObjectDef): ObjectDef => {
+    const { behaviours: _b, ...rest } = o as ObjectDef & { behaviours?: unknown };
+    const children = (rest as { children?: ObjectDef[] }).children;
+    return { ...(rest as ObjectDef), ...(children ? { children: children.map(strip) } : {}) } as ObjectDef;
+  };
+  const obj = { ...strip(found.object), position: [0, 0, 0], visible: true } as ObjectDef;
+  return {
+    version: scene.version,
+    id: `${scene.id ?? "scene"}-isolate`,
+    title: `${id} (isolated)`,
+    target: { kind: "square", aspect: "1:1" },
+    camera: { type: "perspective", fov: 35, position: [3, 2.5, 5], target: [0, 0.5, 0] },
+    environment: { background: "#dfe2e8", lighting: "studio" },
+    lights: [
+      { id: "fill", type: "hemisphere", skyColor: "#ffffff", groundColor: "#8c8f99", intensity: 1.1 },
+      { id: "key", type: "directional", position: [4, 8, 6], intensity: 2.2 },
+    ],
+    objects: [obj],
+  } as SceneDoc;
+}
+
+// A camera in front (+Z), slightly right and above, framing a box.
+export function frameBox(min: number[], max: number[], fov = 35, aspect = 1): { position: [number, number, number]; target: [number, number, number] } {
+  const c = [0, 1, 2].map((i) => (min[i] + max[i]) / 2);
+  const r = Math.max(0.01, Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2);
+  const half = ((fov / 2) * Math.PI) / 180;
+  const fit = Math.min(half, Math.atan(Math.tan(half) * aspect));
+  const d = (r / Math.sin(fit)) * 1.0; // bounding sphere: the object fills ~70-90 % of the frame
+  const dir = [0.45, 0.35, 1];
+  const n = Math.hypot(...dir);
+  const round = (v: number) => Math.round(v * 1000) / 1000;
+  return { position: [0, 1, 2].map((i) => round(c[i] + (dir[i] / n) * d)) as [number, number, number], target: c.map(round) as [number, number, number] };
+}
+
 export async function renderProject(opts: RenderOptions): Promise<RenderResult> {
   const t0 = Date.now();
-  const scene = opts.scene ?? readScene(opts.projectDir);
-  const viewport = viewportFor(scene, { size: opts.size, width: opts.width, scale: opts.scale });
+  const original = opts.scene ?? readScene(opts.projectDir);
+  const scene = opts.isolate ? isolateScene(original, opts.isolate) : original;
+  const bgOpt = parseBg(opts.bg);
+  const transparent = !!scene.target?.transparent;
+  const frameBg = bgOpt && bgOpt !== "none" ? bgOpt : undefined;
+  const sheetBg = bgOpt === "none" ? undefined : (bgOpt ?? (transparent ? "checker" : undefined));
+  const viewport = viewportFor(scene, { size: opts.size ?? (opts.isolate ? "800x800" : undefined), width: opts.width, scale: opts.scale });
   const inputs = opts.input ?? [];
-  let times = frameTimes(scene, { frames: opts.frames, count: opts.count });
+  let times = frameTimes(scene, { frames: opts.frames, count: opts.count ?? (opts.isolate ? 1 : undefined) });
   // Seeking backwards restarts the game: with inputs, render in time order.
   if (inputs.length) times = [...times].sort((a, b) => a - b);
   const capture = !opts.capture || opts.capture === "auto" ? (scene.ui?.elements?.length ? "page" : "canvas") : opts.capture;
   const outDir = resolve(opts.outDir ?? join(opts.projectDir, "renders"));
   const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, timeoutMs: opts.timeoutMs, log: opts.log });
   try {
+    let isolated: RenderResult["isolated"];
+    if (opts.isolate) {
+      // Frame the object's real bounds, then re-mount with that camera.
+      const first = (await session.info()).inspect?.objects.find((o) => o.id === opts.isolate);
+      if (first) {
+        const cam = frameBox(first.min, first.max, 35, viewport.width / viewport.height);
+        await session.update({ ...scene, camera: { ...scene.camera, ...cam } } as SceneDoc);
+        const r = (v: number) => Math.round(v * 1000) / 1000;
+        isolated = {
+          id: opts.isolate,
+          size: first.max.map((v, i) => r(v - first.min[i])) as [number, number, number],
+          center: first.max.map((v, i) => r((v + first.min[i]) / 2)) as [number, number, number],
+          note: "Front three-quarter view with the object's scene rotation and scale: the camera looks from +Z (front), slightly right (+X) and above (+Y). A model facing the camera faces +Z.",
+        };
+      }
+    }
     const tf = Date.now();
     const shots: Uint8Array[] = [];
     let next = 0;
@@ -470,7 +570,8 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
         await session.seek(inputs[next].t);
         await session.input(inputs[next]);
       }
-      shots.push(capture === "page" ? await session.screenshot(t) : await session.frame(t));
+      const shot = capture === "page" ? await session.screenshot(t) : await session.frame(t);
+      shots.push(frameBg ? await session.composite(shot, frameBg) : shot);
     }
     const framesMs = Date.now() - tf;
     const info = await session.info();
@@ -483,7 +584,7 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
     });
     let sheet: string | undefined;
     if (opts.sheet) {
-      const bytes = await session.sheet(shots, times.map((t) => `t = ${t.toFixed(2)} s`), opts.cols);
+      const bytes = await session.sheet(shots, times.map((t) => `t = ${t.toFixed(2)} s`), opts.cols, frameBg ? undefined : sheetBg);
       sheet = join(outDir, `${stamp}-sheet.png`);
       writeFileSync(sheet, bytes);
     }
@@ -502,6 +603,7 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
       frames: frames.map((f) => ({ t: f.t, path: projectPath(projectDir, f.path) })),
       ...(sheet ? { sheet: projectPath(projectDir, sheet) } : {}),
       ...(preview ? { preview: projectPath(projectDir, preview) } : {}),
+      ...(isolated ? { isolated } : {}),
       size: viewport,
       capture,
       stats: info.stats,

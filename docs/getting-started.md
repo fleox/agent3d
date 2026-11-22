@@ -52,6 +52,8 @@ npx -y @fleox/agent3d@0.1.0 export --project bakery --json
 <agent3d-scene src="./bakery/scene.json" poster="./bakery/poster.webp" aria-label="Golden Crust — animated 3D banner"></agent3d-scene>
 ```
 
+Useful render options: `--sheet` (contact sheet), `--size 390x700` (phone), `--isolate <objectId>` (one object alone, auto-framed from the front — check a model's orientation), `--bg checker|<colour>` (background under transparent scenes; transparent scenes get a checkerboard sheet by default), `--input` (simulated game input, see [scripting.md](scripting.md#testing-scripts)).
+
 ## Next
 
 - See it live while you edit: `npx -y @fleox/agent3d@0.1.0 serve --project bakery --open`, or the visual editor: `npx -y @fleox/agent3d@0.1.0 studio --project bakery`.

@@ -3,7 +3,8 @@
 // exposes:
 //   window.__agent3d          { player, issues, ready, error, webgl }  (HeadlessHandle + diagnostics)
 //   window.__agent3dFrame(t, type?, quality?)   seek(t) + snapshot() → data URL
-//   window.__agent3dSheet(urls, labels, cols)   contact sheet (grid + time labels) → PNG data URL
+//   window.__agent3dSheet(urls, labels, cols, bg?)   contact sheet (grid + time labels) → PNG data URL
+//   window.__agent3dComposite(url, bg)   a frame over a background ("checker" or a CSS colour) → PNG data URL
 //   window.__agent3dRender(times, sheet?, cols?) all of the above in one call
 //   window.__agent3dInfo()    { stats, inspect, issues, state }
 
@@ -38,7 +39,27 @@ window.__agent3dFrame = async (t, type, quality) => {
   return p.snapshot(type || "image/png", quality);
 };
 
-window.__agent3dSheet = async (urls, labels, cols) => {
+// Background under transparent frames: "checker" (grey / white squares) or a CSS colour.
+const paintBg = (g, x, y, w, h, bg) => {
+  if (!bg) return;
+  if (bg !== "checker") { g.fillStyle = bg; g.fillRect(x, y, w, h); return; }
+  const s = Math.max(8, Math.round(Math.min(w, h) / 32));
+  g.fillStyle = "#ffffff"; g.fillRect(x, y, w, h);
+  g.fillStyle = "#d9d9de";
+  for (let j = 0; j * s < h; j++) for (let i = j % 2; i * s < w; i += 2) g.fillRect(x + i * s, y + j * s, Math.min(s, w - i * s), Math.min(s, h - j * s));
+};
+
+window.__agent3dComposite = async (url, bg) => {
+  const img = await loadImage(url);
+  const cv = document.createElement("canvas");
+  cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+  const g = cv.getContext("2d");
+  paintBg(g, 0, 0, cv.width, cv.height, bg);
+  g.drawImage(img, 0, 0);
+  return cv.toDataURL("image/png");
+};
+
+window.__agent3dSheet = async (urls, labels, cols, bg) => {
   const imgs = await Promise.all(urls.map(loadImage));
   const n = imgs.length;
   const w0 = imgs[0].naturalWidth, h0 = imgs[0].naturalHeight;
@@ -60,6 +81,7 @@ window.__agent3dSheet = async (urls, labels, cols) => {
   g.textBaseline = "middle";
   imgs.forEach((img, i) => {
     const x = gap + (i % cols) * (cellW + gap), y = gap + Math.floor(i / cols) * (cellH + gap);
+    paintBg(g, x, y, cellW, cellH, bg);
     g.drawImage(img, x, y, cellW, cellH);
     const label = labels[i] || "";
     if (label) {

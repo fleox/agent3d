@@ -38,6 +38,10 @@ export interface RenderOptions {
   out?: string;
   // Also write a preview of the sheet at most this many pixels wide (MCP image block; 0 = none).
   previewWidth?: number;
+  // Render only this object, auto-framed, neutral background.
+  isolate?: string;
+  // Background under the frames: "checker", a CSS colour or "none".
+  bg?: string;
   // Games: simulated input applied while seeking (frames render in time order):
   // { t, key, down? | hold? } | { t, click: [x, y] } | { t, pointer: [x, y], down? } | { t, pointerDown: [x, y] }
   // | { t, pointerUp: [x, y] | true } | { t, drag: { from, to, duration? } } | { t, swipe: "left"|"right"|"up"|"down" } (coordinates -1..1).
@@ -51,6 +55,7 @@ export interface RenderResult {
   sheet?: string;
   // Down-scaled sheet / first frame (previewWidth) — what MCP shows as the image.
   preview?: string;
+  isolated?: { id: string; size: [number, number, number]; center: [number, number, number]; note: string };
   stats?: FrameStats;
   inspect?: InspectResult;
   // Script-visible game state (api.state) after the last frame.

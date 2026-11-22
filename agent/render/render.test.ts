@@ -6,7 +6,7 @@ import { decodePng, pngVariance } from "./png";
 import { MINIMAL_SCENE, writeFakeDist } from "../testing/fakeRuntime";
 import { findBrowser } from "./browser";
 import { CliError } from "../output";
-import { frameTimes, inputCall, parseInputScript, projectPath, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
+import { frameBox, frameTimes, inputCall, isolateScene, parseBg, parseInputScript, projectPath, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
 
 // The render pipeline (server → Chrome → CDP → page → PNG files) against a
 // stand-in runtime. Runs only when a Chromium-family browser is installed.
@@ -84,6 +84,25 @@ describe("render --input scripts and paths", () => {
     expect(err([{ t: 1, click: [0, 0], hold: 1 }]).message).toMatch(/unknown field "hold" for a "click" event/);
     expect(err([{ t: 1, swipe: "diagonal" }]).message).toMatch(/swipe/);
     expect(err([{ t: 1, drag: { from: [0, 0], to: [1, 0], speed: 2 } }]).message).toMatch(/unknown drag field "speed"/);
+  });
+  it("isolates one object and frames a box from the front", () => {
+    const scene = { version: 1, id: "s", title: "S", target: { kind: "banner", aspect: "4:1" }, camera: { type: "perspective", fov: 50, position: [0, 0, 9], target: [0, 0, 0] }, lights: [], scripts: ["scripts/game.js"], ui: { elements: [] }, objects: [{ id: "g", kind: "group", children: [{ id: "fox", kind: "model", src: "a.glb", position: [5, 1, 2], rotation: [0, 90, 0], behaviours: [{ type: "float" }] }] }] } as never;
+    const iso = isolateScene(scene, "fox");
+    expect(iso.objects).toEqual([{ id: "fox", kind: "model", src: "a.glb", position: [0, 0, 0], rotation: [0, 90, 0], visible: true }]);
+    expect(iso.scripts).toBeUndefined();
+    expect(iso.ui).toBeUndefined();
+    expect(() => isolateScene(scene, "fx")).toThrow(/No object "fx"/);
+    const cam = frameBox([-1, 0, -1], [1, 2, 1]);
+    expect(cam.target).toEqual([0, 1, 0]);
+    expect(cam.position[2]).toBeGreaterThan(cam.position[0]);
+    expect(cam.position[1]).toBeGreaterThan(1);
+  });
+  it("validates --bg", () => {
+    expect(parseBg("checker")).toBe("checker");
+    expect(parseBg("#fff")).toBe("#fff");
+    expect(parseBg("rgb(1, 2, 3)")).toBe("rgb(1, 2, 3)");
+    expect(parseBg(undefined)).toBeUndefined();
+    expect(() => parseBg("url(x)")).toThrow(/--bg/);
   });
   it("maps events to Player.input calls", () => {
     expect(inputCall({ t: 0, swipe: "up" })).toBe('i.swipe?.("up")');

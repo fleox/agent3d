@@ -38,9 +38,11 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
               outDir: opts.out ? fs.resolve(opts.out) : undefined,
               input: opts.input ? (await import("./render/render")).parseInputScript(opts.input) : undefined,
               previewWidth: opts.previewWidth,
+              isolate: opts.isolate,
+              bg: opts.bg,
               log: (m) => void process.stderr.write(`${m}\n`),
             });
-            return { dir: r.dir, frames: r.frames, ...(r.sheet ? { sheet: r.sheet } : {}), ...(r.preview ? { preview: r.preview } : {}), ...(r.stats ? { stats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}), state: r.state, issues: r.issues.map(runtimeIssueToIssue), consoleErrors: r.consoleErrors };
+            return { dir: r.dir, frames: r.frames, ...(r.sheet ? { sheet: r.sheet } : {}), ...(r.preview ? { preview: r.preview } : {}), ...(r.isolated ? { isolated: r.isolated } : {}), ...(r.stats ? { stats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}), state: r.state, issues: r.issues.map(runtimeIssueToIssue), consoleErrors: r.consoleErrors };
           },
         }
       : {}),
