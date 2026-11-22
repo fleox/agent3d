@@ -1,6 +1,6 @@
 // Stylised low-poly characters built from primitives with a real bone
 // hierarchy (rig → hips → torso → head / shoulders → elbows, hips → knees),
-// one merged vertex-coloured mesh per bone, and procedural animations that
+// skinned into one vertex-coloured mesh (+ one for glowing parts), and procedural animations that
 // are pure functions of t: idle, walk, run, wave, jump, dance.
 //
 // Pointer: `object.userData.setPointer(x, y)` (normalised -1..1) turns the
@@ -48,7 +48,10 @@ interface Colors {
   accent: THREE.Color;
 }
 
-// Collects primitives per bone, then turns each into one mesh.
+// Collects primitives per bone, then skins them: ONE SkinnedMesh for the solid
+// parts and one for the glowing parts (unlit), each vertex bound rigidly
+// (weight 1) to its bone. Two draw calls per character (+ shadow / outline
+// passes) instead of one or two per bone.
 class Parts {
   private map = new Map<THREE.Object3D, { solid: MeshBuilder; glow: MeshBuilder }>();
   add(bone: THREE.Object3D, geo: THREE.BufferGeometry, m: THREE.Matrix4, color: THREE.Color | ((x: number, y: number, z: number, f: number) => THREE.Color), glow = false): void {
@@ -57,16 +60,49 @@ class Parts {
     (glow ? e.glow : e.solid).add(geo, m, color);
     geo.dispose();
   }
-  finish(solid: THREE.Material, glow: THREE.Material): void {
-    for (const [bone, e] of this.map) {
-      for (const [b, mat, tag] of [[e.solid, solid, "solid"], [e.glow, glow, "glow"]] as const) {
+  finish(rig: THREE.Object3D, solid: THREE.Material, glow: THREE.Material): void {
+    // Bind pose = the rest pose, in rig space (the rig has no parent yet).
+    rig.updateMatrixWorld(true);
+    const bones: THREE.Object3D[] = [];
+    rig.traverse((o) => {
+      if (o !== rig && o instanceof THREE.Group) bones.push(o);
+    });
+    const skeleton = new THREE.Skeleton(bones as THREE.Bone[]);
+    for (const tag of ["solid", "glow"] as const) {
+      const pos: number[] = [];
+      const col: number[] = [];
+      const idx: number[] = [];
+      const v = new THREE.Vector3();
+      for (const [bone, e] of this.map) {
+        const b = e[tag];
         if (b.triangles === 0) continue;
-        const mesh = new THREE.Mesh(b.build(), mat);
-        mesh.name = `${bone.name}-${tag}`;
-        mesh.castShadow = true;
-        mesh.receiveShadow = tag === "solid";
-        bone.add(mesh);
+        const bi = bones.indexOf(bone);
+        for (let k = 0; k < b.pos.length; k += 3) {
+          v.set(b.pos[k]!, b.pos[k + 1]!, b.pos[k + 2]!).applyMatrix4(bone.matrixWorld);
+          pos.push(v.x, v.y, v.z);
+          idx.push(bi, 0, 0, 0);
+        }
+        col.push(...b.col);
       }
+      if (!pos.length) continue;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+      geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(idx, 4));
+      const w = new Float32Array(idx.length);
+      for (let k = 0; k < w.length; k += 4) w[k] = 1;
+      geo.setAttribute("skinWeight", new THREE.BufferAttribute(w, 4));
+      geo.computeVertexNormals();
+      geo.computeBoundingBox();
+      geo.computeBoundingSphere();
+      const mesh = new THREE.SkinnedMesh(geo, tag === "solid" ? solid : glow);
+      mesh.name = `character-${tag}`;
+      mesh.castShadow = true;
+      mesh.receiveShadow = tag === "solid";
+      // Limbs leave the bind-pose bounds when animated; characters are small.
+      mesh.frustumCulled = false;
+      rig.add(mesh);
+      mesh.bind(skeleton, new THREE.Matrix4());
     }
   }
 }
@@ -589,7 +625,7 @@ export const character: GeneratorImpl = (raw, ctx) => {
   const r = BUILD[style](colors, parts);
   const solid = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: style === "robot" ? 0.45 : 0.75, metalness: style === "robot" ? 0.25 : 0 });
   const glow = new THREE.MeshBasicMaterial({ vertexColors: true });
-  parts.finish(solid, glow);
+  parts.finish(r.rig, solid, glow);
 
   // Normalise the rest pose to the requested height (feet at y = 0).
   r.rig.updateMatrixWorld(true);
