@@ -1,0 +1,18 @@
+{
+  "id": "character-showcase",
+  "title": "Character showcase",
+  "description": "Cartoon character line-up: an animated library knight cheering on a central pedestal between two procedural characters (a waving robot and a dancing cat), toon outlines and confetti.",
+  "kind": "hero",
+  "tags": [
+    "character",
+    "mascot",
+    "animated",
+    "toon",
+    "outline",
+    "pedestal",
+    "knight",
+    "robot",
+    "cartoon"
+  ],
+  "aspect": "16:9"
+}
