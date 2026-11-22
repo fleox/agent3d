@@ -142,6 +142,7 @@ Set `target.posterTime` to a frame where obstacles are on screen (3 s in the lan
 - `render --frames 0,2,4,6 --sheet` and look: obstacles appear, the autopilot dodges, the HUD shows the right phase.
 - `data.issues` / `data.consoleErrors` show script errors (`script-error` with the script path).
 - `render --input '[{"t": 0.5, "key": "ArrowLeft", "hold": 1}]'` plays simulated input while seeking; `data.state` (the script's `api.state` after the last frame) tells whether it worked (score, phase, lives).
+- Test touch controls with the same render: `{"t": 0.5, "swipe": "left"}` (→ `api.input.swipe()`), `{"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.3}}` (press, pointer moves, release), `{"t": 1, "pointerDown": [0, -0.5]}` … `{"t": 2, "pointerUp": true}` (hold-to-charge, slingshots).
 - A phase that needs input (game over): put `"startPhase": "over"` in `scene.data`, call `reset(api.data.startPhase ?? "ready")` in `start`, render, then remove it.
 - Show values you want to verify in a temporary HUD text (`"text": "speed {speed}"`) and read them on the render.
 - Deterministic: same seed, same frames. If two renders of the same time differ, something uses `Math.random()` or wall-clock time.

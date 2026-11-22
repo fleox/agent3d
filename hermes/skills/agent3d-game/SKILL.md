@@ -79,7 +79,7 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
    ```bash
    python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project dodge --sheet --frames 0,1,2,3 --input '[{"t": 0.2, "click": [0, -0.3]}, {"t": 0.5, "key": "ArrowLeft", "hold": 0.6}, {"t": 1.5, "key": "Space", "down": true}, {"t": 1.6, "key": "Space", "down": false}]' --json
    ```
-   Events: `{ "t", "key", "down" }` (`key` is a `KeyboardEvent.code`: `ArrowLeft`, `KeyA`, `Space`…; `down: false` releases), `{ "t", "key", "hold": seconds }` (press and release), `{ "t", "click": [x, y] }`, `{ "t", "pointer": [x, y] }` (canvas coordinates −1..1, y up; a click on a HUD button does not trigger it — emit the action from a key instead while testing). Use `@inputs.json` for longer scripts. MCP: `render_preview` takes the same events as `input`.
+   Events: `{ "t", "key", "down" }` (`key` is a `KeyboardEvent.code`: `ArrowLeft`, `KeyA`, `Space`…; `down: false` releases), `{ "t", "key", "hold": seconds }` (press and release), `{ "t", "click": [x, y] }`, `{ "t", "pointer": [x, y] }` (add `"down": true` / `false` to press / release there), `{ "t", "pointerDown": [x, y] }` and `{ "t", "pointerUp": [x, y] }` (hold the pointer: `api.input.pointer.down`), `{ "t", "drag": { "from": [x, y], "to": [x, y], "duration": 0.4 } }` (press, move, release), `{ "t", "swipe": "left" | "right" | "up" | "down" }` (what `api.input.swipe()` returns next step) — canvas coordinates −1..1, y up; a click on a HUD button does not trigger it — emit the action from a key instead while testing. Unknown fields are rejected (exit 2, the hint lists the valid shapes). Test the touch controls too, e.g. `--input '[{"t": 0.5, "swipe": "left"}, {"t": 1.2, "drag": {"from": [0, -0.5], "to": [0, 0.3], "duration": 0.3}}]'`. Use `@inputs.json` for longer scripts. MCP: `render_preview` takes the same events as `input`.
 7. To test a state that is hard to reach with input (game over screen, high score), temporarily set the starting phase in `api.data` (e.g. `"startPhase": "over"`), render, then restore it.
 8. `check`, then `export` (skill `agent3d-publish`). Games export like any scene; the embed gets keyboard focus on click (`tabindex`, `role="application"`).
 
@@ -97,7 +97,7 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
 ## Rules
 
 - No external code, no network, no DOM: only `api`. Tell the user when a request needs something the sandbox forbids (online leaderboards, analytics) and offer a local alternative (best score in storage).
-- Games must be playable on phones: touch swipes / taps for every control, big HUD buttons, no hover-only interactions.
+- Games must be playable on phones: touch swipes / taps for every control, big HUD buttons, no hover-only interactions. The HUD scales with the embed and anchors in one row never overlap (3 × 3 grid; side columns get ~80 px on a 360 px phone): keep side texts short, put sentences in `top` / `center` / `bottom`, and check with `render --size 360x640`.
 - Audio starts only after a user gesture (browser rule); the HUD shows a mute toggle. Keep sounds short and not too loud (`volume` 0.4–0.6).
 - Reduced motion: games default to `target.reducedMotion: "ignore"` (the player drives the motion); other kinds default to `static`. Don't set `static` on a game: it would freeze it.
 - Keep the first frame meaningful (attract mode) and `target.posterTime` on a frame with action: it is the poster and the reduced-motion still.

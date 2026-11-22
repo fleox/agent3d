@@ -19,7 +19,7 @@ Agent3D turns a JSON **scene** (`scene.json` in a project folder) into a 3D elem
 
 Every command is `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py <command> --json` and prints one object: `{"ok": true, "data": …}` or `{"ok": false, "error": {"code", "message", "hint"}}`. Read `error.hint` when `ok` is false: it says what to do. `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py help scene --json` lists any command's actions and options. Pass `--project <dir>` to every project command (default: the current directory).
 
-First run on a machine: `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py doctor --json` checks Node, Chrome and does a test render. Without Chrome, renders and posters fail with a hint (install Chrome, or set `AGENT3D_CHROME`); `export --no-poster` still works.
+First run on a machine: `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py doctor --json` checks Node, Chrome and does a test render: `{ ok: true, data: { checks } }` when everything required passes, else `{ ok: false, error: { code: "doctor-failed", hint } }` (exit 1) with one hint per failed check and every check in `error.details.checks`. Without Chrome, renders and posters fail with a hint (install Chrome, or set `AGENT3D_CHROME`); `export --no-poster` still works.
 
 ## Running the commands (Hermes)
 
@@ -82,6 +82,11 @@ Every `agent3d <command>` below runs through this skill's Python wrapper: `pytho
    - **Motion**: frames differ (something moves), but nothing jumps; the first frame is not empty (an `appear` behaviour hides objects at t = 0, so set `target.posterTime` after it).
    - Also read `data.issues`, `data.consoleErrors` and `data.inspect.objects` (each top-level object's `inView`: full / partial / none, and `screenCoverage`).
    - `--frames 0,2,4` picks exact times; `--size 390x700` simulates a phone-shaped container; `--scale 2` gives retina-sharp frames.
+   - `--isolate <objectId>` renders one object alone (no behaviours, scripts or UI), at the origin, auto-framed from the front three-quarter view (+Z front) on a neutral grey background, and returns `data.isolated.size`: the fastest way to check that a downloaded model faces +Z, stands upright and has a sensible size.
+     ```bash
+     python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --project bakery-banner --isolate croissant-left --json
+     ```
+   - Transparent scenes (`target.transparent`): frames keep their alpha and the contact sheet gets a checkerboard behind them; `--bg "#ffffff"` (any CSS colour) previews the scene over the host page's colour, frames included; `--bg none` turns it off.
 6. **Fix and repeat** until it looks finished. Two or three iterations are normal; say what you changed and why.
 7. **Check** until there are no errors and no warnings:
    ```bash
