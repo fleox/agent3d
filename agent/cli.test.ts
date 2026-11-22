@@ -91,6 +91,15 @@ describe("CLI contract", () => {
     expect(internal.message).toContain("ENOENT");
   });
 
+  it("validation messages never end with a double period", async () => {
+    const dir = join(tmp(), "dots");
+    await ok(["new", dir, "--target", "banner"]);
+    const r = await cli(["object", "update", "title", "--set", 'behaviours=[{"type":"hoverscale"}]', "--project", dir]);
+    expect(r.code).toBe(2);
+    expect(r.body.error?.message).toContain('Unknown behaviour "hoverscale". Nothing was written.');
+    expect(r.body.error?.message).not.toMatch(/[^.]\.\.(?!\.)/);
+  });
+
   it("pages the built-in library and shows animation clips", async () => {
     const first = await ok(["assets", "library"]);
     expect(first.assets.length).toBeLessThanOrEqual(50);

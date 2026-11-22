@@ -21,7 +21,7 @@ function validationError(issues: Issue[], plan?: unknown): CliError {
   const first = errs[0];
   return new CliError(
     "validation",
-    `The change makes the scene invalid: ${errs.length} error${errs.length > 1 ? "s" : ""}${first ? ` — ${first.path}: ${first.message}` : ""}. Nothing was written.`,
+    `The change makes the scene invalid: ${errs.length} error${errs.length > 1 ? "s" : ""}${first ? ` — ${first.path}: ${first.message.replace(/[.!?]+$/, "")}` : ""}. Nothing was written.`,
     first?.hint ?? "Fix the listed issues (details.issues: JSON path + message + hint) and retry; `agent3d catalog <section> <id>` documents the parameters.",
     2,
     { issues, ...(plan !== undefined ? { plan } : {}) },

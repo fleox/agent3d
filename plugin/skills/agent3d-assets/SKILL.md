@@ -30,7 +30,7 @@ npx -y @fleox/agent3d@0.1.0 assets library --kind hdri --json
 npx -y @fleox/agent3d@0.1.0 assets library --query character --kind model --json
 ```
 
-Each hit has `ref` (use it as is in the scene), `description` (with the bounding box), `tags`, `license`, `kb`, and for models `triangles` and `animations` (the clip names of animated models). Listings show 50 results per page: narrow with `--query` and `--kind`; when `more` is true, page with `--offset 50` (or `--limit 100`, `--all`).
+The answer lists the matches in `data.assets[]` (with `data.total` and `data.more`; `assets search` below names its list `data.hits[]` instead). Each entry has `ref` (use it as is in the scene), `description` (with the bounding box), `tags`, `license`, `kb`, and for models `triangles` and `animations` (the clip names of animated models). Listings show 50 results per page: narrow with `--query` and `--kind`; when `more` is true, page with `--offset 50` (or `--limit 100`, `--all`).
 
 ```bash
 npx -y @fleox/agent3d@0.1.0 assets library --kind model --offset 50 --json
@@ -55,7 +55,7 @@ npx -y @fleox/agent3d@0.1.0 assets search sunset --kind hdri --source polyhaven 
 npx -y @fleox/agent3d@0.1.0 assets search fox --source khronos --project my-scene --json
 ```
 
-Hits: `source`, `id`, `title`, `kind`, `license`, `author`, `attribution` (when the licence needs one), `previewUrl` (show it to the user or open it), `pageUrl`, `downloads` (resolutions / formats). Per-source failures come in `data.errors` without failing the search. Search terms match titles and tags: try synonyms ("planks", "wood floor") when a search is poor.
+The answer lists the matches in `data.hits[]`; each hit has `source`, `id`, `title`, `kind`, `license`, `author`, `attribution` (when the licence needs one), `previewUrl` (show it to the user or open it), `pageUrl`, `downloads` (resolutions / formats). Per-source failures come in `data.errors` without failing the search. Search terms match titles and tags: try synonyms ("planks", "wood floor") when a search is poor.
 
 Download one hit into the project (licence recorded in `assets/manifest.json`):
 
