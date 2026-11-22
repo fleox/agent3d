@@ -17,7 +17,11 @@ export interface BehaviourRunner {
   dispose(): void;
 }
 
-export function createRunner(def: BehaviourDef, impl: BehaviourImpl, ctx: BehaviourContext): BehaviourRunner {
+// Entrance behaviours: with reduced motion "static" they are considered complete.
+export const ENTRANCE_BEHAVIOURS = new Set(["appear"]);
+const SETTLED_TIME = 1e6;
+
+export function createRunner(def: BehaviourDef, impl: BehaviourImpl, ctx: BehaviourContext, opts: { settled?: () => boolean } = {}): BehaviourRunner {
   const inst: BehaviourInstance = impl(def, ctx);
   const when = def.when ?? "always";
   const delay = num(def.delay, 0);
@@ -26,6 +30,10 @@ export function createRunner(def: BehaviourDef, impl: BehaviourImpl, ctx: Behavi
   return {
     def,
     step(t, dt) {
+      if (opts.settled?.() && ENTRANCE_BEHAVIOURS.has(def.type) && (when === "always" || when === "visible")) {
+        inst.update(SETTLED_TIME, dt);
+        return;
+      }
       let local: number;
       switch (when) {
         case "hover":

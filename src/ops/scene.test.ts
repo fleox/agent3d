@@ -5,6 +5,9 @@ import type { SceneDoc } from "../core/types";
 import { OpsError } from "./context";
 import { addObject, getObject, listObjects, moveObject, removeObject, updateObject } from "./objects";
 import { createProject, loadProject, saveScene } from "./project";
+import { starterScene } from "./starters";
+import { walkObjects } from "./tree";
+import { TARGET_KINDS } from "../core/validate";
 import { applyPatchOps, applyScene, diffScenes, getScene, patchScene, summarizeScene } from "./scene";
 import { addTrack, editTimeline, removeTrack, setTimeline } from "./timeline";
 
@@ -45,6 +48,16 @@ describe("project", () => {
     expect(scene.target).toMatchObject({ kind: "banner", aspect: "4:1" });
     expect(scene.objects.find((o) => o.id === "title")).toMatchObject({ kind: "text", text: "Test Banner" });
     await expect(createProject(fs, { name: "again" })).rejects.toMatchObject({ code: "conflict" });
+  });
+  it("starter posters show finished entrances (posterTime ≥ appear delay + duration)", () => {
+    for (const kind of TARGET_KINDS) {
+      const scene = starterScene({ title: "Hello", target: { kind } });
+      let end = 0;
+      walkObjects(scene.objects, (o) => {
+        for (const b of o.behaviours ?? []) if (b.type === "appear") end = Math.max(end, Number(b.delay ?? 0) + Number((b as { duration?: number }).duration ?? 0.8));
+      });
+      expect(scene.target.posterTime ?? 0, kind).toBeGreaterThanOrEqual(end);
+    }
   });
   it("game starter ships a script", async () => {
     const fs = await project("game");

@@ -66,6 +66,16 @@ describe("behaviours", () => {
 });
 
 describe("behaviour runner", () => {
+  it("settles entrance behaviours (reduced motion static)", () => {
+    const o = new THREE.Object3D();
+    const r = createRunner({ type: "appear", effect: "rise", duration: 1, delay: 0.5 }, BEHAVIOUR_IMPLS.appear, ctxFor(o), { settled: () => true });
+    r.step(0, 0);
+    expect(o.scale.x).toBeCloseTo(1);
+    expect(o.position.y).toBeCloseTo(0);
+    const o2 = new THREE.Object3D();
+    createRunner({ type: "appear", effect: "rise", duration: 1 }, BEHAVIOUR_IMPLS.appear, ctxFor(o2), { settled: () => false }).step(0, 0);
+    expect(o2.scale.x).toBeLessThan(0.01);
+  });
   it("respects delay", () => {
     const o = new THREE.Object3D();
     const r = createRunner({ type: "rotate", speed: 90, delay: 1 }, BEHAVIOUR_IMPLS.rotate, ctxFor(o));

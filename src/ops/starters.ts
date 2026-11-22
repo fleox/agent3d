@@ -7,11 +7,19 @@ import { slugify } from "../core/ids";
 import type { LightDef, ObjectDef, SceneDoc, TargetDef, TargetKind } from "../core/types";
 import { SCENE_VERSION } from "../core/types";
 
-const studioLights = (): LightDef[] => [
-  { id: "fill", type: "hemisphere", skyColor: "#e8ecff", groundColor: "#3a2f5c", intensity: 0.9 },
-  { id: "key", type: "directional", position: [4, 6, 6], intensity: 2.2, castShadow: true },
-  { id: "rim", type: "point", position: [-5, 2, -3], color: "#7cc8ff", intensity: 30, distance: 20 },
+// Bloom runs on the HDR image (before tone mapping): keep the lights moderate
+// and the bloom threshold above 1 so only highlights glow and a light title
+// stays readable.
+const studioLights = (k = 1): LightDef[] => [
+  { id: "fill", type: "hemisphere", skyColor: "#e8ecff", groundColor: "#3a2f5c", intensity: 0.6 * k },
+  { id: "key", type: "directional", position: [4, 6, 6], intensity: 1.6 * k, castShadow: true },
+  { id: "rim", type: "point", position: [-5, 2, -3], color: "#7cc8ff", intensity: 18 * k, distance: 20 },
 ];
+
+// The title's entrance (appear) lasts APPEAR_S: posters and reduced-motion
+// visitors (frozen at target.posterTime) must see the finished title.
+const APPEAR_S = 1;
+const POSTER_TIME = 1.5;
 
 function title(text: string, size: number, extra: Partial<ObjectDef> = {}): ObjectDef {
   return {
@@ -22,9 +30,9 @@ function title(text: string, size: number, extra: Partial<ObjectDef> = {}): Obje
     size,
     depth: size * 0.3,
     bevel: size * 0.03,
-    material: { preset: "plastic", color: "#ffffff", roughness: 0.25 },
+    material: { preset: "plastic", color: "#ebe3f7", roughness: 0.4 },
     behaviours: [
-      { type: "appear", effect: "rise", duration: 1 },
+      { type: "appear", effect: "rise", duration: APPEAR_S },
       { type: "float", amplitude: 0.08, speed: 0.4 },
     ],
     ...extra,
@@ -44,33 +52,38 @@ const shape = (id: string, type: string, position: [number, number, number], col
   ],
 });
 
+// Banner 4:1 (fov 30, camera z 12 → ~25.7 × 6.4 units visible at z 0): the
+// title (size 0.8, ~8.5 units wide for 14 characters) leaves room for props
+// beyond x = ±5.
 function banner(text: string): Pick<SceneDoc, "camera" | "environment" | "lights" | "objects" | "postfx"> {
   return {
     camera: { type: "perspective", fov: 30, position: [0, 0, 12], target: [0, 0, 0], controls: "parallax", parallax: { strength: 0.4, smoothing: 0.92 } },
-    environment: { background: { gradient: ["#1b1446", "#4a2a8f", "#ff7ab6"], angle: 20 }, lighting: "studio", lightingIntensity: 0.8 },
+    environment: { background: { gradient: ["#1b1446", "#4a2a8f", "#ff7ab6"], angle: 20 }, lighting: "studio", lightingIntensity: 0.6 },
     lights: studioLights(),
     objects: [
-      title(text, 1),
-      shape("torus", "torus", [-6.2, 0.6, -1.5], "#ffb3d9", { radius: 0.6, tube: 0.22 }),
-      shape("gem", "icosahedron", [6.3, -0.4, -1], "#8fd3ff", { radius: 0.7, detail: 0 }, 0.4),
-      shape("pill", "capsule", [4.2, 1.3, -2.5], "#ffe08a", { radius: 0.25, length: 0.5 }, 0.7),
+      title(text, 0.8),
+      shape("torus", "torus", [-7.6, 0.5, -1.5], "#ff9ccf", { radius: 0.6, tube: 0.22 }),
+      shape("gem", "icosahedron", [7.8, -0.5, -1], "#7cc8ff", { radius: 0.7, detail: 0 }, 0.4),
+      shape("pill", "capsule", [5.9, 1.6, -2.5], "#ffd36e", { radius: 0.25, length: 0.5 }, 0.7),
+      shape("block", "roundedBox", [-5.8, -1.6, -2.5], "#b9a2ff", { width: 0.6, height: 0.6, depth: 0.6, radius: 0.1 }, 0.2),
       { id: "dust", kind: "particles", preset: "dust", count: 120, area: [26, 7, 6], size: 0.05, color: "#ffffff", opacity: 0.6 },
     ],
-    postfx: [{ type: "bloom", strength: 0.35, radius: 0.4, threshold: 0.9 }],
+    postfx: [{ type: "bloom", strength: 0.25, radius: 0.5, threshold: 1.5 }],
   };
 }
 
+// Hero 16:9: the title above a glossy blob, both centred.
 function hero(text: string): ReturnType<typeof banner> {
   return {
     camera: { type: "perspective", fov: 35, position: [0, 0.3, 10], target: [0, 0, 0], controls: "parallax", parallax: { strength: 0.5 } },
-    environment: { background: { radial: ["#2b1f63", "#0c0a1f"] }, lighting: "studio" },
-    lights: studioLights(),
+    environment: { background: { radial: ["#2b1f63", "#0c0a1f"] }, lighting: "studio", lightingIntensity: 0.6 },
+    lights: studioLights(0.8),
     objects: [
-      { id: "blob", kind: "generator", generator: "blob", params: { radius: 1.6, noise: 0.35, speed: 0.35 }, position: [2.6, 0, -1] },
-      title(text, 0.8, { position: [-2.2, 0.2, 0.5], align: "center" } as Partial<ObjectDef>),
+      { id: "blob", kind: "generator", generator: "blob", params: { radius: 1.4, noise: 0.3, speed: 0.35 }, position: [0, -1.05, -1.5] },
+      title(text, 0.7, { position: [0, 1.75, 0.5] } as Partial<ObjectDef>),
       { id: "sparkles", kind: "particles", preset: "dust", count: 160, area: [16, 9, 6], size: 0.05, color: "#cfc6ff", opacity: 0.7 },
     ],
-    postfx: [{ type: "bloom", strength: 0.4, radius: 0.5, threshold: 0.85 }, { type: "vignette", darkness: 0.9 }],
+    postfx: [{ type: "bloom", strength: 0.25, radius: 0.5, threshold: 1.5 }, { type: "vignette", darkness: 0.9 }],
   };
 }
 
@@ -81,23 +94,23 @@ function card(text: string): ReturnType<typeof banner> {
     lights: studioLights(),
     objects: [
       { id: "pedestal", kind: "mesh", geometry: { type: "cylinder", radiusTop: 1.2, radiusBottom: 1.3, height: 0.4, segments: 64 }, material: { preset: "clay", color: "#fff4ea" }, position: [0, -0.8, 0], receiveShadow: true, castShadow: true },
-      { id: "knot", kind: "mesh", geometry: { type: "torusKnot", radius: 0.6, tube: 0.2 }, material: { preset: "pearl", color: "#ffd1dc" }, position: [0, 0.6, 0], castShadow: true, behaviours: [{ type: "rotate", speed: 25 }, { type: "float", amplitude: 0.1, speed: 0.4 }, { type: "hoverScale", scale: 1.1 }] },
-      title(text, 0.35, { position: [0, 2.1, 0], material: { preset: "matte", color: "#5a3e5d" } } as Partial<ObjectDef>),
+      { id: "knot", kind: "mesh", geometry: { type: "torusKnot", radius: 0.55, tube: 0.18 }, material: { preset: "pearl", color: "#ff9fb8" }, position: [0, 0.45, 0], castShadow: true, behaviours: [{ type: "rotate", speed: 25 }, { type: "float", amplitude: 0.1, speed: 0.4 }, { type: "hoverScale", scale: 1.1 }] },
+      title(text, 0.24, { position: [0, 1.75, 0], material: { preset: "matte", color: "#5a3e5d" } } as Partial<ObjectDef>),
     ],
   };
 }
 
 function square(text: string): ReturnType<typeof banner> {
   return {
-    camera: { type: "perspective", fov: 35, position: [0, 0.5, 7], target: [0, 0, 0], controls: "orbit", orbitZoom: false, autoRotate: 10 },
-    environment: { background: { radial: ["#3a1c71", "#0f0c29"] }, lighting: "studio" },
-    lights: studioLights(),
+    camera: { type: "perspective", fov: 35, position: [0, 0.4, 7], target: [0, 0, 0], controls: "orbit", orbitZoom: false },
+    environment: { background: { radial: ["#3a1c71", "#0f0c29"] }, lighting: "studio", lightingIntensity: 0.6 },
+    lights: studioLights(0.8),
     objects: [
-      { id: "gem", kind: "mesh", geometry: { type: "icosahedron", radius: 1.3, detail: 0 }, material: { preset: "holographic" }, behaviours: [{ type: "rotate", axis: [0.2, 1, 0], speed: 20 }, { type: "float", amplitude: 0.12, speed: 0.4 }] },
-      title(text, 0.35, { position: [0, -2, 0.5] } as Partial<ObjectDef>),
+      { id: "gem", kind: "mesh", geometry: { type: "icosahedron", radius: 1, detail: 0 }, material: { preset: "holographic" }, position: [0, 0.5, 0], behaviours: [{ type: "rotate", axis: [0.2, 1, 0], speed: 20 }, { type: "float", amplitude: 0.12, speed: 0.4 }] },
+      title(text, 0.28, { position: [0, -1.25, 0.5] } as Partial<ObjectDef>),
       { id: "stars", kind: "particles", preset: "stars", count: 200, area: [12, 12, 8], size: 0.04 },
     ],
-    postfx: [{ type: "bloom", strength: 0.5, radius: 0.4, threshold: 0.8 }],
+    postfx: [{ type: "bloom", strength: 0.35, radius: 0.4, threshold: 1.5 }],
   };
 }
 
@@ -113,7 +126,12 @@ function landscape(text: string): ReturnType<typeof banner> {
       { id: "terrain", kind: "generator", generator: "terrain", params: { size: 60, height: 7, shape: "island", waterLevel: 0.8 }, seed: 7, receiveShadow: true },
       { id: "trees", kind: "generator", generator: "trees", params: { count: 60, area: [40, 0, 40], style: "mixed" }, seed: 3, castShadow: true },
       { id: "clouds", kind: "generator", generator: "clouds", params: { count: 7, height: 14 } },
-      title(text, 1.4, { position: [0, 8, 0], material: { preset: "clay", color: "#ffffff" } } as Partial<ObjectDef>),
+      // The camera orbits: the title billboards to stay readable.
+      title(text, 1.1, {
+        position: [0, 8.8, 10],
+        material: { preset: "plastic", color: "#25406b", roughness: 0.4 },
+        behaviours: [{ type: "appear", effect: "rise", duration: APPEAR_S }, { type: "billboard" }, { type: "float", amplitude: 0.15, speed: 0.3 }],
+      } as Partial<ObjectDef>),
     ],
   };
 }
@@ -130,7 +148,7 @@ function game(text: string): ReturnType<typeof banner> & Pick<SceneDoc, "scripts
       { id: "floor", kind: "mesh", geometry: { type: "box", width: 20, height: 0.5, depth: 20 }, material: { preset: "matte", color: "#b8e0a8" }, position: [0, -0.25, 0], receiveShadow: true, body: { type: "static" } },
       { id: "player", kind: "mesh", geometry: { type: "roundedBox", width: 0.8, height: 0.8, depth: 0.8, radius: 0.15 }, material: { preset: "plastic", color: "#ff6b6b" }, position: [0, 0.4, 0], castShadow: true, body: { type: "kinematic" }, tags: ["player"] },
       { id: "coins", kind: "group", children: [-4, -1.5, 2, 4.5].map((x, i) => ({ id: `coin-${i + 1}`, kind: "mesh" as const, geometry: { type: "cylinder" as const, radiusTop: 0.3, radiusBottom: 0.3, height: 0.08 }, material: { preset: "gold" }, position: [x, 0.6, i % 2 ? -3 : 3] as [number, number, number], rotation: [90, 0, 0] as [number, number, number], tags: ["coin"], body: { type: "trigger" as const }, behaviours: [{ type: "rotate", axis: [0, 0, 1], speed: 120 }] })) },
-      title(text, 0.6, { position: [0, 3, -6], behaviours: [{ type: "float", amplitude: 0.1, speed: 0.4 }] } as Partial<ObjectDef>),
+      title(text, 0.6, { position: [0, 3, -6], material: { preset: "plastic", color: "#5b3fd1", roughness: 0.35 }, behaviours: [{ type: "float", amplitude: 0.1, speed: 0.4 }] } as Partial<ObjectDef>),
     ],
     scripts: ["scripts/game.js"],
     ui: { elements: [{ id: "score", type: "text", text: "Coins: {score}", anchor: "top-left", style: "pill" }], color: "#2b2340" },
@@ -177,9 +195,9 @@ export function starterScene(opts: { title: string; id?: string; target?: Partia
     id: opts.id ?? slugify(opts.title, "scene"),
     title: opts.title,
     ariaLabel: `${opts.title} — animated 3D ${kind === "game" ? "mini game" : kind}`,
-    target: { ...opts.target, kind, aspect: opts.target?.aspect ?? DEFAULT_ASPECT[kind] },
+    target: { ...(kind === "game" ? {} : { posterTime: POSTER_TIME }), ...opts.target, kind, aspect: opts.target?.aspect ?? DEFAULT_ASPECT[kind] },
     ...body,
   };
-  if (kind === "banner" || kind === "hero" || kind === "square") scene.timeline = { duration: 8, loop: true, tracks: [{ target: "title.rotation.y", keys: [[0, -6], [4, 6], [8, -6]], ease: "inOutSine" }] };
+  if (kind === "banner" || kind === "hero" || kind === "square" || kind === "inline") scene.timeline = { duration: 8, loop: true, tracks: [{ target: "title.rotation.y", keys: [[0, -6], [4, 6], [8, -6]], ease: "inOutSine" }] };
   return scene;
 }

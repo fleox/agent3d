@@ -79,8 +79,8 @@ npx -y @fleox/agent3d@0.1.0 scene validate --file candidate.json --json
 | `transparent` | false | Transparent canvas: the page shows through (background ignored) |
 | `lazy` / `pauseOffscreen` | true / true | Start when visible; pause when scrolled away |
 | `maxDpr` | 2 | Cap of the device pixel ratio |
-| `reducedMotion` | `static` (games: `ignore`) | For visitors who prefer reduced motion: `static` freezes on `posterTime`, `slow` halves speeds, `ignore` plays normally |
-| `posterTime` | 0 | Time of the poster frame and the reduced-motion still |
+| `reducedMotion` | `static` (games: `ignore`) | For visitors who prefer reduced motion: `static` freezes on `posterTime` with entrance behaviours (`appear`) shown finished, `slow` halves speeds, `ignore` plays normally |
+| `posterTime` | 0 | Time of the poster frame and the reduced-motion still. Pick a time after every `appear` (delay + duration) — starters use 1.5 |
 | `antialias` | true | |
 | `shadows` | true when a light casts shadows | |
 | `toneMapping` / `exposure` | `aces` / 1 | `none`, `aces`, `agx`, `neutral`, `reinhard` |

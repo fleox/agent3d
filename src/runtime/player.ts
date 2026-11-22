@@ -247,6 +247,7 @@ class PlayerImpl implements Player {
 
   private async attachWorld(world: World): Promise<void> {
     this.world = world;
+    world.settleEntrances = this.staticMotion;
     this.postfx?.dispose();
     this.postfx = null;
     if (this.scene.postfx?.length && this.renderer) {

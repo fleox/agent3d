@@ -82,6 +82,8 @@ export class World {
   env: BuiltEnvironment | null = null;
   entries = new Map<string, WorldEntry>();
   timeline: TimelineRunner | null = null;
+  // Reduced motion "static": entrance behaviours (`appear`) show their final state.
+  settleEntrances = false;
   private updaters: ((t: number, dt: number) => void)[] = [];
   private cameraRest0 = { position: new THREE.Vector3(), target: new THREE.Vector3(), fov: 45 };
   private viewportH = 600;
@@ -174,7 +176,7 @@ export class World {
         this.ctx.issue("unknown-catalog-id", `Unknown behaviour "${b.type}"`, `objects#${entry.id}.behaviours`);
         continue;
       }
-      entry.runners.push(createRunner(b, impl, this.behaviourContext(entry)));
+      entry.runners.push(createRunner(b, impl, this.behaviourContext(entry), { settled: () => this.settleEntrances }));
       if (INTERACTIVE_BEHAVIOURS.has(b.type) || b.when === "hover" || b.when === "click") entry.interactive = true;
     }
     if (entry.runners.length) entry.animated = true;
