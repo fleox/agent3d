@@ -1,0 +1,19 @@
+{
+  "id": "game-tap-targets",
+  "title": "Tap the targets",
+  "description": "Playable 30-second reflex game: targets pop out of nine holes, tap or click them, chain hits for a combo multiplier, golden targets score 5\u00d7 \u2014 best score saved, touch + keyboard, attract mode.",
+  "kind": "game",
+  "tags": [
+    "game",
+    "reflex",
+    "tap",
+    "click",
+    "combo",
+    "arcade",
+    "mobile",
+    "touch",
+    "score",
+    "casual"
+  ],
+  "aspect": "16:9"
+}
