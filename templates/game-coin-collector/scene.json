@@ -13,11 +13,11 @@
   },
   "camera": {
     "type": "perspective",
-    "fov": 50,
+    "fov": 58,
     "position": [
       0,
-      6.4,
-      7.4
+      5.4,
+      8.4
     ],
     "target": [
       0,
@@ -29,8 +29,8 @@
       "target": "hero",
       "offset": [
         0,
-        5.6,
-        5.4
+        4.2,
+        6
       ],
       "smoothing": 0.9
     }
