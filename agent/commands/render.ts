@@ -17,8 +17,8 @@ const log = (m: string) => void process.stderr.write(`${m}\n`);
 
 export const renderCommand: Command = {
   name: "render",
-  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] | --video out.mp4|out.webm [--fps 30] [--duration 6] | --gif out.gif | --webp out.webp [--project <dir>]",
-  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size and return { path, format, codec, frames, fps, duration, size, bytes }.",
+  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--reduced-motion] [--segment <name>] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] | --video out.mp4|out.webm [--fps 30] [--duration 6] | --gif out.gif | --webp out.webp [--project <dir>]",
+  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes / HUD button clicks / emitted events and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size (with --input, --segment, --scroll and --reduced-motion applied too) and return { path, format, codec, frames, fps, duration, size, bytes }. Scenes whose timeline waits for a click / interaction: --segment <name> plays that segment from the start.",
   writes: true,
   options: [
     PROJECT_OPTION,
@@ -30,13 +30,15 @@ export const renderCommand: Command = {
     { name: "sheet", type: "boolean", description: "Also compose a contact sheet (grid with time labels) — the one image to look at." },
     { name: "cols", type: "string", description: "Contact sheet columns (default: from the aspect)." },
     { name: "capture", type: "string", description: "canvas (WebGL canvas only), page (includes the HUD / DOM overlays) or auto (page when the scene has a ui; default)." },
-    { name: "input", type: "string", description: 'Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2], "down": true}, {"t": 4, "pointerUp": true}, {"t": 1, "pointerDown": [0, 0]}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 2, "swipe": "left"}] (key = KeyboardEvent.code, coordinates -1..1, y up; unknown fields are rejected). Frames render in time order.' },
+    { name: "input", type: "string", description: 'Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2], "down": true}, {"t": 4, "pointerUp": true}, {"t": 1, "pointerDown": [0, 0]}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 2, "swipe": "left"}, {"t": 1, "scroll": 0.5}, {"t": 3, "emit": "retry"}, {"t": 3, "ui": "retryBtn"} (click a HUD button by id), {"t": 0, "segment": "intro"}] (key = KeyboardEvent.code, coordinates -1..1, y up; unknown fields are rejected). Frames render in time order; --video / --gif / --webp apply each event at its time.' },
     { name: "isolate", type: "string", description: "Render only this object (behaviours, scripts, UI dropped), at the origin, auto-framed from the front (+Z) three-quarter view on a neutral background (default 800x800, 1 frame) — to check a model's orientation and size. Returns isolated { size, center }." },
     { name: "bg", type: "string", description: 'Background drawn under the frames: "checker", a CSS colour ("#fff", "rgb(…)", "white") or "none". Default: a checkerboard under the contact sheet of transparent scenes (frames keep their alpha).' },
     { name: "out", type: "string", description: "Output folder, relative to the project folder (default <project>/renders)." },
     { name: "quality", type: "string", description: "Supersampling: draft / standard (1×, default), high (2×), ultra (3×) — rendered larger and downscaled for smoother edges and detail (clamped to 4096 px)." },
     { name: "transparent", type: "boolean", description: "Render with a transparent canvas (alpha PNG / GIF / WebP) even if the scene has a background." },
-    { name: "scroll", type: "string", description: "Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page). Renders one frame unless --frames / --count are given." },
+    { name: "scroll", type: "string", description: "Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page). Renders one frame unless --frames / --count are given; frames are named by progress (<stamp>-s0_5.png) and carry `scroll`." },
+    { name: "reduced-motion", type: "boolean", description: "Mount the scene as visitors with prefers-reduced-motion see it (reducedMotion: true — static pose / poster time)." },
+    { name: "segment", type: "string", description: 'Play this timeline segment (timeline.segments, or "timeline") from t = 0 (media: from --start) — to film or check scenes whose timeline waits for a click / interaction (autoplay false, trigger manual / click).' },
     { name: "video", type: "string", description: "Render a video file instead of PNGs (default 1280 px wide): .mp4 (H.264, needs Google Chrome) or .webm (VP9), path relative to the project folder. Frame-exact; see --fps, --duration, --start, --size, --quality." },
     { name: "gif", type: "string", description: "Render an animated GIF, path relative to the project folder (looping, global palette, frame differencing; default 640 px wide, 15 fps)." },
     { name: "webp", type: "string", description: "Render an animated WebP, path relative to the project folder (smaller than GIF, alpha; default 800 px wide, 20 fps)." },
@@ -52,6 +54,11 @@ export const renderCommand: Command = {
     const { parseQuality } = await import("../render/render");
     const quality = parseQuality(strOpt(options, "quality"));
     const scroll = numOpt(options, "scroll");
+    const { parseInputScript } = await import("../render/render");
+    const rawInput = strOpt(options, "input") !== undefined ? jsonOpt(options, "input", `--input '[{"t": 0.5, "key": "ArrowRight", "hold": 1}]' or --input @inputs.json`) : undefined;
+    const input = rawInput === undefined ? undefined : parseInputScript(rawInput);
+    const segment = strOpt(options, "segment");
+    const reducedMotion = boolOpt(options, "reduced-motion");
     const mediaOpts = (["video", "gif", "webp"] as const).filter((k) => strOpt(options, k) !== undefined);
     if (mediaOpts.length > 1) usage("Use only one of --video, --gif, --webp per render.");
     if (mediaOpts.length) {
@@ -76,6 +83,10 @@ export const renderCommand: Command = {
         bg: strOpt(options, "bg"),
         transparent: boolOpt(options, "transparent"),
         bitrate: mbps === undefined ? undefined : mbps * 1e6,
+        input,
+        segment,
+        reducedMotion,
+        scroll,
         timeoutMs: timeoutMs(options),
         log,
       });
@@ -84,9 +95,7 @@ export const renderCommand: Command = {
     }
     const capture = strOpt(options, "capture");
     if (capture && !["auto", "canvas", "page"].includes(capture)) usage(`--capture must be auto, canvas or page, got "${capture}".`);
-    const { renderProject, parseInputScript } = await import("../render/render");
-    const rawInput = strOpt(options, "input") !== undefined ? jsonOpt(options, "input", `--input '[{"t": 0.5, "key": "ArrowRight", "hold": 1}]' or --input @inputs.json`) : undefined;
-    const input = rawInput === undefined ? undefined : parseInputScript(rawInput);
+    const { renderProject } = await import("../render/render");
     // A scroll position is one state: one frame unless --frames / --count ask for more.
     const frames = renderFrames(strOpt(options, "frames"), numOpt(options, "count"), scroll);
     const r = await renderProject({
@@ -105,6 +114,8 @@ export const renderCommand: Command = {
       quality,
       transparent: boolOpt(options, "transparent"),
       scroll,
+      reducedMotion,
+      segment,
       outDir: strOpt(options, "out") ? projectPath(fs.root, strOpt(options, "out")!) : undefined,
       timeoutMs: timeoutMs(options),
       log,
@@ -115,10 +126,11 @@ export const renderCommand: Command = {
       ...(r.inspect?.camera.insideObject ? [`The camera is inside "${r.inspect.camera.insideObject}".`] : []),
       ...(r.issues.length ? [`${r.issues.length} runtime issue(s): see issues.`] : []),
       ...(r.consoleErrors.length ? [`${r.consoleErrors.length} console error(s): see consoleErrors.`] : []),
+      ...(r.inputWarnings ?? []),
     ];
     printResult(io, { ...r, ...(hints.length ? { hints } : {}) }, () =>
       [
-        ...r.frames.map((f) => `t=${f.t}s  ${resolve(r.dir, f.path)}`),
+        ...r.frames.map((f) => `${f.scroll !== undefined ? `scroll=${f.scroll} ` : ""}t=${f.t}s  ${resolve(r.dir, f.path)}`),
         ...(r.sheet ? [`sheet   ${resolve(r.dir, r.sheet)}`] : []),
         ...(r.isolated ? [`isolated "${r.isolated.id}": size ${r.isolated.size.join(" × ")} (w × h × d) — ${r.isolated.note}`] : []),
         ...(r.state && Object.keys(r.state).length ? [`state   ${JSON.stringify(r.state)}`] : []),
@@ -147,9 +159,9 @@ function dirNonEmpty(dir: string): string[] {
 
 export const exportCommand: Command = {
   name: "export",
-  usage: "export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--yes] [--project <dir>]",
+  usage: "export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--prune-runtime] [--yes] [--project <dir>]",
   summary:
-    "Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Overwriting a non-empty --out needs --yes.",
+    "Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Reports pageKb / pageKbGzip (what a visitor downloads for this scene: runtime entry + the chunks it loads + scene, assets, scripts, poster) and folderKb (every file written). Overwriting a non-empty --out needs --yes.",
   writes: true,
   options: [
     PROJECT_OPTION,
@@ -161,6 +173,7 @@ export const exportCommand: Command = {
     { name: "no-integrity", type: "boolean", description: "embed / zip: no Subresource Integrity hash on the runtime <script> (default: integrity=\"sha384-…\")." },
     { name: "no-extras", type: "boolean", description: "embed / zip: skip EMBED.md and frameworks/ (React / Vue / Svelte wrappers)." },
     { name: "no-poster", type: "boolean", description: "embed / zip / single-html: don't render a poster nor og-image (no Chrome needed)." },
+    { name: "prune-runtime", type: "boolean", description: "embed / zip: copy only the runtime chunks this scene loads (smaller folder). Only for a runtime folder used by this scene alone — other scenes sharing it may need the left-out chunks; kept whole when a chunk's feature is unknown." },
     { name: "no-og", type: "boolean", description: "embed / zip: don't render the 1200×630 og-image.png social preview." },
     { name: "optimize", type: "boolean", description: "embed / zip / single-html: export optimised copies of the assets (project and library) — textures at the size the scene needs (format kept), .glb geometry meshopt-compressed with WebP textures. The project is not modified. Textures need Chrome." },
     { name: "image", type: "string", description: "poster: webp (default), png or jpeg." },
@@ -247,6 +260,7 @@ export const exportCommand: Command = {
       cacheBust: boolOpt(options, "cache-bust"),
       integrity: !boolOpt(options, "no-integrity"),
       extras: !boolOpt(options, "no-extras"),
+      pruneRuntime: boolOpt(options, "prune-runtime"),
       version,
     }).finally(() => closeCodec?.());
     const optimized = optimizeReport?.();
@@ -260,10 +274,11 @@ export const exportCommand: Command = {
     const entry = resolve(out, r.entry);
     printResult(
       io,
-      { format, out, entry, snippet: r.snippet, ...(r.head ? { head: r.head } : {}), ...(r.integrity ? { integrity: r.integrity } : {}), ...(r.runtimeDir ? { runtimeDir: r.runtimeDir } : {}), totalKb: r.totalKb, sizes: r.sizes, ...(optimized ? { optimized } : {}), credits: r.credits, issues: r.issues, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) },
+      { format, out, entry, snippet: r.snippet, ...(r.head ? { head: r.head } : {}), ...(r.integrity ? { integrity: r.integrity } : {}), ...(r.runtimeDir ? { runtimeDir: r.runtimeDir } : {}), pageKb: r.pageKb, ...(r.pageKbGzip !== undefined ? { pageKbGzip: r.pageKbGzip } : {}), folderKb: r.folderKb, totalKb: r.totalKb, sizes: r.sizes, page: r.page, ...(optimized ? { optimized } : {}), credits: r.credits, issues: r.issues, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) },
       () =>
         [
-          `Exported ${format} → ${out} (${r.totalKb} KB, ${written.length} files)`,
+          `Exported ${format} → ${out} (folder ${r.folderKb} KB, ${written.length} files)`,
+          `Page weight: ${r.pageKb} KB${r.pageKbGzip !== undefined ? ` (${r.pageKbGzip} KB gzipped)` : ""} — runtime ${r.page.runtimeKb} KB (${r.page.runtimeFiles.length} files; ${r.page.skippedChunks.length} lazy chunks this scene never loads${r.page.pruned ? ", left out" : ""}) + scene, assets, scripts, poster.`,
           `Open: ${entry}`,
           ...(optimized ? [`Optimised asset copies: ${optimized.beforeKb} → ${optimized.afterKb} KB (saved ${optimized.savedKb} KB; the project is unchanged).`] : []),
           ...(format === "zip" ? [] : ["", "Paste in your page:", r.snippet]),

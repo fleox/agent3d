@@ -20,7 +20,7 @@ import { FullScreenQuad } from "three/addons/postprocessing/Pass.js";
 import { activePostFx, qualitySettings, type QualitySettings } from "../../core/postfx";
 import type { PostFxDef } from "../../core/types";
 import { num } from "../util";
-import { BackgroundPass, SANITIZE_GLSL } from "./background";
+import { BackgroundPass, hasTransmission, SANITIZE_GLSL, SceneBackdrop } from "./background";
 import { type Cam, type EffectHandle, type EffectImpl, type FxRuntime, fsMaterial, GBuffer, ShaderFxPass } from "./common";
 import { FinishPass } from "./finish";
 import { createAo, createBloom, createDof, createGodrays, createLensflare, createOutline } from "./hdr";
@@ -213,7 +213,11 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
     const ortho = (camera as THREE.OrthographicCamera).isOrthographicCamera;
     let [prev, next] = accum;
     for (let i = 0; i < samples; i++) {
-      const jx = halton(i + 1, 2) - 0.5, jy = halton(i + 1, 3) - 0.5;
+      // Each MSAA render already box-filters one pixel: a full ±0.5 px jitter
+      // on top doubles the filter width (thin strokes and small text go soft
+      // and pale). Halve the jitter when the scene target is multisampled.
+      const js = msaa > 0 ? 0.5 : 1;
+      const jx = (halton(i + 1, 2) - 0.5) * js, jy = (halton(i + 1, 3) - 0.5) * js;
       if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera || ortho) camera.setViewOffset(pw, ph, jx, jy, pw, ph);
       renderScene(sceneTarget);
       accMat.uniforms.tDiffuse.value = sceneTarget.texture;
@@ -233,6 +237,9 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
 
   let clearColor = new THREE.Color();
   let clearAlpha = 1;
+  let backdrop: SceneBackdrop | null = null;
+  let wantsBackdrop = false;
+  let backdropReady = false;
   function renderScene(target: THREE.WebGLRenderTarget) {
     // Volumetric spot cones fade softly against the scene depth (lights.ts):
     // publish the shared depth pre-pass (it never contains the cones).
@@ -243,7 +250,20 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
       scene.userData.a3dDepth = { texture: gb.depthTexture, width: pw, height: ph };
     }
     const bg = scene.background;
+    // Transmissive materials sample the scene behind them: give that pass the
+    // background (see SceneBackdrop). Reflectors (water) see it too.
+    const backdropOn = !!bg && wantsBackdrop;
+    if (backdropOn) {
+      backdrop ??= new SceneBackdrop(bgPass.texture);
+      if (!backdropReady) bgPass.prepare(renderer);
+      backdropReady = true;
+      backdrop.mainTarget = target;
+      if (backdrop.mesh.parent !== scene) scene.add(backdrop.mesh);
+      backdrop.mesh.visible = true;
+    }
     scene.background = null;
+    // Planar reflections (water) render the mirrored scene WITH its background.
+    scene.userData.a3dBackground = bg;
     renderer.setRenderTarget(target);
     renderer.setClearColor(0x000000, 0);
     renderer.clear();
@@ -252,6 +272,8 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
     } finally {
       scene.background = bg;
       delete scene.userData.a3dDepth;
+      delete scene.userData.a3dBackground;
+      if (backdrop) backdrop.mesh.visible = false;
     }
   }
 
@@ -282,6 +304,8 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
       const autoClear = renderer.autoClear;
       renderer.autoClear = true;
       const samples = Math.max(1, Math.floor(opts?.samples ?? 1));
+      wantsBackdrop = hasTransmission(scene);
+      backdropReady = false;
       let read: THREE.WebGLRenderTarget, write: THREE.WebGLRenderTarget;
       try {
         if (samples > 1) {
@@ -335,6 +359,7 @@ export function createPostFx(defs: PostFxDef[], ctx: PostFxContext, onUnknown: (
       accMat?.dispose();
       resolveMat?.dispose();
       quad.dispose();
+      backdrop?.dispose();
     },
   };
 }

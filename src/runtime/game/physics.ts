@@ -184,6 +184,11 @@ interface Rec {
   torques: C.Vec3[];
   lastGrounded: number; // world time
   jumpedAt: number;
+  // Characters: ground state measured at the end of each step (contacts +
+  // a short probe below the feet) so teleports between steps keep it.
+  ground: Rec | null;
+  onGround: boolean;
+  carry: C.Vec3 | null; // platform velocity added for the current step
   view: Body;
 }
 
@@ -201,6 +206,10 @@ const cq = (q: Q4 | undefined) => (q ? new C.Quaternion(q[0], q[1], q[2], q[3]) 
 const DEFAULT_FRICTION = 0.5;
 const DEFAULT_RESTITUTION = 0.2;
 const PRISM_DEPTH = 0.08;
+// Character ground probe: how far below the feet still counts as grounded.
+const GROUND_SKIN = 0.08;
+// Character teleports shorter than this keep their contacts / ground state.
+const TELEPORT_KEEP = 0.5;
 const CHUNK_TRIS = 48;
 
 // Thin triangular prisms (top face = the triangle, extruded backwards).
@@ -334,6 +343,9 @@ export class PhysicsWorld {
   }
 
   add(init: BodyInit): Body {
+    const old = this.byId.get(init.id);
+    const keptNow = old ? [...this.contactsNow].filter(([, c]) => c.a === old || c.b === old) : [];
+    const keptPrev = old ? [...this.contactsPrev].filter(([, c]) => c.a === old || c.b === old) : [];
     this.remove(init.id);
     const named = init.material ? this.namedMaterials[init.material] : undefined;
     const character = !!init.character;
@@ -388,6 +400,9 @@ export class PhysicsWorld {
       torques: [],
       lastGrounded: -Infinity,
       jumpedAt: -Infinity,
+      ground: null,
+      onGround: false,
+      carry: null,
       view: null as unknown as Body,
     };
     rec.view = this.viewOf(rec);
@@ -395,6 +410,20 @@ export class PhysicsWorld {
     this.byId.set(rec.id, rec);
     this.byBody.set(main, rec);
     for (const b of extra) this.byBody.set(b, rec);
+    if (old) {
+      // Rebuilt in place (e.g. a scripted scale change): same pair order,
+      // contacts, ground and jump state, so events and grounded() continue.
+      rec.order = old.order;
+      rec.lastGrounded = old.lastGrounded;
+      rec.jumpedAt = old.jumpedAt;
+      rec.ground = old.ground;
+      rec.onGround = old.onGround;
+      if (old.character) this.makeCharacter(rec);
+      const swap = (c: ContactNow): ContactNow => ({ ...c, a: c.a === old ? rec : c.a, b: c.b === old ? rec : c.b });
+      for (const [k, c] of keptNow) this.contactsNow.set(k, swap(c));
+      for (const [k, c] of keptPrev) this.contactsPrev.set(k, swap(c));
+      for (const r of this.recs) if (r.ground === old) r.ground = rec;
+    }
     return rec.view;
   }
 
@@ -471,6 +500,7 @@ export class PhysicsWorld {
     this.recs.splice(this.recs.indexOf(rec), 1);
     for (const [k, c] of this.contactsNow) if (c.a === rec || c.b === rec) this.contactsNow.delete(k);
     for (const [k, c] of this.contactsPrev) if (c.a === rec || c.b === rec) this.contactsPrev.delete(k);
+    for (const r of this.recs) if (r.ground === rec) r.ground = null;
   }
 
   // Teleport (scripts moved the object). Kinematic bodies sweep to the new pose
@@ -480,6 +510,13 @@ export class PhysicsWorld {
     if (!rec) return;
     const b = rec.main;
     if ((rec.type === "kinematic" || rec.type === "trigger") && !rec.kinFrom) rec.kinFrom = { p: b.position.clone(), q: b.quaternion.clone() };
+    // Characters: a small correction (clamping z, snapping to a rail) keeps the
+    // contacts and the ground state; a real teleport (respawn) clears them.
+    if (rec.character && Math.hypot(position[0] - b.position.x, position[1] - b.position.y, position[2] - b.position.z) > TELEPORT_KEEP) {
+      rec.ground = null;
+      rec.onGround = false;
+      rec.lastGrounded = -Infinity;
+    }
     for (const body of [b, ...rec.extra]) {
       body.position.set(...position);
       if (quaternion) body.quaternion.set(...quaternion);
@@ -678,12 +715,64 @@ export class PhysicsWorld {
   // ─── Character controller ───────────────────────────────────────────
 
   private isGrounded(rec: Rec): boolean {
+    if (rec.character) return rec.onGround;
+    return !!this.contactGround(rec);
+  }
+
+  // The body under rec from this step's contacts (upward normal), preferring
+  // a moving (kinematic) one.
+  private contactGround(rec: Rec): Rec | null {
+    let found: Rec | null = null;
     for (const c of this.contactsNow.values()) {
       if (c.trigger) continue;
-      if (c.a === rec && -c.info.normal[1] > 0.5) return true;
-      if (c.b === rec && c.info.normal[1] > 0.5) return true;
+      const other = c.a === rec && -c.info.normal[1] > 0.5 ? c.b : c.b === rec && c.info.normal[1] > 0.5 ? c.a : null;
+      if (!other) continue;
+      if (other.type === "kinematic") return other;
+      found ??= other;
     }
-    return false;
+    return found;
+  }
+
+  // Ground state of a character at the end of a step: contacts, else a short
+  // ray below its lowest point (a contact can flicker for a step when a script
+  // nudges the body or a platform moves under it). Rising bodies are airborne.
+  private updateGround(rec: Rec): void {
+    const b = rec.main;
+    const contact = this.contactGround(rec);
+    const justJumped = this.time - rec.jumpedAt < 0.15;
+    const rising = b.velocity.y > 1;
+    let ground = justJumped && rising ? null : contact;
+    if (!ground && !rising && !justJumped) {
+      const box = this.aabb(rec);
+      if (box) {
+        const from: V3 = [b.position.x, b.position.y, b.position.z];
+        const depth = b.position.y - box.lowerBound.y + GROUND_SKIN;
+        const hit = this.raycast(from, [0, -1, 0], depth, { triggers: false, mask: b.collisionFilterMask, ignore: (v) => v.id === rec.id });
+        if (hit && hit.normal[1] > 0.5) {
+          ground = this.byId.get(hit.body.id) ?? null;
+          // Report the support as a resting contact (contacts() / events stay steady).
+          if (ground) {
+            const [ca, cb] = rec.order < ground.order ? [rec, ground] : [ground, rec];
+            const key = `${ca.id}|${cb.id}`;
+            const n = hit.normal;
+            if (!this.contactsNow.has(key)) {
+              const normal: V3 = ca === rec ? [-n[0], -n[1], -n[2]] : [n[0], n[1], n[2]];
+              this.contactsNow.set(key, { a: ca, b: cb, trigger: false, info: { point: hit.point, normal, impulse: 0, speed: 0 } });
+            }
+          }
+        }
+      }
+    }
+    rec.ground = ground;
+    rec.onGround = !!ground;
+  }
+
+  // Ground body of a character (or of any body resting on something), if any.
+  groundOf(id: string): Body | null {
+    const rec = this.byId.get(id);
+    if (!rec) return null;
+    const g = rec.character ? rec.ground : this.contactGround(rec);
+    return g ? g.view : null;
   }
 
   grounded(id: string): boolean {
@@ -721,6 +810,7 @@ export class PhysicsWorld {
     if (!grounded || this.time - rec.jumpedAt < 0.2) return false;
     rec.jumpedAt = this.time;
     rec.lastGrounded = -Infinity;
+    rec.onGround = false;
     rec.main.velocity.y = speed;
     rec.main.wakeUp();
     return true;
@@ -775,6 +865,19 @@ export class PhysicsWorld {
       }
       r.kinFrom = null;
     }
+    // Characters standing on a moving kinematic body ride it: its velocity at
+    // the feet is added for this step and removed after, so moveCharacter's
+    // steering stays relative to the platform.
+    for (const r of this.recs) {
+      r.carry = null;
+      if (!r.character || r.type !== "dynamic" || !r.onGround || r.ground?.type !== "kinematic") continue;
+      const pb = r.ground.main;
+      const rel = r.main.position.vsub(pb.position);
+      const carry = pb.velocity.vadd(pb.angularVelocity.cross(rel));
+      if (carry.lengthSquared() < 1e-10) continue;
+      r.carry = carry;
+      r.main.velocity.vadd(carry, r.main.velocity);
+    }
     const merged = new Map<string, ContactNow>();
     const g = this.world.gravity;
     for (let i = 0; i < n; i++) {
@@ -794,6 +897,7 @@ export class PhysicsWorld {
       this.collectContacts(merged, h);
     }
     for (const r of this.recs) (r.forces = []), (r.torques = []);
+    for (const r of this.recs) if (r.carry) r.main.velocity.vsub(r.carry, r.main.velocity);
     for (const s of sweeps) {
       for (const body of [s.rec.main, ...s.rec.extra]) {
         body.position.copy(s.p);
@@ -826,7 +930,10 @@ export class PhysicsWorld {
     }
     this.contactsPrev = this.contactsNow;
     this.contactsNow = merged;
-    for (const r of this.recs) if (this.isGrounded(r)) r.lastGrounded = this.time;
+    for (const r of this.recs) {
+      if (r.character) this.updateGround(r);
+      if (this.isGrounded(r)) r.lastGrounded = this.time;
+    }
     for (const [key, c] of merged) {
       if (this.contactsPrev.has(key)) continue;
       for (const h of this.beginHandlers) h(c.a.view, c.b.view, c.info);

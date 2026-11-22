@@ -87,6 +87,52 @@ describe("<agent3d-scene> lifecycle without WebGL", () => {
     expect(el.player).toBeNull();
     expect(el.querySelector("canvas")).toBeNull();
   });
+  it("connected while the parser is still inside it: waits for DOMContentLoaded, then loads the inline scene", async () => {
+    const el = document.createElement("agent3d-scene-test") as Agent3DSceneElement;
+    Object.defineProperty(document, "readyState", { value: "loading", configurable: true });
+    try {
+      document.body.appendChild(el); // no child JSON yet (not parsed)
+      await new Promise((r) => setTimeout(r, 10));
+      expect(el.getAttribute("status")).toBe("loading"); // waiting, not idle
+      const script = document.createElement("script");
+      script.type = "application/json";
+      script.textContent = JSON.stringify(scene);
+      el.appendChild(script);
+    } finally {
+      delete (document as unknown as Record<string, unknown>).readyState;
+    }
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(el.getAttribute("status")).toBe("unsupported"); // it mounted (no WebGL here)
+    el.remove();
+  });
+  it("lazy start: starts from the geometry fallback when the IntersectionObserver never reports", async () => {
+    const IO = globalThis.IntersectionObserver;
+    // An observer that never calls back (the intermittent headless failure).
+    (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    };
+    try {
+      const lazy = { ...scene, target: { ...scene.target, lazy: true } } as SceneDoc;
+      const el = document.createElement("agent3d-scene-test") as Agent3DSceneElement;
+      el.getBoundingClientRect = () => ({ top: 0, bottom: 200, left: 0, right: 400, width: 400, height: 200, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+      const script = document.createElement("script");
+      script.type = "application/json";
+      script.textContent = JSON.stringify(lazy);
+      el.appendChild(script);
+      document.body.appendChild(el);
+      await new Promise((r) => setTimeout(r, 700)); // rAF / 500 ms fallback checks
+      expect(el.getAttribute("status")).toBe("unsupported"); // start() ran (no WebGL here)
+      el.remove();
+    } finally {
+      (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver = IO;
+    }
+  });
   it("exposes data from scene, data-* attributes and setData", async () => {
     const el = mount({ "data-title": "Attr", "data-cta-label": "Go" });
     document.body.appendChild(el);

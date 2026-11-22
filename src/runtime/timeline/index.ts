@@ -7,7 +7,7 @@ import * as THREE from "three";
 import type { TimelineDef, TrackDef, TrackKey } from "../../core/types";
 import { envScaleUniform } from "../build/materials";
 import { DEG, meshMaterials } from "../util";
-import { resolveKeys, sampleKeys, splitTarget, staggerOrder, type AbsKey, type Sampled } from "./sample";
+import { resolveKeys, sampleKeys, splitTarget, staggerOrder, type AbsKey, type ColorSpace, type Sampled } from "./sample";
 
 export { timelineTime, sampleKeys, interpolate, splitTarget, resolveKeys, staggerOrder } from "./sample";
 export { ease, easeFn, EASINGS } from "./easing";
@@ -308,6 +308,7 @@ export interface BoundTrack {
   id: string;
   keys: AbsKey[];
   ease?: string;
+  colorSpace?: ColorSpace;
   set: Setter;
 }
 
@@ -329,7 +330,7 @@ export function bindTrack(track: TrackDef, host: TimelineHost): BoundTrack[] {
     let keys = resolveKeys(track.keys as TrackKey[], acc.get());
     const offset = stagger * order[i];
     if (offset) keys = keys.map((k) => [k[0] + offset, k[1], k[2]] as AbsKey);
-    out.push({ id, keys, ease: track.ease, set: acc.set });
+    out.push({ id, keys, ease: track.ease, colorSpace: track.colorSpace, set: acc.set });
   });
   return out;
 }
@@ -353,7 +354,7 @@ export function createTimeline(def: TimelineDef, host: TimelineHost): TimelineRu
     animatesCamera: bound.some((b) => b.id === "camera"),
     apply(localT) {
       for (const b of bound) {
-        const v = sampleKeys(b.keys, localT, b.ease);
+        const v = sampleKeys(b.keys, localT, b.ease, b.colorSpace);
         if (v !== undefined) b.set(v);
       }
     },

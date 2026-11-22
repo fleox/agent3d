@@ -1,3 +1,11 @@
+import { tryTranslate } from "../i18n";
+
+// Label of an inspector field (ParamSpec name): the translated `fields.<name>`
+// message, else the prettified id (catalog parameter names).
+export function fieldLabel(name: string): string {
+  return tryTranslate(`fields.${name}`) ?? pretty(name);
+}
+
 // "reducedMotion" → "Reduced motion", "budgetKb" → "Budget KB", "torusKnot" → "Torus knot".
 const ACRONYMS: Record<string, string> = { kb: "KB", dpr: "DPR", ior: "IOR", svg: "SVG", hdri: "HDRI", fov: "FOV", ui: "UI", id: "ID", url: "URL" };
 

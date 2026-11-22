@@ -69,6 +69,10 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
     fragmentShader: PLANE_FRAG,
     transparent: true,
     depthWrite: false,
+    // Lies 1 mm above the ground: win the depth test at grazing angles.
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -4,
   });
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), planeMat);
   plane.rotation.x = -Math.PI / 2;
@@ -118,7 +122,10 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
     const center = box.getCenter(new THREE.Vector3());
     const y = o.y ?? defaultY ?? box.min.y;
     const side = o.size ?? Math.max(size.x, size.z, 0.5) * 2.2 + 0.5;
-    const far = o.far ?? Math.max(0.5, Math.min(size.y, side) * 0.9);
+    // Default reach: from the height of what STANDS on the plane (meshes whose
+    // bottom touches it), not of everything — a title floating above a product
+    // used to stretch `far` up to itself and smudge the plane.
+    const far = o.far ?? Math.max(0.3, Math.min(groundedHeight(scene, y, Math.max(0.05, size.y * 0.08)) ?? size.y, side) * 0.9);
     // Centred on the subject (also with an explicit size), or on `center`.
     const c = Array.isArray(o.center) ? o.center : [center.x, center.z];
     group.position.set(c[0], y + 0.001, c[1]);
@@ -127,10 +134,21 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
     cam.right = side / 2;
     cam.top = side / 2;
     cam.bottom = -side / 2;
+    // The camera sits just BELOW the plane: flat bottoms resting exactly on
+    // it (boxes, cylinders — whose walls are edge-on from below) are captured
+    // at full darkness instead of falling behind the near plane.
+    cam.position.y = -CAM_DROP;
     cam.near = 0;
-    cam.far = far;
+    cam.far = far + CAM_DROP;
     cam.updateProjectionMatrix();
+    casterTop = y + far * CASTER_REACH;
+    floorTop = y + 0.002;
   };
+  // Meshes whose bottom is above this height don't cast (floating objects).
+  let casterTop = Infinity;
+  // Meshes entirely at / below the plane (floors, pedestal tops) never cast.
+  let floorTop = -Infinity;
+  const mb = new THREE.Box3();
 
   const blur = (amount: number) => {
     blurMat.uniforms.tDiffuse!.value = rt.texture;
@@ -148,8 +166,14 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
     if (frames > 0 && rendered >= frames) return;
     rendered++;
     const hidden: THREE.Object3D[] = [];
+    scene.updateMatrixWorld();
     scene.traverse((x) => {
-      if (x.visible && (x.userData.helper || (x as THREE.Points).isPoints || (x as THREE.Sprite).isSprite)) hidden.push(x);
+      if (!x.visible) return;
+      if (x.userData.helper || (x as THREE.Points).isPoints || (x as THREE.Sprite).isSprite) hidden.push(x);
+      else if ((x as THREE.Mesh).isMesh) {
+        ownBox(x as THREE.Mesh, mb);
+        if (mb.min.y > casterTop || mb.max.y <= floorTop) hidden.push(x);
+      }
     });
     for (const x of hidden) x.visible = false;
     const prev = {
@@ -195,6 +219,45 @@ export function createContactShadows(opts: boolean | ContactShadowsDef, scene: T
       blurQuad.geometry.dispose();
     },
   };
+}
+
+// Fraction of `far` a mesh's bottom may float above the plane and still cast.
+export const CASTER_REACH = 0.6;
+const CAM_DROP = 0.003;
+
+// World box of one mesh's own geometry (instances included, children not).
+function ownBox(m: THREE.Mesh, out: THREE.Box3): THREE.Box3 {
+  if ((m as THREE.InstancedMesh).isInstancedMesh) {
+    const im = m as THREE.InstancedMesh;
+    if (!im.boundingBox) im.computeBoundingBox();
+    return out.copy(im.boundingBox!).applyMatrix4(im.matrixWorld);
+  }
+  if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+  return out.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld);
+}
+
+/**
+ * Height above `y` of the tallest solid mesh standing on the plane (bottom
+ * within `tol` of it); undefined when nothing touches the plane.
+ */
+export function groundedHeight(scene: THREE.Object3D, y: number, tol: number): number | undefined {
+  let h: number | undefined;
+  const b = new THREE.Box3();
+  scene.updateMatrixWorld(true);
+  scene.traverseVisible((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.geometry || o.userData.helper || (o as THREE.Points).isPoints || (o as THREE.Sprite).isSprite || (o as THREE.Line).isLine) return;
+    if (o.parent && isHelperBranch(o)) return;
+    ownBox(m, b);
+    if (b.isEmpty() || b.min.y > y + tol || b.max.y - y > 200) return;
+    h = Math.max(h ?? 0, b.max.y - y);
+  });
+  return h;
+}
+
+function isHelperBranch(o: THREE.Object3D): boolean {
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (p.userData.helper || p.name === "__contactShadows") return true;
+  return false;
 }
 
 /**

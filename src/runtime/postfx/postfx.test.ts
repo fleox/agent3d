@@ -6,8 +6,10 @@ import { describe, expect, it } from "vitest";
 import { qualitySettings } from "../../core/postfx";
 import { GBuffer, type FxRuntime } from "./common";
 import { FinishPass } from "./finish";
-import { createBloom, createDof, createLensflare } from "./hdr";
-import { createGlitch } from "./ldr";
+import { createBloom, createDof, createGodrays, createLensflare } from "./hdr";
+import { createGlitch, fxaaFragment } from "./ldr";
+import { BackgroundPass, hasTransmission, SceneBackdrop } from "./background";
+import { POSTFX_LOOKS } from "../../core/catalog";
 
 function fakeRuntime(): FxRuntime {
   let gb: GBuffer | null = null;
@@ -108,5 +110,59 @@ describe("bloom / lensflare / godrays internals", () => {
     expect(src.x).toBeCloseTo(0.5, 2);
     expect(src.y).toBeGreaterThan(0.5);
     expect(p.visible).toBeGreaterThan(0.9);
+  });
+});
+
+describe("small dark text stays crisp (clean look)", () => {
+  it("FXAA detects edges on a perceptual luma and blends sub-pixels gently", () => {
+    const f = fxaaFragment();
+    expect(f).toContain("sqrt( max( Sample( tex2D, uv ).rgb");
+    expect(f).toContain("_SubpixelBlending = 0.35");
+  });
+  it("the clean look has no FXAA", () => {
+    expect(POSTFX_LOOKS.clean.effects.map((e) => e.type)).not.toContain("fxaa");
+  });
+  it("the background pass tone-maps un-premultiplied colour (no toe crush on partly covered pixels)", () => {
+    const pass = new BackgroundPass(new THREE.Scene(), new THREE.PerspectiveCamera(), 4, 4);
+    const src = (pass as unknown as { mat: THREE.RawShaderMaterial }).mat.fragmentShader;
+    expect(src).toContain("tm(fg.rgb / a) * a");
+    pass.dispose();
+  });
+});
+
+describe("glass in front of the background (post-processing)", () => {
+  it("detects transmissive meshes", () => {
+    const s = new THREE.Scene();
+    s.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    expect(hasTransmission(s)).toBe(false);
+    s.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshPhysicalMaterial({ transmission: 1 })));
+    expect(hasTransmission(s)).toBe(true);
+  });
+  it("the backdrop draws the background everywhere except in the main scene pass", () => {
+    const tex = new THREE.Texture();
+    const b = new SceneBackdrop(tex);
+    const main = new THREE.WebGLRenderTarget(4, 4);
+    b.mainTarget = main;
+    const uShow = (b.mesh.material as THREE.ShaderMaterial).uniforms.uShow;
+    const fake = (target: THREE.WebGLRenderTarget | null) => ({ getRenderTarget: () => target }) as unknown as THREE.WebGLRenderer;
+    const call = (r: THREE.WebGLRenderer) => b.mesh.onBeforeRender(r, new THREE.Scene(), new THREE.PerspectiveCamera(), b.mesh.geometry, b.mesh.material as THREE.Material, null as never);
+    call(fake(main));
+    expect(uShow.value).toBe(0);
+    call(fake(new THREE.WebGLRenderTarget(2, 2))); // three's transmission target
+    expect(uShow.value).toBe(1);
+    expect(b.mesh.renderOrder).toBeLessThan(-1e6);
+    expect((b.mesh.material as THREE.Material).transparent).toBe(false);
+    b.dispose();
+  });
+});
+
+describe("godrays sampling", () => {
+  it("jitters the ray taps per pixel and keeps shadow shafts off solid surfaces", () => {
+    const h = createGodrays({ type: "godrays" }, fakeRuntime());
+    const p = h.pass as unknown as Record<string, THREE.ShaderMaterial>;
+    expect(p.raysMat.fragmentShader).toContain("a3dIgn(gl_FragCoord.xy)");
+    expect(p.fineMat.fragmentShader).toContain("a3dIgn(");
+    expect(p.compMat.fragmentShader).toContain("mix(0.3, 1.0, sky)");
+    expect(p.compMat.uniforms.tNormal.value).toBeInstanceOf(THREE.Texture);
   });
 });

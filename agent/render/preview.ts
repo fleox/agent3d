@@ -6,6 +6,7 @@
 //   window.__agent3dSheet(urls, labels, cols, bg?)   contact sheet (grid + time labels) → PNG data URL
 //   window.__agent3dComposite(url, bg)   a frame over a background ("checker" or a CSS colour) → PNG data URL
 //   window.__agent3dRender(times, sheet?, cols?) all of the above in one call
+//   window.__agent3dUi(id)    click a HUD button by id (false when missing / hidden)
 //   window.__agent3dInfo()    { stats, inspect, issues, state }
 //   window.__agent3dGrab(t, { ss, type, quality, bg, raw })   seek(t) + supersampled capture
 //        (the canvas was rendered at ss× the pixel ratio and is downscaled): data URL, or raw RGBA (base64)
@@ -15,7 +16,7 @@
 
 export const RUNTIME_URL = "/__runtime/agent3d-runtime.js";
 
-export function previewHtml(opts: { pixelRatio?: number; transparent?: boolean } = {}): string {
+export function previewHtml(opts: { pixelRatio?: number; transparent?: boolean; reducedMotion?: boolean } = {}): string {
   const pr = opts.pixelRatio ?? 1;
   return `<!doctype html>
 <html lang="en">
@@ -211,6 +212,14 @@ window.__agent3dVideoEnd = async () => {
   return out;
 };
 
+// Click a HUD button (scene.ui element of type "button") by id: false when it is missing or hidden.
+window.__agent3dUi = (id) => {
+  const b = Array.from(document.querySelectorAll(".a3d-hud [data-id]")).find((el) => el.dataset.id === id);
+  if (!b || !b.getClientRects().length) return false;
+  b.click();
+  return true;
+};
+
 window.__agent3dInfo = () => {
   const p = handle.player;
   const safe = (f) => { try { return f(); } catch (e) { return null; } };
@@ -235,7 +244,7 @@ try {
     assetBase: "/project/",
     libraryBase: "/__library/",
     pixelRatio: ${JSON.stringify(pr)},
-    reducedMotion: false,
+    reducedMotion: ${opts.reducedMotion ? "true" : "false"},
     onError: (issue) => handle.issues.push(issue),
   });
   handle.player = player;

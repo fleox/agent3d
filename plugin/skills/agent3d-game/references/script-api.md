@@ -82,7 +82,7 @@ Real rigid-body physics (cannon-es, fixed step, deterministic): bodies rotate, t
 | Field | Meaning |
 |---|---|
 | `type` | `dynamic` (simulated), `static` (immovable), `kinematic` (moved by scripts / velocity, pushes dynamic bodies, ignores gravity), `trigger` (detects overlaps, never pushes) |
-| `shape` | `box` (default: the object's bounding box, in the object's rotated frame), `sphere`, `cylinder`, `capsule` (Y-up), `convex` (hull of the mesh / model, good for dynamic models), `trimesh` (exact triangles; static / kinematic only — level geometry, models), `heightfield` (terrain generators), `compound` (`shapes`), `auto` (primitive geometry → matching shape, terrain → heightfield, static models / meshes → trimesh, dynamic → convex) |
+| `shape` | `box` (default: the bounding box of the object's **own** geometry — never its child objects — in the object's rotated frame), `sphere`, `cylinder`, `capsule` (Y-up), `convex` (hull of the mesh / model, good for dynamic models), `trimesh` (exact triangles; static / kinematic only — level geometry, models), `heightfield` (terrain generators), `compound` (`shapes`; without `shapes`: one box for the object + one per child object without a body), `auto` (primitive geometry → matching shape, terrain → heightfield, static models / meshes → trimesh, dynamic → convex) |
 | `size`, `radius`, `height` | Override the measured box size / sphere, cylinder, capsule radius / cylinder, capsule height (world units) |
 | `offset` | Collider centre relative to the object origin (default: bounding-box centre) |
 | `shapes` | `compound`: `[{ "shape": "box" \| "sphere" \| "cylinder" \| "capsule", "size"?, "radius"?, "height"?, "offset"?, "rotation"? }]` (offsets from the object origin) |
@@ -96,6 +96,8 @@ Real rigid-body physics (cannon-es, fixed step, deterministic): bodies rotate, t
 | `sleep` | `false` keeps it always awake |
 | `ccd` | Fast object (bullets, thrown balls): extra sub-steps against tunnelling |
 | `layer`, `collidesWith` | Collision layer name and the layers it collides with (default: all) |
+
+Child objects never enlarge a measured collider: a child with its own `body` gets its own collider; a decorative child (a platform's dirt layer) is ignored unless the parent uses `"shape": "compound"` without `shapes`, which adds one box per such child. No explicit `size` / `offset` is needed for a platform with decorations. A `group` (no geometry of its own) measures its children.
 
 Generators that publish collision boxes (the maze generator with `bodies: true`) get a static compound body with the generator's id.
 
@@ -111,7 +113,9 @@ Generators that publish collision boxes (the maze generator with `bodies: true`)
 
 All joints take `maxForce` (default 1e6) and `collideConnected` (default `false`).
 
-Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports it (dynamic bodies keep their velocity; kinematic bodies sweep to the new pose so they push what they touch). A player whose velocity you set every step should have `"fixedRotation": true` (or `"character": true`), otherwise friction makes it tumble.
+Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports it (dynamic bodies keep their velocity; kinematic bodies sweep to the new pose so they push what they touch). A character keeps its contacts and `grounded()` state through small corrections (under 0.5 m: clamping z every step, snapping to a lane), so jumps keep working; a longer teleport (respawn) clears them until the next step. A player whose velocity you set every step should have `"fixedRotation": true` (or `"character": true`), otherwise friction makes it tumble.
+
+**Moving platforms carry characters.** A character standing on a `kinematic` body — moved by `position.set` every step or by a velocity, sliding, lifting or turning — rides it: the platform's motion is added for the step, `moveCharacter` steering stays relative to the platform, and `grounded()` / `contacts()` report the platform every step (even while it moves down). Do not carry the hero yourself.
 
 | Member | Description |
 |---|---|
@@ -122,7 +126,7 @@ Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports i
 | `api.physics.applyForce(obj, [x, y, z], point?)` / `applyTorque(obj, [x, y, z])` | Continuous push for the next step (call every update: thrusters, wind) |
 | `api.physics.setVelocity(obj, v)` / `getVelocity(obj)` | Linear velocity (m/s) — also `obj.velocity.x = …` |
 | `api.physics.setAngularVelocity(obj, deg)` / `getAngularVelocity(obj)` | Spin in degrees / s |
-| `api.physics.grounded(obj)` | Standing on something (a contact pushing up) |
+| `api.physics.grounded(obj)` | Standing on something (a contact pushing up; characters also count ground within a few cm under their feet, so it does not flicker on moving platforms) |
 | `api.physics.moveCharacter(obj, { x, z } \| [x, z], { speed?, acceleration?, airControl? }?)` | Character controller: steer horizontally toward `move × speed` (move length ≤ 1, default speed 5), keeps the vertical velocity, reduced control in the air; turns the body into a character (no rotation, no friction). Call once per update |
 | `api.physics.jump(obj, speed?)` | Jumps (default 6 m/s) when grounded or within 0.12 s of leaving the ground (coyote time); no double jump; returns `true` when it jumped |
 | `api.physics.wake(obj)` | Wake a sleeping body |
@@ -139,7 +143,8 @@ export default function (api) {
   return {
     update() {
       const x = (api.input.isDown("ArrowRight") ? 1 : 0) - (api.input.isDown("ArrowLeft") ? 1 : 0);
-      api.physics.moveCharacter(hero, { x, z: 0 }, { speed: 6 });
+      api.physics.moveCharacter(hero, { x, z: 0 }, { speed: 6 }); // relative to a lift it stands on
+      hero.position.set(hero.position.x, hero.position.y, 0); // stay on the z = 0 plane (keeps grounded state)
       if (api.input.pressed("Space") && api.physics.jump(hero, 7)) api.audio.play("jump");
     },
   };

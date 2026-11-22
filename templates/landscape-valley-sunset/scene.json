@@ -2,7 +2,7 @@
   "version": 1,
   "id": "landscape-valley-sunset",
   "title": "Mountain valley at sunset",
-  "ariaLabel": "Snowy mountains around a forested valley and a lake at sunset",
+  "ariaLabel": "A forested mountain valley with a lake and snowy peaks at sunset",
   "seed": 8,
   "target": {
     "kind": "hero",
@@ -17,13 +17,13 @@
     "fov": 40,
     "position": [
       0,
-      16,
-      40
+      15,
+      52
     ],
     "target": [
       0,
-      6,
-      -10
+      7,
+      -30
     ],
     "controls": "parallax",
     "parallax": {
@@ -36,22 +36,17 @@
       "sky": {
         "preset": "golden-hour",
         "sun": {
-          "elevation": 3,
-          "azimuth": 160,
-          "intensity": 2.8
+          "elevation": 5,
+          "azimuth": 152,
+          "intensity": 2.6
         },
-        "turbidity": 5,
-        "clouds": 0.3,
-        "exposure": 0.6,
-        "rayleigh": 3.6,
-        "mieDirectionalG": 0.8,
-        "mieCoefficient": 0.004
+        "clouds": 0.25
       }
     },
     "lightingIntensity": 0.9,
     "fog": {
-      "density": 0.012,
-      "height": 5,
+      "density": 0.009,
+      "height": 7,
       "falloff": 0.3
     },
     "shadows": {
@@ -64,12 +59,12 @@
       "id": "front",
       "type": "directional",
       "position": [
-        -10,
-        12,
-        30
+        -20,
+        14,
+        40
       ],
-      "color": "#8fa2e8",
-      "intensity": 0.5
+      "color": "#9fb0ea",
+      "intensity": 0.45
     }
   ],
   "objects": [
@@ -78,28 +73,28 @@
       "kind": "generator",
       "generator": "terrain",
       "params": {
-        "size": 110,
-        "resolution": 120,
-        "height": 26,
-        "scale": 1.4,
-        "shape": "mountains",
+        "size": 130,
+        "resolution": 140,
+        "height": 30,
+        "scale": 1.3,
+        "shape": "valley",
         "palette": [
-          "#c9ad7f",
-          "#5f8a3e",
-          "#3d6b35",
-          "#7a6a6e",
-          "#fdf7f2"
+          "#c9b48a",
+          "#6b8f45",
+          "#3f6b37",
+          "#7a6c70",
+          "#fbf6f1"
         ],
         "lowpoly": true,
-        "waterLevel": 3,
-        "waterColor": "#2fb0c4",
-        "snowLine": 0.62
+        "waterLevel": 2.6,
+        "waterPlane": false,
+        "snowHeight": 17
       },
       "seed": 14,
       "position": [
         0,
         0,
-        -20
+        0
       ],
       "receiveShadow": true
     },
@@ -108,21 +103,21 @@
       "kind": "generator",
       "generator": "water",
       "params": {
-        "size": 110,
-        "color": "#2f3d5e",
-        "shallowColor": "#c98f68",
-        "foamColor": "#ffe6c8",
+        "size": 130,
+        "color": "#1d3654",
+        "shallowColor": "#7fa6b8",
+        "foamColor": "#fff1e0",
         "waveHeight": 0.06,
         "waveSpeed": 0.6,
         "foam": 0.5,
         "ripples": 1.6,
-        "depthRange": 4,
+        "depthRange": 3,
         "opacity": 0.95
       },
       "position": [
         0,
-        3.03,
-        -20
+        2.6,
+        0
       ]
     },
     {
@@ -130,15 +125,15 @@
       "kind": "generator",
       "generator": "trees",
       "params": {
-        "count": 220,
+        "count": 520,
         "area": [
-          90,
+          120,
           0,
-          46
+          120
         ],
         "style": "pine",
-        "minScale": 0.8,
-        "maxScale": 1.6,
+        "minScale": 0.7,
+        "maxScale": 1.35,
         "leafColors": [
           "#26492c",
           "#2f5a33",
@@ -152,7 +147,7 @@
       "position": [
         0,
         0,
-        -6
+        0
       ],
       "castShadow": true
     },
@@ -168,8 +163,8 @@
       ],
       "position": [
         0,
-        8,
-        20
+        6,
+        30
       ],
       "color": "#ffd27a",
       "size": 0.12
@@ -207,25 +202,25 @@
           [
             0,
             [
-              -4,
-              16,
-              40
+              -3,
+              15,
+              52
             ]
           ],
           [
             7,
             [
-              4,
-              17,
-              38
+              3,
+              16,
+              50
             ]
           ],
           [
             14,
             [
-              -4,
-              16,
-              40
+              -3,
+              15,
+              52
             ]
           ]
         ],
@@ -237,23 +232,19 @@
     {
       "type": "look",
       "preset": "cinematic",
-      "intensity": 0.7
+      "intensity": 0.5
     },
     {
       "type": "godrays",
-      "intensity": 0.35,
-      "length": 0.7
-    },
-    {
-      "type": "lensflare",
-      "intensity": 0.2,
-      "threshold": 3
+      "intensity": 0.3,
+      "length": 0.6
     },
     {
       "type": "grading",
       "look": "warm",
-      "intensity": 0.4,
-      "saturation": 1.1
+      "intensity": 0.15,
+      "saturation": 1.15,
+      "contrast": 1.08
     }
   ]
 }

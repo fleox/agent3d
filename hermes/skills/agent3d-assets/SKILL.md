@@ -1,7 +1,7 @@
 ---
 name: agent3d-assets
-description: "Find and add 3D assets to an Agent3D project - the built-in CC0 library shipped offline (models, PBR textures, HDRIs, fonts), procedural generators that cost zero bytes, free account-less CC0 sources (Poly Haven, ambientCG, Khronos samples searched and downloaded once into the project; Kenney and Quaternius packs imported from a zip the user downloads), the user's own files, licences and attribution, and size budgets. Use when a scene needs a model, a texture, an HDRI, a logo, a sound or music, or when the user asks where assets come from or how they are licensed."
-version: 0.1.0
+description: "Find and add 3D assets to an Agent3D project - the built-in CC0 library shipped offline (models, PBR textures, HDRIs, fonts), procedural generators that cost zero bytes, free account-less CC0 sources (Poly Haven, ambientCG, Khronos samples searched and downloaded once into the project; Kenney and Quaternius packs imported from a zip the user downloads), the user's own files, licences and attribution, size budgets, and making textures and models lighter (assets optimize: per-usage sizes, WebP, meshopt, simplify). Use when a scene needs a model, a texture, an HDRI, a logo, a sound or music, or when the user asks where assets come from or how they are licensed."
+version: 0.2.0
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
 platforms: [macos, linux, windows]
@@ -29,8 +29,8 @@ Every `agent3d <command>` below runs through this skill's Python wrapper: `pytho
 
 ## Pick the cheapest thing that looks right
 
-1. **Procedural first** (zero download, deterministic, recolourable): primitives (`catalog geometries`), generators (`catalog generators`: terrain, trees, rocks, grass, flowers, water, clouds, city, character, planet, starfield, blob, waveGrid, maze, road), particles (`catalog particlePresets`), shaders, synth sounds (`catalog sounds`: coin, jump, hit, explosion, click, powerup, laser, win, lose, whoosh, ambient-pad, chiptune-loop).
-2. **The built-in library** (ships with Agent3D, works offline, nothing to download, copied into the export automatically): ~110 low-poly models (characters, animals, nature, buildings, city, food and bakery, products, props, vehicles, space…), PBR texture sets (brick, concrete, fabric, grass ground, rusty metal, wood planks), 4 HDRIs (studio, sky, sunset, night), 5 fonts.
+1. **Procedural first** (zero download, deterministic, recolourable): primitives (`catalog geometries`), generators (`catalog generators`: terrain, trees, rocks, grass, flowers, water, clouds, city, character, planet, starfield, blob, waveGrid, maze, road, floatingIsland, globe, crystals, galaxy, bars3d, abstractShapes), particles (`catalog particlePresets`), shaders (`catalog shaders`), procedural textures for any material slot (`catalog textures`: marble, wood, terrazzo, carbon, noise, voronoi, flakes, brushed, grid, checker, stripes, dots: `"map": { "procedural": "wood" }`), procedural environment lighting (`"lighting": "studio"`, `soft`, `sunset`, `night`) and physical skies, synth sounds (`catalog sounds`: coin, jump, hit, explosion, click, powerup, laser, win, lose, whoosh, ambient-pad, chiptune-loop).
+2. **The built-in library** (ships with Agent3D, works offline, nothing to download, copied into the export automatically): about 130 models (rigged characters with animation clips: knight, mage, rogue, barbarian, skeleton, robot, mini soldier, platformer hero; animals, nature, buildings, city, food and bakery, vehicles, space; photoreal products and props: sneaker, velvet sofa, iridescent lamp, lounge chair, water bottle, boombox, marble bust, brass vase, alarm clock, potted succulent, rubber duck, modern armchair, coffee table…), 6 PBR texture sets (brick, concrete, fabric, grass ground, rusty metal, wood planks), 10 HDRIs (softbox, studio, warehouse, forest, city, beach, sky, sunset, night, night-city; each `.hdr` + `.jpg`), 13 fonts (`catalog fonts`).
 3. **Free CC0 sources online**, downloaded **once** into `assets/` with their licence: Poly Haven (models, textures, HDRIs), ambientCG (textures, HDRIs), Khronos glTF samples (models; CC0 or CC-BY), Kenney and Quaternius (game packs; manual zip).
 4. **The user's own files** (logo SVG, product GLB, brand audio): `assets add <file> --license …`.
 
@@ -56,7 +56,8 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets library --kind model --all
 - Always set `fit` (the largest dimension in units): library models come in very different native sizes (the boombox is 2 cm, the lantern 26 units). `center: true` (default) puts the bottom centre at the object's position.
 - Animated models: `"animation": { "clip": "Wave", "loop": true, "speed": 1 }` (clip name or index). The hit's `animations` lists the exact clip names (knight / mage / skeleton: `Idle`, `Walking_A`, `Running_A`, `Cheer`, `Jump_Full_Short`, `Death_A`…; robot: `Idle`, `Walking`, `Running`, `Dance`, `Jump`, `Wave`…); `--query walk` also matches clip names.
 - Textures: `"material": { "map": "library:textures/brick-color.jpg", "normalMap": "library:textures/brick-normal.jpg", "roughnessMap": "library:textures/brick-roughness.jpg", "repeat": [3, 3] }`.
-- HDRIs: `"environment": { "lighting": { "hdri": "library:hdri/studio.hdr", "intensity": 1 } }` for reflections; `"background": { "hdri": "library:hdri/sunset.jpg", "blur": 0.2 }` to show it.
+- HDRIs: `"environment": { "lighting": { "hdri": "library:hdri/softbox.hdr", "intensity": 1 } }` for reflections (softbox for products, warehouse / city / forest / beach for photoreal outdoors and interiors, studio / sky / sunset / night for lighter files); `"background": { "hdri": "library:hdri/forest.jpg", "blur": 0.2 }` to show it, with `"rotation": 120` to turn it and `"groundProjection": { "height": 2, "radius": 60 }` to stand objects on the photo's ground. Weight: `studio`, `sky`, `sunset`, `night` `.hdr` are ~360-410 KB; `softbox`, `warehouse`, `forest`, `city`, `beach`, `night-city` `.hdr` are 1.5-1.9 MB (fine for a hero or product scene, too heavy for a banner or card: use a procedural `lighting` preset there). The `.jpg` previews are 50-250 KB.
+- Photoreal library models (products, props) carry 1k PBR textures and weigh 170 KB to 1.8 MB each: check `kb` and `triangles` in the listing, and prefer them for heroes and product scenes.
 - Recolour a model: `"material": { "color": "#ff8fab" }` on the model object overrides every mesh (or `"preset": "clay"` for a uniform stylised look).
 
 ## Searching free sources (network)
@@ -101,6 +102,14 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets add ./jingle.mp3 --kind au
 
 `--license` is required (an SPDX id such as `CC0-1.0`, `CC-BY-4.0`, or `proprietary` for the user's own work). Files go to `assets/models/`, `assets/textures/`, `assets/hdri/`, `assets/audio/`, `assets/fonts/`, `assets/svg/` or `assets/other/` by kind, unless `--path` says otherwise. SVG logos become 3D with an `svg` object; product models with a `model` object and `fit`; audio with `audio.sounds` / `audio.music` (`{ "src": "assets/audio/jingle.mp3" }`).
 
+SVG logos and icons:
+
+```json
+{ "op": "addObject", "object": { "id": "logo", "kind": "svg", "src": "assets/svg/logo.svg", "size": 2.4, "fit": "height", "depth": 0.25, "bevel": 0.03, "position": [-9, 0, 0] } }
+```
+
+Each path keeps its SVG colour (`keepColors`: default `true` without a `material`, `false` with one; `true` + a material = that finish with the SVG colours). Strokes (`stroke-width`, joins, caps) become solid outlines, so line-icon sets work (`currentColor` takes the material colour; `"strokes": false` ignores strokes). `size` is the width (`fit: "height"` or `"max"` sizes the other or the larger side), `layerGap` separates stacked paths. `<text>` is not supported: ask for the logo with text converted to outlines. Check it with `render --isolate logo`.
+
 ## Listing and removing
 
 ```bash
@@ -111,28 +120,33 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets remove assets/textures/old
 
 `assets list` shows each file's size on disk, licence, whether it exists and which objects use it (`usedBy`); it is read-only: entries whose recorded size differs from the file on disk are listed in `stale` (`assets optimize` / `assets add` rewrite the manifest). `remove` prints a plan (with `usedBy`) unless `--yes`: fix the references first.
 
-## Shrinking textures (over budget)
+## Optimising textures and models
 
-When `check` reports `budget`, its hint names the heaviest files. Downscale them in place (lossy, so it prints a plan unless `--yes`):
+When `check` reports `budget` or `optimizable`, or before exporting a scene with project textures / `.glb` models, run `assets optimize`. Without `--yes` it prints the plan (no Chrome needed): for every file the size it will get and **why** (target kind, the object's size on screen, the camera distance, the texture role). Show the plan to the user, then apply:
 
 ```bash
-python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize assets/textures/wood_planks --max-size 512 --project my-banner --json
-python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize assets/textures/wood_planks --max-size 512 --yes --project my-banner --json
-python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize --all --max-size 1024 --quality 75 --yes --project my-hero --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize --all --project my-hero --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize --all --dry-run --project my-hero --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize --all --yes --project my-hero --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize assets/textures/wood_planks --max-size 512 --format jpeg --yes --project my-banner --json
 ```
 
-- Paths are files or folders; `--all` takes every texture and `.glb` under `assets/`. `--max-size` (default 1024) is the longest side in pixels, never upscaled; `--quality` (default 80) applies to JPEG / WebP.
-- Standalone `.jpg` / `.png` / `.webp` keep their format and path (the scene does not change). Images embedded in a `.glb` are re-encoded inside the binary (an opaque PNG becomes a JPEG). A file is only rewritten when it gets smaller; `assets/manifest.json` sizes follow.
-- The result lists every file (`beforeBytes`, `afterBytes`, `changed`) and image (`from` / `to` as `WxH type KB`), plus `savedKb`. Run `check` again, then `render` to make sure the textures still look right (512 suits banners and small props; keep 1024 for a hero's main surface).
-- Needs headless Chrome (like `render`). MCP: the `assets_optimize` tool takes `{ "paths": [...] | "all": true, "maxSize", "quality" }`.
+- **Smart size (default).** Each texture gets the smallest tier (256 / 512 / 1024 / 2048; up to 4096 for an equirect background) that still gives about one texel per screen pixel where the scene shows it: canvas size from the target (a hero ≈ 2880×1620 device px), object size (`fit`, geometry, scale) and closest camera distance (orbit zoom, scroll paths and timeline camera keys count), divided by `repeat`. Normal maps get ~0.75× and roughness ~0.5× of the colour size; a model's atlas ~1.5× its on-screen size. Heroes never go below 512 for colour maps; games and cards are capped at 1024. Textures not placed in `scene.json` (scripts, unused) get 1024. `--max-size <px>` forces one size for everything. Never upscales.
+- **WebP (default `--format auto`).** Standalone `.jpg` / `.png` files become `.webp`: the file is renamed and every `scene.json` reference rewritten (`renamed` in the result) — unless a script, a `.gltf` or scene data names the file, then the format is kept (`note`). Images inside `.glb` models become WebP with `EXT_texture_webp`. `--format jpeg|png|keep` for other needs; `--quality` (default 80; normal maps at least 90).
+- **Geometry.** `.glb` models are welded (duplicate vertices merged), reordered for the GPU vertex cache and compressed with meshopt (`EXT_meshopt_compression`, 16-bit positions / UVs, 10-bit normals — invisible), which typically cuts the geometry by 60–80 %; the runtime loads the decoder (~27 KB) only for models that use it. It is WebAssembly: a site with a strict Content-Security-Policy needs `'wasm-unsafe-eval'` in `script-src` for scenes with compressed models (tell the user; skill `agent3d-publish` covers CSP). `--simplify 0.5` keeps about half of the triangles within `--simplify-error` (default 0.01 = 1 % of the mesh size; the result says when it stopped early); `--compress none` skips meshopt. Draco-compressed models cannot be decoded (the runtime refuses them too): re-export them without Draco.
+- A file only changes when it gets clearly smaller (re-encoding without resizing needs a 10 % gain); `assets/manifest.json` follows. Each file reports `maxSize`, `sizeReason`, its images (`role`, `from` / `to` as `WxH type KB`) and `geometry` (triangles / vertices before and after, filters). `--dry-run` encodes everything and returns the real savings without writing.
+- After applying, run `check` and `render` and look at the image: textures and models must look the same. If a surface looks soft, re-run that file with `--max-size 2048`.
+- Library assets (`library:`) are never modified, and `.hdr` / `.exr` files are not optimised at all: when a library HDRI pushes a scene over its KB budget, `assets optimize` has nothing to do (`files: []`); switch to a lighter HDRI or a procedural `lighting` preset. `export --optimize` exports optimised copies of every asset (library ones included; textures keep their format there) without touching the project.
+- Textures need headless Chrome (like `render`); geometry does not. MCP: `assets_optimize` takes `{ "paths": [...] | "all": true, "maxSize", "quality", "format", "compress", "simplify", "simplifyError", "dryRun" }` — call it with `dryRun: true` first.
 
 ## Licences and attribution
 
-- CC0 needs no credit; everything Agent3D searches is CC0, except some Khronos samples (CC-BY-4.0) and the library's fonts (Apache-2.0 / OFL-1.1) and fox model (CC-BY parts).
+- CC0 needs no credit; everything Agent3D searches is CC0, except some Khronos samples (CC-BY-4.0). In the library, the fonts are OFL-1.1 and four models need a credit: `models/products/sneaker.glb` (Shopify, CC-BY-4.0), `models/products/iridescent-lamp.glb` and `models/products/velvet-sofa.glb` (Eric Chadwick, Wayfair, CC-BY-4.0) and `models/animals/fox.glb` (CC-BY parts). Using them is fine: the listing shows `license` and `author`, `check` reports the credit and the export writes it.
 - `check` lists every asset whose licence needs attribution (`licences`, and `attribution` infos); `export` writes them to `<name>/CREDITS.txt` and returns `credits`. Tell the user to keep the credits (a line near the embed or on a credits page).
 - Never download from sites that need an account, scrape a page, or add a file whose licence you don't know. If the user supplies a file, ask who made it and under which licence.
 - Exports never hotlink: every file is copied into the export.
 
 ## Budgets
 
-The `check` KB budget per target counts assets + scripts + scene (runtime excluded): banner 600 KB, card 400, square / inline 600, hero 1500, fullscreen / game 4000 (`target.budgetKb` overrides it). Typical sizes: a library model 5–800 KB (median ~25 KB), a library texture set ~200–300 KB, a library HDRI ~350–400 KB (`.hdr`) or ~70–150 KB (`.jpg`), a downloaded 1k texture set 2–4 MB (the colour JPG alone ~1.3 MB), a Poly Haven 1k HDRI ~1.5 MB. A banner with a downloaded 1k texture set is already over budget: prefer library textures, `repeat` a small texture, or a material colour. Details and the per-source notes: [references/sources.md](references/sources.md).
+The `check` KB budget per target counts assets + scripts + scene (runtime excluded): banner 600 KB, card 400, square / inline 600, hero 1500, fullscreen / game 4000 (`target.budgetKb` overrides it). Typical sizes: a library model 6 KB to 1.8 MB (median ~30 KB; photoreal products 170 KB to 1.8 MB), a library texture set ~150–270 KB, a library HDRI 0.36–1.9 MB (`.hdr`) or 50–250 KB (`.jpg`), a library font 80–230 KB (copied only when used), a downloaded 1k texture set 2–4 MB (the colour JPG alone ~1.3 MB), a Poly Haven 1k HDRI ~1.5 MB. A banner with a downloaded 1k texture set is already over budget: prefer library textures, `repeat` a small texture, or a material colour. Details and the per-source notes: [references/sources.md](references/sources.md).

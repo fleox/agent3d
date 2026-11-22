@@ -1,6 +1,6 @@
 // Lighting / environment / materials: procedural textures, light rigs,
 // physical sky helpers, material presets and shader patches.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { LIGHT_RIGS, MATERIAL_PRESETS, TEXTURES } from "../../core/catalog";
 import { validateScene } from "../../core/validate";
@@ -113,6 +113,22 @@ describe("physical sky", () => {
     expect(v.azimuth).toBeCloseTo(0);
     expect(resolveSky({ preset: "sunset" }).elevation).toBe(SKY_PRESETS.sunset.elevation);
   });
+  it("sky presets are tuned to look rich at the default exposure (ACES / AgX)", () => {
+    // Preetham radiance grows with the sun's elevation: brighter presets need a
+    // lower exposure, otherwise noon / afternoon render near-white.
+    const e = (p: keyof typeof SKY_PRESETS) => resolveSky({ preset: p }).exposure;
+    expect(e("noon")).toBeLessThanOrEqual(0.15);
+    expect(e("afternoon")).toBeLessThanOrEqual(0.2);
+    expect(e("morning")).toBeLessThanOrEqual(0.25);
+    expect(e("noon")).toBeLessThan(e("afternoon"));
+    expect(e("afternoon")).toBeLessThan(e("golden-hour"));
+    expect(e("dusk")).toBeGreaterThan(e("sunset"));
+    // Deep colours: enough Rayleigh scattering everywhere, the golden hour richest.
+    for (const v of Object.values(SKY_PRESETS)) expect(v.rayleigh).toBeGreaterThanOrEqual(2);
+    expect(SKY_PRESETS["golden-hour"].rayleigh).toBeGreaterThanOrEqual(3.4);
+    // `exposure` stays a multiplier of the tuned value.
+    expect(resolveSky({ preset: "noon", exposure: 2 }).exposure).toBeCloseTo(2 * SKY_PRESETS.noon.exposure);
+  });
   it("sun light gets warmer and dimmer towards the horizon", () => {
     const low = sunLight(2), high = sunLight(50);
     expect(low.intensity).toBeLessThan(high.intensity);
@@ -148,7 +164,29 @@ describe("materials", () => {
     expect(m.clearcoatRoughness).toBe(0.02);
     expect(m.sheenColor.g).toBeGreaterThan(0.9);
     expect(m.envMapIntensity).toBe(2);
-    expect(m.iridescenceThicknessRange).toEqual([100, 400]);
+    expect(m.iridescenceThicknessMinimum).toBe(100);
+    expect(m.iridescenceThicknessMaximum).toBe(400);
+  });
+  it("builds every preset and material type without a three.js warning", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      for (const p of MATERIAL_PRESETS) await createMaterial({ preset: p.id }, ctx());
+      for (const type of ["standard", "physical", "basic", "lambert", "toon", "normal", "matcap", "gradient"] as const) await createMaterial({ type, iridescence: type === "physical" ? 1 : undefined }, ctx());
+      await createMaterial({ type: "normal", side: "double", opacity: 0.5 }, ctx());
+      expect(warn.mock.calls.map((c) => String(c[0]))).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+  it("toon is a lit standard material with banded direct light (keeps IBL fill)", async () => {
+    const m = (await createMaterial({ preset: "toon", color: "#2cc7b8" }, ctx())) as THREE.MeshStandardMaterial;
+    expect(m).toBeInstanceOf(THREE.MeshStandardMaterial);
+    expect(m.userData.toon).toBe(true);
+    expect(m.color.getHexString()).toBe("2cc7b8");
+    const shader = { fragmentShader: "#include <lights_physical_pars_fragment>\nvoid main() {}", vertexShader: "", uniforms: {} } as unknown as THREE.WebGLProgramParametersWithUniforms;
+    m.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+    expect(shader.fragmentShader).toContain("a3dToonBand( dot( geometryNormal, directLight.direction ) )");
+    expect(m.customProgramCacheKey()).toMatch(/a3d-toon/);
   });
   it("procedural textures land in the right slot / colour space", async () => {
     const m = (await createMaterial({ type: "physical", map: { procedural: "checker", resolution: 32 }, normalMap: { procedural: "flakes", resolution: 32 }, roughnessMap: { procedural: "noise", resolution: 32 } }, ctx())) as THREE.MeshPhysicalMaterial;
@@ -165,6 +203,25 @@ describe("materials", () => {
     expect(shader.fragmentShader).toContain("normalMatrix * objN");
     expect(shader.vertexShader).toContain("vTriPos = position");
     expect(m.customProgramCacheKey()).toContain("triplanar");
+  });
+  it("transmission samples are soft-clipped (no HDR glare through thin panes); gems and opaque materials untouched", async () => {
+    const pane = (await createMaterial({ type: "physical", transmission: 1, roughness: 0.3, thickness: 0.05 }, ctx())) as THREE.MeshPhysicalMaterial;
+    const lib = THREE.ShaderLib.physical;
+    const shader = { uniforms: {}, vertexShader: lib.vertexShader, fragmentShader: lib.fragmentShader } as unknown as THREE.WebGLProgramParametersWithUniforms;
+    pane.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+    expect(shader.fragmentShader).toContain("vec3 a3dSoftClip(vec3 c)");
+    expect(shader.fragmentShader).toContain("transmitted.rgb = a3dSoftClip( transmitted.rgb );");
+    expect(shader.fragmentShader).not.toContain("#include <transmission_fragment>");
+    expect(pane.customProgramCacheKey()).toContain("transmission-clamp");
+    // The curve: identity up to 1, asymptote 2.
+    const clip = (c: number) => Math.min(c, 1) + Math.max(c - 1, 0) / (1 + Math.max(c - 1, 0));
+    expect(clip(0.5)).toBe(0.5);
+    expect(clip(1)).toBe(1);
+    expect(clip(50)).toBeLessThan(2);
+    const gem = (await createMaterial({ type: "physical", transmission: 1, ior: 2.4, roughness: 0 }, ctx())) as THREE.MeshPhysicalMaterial;
+    expect(gem.customProgramCacheKey()).not.toContain("transmission-clamp");
+    const opaque = (await createMaterial({ type: "physical", roughness: 0.3 }, ctx())) as THREE.MeshPhysicalMaterial;
+    expect(opaque.userData.a3dPatches?.some((p: { key: string }) => p.key === "transmission-clamp") ?? false).toBe(false);
   });
   it("addShaderPatch keeps a pre-existing onBeforeCompile", () => {
     const m = new THREE.MeshStandardMaterial();
@@ -245,6 +302,21 @@ describe("contact shadows fit", () => {
     const b = meshBox(root);
     expect(b.min.toArray()).toEqual([2, 0, -1]);
     expect(b.max.toArray()).toEqual([4, 2, 1]);
+  });
+  it("default reach comes from what stands on the plane, not from floating titles", async () => {
+    const THREE = await import("three");
+    const { groundedHeight, CASTER_REACH } = await import("./contactShadows");
+    const scene = new THREE.Scene();
+    const product = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 1));
+    product.position.set(0, 0.6, 0);
+    const title = new THREE.Mesh(new THREE.BoxGeometry(3, 0.5, 0.2));
+    title.position.set(0, 2.6, 0); // floats 2.35 above the plane
+    scene.add(product, title);
+    const h = groundedHeight(scene, 0, 0.1)!;
+    expect(h).toBeCloseTo(1.2);
+    // far ≈ 0.9 × 1.2: the title's bottom (2.35) is far above the caster limit.
+    expect(2.35).toBeGreaterThan(0 + h * 0.9 * CASTER_REACH);
+    expect(groundedHeight(new THREE.Scene().add(title.clone()), 0, 0.1)).toBeUndefined();
   });
 });
 

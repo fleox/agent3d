@@ -2,7 +2,12 @@
 // (top-left … bottom-right), styled (plain / pill / title / subtitle), their
 // text interpolates {placeholders} from the script state, `visible` is a
 // boolean / state key / safe expression, buttons emit their `action`.
+// Expressions and placeholders also read `timeline.*` (time, duration,
+// progress, segment, marker) without any script.
+// Theme: ui.color / accent / buttonText (default: auto-contrast against the
+// accent), per-element color / background, and a `panel` backdrop card.
 
+import { readableTextOn } from "../../core/color";
 import type { UiDef, UiElementDef } from "../../core/types";
 import { formatText, isVisible, lookup } from "./expr";
 
@@ -29,15 +34,17 @@ const ANCHORS: Record<NonNullable<UiElementDef["anchor"]>, string> = {
 // embeds) between a minimum and the desktop size.
 const fit = (min: number, cqw: number, max: number) => `font-size:${max}px;font-size:clamp(${min}px,min(${cqw}cqw,${(cqw * 1.6).toFixed(1)}cqh),${max}px)`;
 
-const CSS = (font: string, color: string, accent: string) => `
-.a3d-hud{position:absolute;inset:0;pointer-events:none;font-family:${font};color:${color};z-index:2;overflow:hidden;user-select:none;-webkit-user-select:none;container-type:size;display:grid;grid-template-columns:minmax(0,1fr) fit-content(56%) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
+const CSS = (font: string, color: string, accent: string, buttonText: string) => `
+.a3d-hud{position:absolute;inset:0;pointer-events:none;font-family:${font};color:${color};z-index:2;overflow:hidden;user-select:none;-webkit-user-select:none;container-type:size;display:grid;grid-template-columns:minmax(min-content,1fr) fit-content(56%) minmax(min-content,1fr);grid-template-rows:auto minmax(0,1fr) auto}
 .a3d-zone{display:flex;flex-direction:column;gap:8px;gap:clamp(4px,1.6cqw,8px);padding:14px;padding:clamp(8px,2.6cqw,14px);min-width:0;max-width:100%;box-sizing:border-box}
 .a3d-el{line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.45);white-space:pre-line;overflow-wrap:break-word}
 .a3d-plain{${fit(11, 3.2, 15)};font-weight:600}
-.a3d-pill{${fit(11, 3, 14)};font-weight:700;padding:.43em 1em;border-radius:999px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-shadow:none}
+.a3d-pill{${fit(11, 3, 14)};font-weight:700;padding:.43em 1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;box-sizing:border-box;flex:none;border-radius:999px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-shadow:none}
 .a3d-title{${fit(20, 7, 44)};font-weight:800;letter-spacing:-.01em}
 .a3d-subtitle{${fit(12, 3.6, 18)};font-weight:500;opacity:.9}
-.a3d-btn{pointer-events:auto;cursor:pointer;border:0;font:inherit;${fit(12, 3.4, 15)};font-weight:700;color:#fff;background:${accent};padding:.67em 1.47em;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .12s ease,filter .12s ease;text-shadow:none;min-height:36px}
+.a3d-panel{${fit(13, 3.6, 18)};font-weight:600;line-height:1.45;padding:1.1em 1.6em;border-radius:18px;background:rgba(10,12,20,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 34px rgba(0,0,0,.35);text-shadow:none;max-width:100%;box-sizing:border-box}
+.a3d-panel::first-line{font-size:1.45em;font-weight:800}
+.a3d-btn{pointer-events:auto;cursor:pointer;border:0;font:inherit;${fit(12, 3.4, 15)};font-weight:700;color:${buttonText};background:${accent};padding:.67em 1.47em;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .12s ease,filter .12s ease;text-shadow:none;min-height:36px}
 .a3d-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}.a3d-btn:active{transform:translateY(1px)}
 .a3d-bar{width:160px;width:clamp(80px,30cqw,160px);height:10px;height:clamp(7px,2cqw,10px);border-radius:999px;background:rgba(0,0,0,.35);overflow:hidden}
 .a3d-bar>i{display:block;height:100%;width:0;background:${accent};border-radius:inherit}
@@ -57,8 +64,19 @@ interface ElState {
   last: string;
 }
 
+// Timeline state exposed to HUD expressions as `timeline.*`.
+export interface HudTimeline {
+  time: number; // timeline-local seconds
+  duration: number;
+  progress: number; // 0..1
+  segment: string; // playing segment, else the first segment containing the time, else ""
+  marker: string; // last marker at or before the time ("" before the first)
+}
+
 export interface Hud {
   root: HTMLElement;
+  // Timeline state for this frame (null = no timeline).
+  setTimeline(info: HudTimeline | null): void;
   set(id: string, props: { text?: string; visible?: boolean; value?: number }): void;
   toast(text: string, seconds?: number, now?: number): void;
   update(state: Record<string, unknown>, now: number): void;
@@ -72,7 +90,8 @@ export function createHud(container: HTMLElement, ui: UiDef | undefined, emit: (
   root.className = "a3d-hud";
   root.setAttribute("aria-live", "polite");
   const style = doc.createElement("style");
-  style.textContent = CSS(ui?.font ?? "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif", ui?.color ?? "#ffffff", ui?.accent ?? "#ff006e");
+  const accent = ui?.accent ?? "#ff006e";
+  style.textContent = CSS(ui?.font ?? "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif", ui?.color ?? "#ffffff", accent, ui?.buttonText ?? readableTextOn(accent));
   root.appendChild(style);
   const zones = new Map<string, HTMLElement>();
   const zone = (anchor: string) => {
@@ -122,6 +141,13 @@ export function createHud(container: HTMLElement, ui: UiDef | undefined, emit: (
       node = doc.createElement("div");
       node.className = `a3d-el a3d-${def.style ?? "plain"}`;
     }
+    // Per-element theme (a button / pill / panel background, a bar track).
+    if (def.color) {
+      node.style.color = def.color;
+      if (def.type === "bar" && fill) fill.style.background = def.color;
+    }
+    if (def.background) node.style.background = def.background;
+    if (def.type === "button" && def.background && !def.color) node.style.color = readableTextOn(def.background);
     node.dataset.id = def.id;
     zone(def.anchor ?? "top-left").appendChild(node);
     els.set(def.id, { def, node, fill, override: {}, last: "" });
@@ -133,9 +159,13 @@ export function createHud(container: HTMLElement, ui: UiDef | undefined, emit: (
   let toastUntil = 0;
   let toastPending: { text: string; seconds: number } | null = null;
   let muteBtn: HTMLButtonElement | null = null;
+  let timeline: HudTimeline | null = null;
 
   return {
     root,
+    setTimeline(info) {
+      timeline = info;
+    },
     set(id, props) {
       const el = els.get(id);
       if (el) Object.assign(el.override, props);
@@ -143,7 +173,9 @@ export function createHud(container: HTMLElement, ui: UiDef | undefined, emit: (
     toast(text, seconds = 2) {
       toastPending = { text, seconds };
     },
-    update(state, now) {
+    update(scriptState, now) {
+      // timeline.* next to the script state (a script's own `timeline` key wins).
+      const state = timeline && !Object.prototype.hasOwnProperty.call(scriptState, "timeline") ? { ...scriptState, timeline } : scriptState;
       for (const el of els.values()) {
         const visible = el.override.visible ?? isVisible(el.def.visible, state);
         el.node.style.display = visible ? "" : "none";

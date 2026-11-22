@@ -44,7 +44,8 @@ export const blob: GeneratorImpl = (raw, ctx) => {
     clearcoatRoughness: 0.15,
     iridescence: 0.9,
     iridescenceIOR: 1.35,
-    iridescenceThicknessRange: [180, 620],
+    iridescenceThicknessMinimum: 180,
+    iridescenceThicknessMaximum: 620,
     sheen: 0.4,
     sheenColor: new THREE.Color("#ffd6f5"),
   });

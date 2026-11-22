@@ -1,6 +1,6 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { createMcpServer, isRefusal, serveStdio, type JsonRpcResponse, type McpTool } from "./server";
+import { createMcpServer, isRefusal, serveStdio, STRUCTURED_MAX_CHARS, type JsonRpcResponse, type McpTool } from "./server";
 
 // MCP over an in-process stdio pair: handshake, tools/list (annotations,
 // read-only mode), tools/call (structured result + text + image blocks,
@@ -32,9 +32,10 @@ function setup(readOnly = false) {
       }
       if (name === "scene_patch") return { status: "refused", applied: false, counts: { errors: 1, warnings: 0, infos: 0 }, issues: [{ severity: "error", code: "x", path: "objects#a", message: "Bad" }] };
       if (name === "render_preview") return { frames: [{ t: 0, path: "/tmp/x.png" }], sheet: "/tmp/sheet.png" };
+      if (name === "scene_summary" && input.big) return { blob: "x".repeat(20_000) };
       return { objects: 1, input };
     },
-    images: async (name) => (name === "render_preview" ? [{ data: "iVBORw0KGgo=", mimeType: "image/png" }] : []),
+    images: async (name) => (name === "render_preview" ? [{ data: "/9j/4AAQ", mimeType: "image/jpeg" }] : []),
     resources: [{ uri: "agent3d://scene", name: "scene", title: "Scene", description: "The scene.", mimeType: "application/json", read: async () => ({ version: 1 }) }],
   });
   const input = new PassThrough();
@@ -78,7 +79,7 @@ describe("MCP server", () => {
 
     const render = (await t.request("tools/call", { name: "render_preview", arguments: {} })).result as { content: { type: string; data?: string; mimeType?: string }[] };
     expect(render.content.map((c) => c.type)).toEqual(["text", "image"]);
-    expect(render.content[1]).toMatchObject({ mimeType: "image/png", data: "iVBORw0KGgo=" });
+    expect(render.content[1]).toMatchObject({ mimeType: "image/jpeg", data: "/9j/4AAQ" });
 
     const failed = (await t.request("tools/call", { name: "object_remove", arguments: { id: "nope" } })).result as { isError: boolean; structuredContent: { error: { code: string; hint: string } } };
     expect(failed.isError).toBe(true);
@@ -99,6 +100,22 @@ describe("MCP server", () => {
     const read = (await t.request("resources/read", { uri: "agent3d://scene" })).result as { contents: { text: string }[] };
     expect(JSON.parse(read.contents[0].text)).toEqual({ version: 1 });
     expect((await t.request("resources/read", { uri: "agent3d://nope" })).error).toMatchObject({ code: -32002 });
+    await t.close();
+  });
+
+  it("sends compact JSON text and structuredContent only for small results on 2025-06-18", async () => {
+    const t = setup();
+    await t.request("initialize", { protocolVersion: "2025-06-18" });
+    const small = (await t.request("tools/call", { name: "scene_summary", arguments: { a: 1 } })).result as { content: { text: string }[]; structuredContent?: unknown };
+    expect(small.content[0].text).toBe('{"objects":1,"input":{"a":1}}');
+    expect(small.structuredContent).toBeDefined();
+    const big = (await t.request("tools/call", { name: "scene_summary", arguments: { big: true } })).result as { content: { text: string }[]; structuredContent?: unknown };
+    expect(big.content[0].text.length).toBeGreaterThan(STRUCTURED_MAX_CHARS);
+    expect(big.structuredContent).toBeUndefined();
+    // Older protocol versions have no structuredContent.
+    await t.request("initialize", { protocolVersion: "2025-03-26" });
+    const old = (await t.request("tools/call", { name: "scene_summary", arguments: { a: 1 } })).result as { structuredContent?: unknown };
+    expect(old.structuredContent).toBeUndefined();
     await t.close();
   });
 

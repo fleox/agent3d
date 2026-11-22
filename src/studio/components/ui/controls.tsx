@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
+import { t } from "../../i18n";
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 type BtnVariant = "ghost" | "subtle" | "primary" | "danger";
@@ -121,14 +122,16 @@ export function Toggle({ checked, onChange, ariaLabel }: { checked: boolean; onC
 // Label + control row. `overridden` shows a dot and a reset button.
 export function Row({ label, children, hint, onReset, overridden, align = "center" }: { label: ReactNode; children: ReactNode; hint?: string; onReset?: () => void; overridden?: boolean; align?: "center" | "start" }) {
   return (
-    <div className={clsx("group grid grid-cols-[84px_minmax(0,1fr)_16px] gap-x-2 px-3 py-[3px]", align === "center" ? "items-center" : "items-start")}>
-      <div className={clsx("truncate text-xs text-fg-muted", align === "start" && "pt-1")} title={typeof label === "string" ? (hint ? `${label} — ${hint}` : label) : hint}>
+    // Label column: 104 px, long labels wrap on two lines (French labels are longer),
+    // the full label + hint is the tooltip.
+    <div className={clsx("group grid grid-cols-[104px_minmax(0,1fr)_16px] gap-x-2 px-3 py-[3px]", align === "center" ? "items-center" : "items-start")}>
+      <div className={clsx("line-clamp-2 break-words text-xs leading-tight text-fg-muted [hyphens:auto]", align === "start" && "pt-1")} title={typeof label === "string" ? (hint ? `${label} — ${hint}` : label) : hint}>
         {label}
       </div>
       <div className="flex min-w-0 items-center gap-1">{children}</div>
       <div className="flex justify-end">
         {onReset && overridden && (
-          <button type="button" title="Reset" aria-label="Reset" onClick={onReset} className="text-fg-faint opacity-0 transition-opacity hover:text-fg group-hover:opacity-100">
+          <button type="button" title={t("ui.reset")} aria-label={t("ui.reset")} onClick={onReset} className="text-fg-faint opacity-0 transition-opacity hover:text-fg group-hover:opacity-100">
             <RotateCcw size={11} />
           </button>
         )}

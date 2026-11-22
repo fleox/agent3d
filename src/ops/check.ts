@@ -11,7 +11,8 @@ import type { AssetEntry, AssetManifest, Issue, SceneDoc, TargetKind } from "../
 import { DEFAULT_BUDGET_KB, validateScene } from "../core/validate";
 import type { FrameStats, InspectResult } from "../runtime/api";
 import { GENERATORS } from "../core/catalog";
-import { DRAW_CALL_LIMIT, estimateTriangles, TRIANGLE_LIMIT } from "./budget";
+import { DRAW_CALL_LIMIT, estimateTriangles, frameTriangles, TRIANGLE_AIM, TRIANGLE_LIMIT, type FrameTriangleEstimate } from "./budget";
+import { expandPostFx } from "../core/postfx";
 import { modelInfo } from "./gltf";
 import { optimizeSuggestions } from "./optimizeSizing";
 import { KB, readJsonOr } from "./context";
@@ -47,6 +48,12 @@ export interface CheckReport {
     // counts every pass (shadow maps, post effects): with a render, `triangles`
     // is the measured number and `trianglesSource` "runtime".
     estimatedTriangles: number;
+    // Every pass estimated (main + shadow maps + normal / depth pre-pass + contact
+    // shadows): what the runtime would measure. `triangles` without a render.
+    estimatedFrameTriangles: number;
+    passes: FrameTriangleEstimate["passes"];
+    // "Aim for" of the target kind (art-direction table), per frame.
+    triangleAim: number;
     runtimeTriangles?: number;
     triangles: number;
     trianglesSource: "estimate" | "runtime";
@@ -173,6 +180,7 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
     }
   }
   const tris = estimateTriangles(scene, { models: (src) => modelTris.get(src) });
+  const frame = frameTriangles(scene, tris, { expandPostFx: (d) => expandPostFx(d) });
   const sceneBytes = (await fs.exists(SCENE_FILE)) ? await fs.size(SCENE_FILE) : 0;
   const budgetKb = scene.target?.budgetKb ?? DEFAULT_BUDGET_KB[kind] ?? 600;
   const totalKb = KB(assetBytes + scriptBytes + sceneBytes);
@@ -214,14 +222,25 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
     });
   }
   const triLimit = TRIANGLE_LIMIT[kind] ?? 500_000;
+  const triAim = TRIANGLE_AIM[kind] ?? 150_000;
+  const heaviestLine = tris.byObject.slice(0, 3).map((o) => `${o.id} (~${o.triangles.toLocaleString("en-US")})`).join(", ") || "n/a";
+  const passLine = passesLine(frame);
   // A render measured the real number (all passes): it supersedes the estimate.
-  if (tris.total > triLimit && !opts.runtimeStats) {
+  if (frame.perFrame > triLimit && !opts.runtimeStats) {
     issues.push({
       severity: "warning",
       code: "triangles",
       path: tris.byObject[0] ? `objects#${tris.byObject[0].id}` : "objects",
-      message: `Estimated ${tris.total.toLocaleString("en-US")} triangles, above ${triLimit.toLocaleString("en-US")} for a ${kind}.`,
-      hint: `Heaviest: ${tris.byObject.slice(0, 3).map((o) => `${o.id} (~${o.triangles.toLocaleString("en-US")})`).join(", ")}. Lower segments / resolution / detail / count params, use "instances" for repeated meshes, or simplify project models (\`agent3d assets optimize <model.glb> --simplify 0.5\`).`,
+      message: `Estimated ${frame.perFrame.toLocaleString("en-US")} triangles per frame (${passLine}), above ${triLimit.toLocaleString("en-US")} for a ${kind}.`,
+      hint: `Heaviest: ${heaviestLine}. Lower segments / resolution / detail / count params, use "instances" for repeated meshes, or simplify project models (\`agent3d assets optimize <model.glb> --simplify 0.5\`).${passHint(frame)}`,
+    });
+  } else if (frame.perFrame > triAim && !opts.runtimeStats) {
+    issues.push({
+      severity: "info",
+      code: "triangles-aim",
+      path: tris.byObject[0] ? `objects#${tris.byObject[0].id}` : "objects",
+      message: `Estimated ${frame.perFrame.toLocaleString("en-US")} triangles per frame (${passLine}), above the ~${triAim.toLocaleString("en-US")} to aim for on a ${kind} (fast on a mid-range phone; limit ${triLimit.toLocaleString("en-US")}).`,
+      hint: `Heaviest: ${heaviestLine}.${passHint(frame)} \`check --render\` measures the real number.`,
     });
   }
 
@@ -231,16 +250,39 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
   // ── Runtime performance ──
   if (opts.runtimeStats) {
     const st = opts.runtimeStats;
-    if (st.drawCalls > DRAW_CALL_LIMIT) issues.push({ severity: "warning", code: "draw-calls", path: "objects", message: `${st.drawCalls} draw calls per frame (limit ${DRAW_CALL_LIMIT}).`, hint: 'Merge repeated meshes into an "instances" object, group static decoration into fewer meshes, reduce particles systems and post effects.' });
+    if (st.drawCalls > DRAW_CALL_LIMIT) {
+      const causes = drawCallCauses(scene, frame.shadowLights, !!frame.passes.prepass);
+      issues.push({
+        severity: "warning",
+        code: "draw-calls",
+        path: causes[0] ? `objects#${causes[0].id}` : "objects",
+        message: `${st.drawCalls} draw calls per frame (limit ${DRAW_CALL_LIMIT}).${causes.length ? ` Most draw calls: ${causes.slice(0, 5).map((c) => `${c.id} (~${c.drawCalls}: ${c.why})`).join(", ")}.` : ""}`,
+        hint: `${causes.some((c) => /splitLetters|per-letter/.test(c.why)) ? "Per-letter text (splitLetters / a per-letter reveal) draws every glyph separately — and twice with an outline: reveal by word or line, or drop the outline on split text. " : ""}${causes.some((c) => /copies/.test(c.why)) ? 'Repeated copies of the same object: use one "instances" object (or a generator) instead. ' : ""}Merge repeated meshes into an "instances" object, group static decoration into fewer meshes, reduce particle systems and post effects${frame.shadowLights ? "; every shadow-casting light re-draws each caster (castShadow: false on small / distant objects)" : ""}.`,
+      });
+    }
     if (st.triangles > triLimit)
       issues.push({
         severity: "warning",
         code: "triangles",
         path: tris.byObject[0] ? `objects#${tris.byObject[0].id}` : "objects",
         message: `The runtime renders ${st.triangles.toLocaleString("en-US")} triangles per frame, all passes included (limit ${triLimit.toLocaleString("en-US")} for a ${kind}; geometry estimate ~${tris.total.toLocaleString("en-US")}).`,
-        hint: `Heaviest: ${tris.byObject.slice(0, 3).map((o) => `${o.id} (~${o.triangles.toLocaleString("en-US")})`).join(", ") || "n/a"}. Lower geometry segments / generator resolution or counts, use lighter models (decimate them); shadow-casting lights re-draw every caster (castShadow only where it shows).`,
+        hint: `Heaviest: ${heaviestLine}. Lower geometry segments / generator resolution or counts, use lighter models (decimate them); shadow-casting lights re-draw every caster (castShadow only where it shows).${passHint(frame)}`,
       });
-    if (st.textures > 24) issues.push({ severity: "info", code: "textures", path: "objects", message: `${st.textures} textures in GPU memory.`, hint: "Share textures between materials and prefer 1k maps for web embeds." });
+    else if (st.triangles > triAim)
+      issues.push({
+        severity: "warning",
+        code: "triangles-aim",
+        path: tris.byObject[0] ? `objects#${tris.byObject[0].id}` : "objects",
+        message: `The runtime renders ${st.triangles.toLocaleString("en-US")} triangles per frame (all passes), above the ~${triAim.toLocaleString("en-US")} to aim for on a ${kind} (limit ${triLimit.toLocaleString("en-US")}; estimate ${frame.perFrame.toLocaleString("en-US")}: ${passLine}).`,
+        hint: `It works, but mid-range phones will struggle. Heaviest: ${heaviestLine}.${passHint(frame)}`,
+      });
+    // GPU texture count includes render targets, shadow maps, font / gradient / procedural canvases:
+    // only image files cost downloads and memory worth flagging.
+    const files = textureFiles(scene);
+    if (files.length > 12)
+      issues.push({ severity: "info", code: "textures", path: "objects", message: `${files.length} texture files used by materials / the environment (${st.textures} GPU textures in all, including generated ones).`, hint: "Share textures between materials and prefer 1k maps for web embeds (`agent3d assets optimize --all`)." });
+    else if (st.textures > 24 && !files.length)
+      issues.push({ severity: "info", code: "textures", path: "objects", message: `${st.textures} GPU textures, none from image files: they are generated (procedural textures, gradients, text / HUD canvases, shadow maps, post-processing targets) — no download.`, hint: "Nothing to do unless memory is tight: fewer procedural maps / post effects lower it." });
     if (st.fps !== undefined && st.fps < 30) issues.push({ severity: "warning", code: "fps", path: "target", message: `Measured ${Math.round(st.fps)} fps in the headless render.`, hint: "Headless rendering is slower than a real GPU, but simplify if it drops below ~20: fewer post effects, lower maxDpr, fewer shadows." });
   }
 
@@ -267,8 +309,11 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
     counts,
     budget: {
       estimatedTriangles: tris.total,
+      estimatedFrameTriangles: frame.perFrame,
+      passes: frame.passes,
+      triangleAim: triAim,
       ...(opts.runtimeStats ? { runtimeTriangles: opts.runtimeStats.triangles } : {}),
-      triangles: opts.runtimeStats ? opts.runtimeStats.triangles : tris.total,
+      triangles: opts.runtimeStats ? opts.runtimeStats.triangles : frame.perFrame,
       trianglesSource: opts.runtimeStats ? "runtime" : "estimate",
       heaviestObjects: tris.byObject.slice(0, 5),
       assetsKb: KB(assetBytes),
@@ -281,6 +326,74 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
     },
     licences,
   };
+}
+
+function passesLine(f: FrameTriangleEstimate): string {
+  const p = f.passes;
+  return [`geometry ${p.main.toLocaleString("en-US")}`, ...(p.shadowMaps ? [`shadow maps ${p.shadowMaps.toLocaleString("en-US")} (${f.shadowLights} light${f.shadowLights > 1 ? "s" : ""})`] : []), ...(p.prepass ? [`ao / dof depth-normal pre-pass ${p.prepass.toLocaleString("en-US")}`] : []), ...(p.contactShadows ? [`contact shadows ${p.contactShadows.toLocaleString("en-US")}`] : [])].join(" + ");
+}
+
+function passHint(f: FrameTriangleEstimate): string {
+  const p = f.passes;
+  const parts: string[] = [];
+  if (p.prepass) parts.push("the ao / dof / godrays / outline post effect re-draws the whole scene once more (drop it, or keep it for heroes)");
+  if (p.shadowMaps) parts.push("each shadow-casting light re-draws every caster (castShadow: false on text and small objects)");
+  if (p.contactShadows) parts.push("contactShadows re-draws the casters from below");
+  return parts.length ? ` Passes: ${parts.join("; ")}.` : "";
+}
+
+// Image files the scene's materials / environment use (what "textures" should count).
+function textureFiles(scene: SceneDoc): string[] {
+  return [...new Set(collectAssetRefs(scene).filter((r) => r.kind === "texture" || r.kind === "hdri").map((r) => r.path))];
+}
+
+// Rough draw calls per top-level object, to name the causes of a high count:
+// text drawn per letter (splitLetters / per-letter reveal), × 2 with an outline;
+// groups of many meshes; the same model / geometry repeated (copies); shadow /
+// pre-pass passes multiply every mesh.
+export function drawCallCauses(scene: SceneDoc, shadowLights = 0, prepass = false): { id: string; drawCalls: number; why: string }[] {
+  const passes = 1 + shadowLights + (prepass ? 1 : 0);
+  const perLetter = new Set<string>();
+  for (const tr of scene.timeline?.tracks ?? []) {
+    const t = String(tr?.target ?? "");
+    // Tracks on glyph children ("title/0.position.y", "title/3,title/4.scale").
+    for (const part of t.split(".")[0].split(",")) {
+      const m = /^(.+)\/\d+$/.exec(part.trim());
+      if (m) perLetter.add(m[1]);
+    }
+  }
+  const repeated = new Map<string, string[]>();
+  const out: { id: string; drawCalls: number; why: string }[] = [];
+  for (const top of scene.objects ?? []) {
+    let calls = 0;
+    const why: string[] = [];
+    walkObjects([top], (o) => {
+      const d = o as unknown as Record<string, unknown> & { kind?: string; text?: string };
+      if (d.kind === "text") {
+        const glyphs = String(d.text ?? "").replace(/\s/g, "").length;
+        const split = d.splitLetters === true || !!d.reveal || perLetter.has(o.id);
+        const layers = d.outline ? 2 : 1;
+        if (split) {
+          calls += glyphs * layers;
+          why.push(`"${o.id}" per-letter text (splitLetters / reveal), ${glyphs} glyphs${layers > 1 ? " × outline" : ""}`);
+        } else calls += layers;
+      } else if (d.kind === "mesh" || d.kind === "instances" || d.kind === "particles" || d.kind === "svg") calls += 1;
+      else if (d.kind === "model" || d.kind === "generator") {
+        calls += d.kind === "model" ? 4 : 2;
+        const key = d.kind === "model" ? `model:${String(d.src)}` : `generator:${String(d.generator)}:${JSON.stringify(d.params ?? {})}`;
+        repeated.set(key, [...(repeated.get(key) ?? []), o.id]);
+      }
+    });
+    if (calls) out.push({ id: top.id, drawCalls: calls * passes, why: why.join(", ") || "meshes" });
+  }
+  for (const [key, ids] of repeated) {
+    if (ids.length < 3) continue;
+    const top = out.find((o) => o.id === ids[0]);
+    const label = `${ids.length} copies of ${key.split(":").slice(0, 2).join(" ")} (${ids.slice(0, 4).join(", ")}${ids.length > 4 ? ", …" : ""})`;
+    out.push({ id: ids[0], drawCalls: ids.length * (key.startsWith("model") ? 4 : 2) * passes, why: label });
+    if (top && top.why === "meshes") top.why = label;
+  }
+  return out.sort((a, b) => b.drawCalls - a.drawCalls);
 }
 
 function hasBehaviours(scene: SceneDoc): boolean {
@@ -321,6 +434,19 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
       if ((o as { tags?: string[] }).tags?.includes(tag)) animated.add(o.id);
     });
   };
+  // Objects the timeline hides at t = 0 (opacity 0, visible false, scale 0 at
+  // the first key) and reveals later: not visible at the checked frame even
+  // when they are inside the view — reported like the out-of-view ones.
+  const hiddenAtStart = new Set<string>();
+  const startsHidden = (prop: string, keys: unknown): boolean => {
+    const first = Array.isArray(keys) ? (keys as unknown[]).find((k) => Array.isArray(k)) : undefined;
+    if (!Array.isArray(first) || typeof first[0] !== "number" || first[0] > 1e-6) return false;
+    const v = first[1];
+    if (/^(material\.)?opacity$/.test(prop)) return v === 0;
+    if (prop === "visible") return v === false || v === 0;
+    if (/^scale$/.test(prop)) return v === 0 || (Array.isArray(v) && v.every((x) => x === 0));
+    return false;
+  };
   for (const tr of scene.timeline?.tracks ?? []) {
     const target = typeof tr?.target === "string" ? tr.target : "";
     const dot = target.indexOf(".");
@@ -330,17 +456,28 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
       cameraMoves = true;
       continue;
     }
-    if (!/^(position|scale|rotation|visible|material\.opacity)/.test(prop)) continue;
-    if (head.startsWith("tag:")) tagged(head.slice(4));
-    else if (head.startsWith("children:")) {
+    if (!/^(position|scale|rotation|visible|material\.opacity|opacity)/.test(prop)) continue;
+    const ids: string[] = [];
+    if (head.startsWith("tag:")) {
+      const before = new Set(animated);
+      tagged(head.slice(4));
+      for (const id of animated) if (!before.has(id)) ids.push(id);
+    } else if (head.startsWith("children:")) {
+      // children:<id>.prop animates every child: the parent is hidden when all of them start hidden.
       const id = head.slice(9);
-      animated.add(id);
+      ids.push(id);
       walkObjects(scene.objects, (o) => {
-        if (o.id === id) for (const c of o.children ?? []) animated.add(c.id);
+        if (o.id === id) for (const c of o.children ?? []) ids.push(c.id);
       });
-    } else for (const h of head.split(",")) animated.add(h.trim().replace(/\/\d+$/, ""));
+    } else for (const h of head.split(",")) ids.push(h.trim().replace(/\/\d+$/, ""));
+    for (const id of ids) animated.add(id);
+    if (startsHidden(prop, (tr as { keys?: unknown }).keys)) for (const id of ids) hiddenAtStart.add(id);
   }
-  const objs = inspect.objects.filter((o) => !hidden.has(o.id) && declared.has(o.id));
+  // Camera-attached objects (attach: "camera") live in screen space: their framing is the
+  // camera's own (positioned relative to the lens), never "out of view" / "clipped" like world objects.
+  const attached = new Set((scene.objects ?? []).filter((o) => (o as { attach?: string }).attach === "camera").map((o) => o.id));
+  for (const id of [...attached]) walkObjects(scene.objects.find((o) => o.id === id)?.children ?? [], (c) => void attached.add(c.id));
+  const objs = inspect.objects.filter((o) => !hidden.has(o.id) && declared.has(o.id) && !attached.has(o.id));
   const cam = `camera position ${JSON.stringify(inspect.camera.position)} looking at ${JSON.stringify(inspect.camera.target)}`;
   if (inspect.camera.insideObject) {
     issues.push({ severity: "warning", code: "camera-inside", path: `objects#${inspect.camera.insideObject}`, message: `The camera is inside "${inspect.camera.insideObject}" (${cam}).`, hint: `Move camera.position outside its bounding box, or scale / move "${inspect.camera.insideObject}".` });
@@ -350,10 +487,16 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
     const centre = o.max.map((v, i) => Math.round(((v + o.min[i]) / 2) * 100) / 100);
     // Background-sized things (terrain, starfield, particles areas) are often partially in view by design.
     const big = Math.max(...size) > 30;
-    if (o.inView === "none" && scene.timeline?.trigger === "scroll" && (cameraMoves || animated.has(o.id))) {
-      issues.push({ severity: "info", code: "out-of-view-at-start", path: `objects#${o.id}`, message: `"${o.id}" is outside the camera view at the checked frame (t = 0); the scroll-driven ${animated.has(o.id) ? "timeline animates it" : "camera moves"}, so it may come into view further down the page.`, hint: "Check the other scroll states with `agent3d render --count 8` (or --scroll 0.5)." });
+    const scroll = scene.timeline?.trigger === "scroll";
+    const later = scroll ? "further down the page" : "later in the timeline";
+    const checkHint = scroll ? "Check the other scroll states with `agent3d render --count 8` (or --scroll 0.5)." : "Check later frames with `agent3d render --count 6` (or --frames …).";
+    if (hiddenAtStart.has(o.id) && o.inView !== "none") {
+      // Same report as an object brought into view later: it is not visible at the checked frame either.
+      issues.push({ severity: "info", code: "out-of-view-at-start", path: `objects#${o.id}`, message: `"${o.id}" is hidden at the checked frame (t = 0): the timeline starts it transparent / invisible / at scale 0 and reveals it ${later}.`, hint: checkHint });
+    } else if (o.inView === "none" && scroll && (cameraMoves || animated.has(o.id))) {
+      issues.push({ severity: "info", code: "out-of-view-at-start", path: `objects#${o.id}`, message: `"${o.id}" is outside the camera view at the checked frame (t = 0)${hiddenAtStart.has(o.id) ? " and hidden by the timeline" : ""}; the ${scroll ? "scroll-driven " : ""}${animated.has(o.id) ? "timeline animates it" : "camera moves"}, so it may come into view ${later}.`, hint: checkHint });
     } else if (o.inView === "none") {
-      issues.push({ severity: "warning", code: "out-of-view", path: `objects#${o.id}`, message: `"${o.id}" is completely outside the camera view (centre ${JSON.stringify(centre)}, size ${JSON.stringify(size)}; ${cam}).`, hint: `Move it toward camera.target, widen camera.fov / move the camera back, or set "visible": false if it is meant to enter later.` });
+      issues.push({ severity: "warning", code: "out-of-view", path: `objects#${o.id}`, message: `"${o.id}" is completely outside the camera view (centre ${JSON.stringify(centre)}, size ${JSON.stringify(size)}; ${cam}).`, hint: `Move it toward camera.target, widen camera.fov / move the camera back, or set "visible": false if it is meant to enter later.${animated.has(o.id) || cameraMoves ? " The timeline animates it: if it enters later on purpose, check later frames (`agent3d render --count 6`) and ignore this." : ""}` });
     } else if (o.inView === "partial" && !big && !spread.has(o.id)) {
       issues.push({ severity: "info", code: "clipped", path: `objects#${o.id}`, message: `"${o.id}" is clipped by the frame edges (centre ${JSON.stringify(centre)}, size ${JSON.stringify(size)}).`, hint: "If unintended, move it inward, scale it down or move the camera back. For wide banners, keep content within the central ~80% of the width." });
     }

@@ -69,6 +69,12 @@ describe("HUD", () => {
     const css = container.querySelector(".a3d-hud style")!.textContent!;
     expect(css).toContain("container-type:size");
     expect(css).toMatch(/\.a3d-title\{font-size:44px;font-size:clamp\(20px,min\(7cqw/);
+    // Pills stay on one line ("Coins 10/13"); side columns grow to their content
+    // instead of squeezing it, the centre title wraps instead.
+    expect(css).toMatch(/\.a3d-pill\{[^}]*white-space:nowrap/);
+    expect(css).toMatch(/\.a3d-pill\{[^}]*text-overflow:ellipsis/);
+    expect(css).toContain("grid-template-columns:minmax(min-content,1fr) fit-content(56%) minmax(min-content,1fr)");
+    expect(css).toMatch(/\.a3d-el\{[^}]*white-space:pre-line/); // plain / panel text still wraps
     hud.setMuteButton(false, () => undefined);
     const mute = container.querySelector(".a3d-mute")!;
     expect(mute.parentElement).toBe(zone("bottom-right"));

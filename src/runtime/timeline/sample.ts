@@ -1,6 +1,7 @@
 // Pure keyframe sampling. Numbers and vec3 interpolate through the segment's
 // easing (the key's own ease, else the track ease), colours interpolate in
-// linear space, booleans step (hold the last key reached). Relative values
+// OKLCh by default (perceptual, chroma kept: no grey dip between
+// complementary hues; the track's `colorSpace` picks "oklab", "rgb" or "hsl"), booleans step (hold the last key reached). Relative values
 // ("+=1", "-=0.5", "*=2") are resolved against a base with `resolveKeys`.
 
 import * as THREE from "three";
@@ -74,12 +75,67 @@ function asVec(v: AbsKey[1]): [number, number, number] | null {
   return null;
 }
 
-export function interpolate(a: AbsKey[1], b: AbsKey[1], k: number): Sampled {
+export type ColorSpace = "oklch" | "oklab" | "rgb" | "hsl";
+
+// THREE.Color holds linear-light sRGB (ColorManagement): OKLab straight from it.
+function toOklab(c: THREE.Color): [number, number, number] {
+  const l = Math.cbrt(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b);
+  const m = Math.cbrt(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b);
+  const s = Math.cbrt(0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+}
+
+function fromOklab(L: number, A: number, B: number, out: THREE.Color): THREE.Color {
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  return out.setRGB(
+    Math.max(0, 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+    Math.max(0, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+    Math.max(0, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
+    THREE.LinearSRGBColorSpace,
+  );
+}
+
+// Blend two colours (k in [0,1], may overshoot with back / elastic easing).
+export function mixColor(a: THREE.Color, b: THREE.Color, k: number, space: ColorSpace = "oklch", out = new THREE.Color()): THREE.Color {
+  if (space === "rgb") return out.copy(a).lerp(b, k);
+  if (space === "oklch") {
+    // Polar OKLab: lightness, chroma and hue blend separately (hue the short
+    // way), so complementary colours keep their saturation midway.
+    const pa = toOklab(a), pb = toOklab(b);
+    const ca = Math.hypot(pa[1], pa[2]), cb = Math.hypot(pb[1], pb[2]);
+    let ha = Math.atan2(pa[2], pa[1]), hb = Math.atan2(pb[2], pb[1]);
+    if (ca < 1e-4) ha = hb;
+    if (cb < 1e-4) hb = ha;
+    let dh = hb - ha;
+    if (dh > Math.PI) dh -= 2 * Math.PI;
+    else if (dh < -Math.PI) dh += 2 * Math.PI;
+    const L = pa[0] + (pb[0] - pa[0]) * k, C = Math.max(0, ca + (cb - ca) * k), h = ha + dh * k;
+    return fromOklab(L, C * Math.cos(h), C * Math.sin(h), out);
+  }
+  if (space === "hsl") {
+    const ha = { h: 0, s: 0, l: 0 }, hb = { h: 0, s: 0, l: 0 };
+    a.getHSL(ha);
+    b.getHSL(hb);
+    // Greys have no hue: borrow the other end's so the blend doesn't swing round the wheel.
+    if (ha.s < 1e-4) ha.h = hb.h;
+    if (hb.s < 1e-4) hb.h = ha.h;
+    let dh = hb.h - ha.h;
+    if (dh > 0.5) dh -= 1;
+    else if (dh < -0.5) dh += 1;
+    return out.setHSL((((ha.h + dh * k) % 1) + 1) % 1, ha.s + (hb.s - ha.s) * k, ha.l + (hb.l - ha.l) * k);
+  }
+  const pa = toOklab(a), pb = toOklab(b);
+  return fromOklab(pa[0] + (pb[0] - pa[0]) * k, pa[1] + (pb[1] - pa[1]) * k, pa[2] + (pb[2] - pa[2]) * k, out);
+}
+
+export function interpolate(a: AbsKey[1], b: AbsKey[1], k: number, space?: ColorSpace): Sampled {
   if (typeof a === "boolean" || typeof b === "boolean") return k >= 1 ? (b as boolean) : (a as boolean);
   if (typeof a === "number" && typeof b === "number") return a + (b - a) * k;
   if (typeof a === "string" || typeof b === "string") {
     const ca = parseColor(String(a)), cb = parseColor(String(b));
-    return ca.clone().lerp(cb, k);
+    return mixColor(ca, cb, k, space);
   }
   const va = asVec(a)!, vb = asVec(b)!;
   return [va[0] + (vb[0] - va[0]) * k, va[1] + (vb[1] - va[1]) * k, va[2] + (vb[2] - va[2]) * k];
@@ -91,7 +147,7 @@ function toSampled(v: AbsKey[1]): Sampled {
   return v;
 }
 
-export function sampleKeys(keys: AbsKey[] | TrackKey[], t: number, easeName?: string): Sampled | undefined {
+export function sampleKeys(keys: AbsKey[] | TrackKey[], t: number, easeName?: string, space?: ColorSpace): Sampled | undefined {
   const ks = keys as AbsKey[];
   if (!ks.length) return undefined;
   if (t <= ks[0][0]) return toSampled(ks[0][1]);
@@ -103,7 +159,7 @@ export function sampleKeys(keys: AbsKey[] | TrackKey[], t: number, easeName?: st
     if (t >= t0 && t < t1) {
       if (typeof v0 === "boolean" || typeof v1 === "boolean") return v0 as boolean;
       const k = t1 > t0 ? ease(e1 ?? easeName ?? "linear", (t - t0) / (t1 - t0)) : 1;
-      return interpolate(v0, v1, k);
+      return interpolate(v0, v1, k, space);
     }
   }
   return toSampled(last[1]);

@@ -1,7 +1,7 @@
 ---
 name: agent3d-edit
-description: "Change an existing Agent3D project - summarise the scene, then patch objects, materials, lights, camera, background, timeline keyframes and behaviours, rebrand it (swap the text, colours, logo), re-time animations, fix framing on phones, and re-render to check every change visually. Use when the user wants to modify a 3D banner, hero, character, landscape, product scene or game that already exists as an Agent3D project folder (scene.json), or a template."
-version: 0.1.0
+description: "Change an existing Agent3D project - summarise the scene, then patch objects, materials and textures, lights and light rigs, sky / fog / background, camera and camera shots, post effects and looks, timeline keyframes (easing, stagger, letters, segments, scroll), behaviours and hover / click interactions, rebrand it (swap the text, colours, logo), re-time animations, fix framing on phones, and re-render to check every change visually. Use when the user wants to modify a 3D banner, hero, character, landscape, product scene or game that already exists as an Agent3D project folder (scene.json), or a template."
+version: 0.2.0
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
 platforms: [macos, linux, windows]
@@ -86,24 +86,31 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py object remove pill --yes --projec
 
 `--set` takes dotted keys and JSON values (`--set 'position=[0,1,0]'`, `--set visible=false`). More recipes per task (materials, lights, camera, timeline, behaviours, post effects): [references/patch-ops.md](references/patch-ops.md).
 
-## 3. Timeline and behaviours
+## 3. Timeline, behaviours and interactions
 
 - **Behaviours** are procedural, per object or light, always running (or `when`: hover, click, visible, scroll; `delay` in seconds). Change parameters with `updateObject` on `behaviours` (an array: `set` it whole) or a path like `objects#title.behaviours[1].speed`.
-- **Timeline** tracks animate a property between keyframes: `target` is `<objectId>.<property>` (`position`, `position.x`, `rotation.y` in degrees, `scale`, `visible`, `material.opacity`, `material.color`, `material.emissiveIntensity`), `camera.position` / `camera.target` / `camera.fov`, `<lightId>.intensity` / `<lightId>.color`. Keys are `[time, value]` sorted by time; `ease` is linear, in/out/inOut Quad, Cubic, Sine, Expo, Back, outElastic, outBounce or step.
+- **Timeline** tracks animate a property between keyframes. `target` is `<selector>.<property>`:
+  - selector: an object or light id, `camera`, `environment`, `postfx`, a comma list `a,b`, `tag:<tag>`, `children:<id>`, or one letter of a text `<textId>/<n>` (needs `splitLetters` or `reveal` on the text; n counts non-space characters from 0);
+  - property: `position`, `position.x`, `rotation.y` (degrees), `scale`, `visible`, `material.opacity` / `color` / `emissiveIntensity` / `roughness`…, `material.uniforms.<name>`; lights `intensity`, `color`; camera `position`, `target`, `fov`, `focus`; `environment.fog.density`, `environment.exposure`; `postfx.<type>.<param>` (an effect written in `postfx` or brought by a `look` preset, e.g. `postfx.bloom.strength` with `{ "type": "look", "preset": "product" }`); models `morph.<name>`, `animation.<clip>.weight`.
+- **Keys** are `[time, value]` or `[time, value, ease]` (the ease shapes the segment ending at that key) sorted by time. Values: numbers, `[x, y, z]`, colours, booleans, or relative strings `"+=0.5"`, `"-=1"`, `"*=1.2"` (from the rest value). The track `ease` (default `linear`) is `step`, `in` / `out` / `inOut` + `Quad`, `Cubic`, `Quart`, `Quint`, `Sine`, `Expo`, `Circ`, `Back`, `Elastic`, `Bounce`, or `"cubicBezier(0.16, 1, 0.3, 1)"`, `"spring(170, 12)"`, `"steps(4)"`. Multi-target selectors take `stagger` (seconds between targets) and `staggerFrom` (`start`, `end`, `center`, `edges`, `random`). Colour keys blend in OKLCh (saturated midpoints); `"colorSpace": "rgb"|"oklab"|"hsl"` on the track changes it.
   ```bash
   python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py timeline set --duration 10 --loop true --trigger visible --project my-banner --json
   python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py timeline add-track --target logo.rotation.y --keys "[[0,0],[10,360]]" --project my-banner --json
+  python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py timeline add-track --target gem.position.y --keys '[[0,"+=0"],[1,"+=0.6","outBack"],[2,"+=0","inOutSine"]]' --project my-banner --json
   python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py timeline remove-track --target logo.rotation.y --yes --project my-banner --json
   ```
-- Loops: the last key equals the first. Triggers: `load`, `visible` (default), `hover`, `click`, `scroll` (time = scroll progress).
-- Re-timing everything: change `duration`, then the key times of each track (a patch `set` on `timeline.tracks[i].keys`).
+- Loops: the last key equals the first. Triggers: `load`, `visible` (default), `hover`, `click`, `scroll` (time = scroll progress; tune with `timeline.scroll`), `manual` (only interactions move it).
+- **Markers and segments** name moments and ranges (`markers: { "lifted": 2.6 }`, `segments: { "hover-in": [2, "lifted"] }`); `autoplay: "intro"` plays only that segment on the trigger. **Interactions** (`scene.interactions`) wire hover / click / scroll / key / marker events to actions: play or toggle a segment, tween a property (`set`), `openUrl` (click / key only), emit an event, play a model clip. Agents on MCP or `tools call` can use the `interactions_set` tool (`{ "add": [...] }` or `{ "interactions": [...] }`, `dryRun`).
+- **Camera shots** (`camera.shots`: pushIn, pullOut, dolly, truck, pedestal, crane, orbit, zoom, move, path, lookAt, focus) are cinematic moves on the timeline clock; `camera.shake` adds handheld noise.
+- Re-timing everything: change `duration`, then the key times of each track (a patch `set` on `timeline.tracks[i].keys`). Patches for all of the above: [references/patch-ops.md](references/patch-ops.md).
+- Check a hover or click state: `render --input '[{"t": 1.9, "pointer": [0, -0.3]}]' --frames 2,3` (coordinates -1..1, y up; `"click": [x, y]` clicks).
 
 ## 4. Rebrand
 
 1. Text: `updateObject` with the new `text` (check the length: banner titles wider than ~11 units collide with the props; lower `size` or move the props). `ariaLabel` and `title` too.
 2. Colours: the background (`environment.background`), materials of the main objects (`set` the material), the rim light colour, particle `color`, HUD `ui.color` / `ui.accent` in games. Keep the structure of the palette (dark background tones, light subject, one accent).
-3. Logo: an SVG becomes extruded 3D with `{ "kind": "svg", "src": "assets/svg/logo.svg", "size": 3, "depth": 0.2 }` (add the file with `assets add ./logo.svg --license proprietary`). Flat colour SVGs work best.
-4. Fonts: `sans-bold`, `sans`, `serif-bold`, `mono`, `display` (bundled; no web fonts).
+3. Logo: an SVG becomes extruded 3D with `{ "kind": "svg", "src": "assets/svg/logo.svg", "size": 3, "depth": 0.2 }` (add the file with `assets add ./logo.svg --license proprietary`). Each path keeps its SVG colour unless a `material` is set (`keepColors: true` keeps both), strokes become solid outlines (line icons work; `strokes: false` ignores them), `fit: "height"` sizes by height. `<text>` is not supported: outline the text in the design tool.
+4. Fonts: 13 bundled fonts (`catalog fonts`: `sans-bold` default, `inter-black`, `montserrat-extrabold`, `space-grotesk-bold`, `bebas-neue`, `anton`, `serif-bold`, `serif`, `mono`, `display`, `pacifico`, `lobster`…; no web fonts). Kerning is on by default; `letterSpacing`, `maxWidth` (wraps), `outline`, `reveal` (letter-by-letter entrance).
 5. Render, compare with the previous sheet, and show both to the user if they asked for options.
 
 ## 5. Check on phones

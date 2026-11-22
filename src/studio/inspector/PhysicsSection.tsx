@@ -6,7 +6,7 @@ import type { JointDef, PhysicsMaterialDef, SceneDoc } from "../../core/types";
 import { NumberField } from "../components/ui/NumberField";
 import { Button, IconButton, Row, Section, Select, TextField } from "../components/ui/controls";
 import { useI18n } from "../i18n";
-import { pretty } from "../lib/labels";
+import { fieldLabel, pretty } from "../lib/labels";
 import { walkObjects } from "../../ops/tree";
 import { useEditor } from "../state/context";
 import { JsonField, ParamForm, useBinder } from "./fields";
@@ -99,8 +99,8 @@ function MaterialRow({ name, m, onRename, onRemove }: { name: string; m: Physics
   return (
     <div className="flex items-center gap-1 px-3 py-[3px]">
       <TextField value={name} onCommit={(v) => onRename(v.trim())} className="w-[84px] flex-none font-mono text-xs" ariaLabel={t("physics.materialName")} />
-      <NumberField label="μ" value={m.friction ?? 0.5} min={0} max={2} placeholder={m.friction === undefined} onChange={(n, f) => bind(`${path}.friction`, n, f)} ariaLabel="friction" />
-      <NumberField label="e" value={m.restitution ?? 0} min={0} max={1} placeholder={m.restitution === undefined} onChange={(n, f) => bind(`${path}.restitution`, n, f)} ariaLabel="restitution" />
+      <NumberField label="μ" value={m.friction ?? 0.5} min={0} max={2} placeholder={m.friction === undefined} onChange={(n, f) => bind(`${path}.friction`, n, f)} ariaLabel={fieldLabel("friction")} />
+      <NumberField label="e" value={m.restitution ?? 0} min={0} max={1} placeholder={m.restitution === undefined} onChange={(n, f) => bind(`${path}.restitution`, n, f)} ariaLabel={fieldLabel("restitution")} />
       <IconButton label={t("physics.removeMaterial")} className="h-5 w-5" onClick={onRemove}>
         <X size={11} />
       </IconButton>
@@ -134,7 +134,7 @@ function JointCard({ joint: j, index, bodies, onRemove }: { joint: JointDef; ind
       {j.type === "hinge" && (
         <Row label={t("physics.motor")} hint={t("physics.motorHint")} overridden={j.motor !== undefined} onReset={() => bind(`${path}.motor`, undefined)}>
           <NumberField label="°/s" value={j.motor?.speed ?? 0} placeholder={!j.motor} onChange={(n, f) => bind(`${path}.motor`, n ? { ...(j.motor ?? {}), speed: n } : undefined, f)} ariaLabel={t("physics.motor")} />
-          <NumberField label="F" value={j.motor?.maxForce ?? 1e6} min={0} placeholder={j.motor?.maxForce === undefined} onChange={(n, f) => j.motor && bind(`${path}.motor.maxForce`, n, f)} ariaLabel="maxForce" />
+          <NumberField label="F" value={j.motor?.maxForce ?? 1e6} min={0} placeholder={j.motor?.maxForce === undefined} onChange={(n, f) => j.motor && bind(`${path}.motor.maxForce`, n, f)} ariaLabel={fieldLabel("maxForce")} />
         </Row>
       )}
     </div>

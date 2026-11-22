@@ -5,6 +5,7 @@
 // of t. The material style is soft matte, glossy plastic or toon.
 
 import * as THREE from "three";
+import { createToonMaterial } from "../build/toon";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { GeneratorImpl } from "../registry";
 import { generatorParams } from "./params";
@@ -113,7 +114,7 @@ export const abstractShapes: GeneratorImpl = (raw, ctx) => {
 
   const material =
     style === "toon"
-      ? new THREE.MeshToonMaterial({ color: 0xffffff })
+      ? createToonMaterial({ color: 0xffffff })
       : style === "glossy"
         ? new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08 })
         : new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62, metalness: 0 });

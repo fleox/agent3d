@@ -510,6 +510,9 @@ export async function buildEnvironment(env: EnvironmentDef, scene: THREE.Scene, 
     plane.position.y = y;
     plane.receiveShadow = true;
     plane.name = "__ground";
+    // The fading ground is transparent: draw it before the contact-shadow
+    // plane (renderOrder -10) or it covers the shadows lying on it.
+    plane.renderOrder = -20;
     plane.userData.helper = true;
     plane.userData.ground = true;
     objects.push(plane);

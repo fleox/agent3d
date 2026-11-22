@@ -9,6 +9,7 @@ const SECTIONS: { key: Exclude<keyof typeof CATALOG, "materialPresets">; title: 
   { key: "behaviours", title: "Behaviours", intro: 'Object or light `behaviours: [{ "type": "<id>", "when"?: "always|hover|click|visible|scroll", "delay"?: s, …params }]`. Angles in degrees, speeds in deg/s or cycles/s as noted.' },
   { key: "generators", title: "Generators", intro: 'Procedural content, zero download: `{ "kind": "generator", "generator": "<id>", "params": { … }, "seed"?: n }`.' },
   { key: "particlePresets", title: "Particle presets", intro: '`{ "kind": "particles", "preset": "<id>", "count"?, "area"?, "size"?, "color"?, … }` — object fields override the preset.' },
+  { key: "instanceLayouts", title: "Instance layouts", intro: '`{ "kind": "instances", "geometry": { "type": "<geometry>", … }, "material"?: {…}, "colors"?: [...], "layout": { "type": "<id>", …params } }` — many copies of one geometry in one draw call. The params are the layout object\'s fields.' },
   { key: "shaders", title: "Shaders", intro: 'Material `{ "type": "shader", "shader": "<id>", "uniforms": { …params } }`.' },
   { key: "textures", title: "Procedural textures", intro: 'Any material texture slot (`map`, `normalMap`, `roughnessMap`, `metalnessMap`, `bumpMap`, `aoMap`, `emissiveMap`, `alphaMap`, `displacementMap`) accepts `{ "procedural": "<id>", …params }` instead of a file: generated at load time, seamless, zero bytes. Colour slots use `colors`; data slots use the pattern height; `normalMap` derives normals from it.' },
   { key: "lightRigs", title: "Light rigs", intro: '`environment.rig: "<id>"` or `{ "preset": "<id>", …params }` — named lighting setups added to `lights` (positions assume a subject ~1–3 units around the origin; use `scale` for bigger scenes, `rotation` to turn the rig).' },
@@ -65,8 +66,11 @@ export function renderCatalogMarkdown(): string {
   for (const s of SECTIONS) {
     const list = CATALOG[s.key] as CatalogEntry[];
     const hasParams = list.some((e) => e.params.length);
+    // Entries sharing one parameter list (particle presets): one table, then the ids.
+    const shared = list.length > 1 && hasParams && list.every((e) => e.params === list[0].params && !e.example && !e.cost && !e.material && !e.gpu);
     out.push(`## ${s.title}`, "", s.intro, "");
-    if (hasParams) for (const e of list) out.push(entry(e, true));
+    if (shared) out.push("Every entry takes these fields:", "", paramTable(list[0].params));
+    else if (hasParams) for (const e of list) out.push(entry(e, true));
     if (s.key === "postfx") out.push(...postfxLooks());
     else {
       out.push("| Id | Description |", "|---|---|", ...list.map((e) => `| \`${e.id}\` | ${cell(e.description)} |`), "");

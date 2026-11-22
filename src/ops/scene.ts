@@ -282,6 +282,46 @@ function requireObject(scene: SceneDoc, id: unknown, i: number, op: unknown) {
   return loc;
 }
 
+// Collections (arrays of objects: objects, lights, children, behaviours,
+// timeline tracks, ui elements, interactions…) that set / merge / remove ops
+// replace wholesale — destructive like a removal (front doors confirm them).
+// A collection replaced by an identical value is not reported.
+export interface ReplacedCollection {
+  opIndex: number;
+  path: string;
+  items: number; // elements in the current collection
+}
+
+export function replacedCollections(scene: SceneDoc, ops: PatchOp[]): ReplacedCollection[] {
+  const out: ReplacedCollection[] = [];
+  const isCollection = (v: unknown): v is unknown[] => Array.isArray(v) && v.length > 0 && v.some((x) => x !== null && typeof x === "object" && !Array.isArray(x));
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  (Array.isArray(ops) ? ops : []).forEach((op, opIndex) => {
+    if (!op || (op.op !== "set" && op.op !== "merge" && op.op !== "remove") || typeof op.path !== "string") return;
+    let current: unknown;
+    try {
+      current = getAt(scene as unknown as Parameters<typeof getAt>[0], op.path);
+    } catch {
+      return;
+    }
+    const value = op.op === "remove" ? undefined : (op as { value: unknown }).value;
+    if (isCollection(current)) {
+      // merge on an array replaces it (RFC 7396), like set.
+      if (!same(current, value)) out.push({ opIndex, path: op.path, items: current.length });
+      return;
+    }
+    if (!current || typeof current !== "object" || Array.isArray(current)) return;
+    for (const [k, v] of Object.entries(current as Record<string, unknown>)) {
+      if (!isCollection(v)) continue;
+      const next = value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>)[k] : undefined;
+      // merge keeps the keys it does not mention.
+      if (op.op === "merge" && value && typeof value === "object" && !Array.isArray(value) && !(k in (value as object))) continue;
+      if (!same(v, next)) out.push({ opIndex, path: `${op.path}.${k}`, items: v.length });
+    }
+  });
+  return out;
+}
+
 // Applies patch ops to a copy of the scene (pure). Throws OpsError("invalid") on the first failing op.
 export function applyPatchOps(scene: SceneDoc, ops: PatchOp[]): SceneDoc {
   if (!Array.isArray(ops)) throw new OpsError("invalid", "ops must be an array of patch operations.", `Ops: ${PATCH_OPS.join(", ")}.`);

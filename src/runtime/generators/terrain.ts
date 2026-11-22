@@ -1,6 +1,9 @@
 // Heightmap terrain: fbm / ridged noise shaped as hills, mountains, island,
-// dunes, canyon or flat; vertex colour bands by height + slope; faceted
-// low-poly (non-indexed) or smooth; optional water plane. Exposes heightAt.
+// dunes, canyon, basin (lake ringed by mountains), valley or flat; optional
+// edge falloff (borders sink smoothly instead of ending in cut walls); vertex
+// colour bands by height + slope, snow above a height fraction or an absolute
+// height; faceted low-poly (non-indexed) or smooth; optional water plane.
+// Exposes heightAt; userData.snowLevel lets scatterers keep off the snow.
 
 import * as THREE from "three";
 import type { GeneratorImpl } from "../registry";
@@ -9,7 +12,20 @@ import { generatorParams } from "./params";
 import { built, ramp, smoothstep } from "./geom";
 import { bakeDepth, createWaterMaterial } from "./waterMaterial";
 
-type Shape = "hills" | "mountains" | "island" | "dunes" | "canyon" | "flat";
+type Shape = "hills" | "mountains" | "island" | "dunes" | "canyon" | "basin" | "valley" | "flat";
+
+// Default edgeFalloff per shape when the scene does not set it: relief that
+// would otherwise end in a vertical cut at the border sinks smoothly.
+export const DEFAULT_EDGE_FALLOFF: Partial<Record<Shape, number>> = { mountains: 0.3, basin: 0.2, valley: 0.15 };
+
+// 0 at the border, 1 inside: smooth sink over the outer `amount` fraction of
+// the half-size (rounded square, so corners sink too).
+export function edgeMask(x: number, z: number, size: number, amount: number): number {
+  if (amount <= 0) return 1;
+  const hx = Math.abs(x) / (size / 2), hz = Math.abs(z) / (size / 2);
+  const d = Math.pow(Math.pow(hx, 4) + Math.pow(hz, 4), 0.25);
+  return 1 - smoothstep(1 - Math.min(1, amount), 1, d);
+}
 
 export function terrainHeightFn(shape: Shape, size: number, scale: number, octaves: number, ox: number, oz: number): (x: number, z: number) => number {
   // Normalised height in ~[0, 1] for world (x, z).
@@ -46,6 +62,36 @@ export function terrainHeightFn(shape: Shape, size: number, scale: number, octav
         const big = fbm2D(nx * 0.35 - 5, nz * 0.35 + 9, 3) * 0.5 + 0.5;
         return shaped * (0.3 + 0.4 * big) + fbm2D(nx * 3, nz * 3, 2) * 0.03 + 0.16;
       }
+      case "basin": {
+        // Lake basin: a low, almost flat floor in the middle (fill it with
+        // waterLevel) ringed by ridged mountains with a noisy shoreline.
+        const r = Math.sqrt(x * x + z * z) / (size * 0.5);
+        const warp = fbm2D(nx * 0.6 - 2.7, nz * 0.6 + 4.1, 3) * 0.18;
+        const rim = smoothstep(0.3, 0.85, r + warp);
+        const ridge = ridged2D(nx * 0.8, nz * 0.8, octaves);
+        const base = fbm2D(nx * 0.4 + 7, nz * 0.4 - 3, 3) * 0.5 + 0.5;
+        const mtn = Math.pow(ridge, 1.5) * (0.45 + 0.65 * base);
+        const floor = 0.015 + (fbm2D(nx * 2, nz * 2, 2) * 0.5 + 0.5) * 0.03;
+        // A continuous range (base ridge) with ridged peaks on top.
+        return floor * (1 - rim) + rim * (0.16 + 0.12 * base + mtn * 1.1 * rim);
+      }
+      case "valley": {
+        // A meandering valley running along z, open toward +z (a camera on +z
+        // looks down it) and closed by mountains at the far end: flat floor
+        // (a river / lake with waterLevel), mountain walls.
+        const cx = fbm2D(z * f * 0.35 + oz, 3.3, 2) * size * 0.2;
+        const w = Math.abs(x - cx) / (size * 0.5);
+        // Walls on both sides, closed by a mountain range at the far end (-z).
+        const side = smoothstep(0.06, 0.55, w + fbm2D(nx * 0.8 + 1.7, nz * 0.8, 2) * 0.08);
+        const end = smoothstep(0.2, 0.68, -z / (size * 0.5) + fbm2D(nx * 0.7 - 4.2, nz * 0.7, 2) * 0.12);
+        const walls = Math.max(side, end);
+        const ridge = ridged2D(nx * 0.8, nz * 0.8, octaves);
+        const base = fbm2D(nx * 0.4 + 7, nz * 0.4 - 3, 3) * 0.5 + 0.5;
+        const mtn = Math.pow(ridge, 1.5) * (0.45 + 0.65 * base);
+        const floor = 0.015 + (fbm2D(nx * 2, nz * 2, 2) * 0.5 + 0.5) * 0.03;
+        // The far range stands taller (the backdrop of the shot).
+        return floor * (1 - walls) + walls * (0.14 + 0.12 * base + mtn * 1.1 * walls) + end * end * (0.22 + mtn * 0.5);
+      }
       case "canyon": {
         const n = fbm2D(nx, nz, octaves) * 0.5 + 0.5;
         // Terraced plateau carved by a meandering river valley.
@@ -74,9 +120,17 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
   const lowpoly = p.bool("lowpoly");
   const waterLevel = p.numOrNull("waterLevel");
   const snowLine = p.num("snowLine");
+  // Absolute snow height (terrain-local units, like waterLevel) wins over the fraction.
+  const snowHeight = typeof p.raw("snowHeight") === "number" ? p.num("snowHeight") : null;
   const ox = ctx.rng.range(-500, 500);
   const oz = ctx.rng.range(-500, 500);
-  const h01 = terrainHeightFn(shape, size, p.num("scale"), p.int("octaves"), ox, oz);
+  const shaped = terrainHeightFn(shape, size, p.num("scale"), p.int("octaves"), ox, oz);
+  const falloff = typeof p.raw("edgeFalloff") === "number" ? p.num("edgeFalloff") : DEFAULT_EDGE_FALLOFF[shape] ?? 0;
+  // Edges sink a little below 0 so a water plane hides the border.
+  const h01 = falloff > 0 ? (x: number, z: number) => {
+    const m = edgeMask(x, z, size, falloff);
+    return shaped(x, z) * m - 0.04 * (1 - m);
+  } : shaped;
 
   const n = res + 1;
   const step = size / res;
@@ -127,8 +181,15 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
     // steep → rock (second to last colour), except on the snow band
     const steep = smoothstep(0.5, 0.85, slope);
     if (steep > 0 && t < 0.9) out.lerp(palette[Math.max(1, pal - 2)]!, steep * 0.8);
-    // snow cap above snowLine (last colour); the steepest faces stay rocky
-    if (snowLine < 1 && pal >= 3 && t > snowLine - 0.04) {
+    // snow cap above snowHeight / snowLine (last colour); the steepest faces stay rocky
+    if (snowHeight !== null) {
+      if (pal >= 3) {
+        const band = Math.max(0.15, height * 0.03);
+        const yy = y + jitterN * height * 0.6;
+        const k = smoothstep(snowHeight - band, snowHeight + band, yy) * (1 - smoothstep(0.75, 1.1, slope) * 0.7);
+        if (k > 0) out.lerp(palette[pal - 1]!, k);
+      }
+    } else if (snowLine < 1 && pal >= 3 && t > snowLine - 0.04) {
       const k = smoothstep(snowLine - 0.04, snowLine + 0.04, t) * (1 - smoothstep(0.75, 1.1, slope) * 0.7);
       out.lerp(palette[pal - 1]!, k);
     }
@@ -210,7 +271,7 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
   group.add(mesh);
 
   let waterUniforms: { uTime: { value: number } } | null = null;
-  if (water !== null && water > Math.min(...heights) - 1e-3) {
+  if (water !== null && p.bool("waterPlane") && water > minY - 1e-3) {
     const wres = lowpoly ? 40 : Math.min(160, Math.max(48, res));
     const wg = new THREE.PlaneGeometry(size, size, wres, wres);
     wg.rotateX(-Math.PI / 2);
@@ -238,6 +299,11 @@ export const terrain: GeneratorImpl = (raw, ctx) => {
     group.add(wm);
   }
   group.userData.waterLevel = water;
+  // Lowest snow height (terrain-local): scatterers (trees…) stay below it.
+  const snowDenom = Math.max(0.001, maxY - (water === null ? minY : water), height * 0.6);
+  // (a treeline a little below the first snow patches).
+  const treeline = height * 0.06;
+  group.userData.snowLevel = palette.length >= 3 ? (snowHeight !== null ? snowHeight - Math.max(0.15, height * 0.03) - treeline : snowLine < 1 ? (water === null ? minY : water) + (snowLine - 0.06) * snowDenom - treeline : null) : null;
   group.userData.surface = "terrain";
   group.userData.size = size;
 

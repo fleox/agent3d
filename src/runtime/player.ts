@@ -9,6 +9,7 @@ import { createResolver } from "./assets";
 import { bindSceneData } from "./data";
 import { loadGenerators, loadShaders, type RuntimeContext } from "./build/context";
 import { World, type FrameInput } from "./build/index";
+import { motionGrid } from "./behaviours/runner";
 import { shadowMapSettings } from "./build/lights";
 import type { GameHost } from "./game/index";
 import { bindInput, createInputState, endFrame, scrollProgress, setKey, type InputBinding } from "./input";
@@ -19,6 +20,7 @@ import { TimelineController } from "./timeline/controller";
 import { InteractionRunner, safeUrl } from "./timeline/interactions";
 import { scrollProgressFor } from "./timeline/scroll";
 import { toColor } from "./util";
+import { refineInView } from "./inspectView";
 
 const TONE_MAPPING: Record<string, THREE.ToneMapping> = {
   none: THREE.NoToneMapping,
@@ -233,8 +235,49 @@ class PlayerImpl implements Player {
         { rootMargin: "200px 0px" },
       );
       this.interObs.observe(container);
+      this.armStartFallback();
     }
     doc.addEventListener("visibilitychange", this.onVisibility);
+  }
+
+  // Lazy start safety net: an IntersectionObserver can miss its first
+  // notification (observer created before layout, element hidden / detached
+  // at the time, background tab, upgrade races). On the next frames, window
+  // load, visibilitychange and two timers, check the geometry directly and
+  // start when the element is within the same 200 px margin.
+  private fallbackCleanup: (() => void) | null = null;
+  private armStartFallback(): void {
+    const doc = this.container.ownerDocument;
+    const win = doc.defaultView;
+    if (!win) return;
+    const check = () => {
+      if (this.started || this.disposed) return cleanup();
+      if (doc.visibilityState === "hidden" || !this.container.isConnected) return;
+      const r = this.container.getBoundingClientRect();
+      const vh = win.innerHeight || doc.documentElement.clientHeight;
+      const vw = win.innerWidth || doc.documentElement.clientWidth;
+      const inView = r.bottom >= -200 && r.top <= vh + 200 && r.right >= 0 && r.left <= vw && (r.width > 0 || r.height > 0);
+      if (!inView) return;
+      this.visible = true;
+      this.lastSeen = performance.now();
+      this.start();
+      this.updateRunning();
+      cleanup();
+    };
+    const timers = [setTimeout(check, 500), setTimeout(check, 2000)];
+    let raf = win.requestAnimationFrame(() => (raf = win.requestAnimationFrame(check)));
+    const cleanup = () => {
+      for (const t of timers) clearTimeout(t);
+      win.cancelAnimationFrame(raf);
+      win.removeEventListener("load", check);
+      win.removeEventListener("scroll", check);
+      doc.removeEventListener("visibilitychange", check);
+      this.fallbackCleanup = null;
+    };
+    win.addEventListener("load", check);
+    win.addEventListener("scroll", check, { passive: true });
+    doc.addEventListener("visibilitychange", check);
+    this.fallbackCleanup = cleanup;
   }
 
   // ─── Setup ────────────────────────────────────────────────────────────
@@ -336,6 +379,7 @@ class PlayerImpl implements Player {
       resolveAsset: this.resolveAsset,
       renderer: this.renderer,
       deterministic: this.deterministic,
+      quality: this.quality.tier,
       track: (p) => {
         tracked.push(p.catch(() => undefined));
         this.trackProgress(p);
@@ -708,6 +752,8 @@ class PlayerImpl implements Player {
     this.interactions?.flush();
     const followId = this.scene.camera?.follow?.target;
     world.frame(this.t, dt, input, followId ? world.entries.get(followId)?.object : null);
+    // HUD expressions read timeline.* (segment / progress / marker) without a script.
+    this.game?.hud?.setTimeline(this.tl && input.timelineT !== null ? this.tl.info() : null);
     this.game?.afterFrame();
     this.render();
     endFrame(inp);
@@ -843,10 +889,30 @@ class PlayerImpl implements Player {
       this.resetMotion();
       this.world.frame(0, 0, { pointer: this.inputState.pointer, scroll: 0, hovered: new Set(), clicked: new Set(), timelineT: this.world.timeline ? 0 : null });
     }
+    this.advanceMotionGrid(target);
     const dt = target - this.t;
     this.t = target;
     this.game?.advanceTo(target);
     this.frame(dt);
+  }
+
+  // Deterministic seeks over scenes whose motion state depends on the frame
+  // history (lookAt / magnet / spring smoothing, camera follow): advance the
+  // world on a fixed 1/30 s grid up to the target (no render), so a frame
+  // looks the same whether it was rendered alone or after other frames.
+  private advanceMotionGrid(target: number): void {
+    const world = this.world;
+    if (!world || !this.deterministic || this.game || !world.hasStatefulMotion()) return;
+    const followId = this.scene.camera?.follow?.target;
+    const follow = followId ? world.entries.get(followId)?.object : null;
+    for (const next of motionGrid(this.t, target)) {
+      const dt = next - this.t;
+      this.t = next;
+      const inp = this.inputState;
+      const roots = world.interactiveRoots();
+      const hovered = new Set(inp.pointer.inside ? this.pickIds(inp.pointer.x, inp.pointer.y, roots) : []);
+      world.frame(this.t, dt, { pointer: inp.pointer, scroll: this.scrollValue(), hovered, clicked: new Set(), timelineT: this.timelineLocal(dt, inp.pointer.inside, false) }, follow);
+    }
   }
 
   time(): number {
@@ -922,7 +988,9 @@ class PlayerImpl implements Player {
         minY = Math.min(minY, p.y);
         maxY = Math.max(maxY, p.y);
       }
-      const inView: "full" | "partial" | "none" = inside === 8 ? "full" : frustum.intersectsBox(box) ? "partial" : "none";
+      let inView: "full" | "partial" | "none" = inside === 8 ? "full" : frustum.intersectsBox(box) ? "partial" : "none";
+      // The AABB is loose (rotation, hidden twins): check the visible vertices before calling it clipped.
+      if (inView === "partial" && !e.particles) inView = refineInView(e.object, frustum) ?? inView;
       const cx0 = Math.max(-1, minX), cx1 = Math.min(1, maxX), cy0 = Math.max(-1, minY), cy1 = Math.min(1, maxY);
       const coverage = inView === "none" || box.containsPoint(camPos) ? (box.containsPoint(camPos) ? 1 : 0) : Math.max(0, cx1 - cx0) * Math.max(0, cy1 - cy0) / 4;
       if (!insideObject && e.kind !== "particles" && box.containsPoint(camPos)) insideObject = e.id;
@@ -1073,6 +1141,7 @@ class PlayerImpl implements Player {
     this.raf = 0;
     this.resizeObs?.disconnect();
     this.interObs?.disconnect();
+    this.fallbackCleanup?.();
     this.container.ownerDocument.removeEventListener("visibilitychange", this.onVisibility);
     this.inputBinding?.dispose();
     this.overlay = null;

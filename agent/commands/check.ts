@@ -10,7 +10,7 @@ import { boolOpt, PROJECT_OPTION, projectFs, strOpt } from "./util";
 export const checkCommand: Command = {
   name: "check",
   usage: "check [--project <dir>] [--render [--out <dir>]]",
-  summary: "Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles, KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok.",
+  summary: "Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles per frame with every pass — shadow maps, ao / dof pre-pass, contact shadows — against the per-kind aim and limit; KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok.",
   options: [
     PROJECT_OPTION,
     { name: "render", type: "boolean", description: "Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). The frame goes to a temporary folder (its absolute path is in `render`) unless --out is given." },
@@ -36,7 +36,7 @@ export const checkCommand: Command = {
       [
         report.ok ? "Check passed." : "Check failed.",
         ...report.issues.map((i) => `  ${i.severity === "error" ? "✗" : i.severity === "warning" ? "!" : "·"} ${i.code} ${i.path}: ${i.message}${i.hint ? ` (${i.hint})` : ""}`),
-        `Budget: ~${report.budget.triangles} triangles (${report.budget.trianglesSource === "runtime" ? `measured, all passes; geometry estimate ~${report.budget.estimatedTriangles}` : "estimate"}), assets ${report.budget.assetsKb} KB, scripts ${report.budget.scriptsKb} KB / ${report.budget.budgetKb} KB (runtime ${report.budget.runtimeKb} KB)`,
+        `Budget: ~${report.budget.triangles} triangles per frame (${report.budget.trianglesSource === "runtime" ? `measured, all passes; estimate ~${report.budget.estimatedFrameTriangles}` : `estimate, all passes; geometry ~${report.budget.estimatedTriangles}`}; aim ≤ ${report.budget.triangleAim}), assets ${report.budget.assetsKb} KB, scripts ${report.budget.scriptsKb} KB / ${report.budget.budgetKb} KB (runtime ${report.budget.runtimeKb} KB)`,
         ...(report.licences.length ? ["Attribution needed:", ...report.licences.map((l) => `  ${l.path}: ${l.license} — ${l.attribution}`)] : []),
       ].join("\n"),
     );

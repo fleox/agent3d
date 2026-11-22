@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { TEXTURES, catalogEntry } from "../../core/catalog";
 import type { TextureRef } from "../../core/types";
 import { useI18n } from "../i18n";
-import { pretty } from "../lib/labels";
+import { fieldLabel, pretty } from "../lib/labels";
 import { useEditor } from "../state/context";
 import { libraryUrl, useLibraryBase } from "../state/useLibraryBase";
 import { ParamForm } from "../inspector/fields";
@@ -31,7 +31,7 @@ export function TextureField({ slot, value, path, onChange }: { slot: string; va
   const entry = proc ? catalogEntry("textures", proc.procedural) : undefined;
   return (
     <div className={clsx("rounded-md", mode !== "none" && "bg-ink-0/40 pb-1")}>
-      <Row label={pretty(slot)} overridden={value !== undefined} onReset={() => onChange(undefined)}>
+      <Row label={fieldLabel(slot)} overridden={value !== undefined} onReset={() => onChange(undefined)}>
         <Select
           value={mode}
           options={(["none", "file", "library", "procedural"] as const).map((m) => ({ value: m, label: t(`texture.${m}`) }))}

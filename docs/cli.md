@@ -54,13 +54,13 @@ Generated from the CLI's own command list (`help --json`); `npm test` fails when
 | [`scene`](#scene) | Read, replace, patch and validate scene.json (the SceneDoc). apply / patch print a plan; destructive changes need --yes. |
 | [`object`](#object) | Add, change, remove, list, inspect and re-parent scene objects (shortcuts over scene patch). |
 | [`timeline`](#timeline) | Keyframe timeline: read it, replace it, add or remove a track (target "<objectId>.<property>", keys [[t, value], …]). |
-| [`catalog`](#catalog) | What scenes can use, with parameters: geometries, materialPresets, shaders, textures, lightRigs, behaviours, generators, particlePresets, postfx, fonts, sounds. No section → sections with counts; a section → its entries; an id → the full entry (params, defaults, ranges, example). |
+| [`catalog`](#catalog) | What scenes can use, with parameters: geometries, materialPresets, shaders, textures, lightRigs, behaviours, generators, particlePresets, instanceLayouts, postfx, fonts, sounds. No section → sections with counts; a section → its entries; an id → the full entry (params, defaults, ranges, example). |
 | [`templates`](#templates) | Starter projects (`agent3d new <dir> --template <id>`): list them, or show one (metadata + its scene summary). |
-| [`check`](#check) | Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles, KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok. |
-| [`render`](#render) | Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size and return { path, format, codec, frames, fps, duration, size, bytes }. |
+| [`check`](#check) | Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles per frame with every pass — shadow maps, ao / dof pre-pass, contact shadows — against the per-kind aim and limit; KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok. |
+| [`render`](#render) | Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes / HUD button clicks / emitted events and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size (with --input, --segment, --scroll and --reduced-motion applied too) and return { path, format, codec, frames, fps, duration, size, bytes }. Scenes whose timeline waits for a click / interaction: --segment <name> plays that segment from the start. |
 | [`serve`](#serve) | Live preview of the project on 127.0.0.1 (scene at its aspect ratio, play / pause, time scrubber): scene.json edits update the open page instantly, asset / script edits reload it. Runs until stopped (Ctrl+C). |
 | [`studio`](#studio) | Open the Studio (visual editor: viewport, outliner, inspector, timeline, catalog, templates, assistant) on this computer, editing the project folder through a local API. Runs until stopped (Ctrl+C). |
-| [`export`](#export) | Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Overwriting a non-empty --out needs --yes. |
+| [`export`](#export) | Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Reports pageKb / pageKbGzip (what a visitor downloads for this scene: runtime entry + the chunks it loads + scene, assets, scripts, poster) and folderKb (every file written). Overwriting a non-empty --out needs --yes. |
 | [`assets`](#assets) | Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (smart-size + WebP textures, meshopt .glb geometry), remove, and browse the built-in library. |
 | [`tools`](#tools) | The AI tool catalog (src/ai/tools.ts + render_preview) — exactly what the MCP server and the Studio assistant expose: list the tools with their JSON schemas, or call one with a JSON input. |
 | [`mcp`](#mcp) | Run the MCP server on stdio (JSON-RPC 2.0, protocol 2025-06-18 / 2025-03-26 / 2024-11-05): tools = the AI catalog + render_preview (returns the contact sheet as an image), resources = scene, summary, catalog. For Claude Desktop / Claude Code / Cursor. |
@@ -128,7 +128,7 @@ agent3d scene <get|summary|apply|patch|validate> [--project <dir>]
 | `get` | `agent3d scene get [--path <json.path>]` | The full scene JSON, or the value at a path ("camera", "objects#logo.material"). |
 | `summary` | `agent3d scene summary` | Compact outline: object tree (id, kind, geometry / generator / preset), lights, camera, timeline tracks, scripts. |
 | `apply` | `agent3d scene apply --file <scene.json\|-> [--dry-run] [--yes]` | Replace the whole scene (validated). Prints the diff plan + needsConfirmation unless --yes. **Plan + `--yes`.** |
-| `patch` | `agent3d scene patch --file <ops.json\|-> [--dry-run] [--yes]` | Apply patch ops ([{ "op": "set", "path": "camera.position", "value": [0,2,8] }, { "op": "addObject", "object": {…} }, …]). Removals need --yes. |
+| `patch` | `agent3d scene patch --file <ops.json\|-> [--dry-run] [--yes]` | Apply patch ops ([{ "op": "set", "path": "camera.position", "value": [0,2,8] }, { "op": "addObject", "object": {…} }, …]). Removals and ops replacing a whole collection (set "objects", "lights", "timeline.tracks", "ui.elements"…) need --yes. |
 | `validate` | `agent3d scene validate [--file <scene.json\|->]` | Validate the project's scene (or a candidate file): issues with JSON paths, messages and hints. Exit 2 on errors. |
 
 | Option | Description |
@@ -205,7 +205,7 @@ agent3d timeline <get|set|add-track|remove-track> [--project <dir>]
 
 ### catalog
 
-What scenes can use, with parameters: geometries, materialPresets, shaders, textures, lightRigs, behaviours, generators, particlePresets, postfx, fonts, sounds. No section → sections with counts; a section → its entries; an id → the full entry (params, defaults, ranges, example).
+What scenes can use, with parameters: geometries, materialPresets, shaders, textures, lightRigs, behaviours, generators, particlePresets, instanceLayouts, postfx, fonts, sounds. No section → sections with counts; a section → its entries; an id → the full entry (params, defaults, ranges, example).
 
 ```
 agent3d catalog [<section>] [<id>]
@@ -226,7 +226,7 @@ agent3d templates <list|show> [<id>]
 
 ### check
 
-Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles, KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok.
+Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles per frame with every pass — shadow maps, ao / dof pre-pass, contact shadows — against the per-kind aim and limit; KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok.
 
 ```
 agent3d check [--project <dir>] [--render [--out <dir>]]
@@ -240,10 +240,10 @@ agent3d check [--project <dir>] [--render [--out <dir>]]
 
 ### render
 
-Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size and return { path, format, codec, frames, fps, duration, size, bytes }.
+Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes / HUD button clicks / emitted events and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size (with --input, --segment, --scroll and --reduced-motion applied too) and return { path, format, codec, frames, fps, duration, size, bytes }. Scenes whose timeline waits for a click / interaction: --segment <name> plays that segment from the start.
 
 ```
-agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] | --video out.mp4|out.webm [--fps 30] [--duration 6] | --gif out.gif | --webp out.webp [--project <dir>]
+agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--reduced-motion] [--segment <name>] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] | --video out.mp4|out.webm [--fps 30] [--duration 6] | --gif out.gif | --webp out.webp [--project <dir>]
 ```
 
 | Option | Description |
@@ -257,13 +257,15 @@ agent3d render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--q
 | `--sheet` | Also compose a contact sheet (grid with time labels) — the one image to look at. |
 | `--cols <value>` | Contact sheet columns (default: from the aspect). |
 | `--capture <value>` | canvas (WebGL canvas only), page (includes the HUD / DOM overlays) or auto (page when the scene has a ui; default). |
-| `--input <value>` | Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2], "down": true}, {"t": 4, "pointerUp": true}, {"t": 1, "pointerDown": [0, 0]}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 2, "swipe": "left"}] (key = KeyboardEvent.code, coordinates -1..1, y up; unknown fields are rejected). Frames render in time order. |
+| `--input <value>` | Games: simulated input applied while seeking, JSON array / @file / - : [{"t": 0.5, "key": "ArrowRight", "hold": 1}, {"t": 2, "key": "Space", "down": true}, {"t": 3, "click": [0, 0]}, {"t": 3, "pointer": [0.5, -0.2], "down": true}, {"t": 4, "pointerUp": true}, {"t": 1, "pointerDown": [0, 0]}, {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}}, {"t": 2, "swipe": "left"}, {"t": 1, "scroll": 0.5}, {"t": 3, "emit": "retry"}, {"t": 3, "ui": "retryBtn"} (click a HUD button by id), {"t": 0, "segment": "intro"}] (key = KeyboardEvent.code, coordinates -1..1, y up; unknown fields are rejected). Frames render in time order; --video / --gif / --webp apply each event at its time. |
 | `--isolate <value>` | Render only this object (behaviours, scripts, UI dropped), at the origin, auto-framed from the front (+Z) three-quarter view on a neutral background (default 800x800, 1 frame) — to check a model's orientation and size. Returns isolated { size, center }. |
 | `--bg <value>` | Background drawn under the frames: "checker", a CSS colour ("#fff", "rgb(…)", "white") or "none". Default: a checkerboard under the contact sheet of transparent scenes (frames keep their alpha). |
 | `--out <value>` | Output folder, relative to the project folder (default <project>/renders). |
 | `--quality <value>` | Supersampling: draft / standard (1×, default), high (2×), ultra (3×) — rendered larger and downscaled for smoother edges and detail (clamped to 4096 px). |
 | `--transparent` | Render with a transparent canvas (alpha PNG / GIF / WebP) even if the scene has a background. |
-| `--scroll <value>` | Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page). Renders one frame unless --frames / --count are given. |
+| `--scroll <value>` | Scroll progress 0..1 for scroll-driven scenes (e.g. 0.5 = half-way through the page). Renders one frame unless --frames / --count are given; frames are named by progress (<stamp>-s0_5.png) and carry `scroll`. |
+| `--reduced-motion` | Mount the scene as visitors with prefers-reduced-motion see it (reducedMotion: true — static pose / poster time). |
+| `--segment <value>` | Play this timeline segment (timeline.segments, or "timeline") from t = 0 (media: from --start) — to film or check scenes whose timeline waits for a click / interaction (autoplay false, trigger manual / click). |
 | `--video <value>` | Render a video file instead of PNGs (default 1280 px wide): .mp4 (H.264, needs Google Chrome) or .webm (VP9), path relative to the project folder. Frame-exact; see --fps, --duration, --start, --size, --quality. |
 | `--gif <value>` | Render an animated GIF, path relative to the project folder (looping, global palette, frame differencing; default 640 px wide, 15 fps). |
 | `--webp <value>` | Render an animated WebP, path relative to the project folder (smaller than GIF, alpha; default 800 px wide, 20 fps). |
@@ -306,10 +308,10 @@ agent3d studio [--port <n>] [--no-open] [--project <dir>]
 
 ### export
 
-Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Overwriting a non-empty --out needs --yes.
+Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Reports pageKb / pageKbGzip (what a visitor downloads for this scene: runtime entry + the chunks it loads + scene, assets, scripts, poster) and folderKb (every file written). Overwriting a non-empty --out needs --yes.
 
 ```
-agent3d export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--yes] [--project <dir>]
+agent3d export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--prune-runtime] [--yes] [--project <dir>]
 ```
 
 | Option | Description |
@@ -323,6 +325,7 @@ agent3d export [--format embed|zip|single-html|poster|video|gif] [--out <path>] 
 | `--no-integrity` | embed / zip: no Subresource Integrity hash on the runtime <script> (default: integrity="sha384-…"). |
 | `--no-extras` | embed / zip: skip EMBED.md and frameworks/ (React / Vue / Svelte wrappers). |
 | `--no-poster` | embed / zip / single-html: don't render a poster nor og-image (no Chrome needed). |
+| `--prune-runtime` | embed / zip: copy only the runtime chunks this scene loads (smaller folder). Only for a runtime folder used by this scene alone — other scenes sharing it may need the left-out chunks; kept whole when a chunk's feature is unknown. |
 | `--no-og` | embed / zip: don't render the 1200×630 og-image.png social preview. |
 | `--optimize` | embed / zip / single-html: export optimised copies of the assets (project and library) — textures at the size the scene needs (format kept), .glb geometry meshopt-compressed with WebP textures. The project is not modified. Textures need Chrome. |
 | `--image <value>` | poster: webp (default), png or jpeg. |

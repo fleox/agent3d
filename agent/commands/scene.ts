@@ -36,13 +36,16 @@ function issuesLine(issues: Issue[]): string {
 // Runs patch ops: dry run first (validation + plan), then the write unless
 // --dry-run, or when it removes things without --yes (plan + needsConfirmation).
 export async function runPatch(io: Io, options: Options, fs: NodeFs, ops: PatchOp[], human: string, opts: { destructive?: boolean } = {}): Promise<number | void> {
-  const { patchScene } = await import("../../src/ops/scene");
+  const { patchScene, replacedCollections, getScene } = await import("../../src/ops/scene");
   const dry = await patchScene(fs, ops as never, { dryRun: true });
   if (errorsOf(dry.issues).length) throw validationError(dry.issues, dry.plan);
   if (dry.plan.empty) return printResult(io, { applied: false, plan: dry.plan, issues: dry.issues }, () => `${human}: no changes.`);
   if (boolOpt(options, "dry-run")) return printResult(io, { dryRun: true, plan: dry.plan, issues: dry.issues }, () => `${human} (dry run): ${dry.plan.summary}\n${issuesLine(dry.issues)}`);
-  const destructive = opts.destructive ?? (dry.plan.objects.removed.length > 0 || ops.some((o) => DESTRUCTIVE_OPS.has(o.op)));
-  if (destructive && !confirmOrPlan(io, options, { ...dry.plan, ops, issues: dry.issues }, () => `${human}: ${dry.plan.summary}`)) return;
+  // Replacing a whole collection (e.g. set "objects" / "lights" / "timeline.tracks") is as destructive as a removal.
+  const replaces = replacedCollections(await getScene(fs), ops as never);
+  const destructive = opts.destructive ?? (dry.plan.objects.removed.length > 0 || replaces.length > 0 || ops.some((o) => DESTRUCTIVE_OPS.has(o.op)));
+  const replaceLine = replaces.length ? `\nReplaces: ${replaces.map((r) => `${r.path} (${r.items} item${r.items > 1 ? "s" : ""})`).join(", ")}` : "";
+  if (destructive && !confirmOrPlan(io, options, { ...dry.plan, ops, ...(replaces.length ? { replaces } : {}), issues: dry.issues }, () => `${human}: ${dry.plan.summary}${replaceLine}`)) return;
   const r = await patchScene(fs, ops as never, { dryRun: false });
   if (!r.applied) throw validationError(r.issues, r.plan);
   printResult(io, { applied: true, plan: r.plan, issues: r.issues }, () => `${human}: ${r.plan.summary}\n${issuesLine(r.issues)}`);
@@ -58,7 +61,7 @@ export const sceneCommand: Command = {
     { name: "get", usage: "scene get [--path <json.path>]", summary: 'The full scene JSON, or the value at a path ("camera", "objects#logo.material").' },
     { name: "summary", usage: "scene summary", summary: "Compact outline: object tree (id, kind, geometry / generator / preset), lights, camera, timeline tracks, scripts." },
     { name: "apply", usage: "scene apply --file <scene.json|-> [--dry-run] [--yes]", summary: "Replace the whole scene (validated). Prints the diff plan + needsConfirmation unless --yes.", writes: true, destructive: true },
-    { name: "patch", usage: "scene patch --file <ops.json|-> [--dry-run] [--yes]", summary: 'Apply patch ops ([{ "op": "set", "path": "camera.position", "value": [0,2,8] }, { "op": "addObject", "object": {…} }, …]). Removals need --yes.', writes: true },
+    { name: "patch", usage: "scene patch --file <ops.json|-> [--dry-run] [--yes]", summary: 'Apply patch ops ([{ "op": "set", "path": "camera.position", "value": [0,2,8] }, { "op": "addObject", "object": {…} }, …]). Removals and ops replacing a whole collection (set "objects", "lights", "timeline.tracks", "ui.elements"…) need --yes.', writes: true },
     { name: "validate", usage: "scene validate [--file <scene.json|->]", summary: "Validate the project's scene (or a candidate file): issues with JSON paths, messages and hints. Exit 2 on errors." },
   ],
   options: [PROJECT_OPTION, FILE_OPTION, { name: "path", type: "string", description: "get: a JSON path into the scene." }, DRY_RUN_OPTION, YES_OPTION],

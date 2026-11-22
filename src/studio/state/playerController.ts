@@ -23,7 +23,8 @@ export class PlayerController {
   // The viewport's editor overlay (gizmos, editor camera) once loaded — src/runtime/editor/.
   sceneEditor: import("../../runtime/editor/index").SceneEditor | null = null;
   issues: RuntimeIssue[] = [];
-  playing = true;
+  // Editing starts paused at t = 0 (the scrubber drives the timeline); interact mode plays.
+  playing = false;
   private latest: SceneDoc | null = null;
   private updating = false;
   private raf = 0;
@@ -62,7 +63,12 @@ export class PlayerController {
     }
     this.ready = true;
     if (this.playing) this.player?.play();
-    else this.player?.pause();
+    else {
+      this.player?.pause();
+      // Paused editing shows the poster frame (entrances done), not an empty t = 0.
+      const pt = scene.target?.posterTime;
+      if (pt && pt > 0) await this.player?.seek(pt).catch(() => undefined);
+    }
     this.loop();
     this.notify();
   }
@@ -86,10 +92,13 @@ export class PlayerController {
   }
 
   // Interact mode (I): real triggers (hover / click / scroll timelines, autoplay segments).
+  // Edit mode pauses (scripts are not in the editing view, the timeline is scrubbed).
   setInteract(on: boolean): void {
     if (this.interact === on) return;
     this.interact = on;
     if (this.scene) this.update(this.scene);
+    if (on) this.play();
+    else this.pause();
   }
 
   update(scene: SceneDoc): void {

@@ -130,3 +130,19 @@ export function luminance(c: Rgba): number {
   };
   return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
 }
+
+// WCAG contrast ratio (1..21) between two opaque colours.
+export function contrastRatio(a: Rgba, b: Rgba): number {
+  const la = luminance(a), lb = luminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+// Readable text colour on a background: white or near-black (#111318),
+// whichever contrasts more (≥ 4.5 whenever either can reach it).
+export function readableTextOn(background: unknown): string {
+  const bg = parseColor(background);
+  if (!bg) return "#ffffff";
+  const white = { r: 255, g: 255, b: 255, a: 1 };
+  const dark = { r: 17, g: 19, b: 24, a: 1 };
+  return contrastRatio(bg, white) >= contrastRatio(bg, dark) ? "#ffffff" : "#111318";
+}

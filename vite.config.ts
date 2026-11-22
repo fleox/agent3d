@@ -21,4 +21,6 @@ export default defineConfig({
     sourcemap: false,
     chunkSizeWarningLimit: 1500,
   },
+  // Scratch projects (.agent3d-tmp/) may contain stray test files.
+  test: { exclude: ["**/node_modules/**", "**/dist/**", ".agent3d-tmp/**"] },
 });

@@ -140,6 +140,8 @@ Adding a light: `{ "op": "set", "path": "lights", "value": [ â€¦the whole arrayâ
 ]
 ```
 
+`orbitLimits` takes `minDistance`, `maxDistance`, `minPolar` / `maxPolar` (degrees from straight above) and `minAzimuth` / `maxAzimuth` (degrees around Y, 0 = camera on +Z: `-45` / `45` keeps a product's back hidden).
+
 Cinematic shots and handheld shake (shots run on the timeline clock, scroll-driven with `trigger: "scroll"`; a `focus` shot needs a `dof` effect in `postfx`):
 
 ```json

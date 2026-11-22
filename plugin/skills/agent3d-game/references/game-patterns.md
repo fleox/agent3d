@@ -140,10 +140,25 @@ api.physics.setVelocity(ball, [(target.x - from[0]) / T, (target.y - from[1]) / 
 
 Keep the prototype asleep out of sight: `"position": [0, -29.7, 0], "visible": false` resting on a hidden static shelf. The `game-physics-playground` template is a complete example (tower of blocks, rebuild without reload, impact sounds).
 
-**Moving platforms** — `kinematic` bodies moved from the script push and carry dynamic bodies:
+**Moving platforms** — `kinematic` bodies moved from the script (or given a velocity) push dynamic bodies and **carry characters** standing on them (sliding lifts, elevators going up or down, turntables): the engine adds the platform's motion to the hero every step, so never move the hero with the lift yourself (that would carry it twice). `grounded(hero)` stays true and `contacts(hero)` lists the lift on every step of the ride:
 
 ```js
-platform.position.x = Math.sin(api.time()) * 3; // every update
+lift.position.set(base + Math.sin(api.time() * 0.9) * 1.6, lift.position.y, 0); // every update
+elevator.position.y = baseY + 1.5 - Math.cos(api.time() * 0.8) * 1.5;
+const onLift = api.physics.grounded(hero) && api.physics.contacts(hero).some((o) => o.id === "lift");
+```
+
+**Keeping a 2.5D hero on its plane** — clamping every step is fine: small corrections keep the character's contacts and ground state (jumps still work). A respawn (a teleport of more than 0.5 m) clears them until the next step:
+
+```js
+hero.position.set(hero.position.x, hero.position.y, 0); // after moveCharacter, every update
+```
+
+**Platforms with decorations** — a measured collider (`box`, `auto`, `convex`, `trimesh`) uses the object's own geometry only, so a grass slab with a dirt child keeps a box centred on the slab: no explicit `size` / `offset` needed. To make the decoration solid too, use `"shape": "compound"` without `shapes` (one box per child without a body). A child with its own `body` always gets its own collider:
+
+```json
+{ "id": "ledge", "kind": "mesh", "geometry": { "type": "roundedBox", "width": 4, "height": 0.4, "depth": 2 }, "body": { "type": "static", "shape": "box" },
+  "children": [{ "id": "ledgeDirt", "kind": "mesh", "geometry": { "type": "roundedBox", "width": 3.8, "height": 1, "depth": 1.8 }, "position": [0, -0.6, 0] }] }
 ```
 
 **Doors, pendulums, chains, wheels** — `physics.joints` (world-space pivots at scene start; omit `b` to pin to the world):
@@ -162,7 +177,7 @@ platform.position.x = Math.sin(api.time()) * 3; // every update
 
 **Layers** — `"layer": "debris", "collidesWith": ["default"]` keeps debris from blocking the player; raycasts take `{ layers: ["default"], ignore: [player], triggers: false }`.
 
-**Shapes** — boxes from the mesh bounds are the default (cheapest, stable stacks). Use `sphere` for balls (they roll), `capsule` for characters, `convex` for dynamic props of irregular shape (models), `trimesh` or `auto` for static level geometry (exact, e.g. a ramp model), `heightfield` / `auto` for a terrain generator, `compound` to assemble a few primitives (a table: top box + 4 leg boxes).
+**Shapes** — boxes from the object's own mesh bounds are the default (cheapest, stable stacks; child objects are not included). Use `sphere` for balls (they roll), `capsule` for characters, `convex` for dynamic props of irregular shape (models), `trimesh` or `auto` for static level geometry (exact, e.g. a ramp model), `heightfield` / `auto` for a terrain generator, `compound` to assemble a few primitives (a table: top box + 4 leg boxes).
 
 **Debugging** — `"physics": { "debug": true }` draws every collider (green dynamic, blue static, orange kinematic, magenta trigger, grey asleep) in renders: look at it whenever something falls through, floats or collides early. Remove it before export.
 

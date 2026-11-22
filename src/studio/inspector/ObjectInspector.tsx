@@ -12,14 +12,14 @@ import { useI18n } from "../i18n";
 import { behaviourFromEntry, MATERIAL_KINDS, objPath } from "../lib/patches";
 import { useEditor, useSnapshot } from "../state/context";
 import { JsonField, ParamForm, ParamRow, SubForm, useBinder } from "./fields";
-import { BODY_FLAG_SPECS, BODY_MOTION_SPECS, BODY_SPECS, COLLIDER_SPECS, MATERIAL_GROUPS, MATERIAL_MAIN, MATERIAL_MORE, MATERIAL_TYPE_SPEC, MODEL_ANIM_SPECS, MODEL_SPECS, OBJECT_FLAGS, PARTICLE_SPECS, SVG_SPECS, TEXT_OUTLINE_SPECS, TEXT_REVEAL_SPECS, TEXT_SPECS, TEXTURE_MAPPING_SPECS, TEXTURE_SLOT_SCALES } from "./specs";
+import { BODY_FLAG_SPECS, BODY_MOTION_SPECS, BODY_SPECS, COLLIDER_SPECS, MATERIAL_GROUPS, MATERIAL_MAIN, MATERIAL_MORE, MATERIAL_TYPE_SPEC, MODEL_ANIM_SPECS, MODEL_SPECS, ATTACH_SPEC, OBJECT_FLAGS, PARTICLE_SPECS, SVG_SPECS, TEXT_OUTLINE_SPECS, TEXT_REVEAL_SPECS, TEXT_SPECS, TEXTURE_MAPPING_SPECS, TEXTURE_SLOT_SCALES } from "./specs";
 import { FontPicker } from "../components/FontPicker";
 import { EaseField } from "../components/EaseField";
 import { MaterialPresetPicker } from "../components/MaterialPresetPicker";
 import { TextureField } from "../components/TextureField";
 import { MATERIAL_TEXTURE_SLOTS } from "../../core/validate";
 import type { BodyDef, ColliderDef, TextObjectDef, TextureRef } from "../../core/types";
-import { pretty } from "../lib/labels";
+import { fieldLabel, pretty } from "../lib/labels";
 
 const SAMPLE_REQUIRED: Record<string, Record<string, unknown>> = {
   lathe: { points: [[0, 0], [0.4, 0], [0.5, 0.3], [0.3, 0.8], [0.35, 1.2], [0, 1.2]] },
@@ -76,6 +76,7 @@ export function ObjectInspector({ object: o }: { object: ObjectDef }) {
       <BehavioursSection object={o} />
       <BodySection object={o} />
       <Section title={t("inspector.advanced")} id="advanced" defaultOpen={false}>
+        {(store.getSnapshot().scene?.objects ?? []).some((x) => x.id === o.id) && <ParamForm specs={[ATTACH_SPEC]} base={objPath(o.id, "")} values={o as unknown as Record<string, unknown>} />}
         <ParamForm specs={OBJECT_FLAGS} base={objPath(o.id, "")} values={o as unknown as Record<string, unknown>} />
         <Row label={t("inspector.tags")} hint={t("inspector.tagsHint")}>
           <TextField value={(o.tags ?? []).join(", ")} onCommit={(v) => bind(p("tags"), v.trim() ? v.split(/[\s,]+/).filter(Boolean) : undefined)} ariaLabel={t("inspector.tags")} />
@@ -211,8 +212,8 @@ function TextSections({ object: o }: { object: TextObjectDef }) {
           </>
         ) : (
           <>
-            <Row label={pretty("splitLetters")} hint={TEXT_SPECS.find((x) => x.name === "splitLetters")?.description}>
-              <Toggle checked={!!o.splitLetters} onChange={(v) => bind(objPath(o.id, "splitLetters"), v || undefined)} ariaLabel="splitLetters" />
+            <Row label={fieldLabel("splitLetters")} hint={TEXT_SPECS.find((x) => x.name === "splitLetters")?.description}>
+              <Toggle checked={!!o.splitLetters} onChange={(v) => bind(objPath(o.id, "splitLetters"), v || undefined)} ariaLabel={fieldLabel("splitLetters")} />
             </Row>
             <div className="px-3 text-2xs text-fg-faint">{t("inspector.revealHint")}</div>
           </>
@@ -289,9 +290,9 @@ function MaterialSection({ object: o }: { object: ObjectDef & { material?: Mater
           {hasTextures && (
             <>
               <ParamForm specs={withPreset(TEXTURE_MAPPING_SPECS)} base={base} values={m as Record<string, unknown>} />
-              <Row label={pretty("triplanar")} hint={t("inspector.triplanarHint")} overridden={m.triplanar !== undefined} onReset={() => bind(`${base}.triplanar`, undefined)}>
-                <Toggle checked={!!(m.triplanar ?? preset?.props.triplanar)} onChange={(v) => bind(`${base}.triplanar`, v ? (typeof preset?.props.triplanar === "number" ? preset.props.triplanar : true) : preset?.props.triplanar ? false : undefined)} ariaLabel="triplanar" />
-                {typeof (m.triplanar ?? preset?.props.triplanar) === "number" && <NumberField value={Number(m.triplanar ?? preset?.props.triplanar)} min={0.01} onChange={(n, f) => bind(`${base}.triplanar`, n, f)} className="w-[60px] flex-none" ariaLabel="triplanar scale" />}
+              <Row label={fieldLabel("triplanar")} hint={t("inspector.triplanarHint")} overridden={m.triplanar !== undefined} onReset={() => bind(`${base}.triplanar`, undefined)}>
+                <Toggle checked={!!(m.triplanar ?? preset?.props.triplanar)} onChange={(v) => bind(`${base}.triplanar`, v ? (typeof preset?.props.triplanar === "number" ? preset.props.triplanar : true) : preset?.props.triplanar ? false : undefined)} ariaLabel={fieldLabel("triplanar")} />
+                {typeof (m.triplanar ?? preset?.props.triplanar) === "number" && <NumberField value={Number(m.triplanar ?? preset?.props.triplanar)} min={0.01} onChange={(n, f) => bind(`${base}.triplanar`, n, f)} className="w-[60px] flex-none" ariaLabel={t("ui.triplanarScale")} />}
               </Row>
             </>
           )}
@@ -421,8 +422,8 @@ function BodySection({ object: o }: { object: ObjectDef }) {
           <div className="mx-3 mb-1 mt-1.5 text-2xs font-medium uppercase tracking-wide text-fg-faint">{t("inspector.bodyMotion")}</div>
           <ParamForm specs={motionSpecs.filter((sp) => dynamic || !["mass", "linearDamping", "angularDamping", "gravityScale", "velocity", "angularVelocity"].includes(sp.name) || vals?.[sp.name] !== undefined)} base={path} values={vals} />
           <ParamForm specs={BODY_FLAG_SPECS} base={path} values={vals} />
-          <Row label={pretty("collidesWith")} hint={t("inspector.collidesWithHint")} overridden={body.collidesWith !== undefined} onReset={() => bind(`${path}.collidesWith`, undefined)}>
-            <TextField value={(body.collidesWith ?? []).join(", ")} placeholder={t("inspector.allLayers")} onCommit={(v) => bind(`${path}.collidesWith`, v.trim() ? v.split(/[\s,]+/).filter(Boolean) : undefined)} ariaLabel="collidesWith" />
+          <Row label={fieldLabel("collidesWith")} hint={t("inspector.collidesWithHint")} overridden={body.collidesWith !== undefined} onReset={() => bind(`${path}.collidesWith`, undefined)}>
+            <TextField value={(body.collidesWith ?? []).join(", ")} placeholder={t("inspector.allLayers")} onCommit={(v) => bind(`${path}.collidesWith`, v.trim() ? v.split(/[\s,]+/).filter(Boolean) : undefined)} ariaLabel={fieldLabel("collidesWith")} />
           </Row>
           <div className="px-3 pt-1">
             <Button size="xs" variant="ghost" onClick={() => bind(path, undefined)}>

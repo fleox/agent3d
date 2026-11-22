@@ -259,3 +259,55 @@ describe("helpers", () => {
     expect(assetPathProblem("library:../x")).not.toBeNull();
   });
 });
+
+describe("validateScene: orbit azimuth limits and three.js parameter names", () => {
+  it("accepts orbitLimits.minAzimuth / maxAzimuth (degrees) and range-checks them", () => {
+    const s = defaultScene({}) as SceneDoc;
+    s.camera.controls = "orbit";
+    s.camera.orbitLimits = { minAzimuth: -40, maxAzimuth: 40, minPolar: 30, maxPolar: 85 };
+    expect(validateScene(s)).toEqual([]);
+    s.camera.orbitLimits = { minAzimuth: -400 };
+    expect(validateScene(s).map((i) => i.path)).toEqual(["camera.orbitLimits.minAzimuth"]);
+  });
+  it("names the catalog parameter for three.js geometry names (radialSegments → segments)", () => {
+    const s = defaultScene({}) as SceneDoc;
+    s.objects = [
+      { id: "c", kind: "mesh", geometry: { type: "cylinder", radialSegments: 12 } as never },
+      { id: "k", kind: "mesh", geometry: { type: "cone", radialSegments: 12 } as never },
+    ];
+    const issues = validateScene(s);
+    expect(issues).toHaveLength(2);
+    for (const i of issues) {
+      expect(i.code).toBe("unknown-param");
+      expect(i.message).toContain('it is called "segments" here');
+      expect(i.hint).toBe('Rename "radialSegments" to "segments".');
+    }
+    // torus really has radialSegments: no issue.
+    s.objects = [{ id: "t", kind: "mesh", geometry: { type: "torus", radialSegments: 12 } as never }];
+    expect(validateScene(s)).toEqual([]);
+  });
+});
+
+describe("instances layouts and particle fields (declared in the catalog)", () => {
+  const withObj = (o: Record<string, unknown>): SceneDoc => ({ ...defaultScene({ id: "t", title: "Test" }), objects: [o as never] });
+  it("validates layout fields from CATALOG.instanceLayouts with did-you-mean", () => {
+    const ok = withObj({ id: "trees", kind: "instances", geometry: { type: "cone" }, layout: { type: "scatter", count: 50, area: [10, 0, 10], minScale: 0.5, maxScale: 1.2, seed: 2 } });
+    expect(validateScene(ok)).toEqual([]);
+    const typo = validateScene(withObj({ id: "g", kind: "instances", geometry: { type: "box" }, layout: { type: "grid", count: [2, 1, 2], spacing: [1, 0, 1], spaceing: 2 } }));
+    expect(typo).toEqual([expect.objectContaining({ code: "unknown-param", path: "objects#g.layout.spaceing", hint: expect.stringContaining('Did you mean "spacing"') })]);
+    const missing = errors(withObj({ id: "c", kind: "instances", geometry: { type: "box" }, layout: { type: "circle", count: 5 } }));
+    expect(missing.map((i) => i.path)).toEqual(["objects#c.layout.radius"]);
+    const badGrid = errors(withObj({ id: "g", kind: "instances", geometry: { type: "box" }, layout: { type: "grid", count: [2.5, 1, 2], spacing: [1, 0, 1] } }));
+    expect(badGrid[0]).toMatchObject({ path: "objects#g.layout.count", code: "range" });
+  });
+  it("particle presets declare the overridable fields the validator accepts", async () => {
+    const { CATALOG, PARTICLE_PARAMS, PARTICLE_SHAPES } = await import("./catalog");
+    const runtime = await import("../runtime/particles/presets");
+    for (const p of CATALOG.particlePresets) expect(p.params.map((x) => x.name), p.id).toEqual(PARTICLE_PARAMS.map((x) => x.name));
+    expect([...PARTICLE_SHAPES]).toEqual([...runtime.PARTICLE_SHAPES]);
+    // Every overridable field the runtime reads is declared (seed is the object's RNG seed).
+    for (const k of ["count", "area", "size", "speed", "direction", "spread", "lifetime", "opacity", "blending", "shape"]) expect(k in runtime.PARTICLE_DEFAULTS, k).toBe(true);
+    expect(validateScene(withObj({ id: "s", kind: "particles", preset: "snow", count: 400, area: [10, 5, 5], size: 0.1, color: ["#fff", "#eef"] }))).toEqual([]);
+    expect(validateScene(withObj({ id: "s", kind: "particles", preset: "snow", cuont: 4 }))[0]).toMatchObject({ path: "objects#s.cuont", hint: expect.stringContaining('"count"') });
+  });
+});

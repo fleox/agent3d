@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import pkg from "../../package.json";
 import { MemoryFs } from "../core/fs";
 import { getAt, mergePatch, parsePath, removeAt, setAt } from "../core/jsonPath";
 import type { SceneDoc } from "../core/types";
@@ -16,6 +17,14 @@ async function project(kind: "banner" | "game" = "banner") {
   await createProject(fs, { name: "Test Banner", target: { kind } });
   return fs;
 }
+
+describe("createProject", () => {
+  it("writes the real engine version (package.json) into agent3d.json", async () => {
+    const fs = await project();
+    const manifest = JSON.parse(await fs.readText("agent3d.json"));
+    expect(manifest.agent3d).toBe(pkg.version);
+  });
+});
 
 describe("jsonPath", () => {
   const doc = { objects: [{ id: "a", children: [{ id: "b", position: [0, 1, 2] }] }], lights: [{ id: "key", intensity: 1 }, { type: "x" }] };
@@ -234,5 +243,19 @@ describe("summary & diff", () => {
     const s = await getScene(await project());
     expect(diffScenes(s, JSON.parse(JSON.stringify(s))).empty).toBe(true);
     expect(diffScenes(null, s).objects.added.length).toBeGreaterThan(0);
+  });
+});
+
+describe("replacedCollections", () => {
+  it("reports set / merge / remove ops that replace a whole collection", async () => {
+    const { replacedCollections } = await import("./scene");
+    const scene = { version: 1, objects: [{ id: "a", kind: "mesh", position: [0, 0, 0] }], lights: [{ id: "key", type: "ambient" }], timeline: { duration: 2, tracks: [{ target: "a.position.y", keys: [[0, 0]] }] } } as unknown as SceneDoc;
+    expect(replacedCollections(scene, [{ op: "set", path: "objects", value: [] }])).toEqual([{ opIndex: 0, path: "objects", items: 1 }]);
+    expect(replacedCollections(scene, [{ op: "set", path: "objects", value: scene.objects }])).toEqual([]);
+    expect(replacedCollections(scene, [{ op: "set", path: "timeline", value: { duration: 3, tracks: [] } }])).toEqual([{ opIndex: 0, path: "timeline.tracks", items: 1 }]);
+    expect(replacedCollections(scene, [{ op: "merge", path: "timeline", value: { duration: 3 } }])).toEqual([]);
+    expect(replacedCollections(scene, [{ op: "remove", path: "lights" }])).toEqual([{ opIndex: 0, path: "lights", items: 1 }]);
+    // Arrays of numbers (positions, colours) are values, not collections.
+    expect(replacedCollections(scene, [{ op: "set", path: "objects#a.position", value: [1, 2, 3] }])).toEqual([]);
   });
 });

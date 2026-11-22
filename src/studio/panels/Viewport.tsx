@@ -6,6 +6,7 @@
 // scene (orbit, hover behaviours, games) through the scene camera.
 
 import clsx from "clsx";
+import { badgeCorners, CORNER_CLASS } from "../lib/badges";
 import { Camera, Focus, Globe, Grid2x2, Hand, Lightbulb, Magnet, Monitor, MousePointer2, Move3d, Rotate3d, Scale3d, Smartphone, SwitchCamera, Tablet, TriangleAlert, Video, Box } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { parseAspect } from "../../core/aspect";
@@ -241,6 +242,8 @@ export function Viewport() {
   const lightOk = lightSel && !selId && lightPath(scene, lightSel.id) !== null;
   const selLabel = selId ?? (lightOk ? `${lightSel!.id}${lightSel!.part === "target" ? " · target" : ""}` : null);
   const effView = interact ? "camera" : view;
+  // Badges go to corners the scene's HUD leaves free.
+  const badges = badgeCorners(snap.scene?.ui);
   const tool = (mode: GizmoMode, label: MessageKey, key: string, icon: ReactNode) => (
     <ToolButton label={t(label)} shortcut={key} active={!interact && gizmo === mode} disabled={interact} onClick={() => ui.set({ gizmo: mode, interact: false })}>
       {icon}
@@ -308,13 +311,13 @@ export function Viewport() {
             {effView === "camera" && !interact && helpers && <SafeFrame />}
             <div ref={surfaceRef} data-testid="viewport-surface" className={clsx("absolute inset-0 select-none", interact && "pointer-events-none")} style={{ touchAction: "none" }} aria-label={t("viewport.clickToSelect")} />
             {selLabel && !interact && (
-              <div className="pointer-events-none absolute left-2 top-2 flex max-w-[60%] items-center gap-1 truncate rounded-[4px] bg-ink-0/75 px-1.5 py-0.5 text-2xs font-medium text-accent backdrop-blur">
+              <div className={clsx("pointer-events-none absolute z-10 flex max-w-[60%] items-center gap-1 truncate rounded-[4px] bg-ink-0/75 px-1.5 py-0.5 text-2xs font-medium text-accent backdrop-blur", CORNER_CLASS[badges.selection])}>
                 {lightOk ? <Lightbulb size={10} /> : <Box size={10} />}
                 <span className="truncate">{selLabel}</span>
               </div>
             )}
             {!interact && (
-              <div className="pointer-events-none absolute right-2 top-2 flex items-center gap-1 rounded-[4px] bg-ink-0/60 px-1.5 py-0.5 text-2xs text-fg-muted backdrop-blur">
+              <div className={clsx("pointer-events-none absolute z-10 flex items-center gap-1 rounded-[4px] bg-ink-0/60 px-1.5 py-0.5 text-2xs text-fg-muted backdrop-blur", CORNER_CLASS[badges.camera])}>
                 {effView === "camera" ? <Camera size={10} /> : <Video size={10} />}
                 {effView === "camera" ? t("viewport.sceneCamera") : t("viewport.editorCamera")}
               </div>

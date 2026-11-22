@@ -175,6 +175,33 @@ describe.skipIf(!browser || !runtimeOk)("exported embed in a real browser", () =
     expect(existsSync(join(outs[0], "EMBED.md"))).toBe(true);
   }, 240_000);
 
+  it("starts reliably: 20 consecutive page loads all reach ready (lazy start race)", async () => {
+    const base = mkdtempSync(join(tmpdir(), "agent3d-embed-loop-"));
+    const out = await exportTemplate(base, "banner-neon-title");
+    const server = await startLocalServer({ mounts: { "/": out } });
+    const b = await launchBrowser(browser!);
+    const client = await CdpClient.connect(b.wsUrl);
+    try {
+      const page = await client.newPage();
+      await page.send("Runtime.enable");
+      await page.send("Page.enable");
+      await page.send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 700, deviceScaleFactor: 1, mobile: false });
+      const statuses: string[] = [];
+      for (let i = 0; i < 20; i++) {
+        await page.send("Page.navigate", { url: `${server.url}/index.html?load=${i}` });
+        const s = await waitFor<string>(page, `(() => { const s = document.querySelector("agent3d-scene")?.getAttribute("status"); return s === "ready" || s === "error" || s === "unsupported" ? s : ""; })()`, 20_000).catch(
+          async () => `stuck:${await page.evaluate<string>(`String(document.querySelector("agent3d-scene")?.getAttribute("status"))`)}`,
+        );
+        statuses.push(s);
+      }
+      expect(statuses).toEqual(Array(20).fill("ready"));
+    } finally {
+      client.close();
+      await b.close();
+      await server.close();
+    }
+  }, 600_000);
+
   it("shares one runtime between scenes, pauses off-screen, honours reduced motion and print, falls back without WebGL", async () => {
     const base = mkdtempSync(join(tmpdir(), "agent3d-embed-multi-"));
     const banner = await exportTemplate(base, "banner-neon-title");

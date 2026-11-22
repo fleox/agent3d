@@ -177,6 +177,13 @@ describe("project workflow (new → validate → patch → check)", () => {
     expect(bad.body.error).toMatchObject({ code: "validation", details: { issues: expect.any(Array) } });
     expect(readFileSync(join(dir, "scene.json"), "utf8")).toBe(before);
 
+    // Replacing a whole collection with set needs --yes, like a removal.
+    const objs = JSON.parse(before).objects.map((o: { id: string }) => ({ ...o, visible: true }));
+    writeFileSync(ops, JSON.stringify([{ op: "set", path: "objects", value: objs }]));
+    const setPlan = await ok(["scene", "patch", "--project", dir, "--file", ops]);
+    expect(setPlan).toMatchObject({ needsConfirmation: true, plan: { replaces: [{ opIndex: 0, path: "objects", items: objs.length }] } });
+    expect(readFileSync(join(dir, "scene.json"), "utf8")).toBe(before);
+
     // Removing needs --yes.
     const plan = await ok(["object", "remove", "orb", "--project", dir]);
     expect(plan).toMatchObject({ needsConfirmation: true, plan: { objects: { removed: ["orb"] } } });

@@ -8,8 +8,9 @@ Everything a scene can reference by id. Agents: query it with the `catalog_get` 
 
 - [Geometries](#geometries) (18)
 - [Behaviours](#behaviours) (29)
-- [Generators](#generators) (21)
+- [Generators](#generators) (22)
 - [Particle presets](#particle-presets) (17)
+- [Instance layouts](#instance-layouts) (4)
 - [Shaders](#shaders) (17)
 - [Procedural textures](#procedural-textures) (12)
 - [Light rigs](#light-rigs) (10)
@@ -575,7 +576,7 @@ Procedural content, zero download: `{ "kind": "generator", "generator": "<id>", 
 
 ### `terrain`
 
-Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes. _Cost: ~resolution^2*2 triangles._
+Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes, canyons, a lake basin ringed by mountains, a valley. Trees / rocks / grass / flowers with onTerrain sit on it (and stay below its snow). _Cost: ~resolution^2*2 triangles._
 
 **`material` override** (object-level `"material": { … }`): The ground (not the water plane). Without colour / preset / map the palette bands are kept (e.g. { "roughness": 0.6, "flatShading": false }).
 
@@ -586,12 +587,15 @@ Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, isla
 | `height` | number (0…∞) | `6` | Max height. |
 | `scale` | number (0…∞) | `1` | Noise scale (bigger = wider features). |
 | `octaves` | integer (1…8) | `5` | Detail levels. |
-| `shape` | `hills` \\| `mountains` \\| `island` \\| `dunes` \\| `canyon` \\| `flat` | `"hills"` | Overall shape. |
+| `shape` | `hills` \\| `mountains` \\| `island` \\| `dunes` \\| `canyon` \\| `basin` \\| `valley` \\| `flat` | `"hills"` | Overall shape. basin = low flat floor in the middle (a lake with waterLevel ≈ 0.1 × height) ringed by mountains; valley = flat-floored valley running along z between mountain walls, closed by mountains at the far end (-z): a camera on +z looks down it. |
+| `edgeFalloff` | number (0…1) |  | Fraction (0..1) of the half-size over which the borders sink smoothly below 0 (no vertical cut walls at the edge). Default per shape: mountains 0.3, basin 0.2, valley 0.15, others 0. |
 | `palette` | colors | `["#e2c290","#6aa84f","#38761d","#7f6a5d","#ffffff"]` | Colours from low to high (sand, grass, rock, snow). |
 | `lowpoly` | boolean | `true` | Faceted shading. |
 | `waterLevel` | number | `0.6` | Water surface height in world units (absolute, not a fraction of height); null = no water. |
 | `waterColor` | color | `"#3d9bd6"` | Water colour. |
-| `snowLine` | number (0…1) | `1` | Height fraction (0..1, above the water) where the last palette colour (snow) caps the peaks; 1 = summit only. |
+| `waterPlane` | boolean | `true` | Draw the built-in water plane at waterLevel. false = add your own `water` object at y = waterLevel (full control of colours, waves, foam); waterLevel still colours the shore and keeps trees / grass / flowers out of the lake. |
+| `snowLine` | number (0…1) | `1` | Height fraction (0..1, above the water) where the last palette colour (snow) caps the peaks; 1 = summit only. Relative to this terrain's own relief: use snowHeight for the same snow altitude across terrains. |
+| `snowHeight` | number (0…∞) |  | Absolute snow altitude in terrain units (like waterLevel): everything above is snow-capped. Overrides snowLine. |
 
 ### `trees`
 
@@ -665,6 +669,8 @@ Animated stylised water: waves, shallow → deep colour from the terrain depth b
 | `depthRange` | number (0.01…∞) | `3` | Depth at which the colour is fully deep. |
 | `opacity` | number (0…1) | `0.9` | Opacity. |
 | `lowpoly` | boolean | `false` | Faceted low-poly water (no ripples). |
+| `reflections` | boolean | `false` | Planar mirror reflections of the scene (mirror lakes at sunrise; lower waveHeight / ripples for a calm mirror). Costly: the scene is rendered a second time each frame (half resolution on the medium tier, off on the low tier). |
+| `reflectivity` | number (0…1) | `0.8` | Reflection strength with reflections on (fresnel: stronger at grazing angles). |
 
 ### `clouds`
 
@@ -804,6 +810,31 @@ Endless-runner road made of tiles that scroll toward the camera. _Cost: ~200 tri
 | `color` | color | `"#3d405b"` | Asphalt. |
 | `lineColor` | color | `"#f4f1de"` | Lane lines. |
 | `speed` | number (0…∞) | `10` | Scroll speed (units/s), read by scripts as state.speed when set. |
+| `curbColors` | colors | `["#e63946","#f1faee"]` | Curb colours: two alternate (red / white kerbs); one = a solid curb (e.g. neon yellow). |
+| `verge` | boolean | `true` | Striped verges on both sides (false = road and curbs only, e.g. over a dark ground or a grid). |
+| `vergeColor` | colors | `["#7cc45a","#6bb44c"]` | Verge colours: two alternating stripes; one = that colour plus a slightly darker stripe. |
+
+### `birds`
+
+Flock of stylised birds (one instanced draw call): V-shaped wings with a dihedral (a chevron from every angle), flapping in the shader and alternating with glides; boids-like flight (loose cloud or V formation, wander, banking into turns) that is a pure function of time. Modes: orbit (circle the area), path (closed loop through points), drift (cross the sky and wrap). _Cost: ~count*18 triangles._
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `count` | integer (1…500) | `12` | Birds. |
+| `mode` | `orbit` \\| `path` \\| `drift` | `"orbit"` | Flight: orbit = flock circles an ellipse of radii area x/2, z/2 around the object position; path = closed loop through `points`; drift = crosses `area` x along `heading`, each bird wrapping around (keep the area wider than the view). |
+| `area` | vec3 | `[40,4,30]` | Orbit ellipse (x, z = diameters) / drift length (x) and vertical drift range (y). |
+| `points` | array | `[]` | path mode: [[x, y, z], …] (≥ 2 points, local to the object), flown as a closed smooth loop. |
+| `heading` | number | `0` | drift mode: direction in degrees around Y (0 = +x, left → right for a camera on +z; 180 = right → left; 90 = away from the camera). |
+| `speed` | number (0…∞) | `4` | Flight speed (units/s). |
+| `formation` | `loose` \\| `v` | `"loose"` | loose = a cloud of radius `spread` where each bird wanders; v = V formation (geese). |
+| `spread` | number (0…∞) | `3` | loose formation radius. |
+| `size` | number (0.01…∞) | `1` | Wingspan. |
+| `color` | color | `"#22252e"` | Bird colour (each bird varies ±10 %). Dark reads as a silhouette against a bright sky. |
+| `flapSpeed` | number (0…∞) | `2.5` | Wing beats per second (each bird varies ±18 %). |
+
+```json
+{"count":9,"mode":"drift","formation":"v","area":[80,2,0],"heading":10,"speed":5,"size":1.2}
+```
 
 ### `floatingIsland`
 
@@ -935,7 +966,7 @@ Abstract Memphis / pastel composition for banners: spheres, tori, rings, pills, 
 
 | Id | Description |
 |---|---|
-| `terrain` | Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes. |
+| `terrain` | Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes, canyons, a lake basin ringed by mountains, a valley. Trees / rocks / grass / flowers with onTerrain sit on it (and stay below its snow). |
 | `trees` | Scattered stylised trees. |
 | `rocks` | Scattered low-poly rocks. |
 | `grass` | Instanced grass blades swaying in the wind. |
@@ -950,6 +981,7 @@ Abstract Memphis / pastel composition for banners: spheres, tori, rings, pills, 
 | `waveGrid` | Grid of points / bars rippling like a wave (tech / data banners). |
 | `maze` | Grid maze walls from a seed (games). |
 | `road` | Endless-runner road made of tiles that scroll toward the camera. |
+| `birds` | Flock of stylised birds (one instanced draw call): V-shaped wings with a dihedral (a chevron from every angle), flapping in the shader and alternating with glides; boids-like flight (loose cloud or V formation, wander, banking into turns) that is a pure function of time. Modes: orbit (circle the area), path (closed loop through points), drift (cross the sky and wrap). |
 | `floatingIsland` | Stylised floating island diorama (hero favourite): grassy rolling top with a noisy outline, dirt band, rocky underside tapering to stalactite tips with coloured strata; optional trees, rocks, flowers, grass, a pond with a waterfall, floating debris and a slow bob. |
 | `globe` | Data globe for SaaS / network heroes: dot-matrix Earth (simplified continents), fresnel atmosphere, pulsing location markers and great-circle arcs with travelling light pulses between lat/lon points. |
 | `crystals` | Glowing gem crystals: faceted hexagonal prisms with pointed tips (cluster on a rock base, ring, or scatter), base → tip colour gradient, emissive fresnel glow that pulses. Pair with the bloom post effect. |
@@ -960,6 +992,23 @@ Abstract Memphis / pastel composition for banners: spheres, tori, rings, pills, 
 ## Particle presets
 
 `{ "kind": "particles", "preset": "<id>", "count"?, "area"?, "size"?, "color"?, … }` — object fields override the preset.
+
+Every entry takes these fields:
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `count` | integer (1…200000) |  | Number of particles (preset value when omitted; e.g. stars 900, snow 1200, fireflies 90). |
+| `area` | vec3 |  | Size [x, y, z] of the box the particles live in / are emitted from, centred on the object. |
+| `size` | number (0…∞) |  | Sprite size in units (world space). |
+| `color` | colors |  | A colour or a list of colours (each particle picks one), e.g. "#ffffff" or ["#ff006e", "#ffbe0b"]. |
+| `speed` | number (0…∞) |  | Speed in units/s along `direction` (0 = static). |
+| `direction` | vec3 |  | Main direction of motion, e.g. [0, -1, 0] falls, [0, 1, 0] rises. |
+| `spread` | number (0…1) |  | Direction randomness 0 (parallel) … 1 (any direction). |
+| `lifetime` | number (0…∞) |  | Seconds a particle lives (emitters: sparks, embers, smoke…); omitted / 0 = forever (positions wrap inside the area). |
+| `opacity` | number (0…1) |  | Opacity 0…1. |
+| `blending` | `normal` \\| `additive` |  | additive glows (sparks, magic, stars), normal keeps colours (snow, confetti, petals). |
+| `shape` | `point` \\| `soft` \\| `square` \\| `circle` \\| `star` \\| `spark` \\| `streak` \\| `heart` \\| `bubble` \\| `smoke` \\| `petal` \\| `leaf` \\| `ring` |  | Sprite shape. |
+| `seed` | integer |  | Random seed (same seed = same particles). |
 
 | Id | Description |
 |---|---|
@@ -980,6 +1029,72 @@ Abstract Memphis / pastel composition for banners: spheres, tori, rings, pills, 
 | `leaves` | Autumn leaves falling, fluttering and spinning. |
 | `galaxyDust` | Flat disc of twinkling cosmic dust slowly swirling (inner faster). |
 | `bokeh` | Big soft out-of-focus light orbs drifting (dreamy backgrounds). |
+
+## Instance layouts
+
+`{ "kind": "instances", "geometry": { "type": "<geometry>", … }, "material"?: {…}, "colors"?: [...], "layout": { "type": "<id>", …params } }` — many copies of one geometry in one draw call. The params are the layout object's fields.
+
+### `grid`
+
+Regular 3D grid centred on the object: count [nx, ny, nz] copies spaced by spacing [sx, sy, sz] (use 1 / 0 for a flat axis). _Cost: ~count[0]*count[1]*count[2] * geometry triangles._
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `count` **(required)** | vec3 |  | Copies per axis [nx, ny, nz] (integers ≥ 1). |
+| `spacing` **(required)** | vec3 |  | Distance between copies per axis [sx, sy, sz] in units. |
+
+```json
+{"type":"grid","count":[8,1,8],"spacing":[1.2,0,1.2]}
+```
+
+### `scatter`
+
+Random positions inside a box (seeded): forests of props, rocks, debris. _Cost: ~count * geometry triangles._
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `count` **(required)** | integer (1…200000) |  | Number of copies. |
+| `area` **(required)** | vec3 |  | Box size [x, y, z] centred on the object (y 0 = on a plane). |
+| `minScale` | number (0…∞) | `1` | Smallest random uniform scale. |
+| `maxScale` | number (0…∞) | `1` | Largest random uniform scale. |
+| `randomRotation` | boolean | `false` | Random rotation around Y. |
+| `seed` | integer |  | Random seed (same seed = same layout). |
+
+```json
+{"type":"scatter","count":200,"area":[20,0,20],"minScale":0.6,"maxScale":1.4,"randomRotation":true,"seed":3}
+```
+
+### `circle`
+
+Copies evenly spaced on a horizontal circle (XZ plane) around the object. _Cost: ~count * geometry triangles._
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `count` **(required)** | integer (1…200000) |  | Number of copies. |
+| `radius` **(required)** | number (0…∞) |  | Circle radius in units. |
+
+```json
+{"type":"circle","count":12,"radius":3}
+```
+
+### `list`
+
+Explicit transforms, one copy per item: [{ position, rotation?, scale? }] (rotation in degrees, scale a number or [x, y, z]). _Cost: ~items * geometry triangles._
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `items` **(required)** | array |  | Transforms [{ "position": [x, y, z], "rotation"?: [x, y, z], "scale"?: n \| [x, y, z] }, …]. |
+
+```json
+{"type":"list","items":[{"position":[-1,0,0]},{"position":[1,0,0],"rotation":[0,45,0],"scale":1.5}]}
+```
+
+| Id | Description |
+|---|---|
+| `grid` | Regular 3D grid centred on the object: count [nx, ny, nz] copies spaced by spacing [sx, sy, sz] (use 1 / 0 for a flat axis). |
+| `scatter` | Random positions inside a box (seeded): forests of props, rocks, debris. |
+| `circle` | Copies evenly spaced on a horizontal circle (XZ plane) around the object. |
+| `list` | Explicit transforms, one copy per item: [{ position, rotation?, scale? }] (rotation in degrees, scale a number or [x, y, z]). |
 
 ## Shaders
 
@@ -1358,117 +1473,7 @@ Polka dots.
 
 `environment.rig: "<id>"` or `{ "preset": "<id>", …params }` — named lighting setups added to `lights` (positions assume a subject ~1–3 units around the origin; use `scale` for bigger scenes, `rotation` to turn the rig).
 
-### `studio-3point`
-
-Classic key / fill / rim: warm key with soft shadow, cool fill, bright back rim. Safe default for anything.
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `softbox`
-
-Large overhead and side softboxes (area lights): soft wrap-around product lighting with long glossy highlights.
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `product-top`
-
-Overhead softbox + two vertical strip lights: luxury product / packshot look (best on glossy and metal).
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `rim`
-
-Two strong back rims (cool and warm) and a faint front fill: silhouettes and edge highlights on dark backgrounds.
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `dramatic`
-
-One hard side key (spot) with deep shadows and a thin rim — moody, high contrast.
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `golden-hour`
-
-Low warm sun with long shadows and a blue sky fill.
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `noon`
-
-High white sun with crisp shadows and a sky-blue fill.
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `overcast`
-
-Soft shadowless daylight (big sky dome, faint top key).
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `neon`
-
-Magenta and cyan side lights (area panels) over a dark ambient — night / synthwave.
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `intensity` | number (0…∞) | `1` | Overall brightness multiplier. |
-| `rotation` | number | `0` | Rotate the whole rig around Y (degrees). |
-| `castShadow` | boolean | `true` | Key light casts shadows. |
-| `scale` | number (0.05…∞) | `1` | Distance multiplier (big scenes). |
-| `color` | color |  | Tint mixed into every light (optional). |
-
-### `moonlight`
-
-Cool blue moon key with soft shadows and a dim night-sky fill.
+Every entry takes these fields:
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -1734,7 +1739,7 @@ Film grain (luma-weighted, deterministic) + optional scanlines. _GPU cost: low._
 | `dreamy` | Soft and glowing: wide bloom, pastel grade, gentle lens fringes, light vignette. | `[{"type":"bloom","strength":0.45,"radius":0.85,"threshold":1,"smoothing":0.6},{"type":"grading","look":"pastel"},{"type":"chromatic","amount":0.0015},{"type":"vignette","offset":1,"darkness":0.5},{"type":"film","intensity":0.04}]` |
 | `neon` | Night-club neon: strong tight bloom, anamorphic streaks, saturated contrasty grade, deep vignette. | `[{"type":"bloom","strength":1.3,"radius":0.55,"threshold":0.55,"smoothing":0.2},{"type":"lensflare","intensity":0.45,"threshold":1.4,"streaks":1.2,"ghosts":0.2,"halo":0.1},{"type":"grading","contrast":1.15,"saturation":1.2,"vibrance":0.2},{"type":"chromatic","amount":0.001},{"type":"vignette","offset":0.95,"darkness":0.95}]` |
 | `retro` | Old film / VHS: vintage faded grade, heavy grain + scanlines, fringes, strong vignette. | `[{"type":"grading","look":"vintage"},{"type":"film","intensity":0.3,"scanlines":0.25},{"type":"chromatic","amount":0.0025,"radial":false},{"type":"vignette","offset":0.9,"darkness":1.2},{"type":"bloom","strength":0.3,"radius":0.6,"threshold":1.6,"smoothing":0.4}]` |
-| `clean` | Minimal polish for UI-like scenes: FXAA, subtle contrast, light sharpening, supersampled stills. | `[{"type":"fxaa"},{"type":"grading","contrast":1.04,"saturation":1.02},{"type":"sharpen","amount":0.15},{"type":"vignette","offset":1.2,"darkness":0.25},{"type":"taa","samples":8}]` |
+| `clean` | Minimal polish for UI-like scenes: subtle contrast, light sharpening, faint vignette, supersampled stills. No FXAA (it softens small text; MSAA already smooths edges). | `[{"type":"grading","contrast":1.04,"saturation":1.02},{"type":"sharpen","amount":0.15},{"type":"vignette","offset":1.2,"darkness":0.25},{"type":"taa","samples":8}]` |
 
 ### Grading looks
 

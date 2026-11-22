@@ -129,8 +129,12 @@ export class World {
       const siblings = new Map<string, BuiltObject>();
       // Generators first within a parent so "onTerrain" scatterers find their terrain.
       const objs = def.objects ?? [];
-      await Promise.all(objs.filter((o) => o.kind === "generator" && o.generator === "terrain").map((o) => this.addObject(o, this.scene, undefined, siblings)));
-      await Promise.all(objs.filter((o) => !(o.kind === "generator" && o.generator === "terrain")).map((o) => this.addObject(o, this.scene, undefined, siblings)));
+      // attach: "camera" → the object is a child of the camera (camera-space
+      // transform); the camera then joins the scene graph so it renders.
+      const rootFor = (o: ObjectDef): THREE.Object3D => (o.attach === "camera" ? this.camera : this.scene);
+      if (objs.some((o) => o.attach === "camera")) this.scene.add(this.camera);
+      await Promise.all(objs.filter((o) => o.kind === "generator" && o.generator === "terrain").map((o) => this.addObject(o, rootFor(o), undefined, siblings)));
+      await Promise.all(objs.filter((o) => !(o.kind === "generator" && o.generator === "terrain")).map((o) => this.addObject(o, rootFor(o), undefined, siblings)));
       // Keep declaration order in the scene graph.
       const order = new Map(objs.map((o, i) => [o.id, i]));
       this.scene.children.sort((a, b) => (order.get(a.userData.a3dId) ?? -1) - (order.get(b.userData.a3dId) ?? -1));
@@ -377,7 +381,7 @@ export class World {
       rest: captureRest(object),
       runners: [],
       animated: false,
-      topLevel: parent === this.scene,
+      topLevel: parent === this.scene || (parent === this.camera && !parentId),
       parentId,
       built,
       animator,
@@ -467,7 +471,7 @@ export class World {
     const tmp = new THREE.Box3();
     this.scene.updateMatrixWorld(true);
     for (const e of this.entries.values()) {
-      if (!e.topLevel || e.kind === "particles") continue;
+      if (!e.topLevel || e.kind === "particles" || (e.def as ObjectDef).attach === "camera") continue;
       tmp.setFromObject(e.object);
       if (tmp.isEmpty()) continue;
       if (tmp.getSize(new THREE.Vector3()).length() > 200) continue;
@@ -528,7 +532,7 @@ export class World {
       this.postfxParam?.("dof", "focus", this.rig.rest.focus);
       this.focusWritten = true;
     }
-    for (const e of this.entries.values()) for (const r of e.runners) r.step(t, dt);
+    for (const e of this.entries.values()) for (const r of e.runners) if (!r.late) r.step(t, dt);
     // 4. Time-driven content (+ pointer-aware generators: character eyes, waveGrid ripple).
     for (const e of this.entries.values()) {
       const holder = e.object.userData.setPointer ? e.object : e.object.children[0];
@@ -547,6 +551,18 @@ export class World {
     // 5. Camera.
     const lookAtId = this.def.camera?.lookAt;
     this.rig.update(t, dt, { pointer: input.pointer, scroll: input.scroll, followTarget, lookAt: lookAtId ? this.objectPosition(lookAtId) : null });
+    // 6. Camera-facing behaviours (billboard, lookAt) read this frame's camera pose.
+    this.camera.updateMatrixWorld();
+    for (const e of this.entries.values()) for (const r of e.runners) if (r.late) r.step(t, dt);
+  }
+
+  // True when some motion state depends on how time was split into frames
+  // (see STATEFUL_BEHAVIOURS; camera follow smoothing): deterministic seeks
+  // then advance on a fixed time grid.
+  hasStatefulMotion(): boolean {
+    if (this.def.camera?.controls === "follow" && this.def.camera.follow) return true;
+    for (const e of this.entries.values()) for (const r of e.runners) if (r.stateful) return true;
+    return false;
   }
 
   private pointerRay = new THREE.Raycaster();

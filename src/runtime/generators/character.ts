@@ -7,6 +7,7 @@
 // head / eyes toward the pointer when eyesFollowPointer is true.
 
 import * as THREE from "three";
+import { createToonMaterial } from "../build/toon";
 import type { GeneratorImpl } from "../registry";
 import { generatorParams } from "./params";
 import { built } from "./geom";
@@ -70,7 +71,7 @@ export const character: GeneratorImpl = (raw, ctx) => {
   const metal = style === "robot";
   const solid: THREE.Material =
     shading === "toon"
-      ? new THREE.MeshToonMaterial({ vertexColors: true })
+      ? createToonMaterial({ vertexColors: true })
       : new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: shading === "lowpoly", roughness: metal ? 0.38 : shading === "lowpoly" ? 0.8 : 0.58, metalness: metal ? 0.25 : 0 });
   const glow = new THREE.MeshBasicMaterial({ vertexColors: true });
   const glass = new THREE.MeshPhysicalMaterial({ vertexColors: true, transparent: true, opacity: 0.22, roughness: 0.04, metalness: 0, clearcoat: 1, depthWrite: false, side: THREE.FrontSide });

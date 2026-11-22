@@ -157,6 +157,10 @@ export function createOutline(d: PostFxDef, rt: FxRuntime): EffectHandle {
 //    and the scene is slightly dimmed where the source is blocked along the
 //    view ray, so shadow shafts read over bright fog / sky too.
 
+// Interleaved gradient noise (Jimenez 2014): per-pixel [0,1) dither with
+// blue-noise-like spectrum; a pure function of the pixel (deterministic).
+export const IGN_GLSL = `float a3dIgn(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }`;
+
 class GodraysPass extends Pass {
   private mask: THREE.WebGLRenderTarget;
   private rays: THREE.WebGLRenderTarget;
@@ -203,9 +207,14 @@ class GodraysPass extends Pass {
     this.raysMat = fsMaterial(
       `uniform sampler2D tDiffuse; uniform vec2 uSrc; uniform float uLength; uniform float uDecay; uniform float uSize; uniform float uAspect;
       varying vec2 vUv;
+      ${IGN_GLSL}
       void main() {
         vec2 delta = (vUv - uSrc) * uLength / float(TAPS);
-        vec2 uv = vUv;
+        // Per-pixel start offset (interleaved gradient noise: deterministic,
+        // blue-noise-like). Without it the TAPS discrete copies of every
+        // occluder edge line up into visible streaks / ghost silhouettes
+        // (mountain ridges under height fog); the fine pass averages it out.
+        vec2 uv = vUv - delta * a3dIgn(gl_FragCoord.xy);
         vec4 acc = vec4(0.0); float tot = 0.0, expect = 0.0;
         // decay is per 1/48 of the ray (the classic 0.96 ≈ e^-2 over the full length).
         float stepDecay = pow(uDecay, 48.0 / float(TAPS));
@@ -231,26 +240,39 @@ class GodraysPass extends Pass {
     this.fineMat = fsMaterial(
       `uniform sampler2D tDiffuse; uniform vec2 uSrc; uniform float uLength;
       varying vec2 vUv;
+      ${IGN_GLSL}
       void main() {
         vec2 delta = (vUv - uSrc) * uLength / float(COARSE * 8);
         vec4 acc = vec4(0.0);
-        for (int i = 0; i < 8; i++) acc += texture2D(tDiffuse, vUv - delta * float(i));
+        // Jittered too (other noise phase), plus a half-pixel cross blur
+        // across the ray: the coarse pass's dither dissolves instead of
+        // showing as grain.
+        float j = a3dIgn(gl_FragCoord.xy + vec2(17.0, 31.0));
+        vec2 side = vec2(-delta.y, delta.x) * 0.5;
+        for (int i = 0; i < 8; i++) {
+          vec2 p = vUv - delta * (float(i) + j);
+          acc += texture2D(tDiffuse, p + side * (mod(float(i), 2.0) - 0.5));
+        }
         gl_FragColor = acc / 8.0;
       }`,
       { tDiffuse: { value: null }, uSrc: src, uLength: length },
       { COARSE: Math.max(8, Math.round(rt.quality.rays / 2)) },
     );
     this.compMat = fsMaterial(
-      `uniform sampler2D tDiffuse; uniform sampler2D tRays; uniform float uIntensity; uniform float uShadow;
+      `uniform sampler2D tDiffuse; uniform sampler2D tRays; uniform sampler2D tNormal; uniform float uIntensity; uniform float uShadow;
       varying vec2 vUv;
       void main() {
         vec4 c = texture2D(tDiffuse, vUv);
         vec4 r = texture2D(tRays, vUv);
         // r.a = how much of the ray towards the source is open sky (1) vs blocked (0).
-        float shade = mix(1.0, 0.55 + 0.45 * r.a, uShadow);
+        // Shadow shafts darken the sky / haze; on solid surfaces (already lit
+        // and shadowed by the real lights) only a third of it, or terrain
+        // under height fog gets dark streaks from every ridge between it and the sun.
+        float sky = 1.0 - step(0.25, texture2D(tNormal, vUv).a);
+        float shade = mix(1.0, 0.55 + 0.45 * r.a, uShadow * mix(0.3, 1.0, sky));
         gl_FragColor = vec4(c.rgb * shade + r.rgb * 1.8 * uIntensity, c.a);
       }`,
-      { tDiffuse: { value: null }, tRays: { value: this.rays2.texture }, uIntensity: { value: 0.6 }, uShadow: { value: 0 } },
+      { tDiffuse: { value: null }, tRays: { value: this.rays2.texture }, tNormal: { value: rt.gbuffer().normalTexture }, uIntensity: { value: 0.6 }, uShadow: { value: 0 } },
     );
     this.raysMat.uniforms.uDecay.value = Math.min(1, Math.max(0.5, num(d.decay, 0.96)));
     length.value = Math.min(1, Math.max(0, num(d.length, 0.85)));

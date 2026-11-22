@@ -34,5 +34,9 @@ describe("studio timeline clock", () => {
     expect(editingScene(s).timeline).not.toHaveProperty("autoplay");
     const plain = scene({});
     expect(editingScene(plain)).toBe(plain);
+    // Game scripts never run while editing (interact mode runs them).
+    const game = { ...plain, scripts: ["scripts/game.js"] };
+    expect(editingScene(game)).not.toHaveProperty("scripts");
+    expect(game.scripts).toEqual(["scripts/game.js"]);
   });
 });

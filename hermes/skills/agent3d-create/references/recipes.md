@@ -1,29 +1,298 @@
-# Recipes: complete scenes per kind
+# Recipes: showcase scenes
 
-Each scene below passed `scene validate`, `check` (no errors, no warnings) and was rendered and looked at. Use one as a starting point: save it as `scene.json` in a project made with `new`, or apply it:
+Each scene below passed `scene validate` (no errors, no warnings) and `check --render`, and was rendered and looked at (the README images in `docs/images/recipe-*.jpg` come from them). Start from the closest one, then change the brand parts (text, colours, model, URLs) with `scene patch` and render again:
 
 ```bash
 python3 <skill dir>/scripts/agent3d.py new my-scene --target hero --json
-python3 <skill dir>/scripts/agent3d.py scene apply --project my-scene --file recipe.json --json
+python3 <skill dir>/scripts/agent3d.py scene validate --project my-scene --file recipe.json --json
 python3 <skill dir>/scripts/agent3d.py scene apply --project my-scene --file recipe.json --yes --json
-python3 <skill dir>/scripts/agent3d.py render --project my-scene --sheet --json
+python3 <skill dir>/scripts/agent3d.py check --render --project my-scene --json
+python3 <skill dir>/scripts/agent3d.py render --project my-scene --sheet --count 4 --json
 ```
 
-Then change the brand parts (text, colours, ids you need) with `scene patch`, and render again.
+Exact parameters of every rig, look, material, shader, generator and behaviour: `python3 <skill dir>/scripts/agent3d.py catalog <section> [id] --json`. Premium starting points per target kind: [art-direction.md](art-direction.md#premium-defaults).
 
-## Banner (4:1): brand title with props
+## Product shot (1:1): softbox packshot
 
-A warm bakery banner: serif title centred, two pastries at the far edges, flour dust, a slow sway of the title, vignette. The title rises in during the first second, so `posterTime` is 2.
-
-What makes it work: dark-to-mid gradient in the brand tones, a cream title that contrasts with it, props at abs(x) 8.2 (outside the title), calm float speeds (0.25–0.3), an 8 s loop that ends where it starts.
+A library bottle on a ceramic pedestal, soft studio light, blurred contact shadow, slow turntable that the visitor can drag.
 
 ```json
 {
   "version": 1,
-  "id": "bakery-banner",
-  "title": "Golden Crust Bakery",
-  "ariaLabel": "Golden Crust Bakery: a warm 3D title with floating pastries",
-  "target": {"kind": "banner", "aspect": "4:1", "posterTime": 2, "reducedMotion": "static"},
+  "id": "bottle-packshot",
+  "title": "Water bottle packshot",
+  "ariaLabel": "A reusable water bottle turning slowly on a ceramic pedestal in a soft studio; drag to look around",
+  "target": {"kind": "square", "aspect": "1:1", "reducedMotion": "static", "posterTime": 1.5},
+  "camera": {
+    "type": "perspective",
+    "fov": 28,
+    "position": [0, 1.2, 6.3],
+    "target": [0, 0.95, 0],
+    "controls": "orbit",
+    "orbitZoom": false,
+    "autoRotate": 10,
+    "orbitLimits": {"minPolar": 60, "maxPolar": 92}
+  },
+  "environment": {
+    "background": {"radial": ["#f3e4d4", "#c9ad94"], "center": [0.5, 0.62], "radius": 0.95, "grain": 0.02},
+    "lighting": "studio",
+    "rig": {"preset": "softbox", "intensity": 0.85, "rotation": -25},
+    "contactShadows": {"opacity": 0.6, "blur": 2.5},
+    "lightingIntensity": 0.8
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "pedestal",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 1.1, "radiusBottom": 1.1, "height": 0.3, "segments": 96},
+      "position": [0, 0.15, 0],
+      "material": {"preset": "ceramic", "color": "#b8876a", "roughness": 0.35}
+    },
+    {
+      "id": "bottle",
+      "kind": "model",
+      "src": "library:models/products/water-bottle.glb",
+      "fit": 1.75,
+      "position": [0, 0.3, 0],
+      "castShadow": true,
+      "behaviours": [{"type": "hoverLift", "height": 0.12, "tilt": 5}]
+    }
+  ],
+  "postfx": [{"type": "look", "preset": "product"}]
+}
+```
+
+- The `softbox` rig gives long soft highlights; `"lighting": "studio"` adds reflections for zero bytes (`{ "hdri": "library:hdri/softbox.hdr" }` looks a bit richer but adds ~1.5 MB: over the 600 KB square budget).
+- `contactShadows` grounds the object without a shadow-casting light; `look: product` adds AO, a crisp grade and supersampled stills (AO is dropped on the `low` tier).
+- Knobs: `fit` (size), the pedestal `color` (keep it a tone of the background, not white: white ceramic blows out under a softbox), `rig.rotation` to move the highlight.
+- Your own model: `assets add ./bottle.glb --license proprietary`, then `"src": "assets/models/bottle.glb"`; keep `fit`.
+
+## Golden-hour landscape (21:9): physical sky, height fog, generators
+
+Low-poly mountains with a pine forest, warm side light from a low physical sun, haze in the valleys, drifting clouds, a slow camera sway.
+
+```json
+{
+  "version": 1,
+  "id": "golden-valley",
+  "title": "Golden-hour valley",
+  "ariaLabel": "Low-poly mountains and a pine forest at golden hour, with haze in the valley",
+  "seed": 8,
+  "target": {"kind": "hero", "aspect": "21:9", "reducedMotion": "slow", "posterTime": 0},
+  "camera": {
+    "type": "perspective",
+    "fov": 38,
+    "position": [0, 16, 66],
+    "target": [0, 10, 0],
+    "controls": "parallax",
+    "parallax": {"strength": 1, "smoothing": 0.95}
+  },
+  "environment": {
+    "background": {"sky": {"preset": "golden-hour", "sun": {"elevation": 8, "azimuth": 70}}},
+    "fog": {"density": 0.018, "height": 3, "falloff": 0.35}
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "valley",
+      "kind": "generator",
+      "generator": "terrain",
+      "seed": 14,
+      "receiveShadow": true,
+      "params": {
+        "size": 110,
+        "resolution": 120,
+        "height": 24,
+        "shape": "mountains",
+        "lowpoly": true,
+        "palette": ["#a88c5a", "#6f8f3c", "#46703a", "#7a6a6e", "#fdf7f2"],
+        "waterLevel": null,
+        "waterColor": "#3a8fb0",
+        "snowLine": 0.6
+      }
+    },
+    {
+      "id": "pines",
+      "kind": "generator",
+      "generator": "trees",
+      "seed": 3,
+      "castShadow": true,
+      "params": {
+        "count": 200,
+        "area": [90, 0, 60],
+        "style": "pine",
+        "minScale": 0.8,
+        "maxScale": 1.6,
+        "leafColors": ["#26492c", "#2f5a33", "#3c6b3a"],
+        "onTerrain": true,
+        "sway": true
+      }
+    },
+    {
+      "id": "clouds",
+      "kind": "generator",
+      "generator": "clouds",
+      "seed": 5,
+      "position": [0, 0, -20],
+      "params": {
+        "count": 9,
+        "area": [150, 6, 30],
+        "height": 28,
+        "size": 2.2,
+        "color": "#ffe6cc",
+        "shadowColor": "#c9a9a6",
+        "speed": 0.15
+      }
+    },
+    {
+      "id": "birds",
+      "kind": "particles",
+      "preset": "fireflies",
+      "count": 50,
+      "area": [30, 4, 10],
+      "position": [0, 8, 40],
+      "color": "#ffd27a",
+      "size": 0.12
+    }
+  ],
+  "timeline": {
+    "duration": 14,
+    "loop": true,
+    "tracks": [
+      {
+        "target": "camera.position",
+        "keys": [[0, [-4, 16, 66]], [7, [4, 17, 64]], [14, [-4, 16, 66]]],
+        "ease": "inOutSine"
+      }
+    ]
+  },
+  "postfx": [{"type": "look", "preset": "cinematic", "intensity": 0.8}]
+}
+```
+
+- The `golden-hour` sky preset adds its own sun light (no `lights` needed) and lights the scene through `lighting: "sky"`. Keep the sun **out of frame** (azimuth 50–130 from a camera on +Z): a low sun in frame with fog blows the whole image out.
+- Height fog (`height`, `falloff`) fills the valleys while peaks stay crisp; density 0.01–0.03 for a hero, more reads as smog.
+- Scatter generators (`trees`, `rocks`, `grass`, `flowers`) with `onTerrain` must share the terrain's position: keep both at the origin and move the camera instead.
+- Knobs: `sun.elevation` (3–12 for golden hour), terrain `shape` / `height` / `palette`, tree `count`.
+
+## Neon title (16:9): rect panel lights, volumetric spot, bloom
+
+Two glowing light strips framing a neon headline on a glossy floor, a haze beam from above.
+
+```json
+{
+  "version": 1,
+  "id": "neon-club",
+  "title": "Night Shift neon",
+  "ariaLabel": "The words NIGHT SHIFT in glowing neon between two light strips on a wet reflective floor",
+  "target": {"kind": "hero", "aspect": "16:9", "reducedMotion": "static", "posterTime": 2},
+  "camera": {
+    "type": "perspective",
+    "fov": 35,
+    "position": [0, 1.2, 10],
+    "target": [0, 1, 0],
+    "controls": "parallax",
+    "parallax": {"strength": 0.35, "smoothing": 0.92}
+  },
+  "environment": {
+    "background": "#05040d",
+    "lighting": "night",
+    "lightingIntensity": 0.4,
+    "fog": {"color": "#0b0820", "density": 0.04},
+    "ground": {"y": 0, "size": 40, "color": "#0a0912", "roughness": 0.25}
+  },
+  "lights": [
+    {
+      "id": "stripL",
+      "type": "rect",
+      "position": [-4.6, 1.7, -0.5],
+      "width": 0.12,
+      "height": 3.2,
+      "color": "#ff2fd6",
+      "intensity": 18,
+      "panel": true,
+      "target": [0, 1.6, 4]
+    },
+    {
+      "id": "stripR",
+      "type": "rect",
+      "position": [4.6, 1.7, -0.5],
+      "width": 0.12,
+      "height": 3.2,
+      "color": "#3ee8ff",
+      "intensity": 18,
+      "panel": true,
+      "target": [0, 1.6, 4]
+    },
+    {
+      "id": "beam",
+      "type": "spot",
+      "position": [0, 6, -1.5],
+      "target": [0, 0, 0],
+      "angle": 22,
+      "penumbra": 0.7,
+      "color": "#b9a8ff",
+      "intensity": 60,
+      "volumetric": {"intensity": 0.8}
+    }
+  ],
+  "objects": [
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "NIGHT SHIFT",
+      "font": "bebas-neue",
+      "size": 1.1,
+      "depth": 0.12,
+      "letterSpacing": 0.08,
+      "position": [0, 1.35, 0],
+      "material": {"preset": "neon", "color": "#ff4fdc", "emissive": "#ff2fd6", "emissiveIntensity": 2.6},
+      "behaviours": [{"type": "flicker", "amount": 0.12, "speed": 0.6}]
+    },
+    {
+      "id": "tagline",
+      "kind": "text",
+      "text": "OPEN TILL DAWN",
+      "font": "space-grotesk-bold",
+      "size": 0.26,
+      "depth": 0,
+      "letterSpacing": 0.25,
+      "position": [0, 0.35, 0.2],
+      "material": {"preset": "neon", "color": "#9ff3ff", "emissive": "#3ee8ff", "emissiveIntensity": 1.6}
+    },
+    {
+      "id": "haze",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 120,
+      "area": [10, 4, 4],
+      "position": [0, 2, 0],
+      "size": 0.03,
+      "color": "#c9b8ff",
+      "opacity": 0.4
+    }
+  ],
+  "postfx": [{"type": "look", "preset": "neon", "intensity": 0.7}]
+}
+```
+
+- `rect` lights with `"panel": true` are both the light and the visible strip; aim them with `target` (they face their target, so a target at the origin tilts them).
+- The `neon` look is strong: emissive text above ~3 blows out into a pink fog, below ~1.5 has no halo. 2–2.6 with `intensity` 0.7 is the sweet spot; re-render after every change.
+- A dark glossy `ground` (roughness 0.2–0.3) doubles every light as a reflection; exponential fog makes the volumetric cone read.
+- Knobs: strip colours, `flicker` amount (keep it subtle), `beam.volumetric.intensity`.
+
+## Mesh gradient banner (4:1)
+
+A soft drifting gradient with glossy shapes on the sides and an outlined headline.
+
+```json
+{
+  "version": 1,
+  "id": "gradient-banner",
+  "title": "Mesh gradient banner",
+  "ariaLabel": "Soft drifting colour gradient with glossy floating shapes around the words Spring drop",
+  "target": {"kind": "banner", "aspect": "4:1", "reducedMotion": "static"},
   "camera": {
     "type": "perspective",
     "fov": 30,
@@ -33,246 +302,674 @@ What makes it work: dark-to-mid gradient in the brand tones, a cream title that 
     "parallax": {"strength": 0.3, "smoothing": 0.92}
   },
   "environment": {
-    "background": {"gradient": ["#2a1306", "#5c2c0c", "#a8561b"], "angle": 10},
+    "background": {
+      "meshGradient": ["#ff9a8b", "#ff6a88", "#a18cd1", "#fbc2eb", "#8fd3f4"],
+      "speed": 0.12,
+      "scale": 1.1,
+      "seed": 4,
+      "grain": 0.04
+    },
     "lighting": "studio",
-    "lightingIntensity": 0.7
+    "lightingIntensity": 0.6
   },
   "lights": [
-    {"id": "fill", "type": "hemisphere", "skyColor": "#fff1dc", "groundColor": "#3a1d0b", "intensity": 0.8},
-    {"id": "key", "type": "directional", "position": [4, 6, 6], "intensity": 2.4, "color": "#fff3e0"},
-    {
-      "id": "rim",
-      "type": "point",
-      "position": [-5, 2, -3],
-      "color": "#ffb366",
-      "intensity": 30,
-      "distance": 20
-    }
+    {"id": "key", "type": "directional", "position": [3, 5, 6], "intensity": 1.2},
+    {"id": "rim", "type": "directional", "position": [-4, 2, -4], "color": "#ffd6f0", "intensity": 1.2}
   ],
   "objects": [
     {
       "id": "title",
       "kind": "text",
-      "text": "Golden Crust",
-      "font": "serif-bold",
-      "size": 1.1,
-      "depth": 0.3,
-      "bevel": 0.03,
-      "material": {"preset": "plastic", "color": "#fff4e0", "roughness": 0.3},
-      "behaviours": [
-        {"type": "appear", "effect": "rise", "duration": 1},
-        {"type": "float", "amplitude": 0.06, "speed": 0.3}
-      ]
-    },
-    {
-      "id": "donut",
-      "kind": "mesh",
-      "geometry": {"type": "torus", "radius": 0.7, "tube": 0.32},
-      "material": {"preset": "clay", "color": "#d9944a"},
-      "position": [-8.2, 0.3, -1],
-      "rotation": [60, 20, 0],
-      "behaviours": [
-        {"type": "float", "amplitude": 0.2, "speed": 0.25},
-        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 15}
-      ]
-    },
-    {
-      "id": "bun",
-      "kind": "mesh",
-      "geometry": {"type": "sphere", "radius": 0.75},
-      "material": {"preset": "clay", "color": "#c97b3a"},
-      "position": [8.2, -0.2, -1],
-      "scale": [1, 0.6, 1],
-      "behaviours": [{"type": "float", "amplitude": 0.2, "speed": 0.25, "phase": 0.5}, {"type": "rotate", "speed": 12}]
-    },
-    {
-      "id": "flour",
-      "kind": "particles",
-      "preset": "dust",
-      "count": 90,
-      "area": [22, 6, 4],
-      "size": 0.05,
-      "color": "#fff4e0",
-      "opacity": 0.5
-    }
-  ],
-  "postfx": [{"type": "vignette", "offset": 1, "darkness": 0.9}],
-  "timeline": {
-    "duration": 8,
-    "loop": true,
-    "tracks": [{"target": "title.rotation.y", "keys": [[0, -5], [4, 5], [8, -5]], "ease": "inOutSine"}]
-  }
-}
-```
-
-Variations: swap the props for the product (library models, `fit: 1.5`); `"font": "display"` for playful brands; a `neon` title on a dark background with bloom for nightlife (template `banner-neon-title`).
-
-## Hero (16:9): abstract shape with room for HTML text
-
-An iridescent morphing blob on the right third, a thin neon ring, faint stars, parallax on the pointer. The left half stays empty for the page's headline and buttons.
-
-What makes it work: radial background (focus), two coloured point lights on opposite sides for iridescent highlights, low `lightingIntensity` (the blob is very reflective), bloom with a high threshold so only the ring glows.
-
-```json
-{
-  "version": 1,
-  "id": "blob-hero",
-  "title": "Iridescent blob hero",
-  "ariaLabel": "A slowly morphing iridescent shape",
-  "target": {"kind": "hero", "aspect": "16:9", "reducedMotion": "static"},
-  "camera": {
-    "type": "perspective",
-    "fov": 35,
-    "position": [0, 0, 9],
-    "target": [0, 0, 0],
-    "controls": "parallax",
-    "parallax": {"strength": 0.5, "smoothing": 0.9}
-  },
-  "environment": {"background": {"radial": ["#2b2d6e", "#0d0e24"]}, "lighting": "studio", "lightingIntensity": 0.35},
-  "lights": [
-    {"id": "key", "type": "directional", "position": [3, 5, 5], "intensity": 0.8},
-    {
-      "id": "pink",
-      "type": "point",
-      "position": [-1, 2, 3],
-      "color": "#ff4fd8",
-      "intensity": 12,
-      "distance": 12
-    },
-    {
-      "id": "cyan",
-      "type": "point",
-      "position": [5, -2, 2],
-      "color": "#3ee8ff",
-      "intensity": 12,
-      "distance": 12
-    }
-  ],
-  "objects": [
-    {
-      "id": "blob",
-      "kind": "generator",
-      "generator": "blob",
-      "position": [2.4, 0, 0],
-      "params": {"radius": 1.4, "noise": 0.25, "speed": 0.3, "detail": 96},
-      "behaviours": [{"type": "followPointer", "strength": 0.3, "mode": "rotate"}]
+      "text": "Spring drop",
+      "font": "montserrat-extrabold",
+      "size": 1.25,
+      "depth": 0.25,
+      "letterSpacing": -0.02,
+      "material": {"type": "physical", "color": "#fff4fa", "roughness": 0.35, "clearcoat": 0.6},
+      "behaviours": [{"type": "float", "amplitude": 0.05, "speed": 0.3}],
+      "outline": {"width": 0.07, "color": "#4a1a6e", "depth": 0.12}
     },
     {
       "id": "ring",
       "kind": "mesh",
-      "geometry": {"type": "torus", "radius": 2, "tube": 0.02, "tubularSegments": 128},
-      "material": {"preset": "neon", "color": "#9d8cff", "emissive": "#9d8cff", "emissiveIntensity": 2},
-      "position": [2.4, 0, 0],
-      "rotation": [75, 0, 0],
-      "behaviours": [{"type": "rotate", "axis": [0, 0, 1], "speed": 10}]
+      "geometry": {"type": "torus", "radius": 1, "tube": 0.36, "tubularSegments": 96},
+      "material": {"preset": "chromeGradient", "gradient": ["#7f5cff", "#ff5ca8", "#ffd36e"]},
+      "position": [-8.8, 0.3, -0.5],
+      "rotation": [55, 25, 0],
+      "behaviours": [
+        {"type": "float", "amplitude": 0.18, "speed": 0.25},
+        {"type": "rotate", "axis": [0.3, 1, 0.2], "speed": 14}
+      ]
     },
     {
-      "id": "sparkles",
-      "kind": "particles",
-      "preset": "stars",
-      "count": 150,
-      "area": [16, 9, 4],
-      "size": 0.04,
-      "color": "#cfd6ff"
+      "id": "bubble",
+      "kind": "mesh",
+      "geometry": {"type": "sphere", "radius": 1.05, "segments": 64, "heightSegments": 32},
+      "material": {"preset": "soapBubble", "color": "#ffe9f6"},
+      "position": [8.8, -0.2, -0.5],
+      "behaviours": [{"type": "float", "amplitude": 0.2, "speed": 0.25, "phase": 0.5}]
+    },
+    {
+      "id": "halo",
+      "kind": "mesh",
+      "geometry": {"type": "torus", "radius": 0.35, "tube": 0.1, "tubularSegments": 64},
+      "material": {"preset": "mattePastel", "color": "#fff3c4"},
+      "position": [6.6, 1.7, -1.5],
+      "rotation": [70, 0, 20],
+      "behaviours": [
+        {"type": "float", "amplitude": 0.15, "speed": 0.3, "phase": 0.2},
+        {"type": "rotate", "axis": [0, 1, 0], "speed": 10}
+      ]
+    },
+    {
+      "id": "dot",
+      "kind": "mesh",
+      "geometry": {"type": "sphere", "radius": 0.32},
+      "material": {"preset": "chromeGradient", "gradient": ["#8fd3f4", "#a18cd1"]},
+      "position": [-6.4, -1.7, -1],
+      "behaviours": [{"type": "float", "amplitude": 0.15, "speed": 0.35, "phase": 0.7}]
     }
   ],
-  "postfx": [{"type": "bloom", "strength": 0.45, "radius": 0.5, "threshold": 0.95}]
+  "postfx": [{"type": "look", "preset": "clean"}]
 }
 ```
 
-To put the shape on the left instead: x = -2.4 for the blob and the ring. Transparent over the page's own background: `"target": { …, "transparent": true }`.
+- `meshGradient` gives the Stripe-like background for zero bytes; `grain` hides banding.
+- Light text on a light gradient needs an `outline` (or a dark text colour) to read; avoid bloom here: white text glows into the background.
+- Props at abs(x) 7.6–8.8 stay outside the title (visible width ≈ 25.8 at z 0 with this camera).
+- Knobs: the 5 gradient colours, `speed` (0 = still), `chromeGradient` ramps, `soapBubble` / `mattePastel` presets.
 
-## Landscape (21:9): low-poly island
+## Letter-reveal headline (16:9)
 
-A procedural island (terrain shape `island`) with mixed trees, an opaque sea, drifting clouds, a warm sky with sun and fog, and a very slow camera rotation.
-
-What makes it work: the terrain's own water (`waterLevel` 0.4, same colour as the sea) plus a larger opaque `water` generator just above it, so the horizon has no seam; fog colour = horizon colour; `reducedMotion: "slow"` keeps a gentle motion for people who prefer less.
+The title rises in letter by letter, a wave runs through it, then the last word turns gold.
 
 ```json
 {
   "version": 1,
-  "id": "lowpoly-island",
-  "title": "Low-poly island",
-  "ariaLabel": "A small low-poly island with trees, surrounded by sea, under a warm sky",
-  "target": {"kind": "hero", "aspect": "21:9", "reducedMotion": "slow"},
+  "id": "launch-reveal",
+  "title": "Launch day headline",
+  "ariaLabel": "The headline LAUNCH DAY rises in letter by letter, then a wave runs through it and DAY turns gold",
+  "target": {"kind": "hero", "aspect": "16:9", "reducedMotion": "static", "posterTime": 3.2},
   "camera": {
     "type": "perspective",
-    "fov": 40,
-    "position": [0, 11, 30],
-    "target": [0, 1.5, 0],
-    "controls": "none",
-    "autoRotate": 4
+    "fov": 35,
+    "position": [0, 0.3, 10],
+    "target": [0, 0.2, 0],
+    "controls": "parallax",
+    "parallax": {"strength": 0.3, "smoothing": 0.92}
   },
   "environment": {
-    "background": {
-      "sky": {
-        "top": "#3a7bd5",
-        "horizon": "#ffd8a8",
-        "bottom": "#ffd8a8",
-        "sun": {"direction": [-0.5, 0.25, -1], "color": "#fff1c1", "size": 1}
-      }
-    },
-    "lighting": "sunset",
-    "lightingIntensity": 0.6,
-    "fog": {"color": "#ffd8a8", "near": 35, "far": 90}
+    "background": {"radial": ["#2a2470", "#0b0a24"], "center": [0.5, 0.55], "radius": 0.9, "grain": 0.03},
+    "rig": {"preset": "studio-3point", "intensity": 1},
+    "lighting": "studio",
+    "lightingIntensity": 0.5
   },
-  "lights": [
-    {"id": "fill", "type": "hemisphere", "skyColor": "#cfe8ff", "groundColor": "#6b5a3e", "intensity": 0.9},
-    {
-      "id": "sun",
-      "type": "directional",
-      "position": [-10, 14, 8],
-      "color": "#ffe0b0",
-      "intensity": 2.4,
-      "castShadow": true
-    }
-  ],
+  "lights": [],
   "objects": [
     {
-      "id": "island",
-      "kind": "generator",
-      "generator": "terrain",
-      "seed": 4,
-      "params": {
-        "size": 28,
-        "resolution": 72,
-        "height": 5,
-        "shape": "island",
-        "lowpoly": true,
-        "waterLevel": 0.4,
-        "palette": ["#f2d49b", "#7cb35b", "#4e8a3a", "#8a7560", "#ffffff"],
-        "waterColor": "#1d6fa3"
-      }
+      "id": "title",
+      "kind": "text",
+      "text": "LAUNCH DAY",
+      "font": "inter-black",
+      "size": 0.85,
+      "depth": 0.3,
+      "letterSpacing": 0.02,
+      "position": [0, 0.25, 0],
+      "outline": {"width": 0.05, "color": "#120d2b"},
+      "material": {"type": "physical", "color": "#f4f1ff", "roughness": 0.3, "clearcoat": 1},
+      "reveal": {"effect": "rise", "stagger": 0.06, "duration": 0.8, "delay": 0.2, "order": "forward"}
     },
     {
-      "id": "sea",
-      "kind": "generator",
-      "generator": "water",
-      "position": [0, 0.45, 0],
-      "params": {"size": 140, "color": "#1d6fa3", "shallowColor": "#4fc3d9", "waveHeight": 0.1, "opacity": 1}
+      "id": "sub",
+      "kind": "text",
+      "text": "March 14 - live at 9:00",
+      "font": "sans",
+      "size": 0.22,
+      "depth": 0,
+      "position": [0, -0.75, 0],
+      "material": {"type": "basic", "color": "#b9b3ff"},
+      "behaviours": [{"type": "appear", "effect": "fade", "duration": 0.8, "delay": 1.3}]
     },
     {
-      "id": "forest",
-      "kind": "generator",
-      "generator": "trees",
-      "seed": 9,
-      "params": {"count": 40, "area": [14, 0, 14], "style": "mixed", "onTerrain": true}
-    },
-    {
-      "id": "sky-clouds",
-      "kind": "generator",
-      "generator": "clouds",
-      "params": {"count": 7, "area": [50, 4, 30], "height": 11, "speed": 0.4}
+      "id": "sparks",
+      "kind": "particles",
+      "preset": "stars",
+      "count": 120,
+      "area": [16, 9, 4],
+      "position": [0, 0, -3],
+      "size": 0.04,
+      "color": "#cfd6ff"
     }
-  ]
+  ],
+  "timeline": {
+    "duration": 4,
+    "loop": false,
+    "tracks": [
+      {
+        "target": "children:title.position.y",
+        "keys": [[1.8, "+=0"], [2.05, "+=0.3", "outCubic"], [2.5, "+=0", "outBounce"]],
+        "stagger": 0.05
+      },
+      {
+        "target": "title/6,title/7,title/8.material.color",
+        "keys": [[2.4, "#f4f1ff"], [2.9, "#ffb02e", "outCubic"]],
+        "stagger": 0.1
+      }
+    ]
+  },
+  "postfx": [{"type": "look", "preset": "cinematic", "intensity": 0.6}]
 }
 ```
 
-Other shapes: `mountains`, `dunes` (palette of sands, no water: `"waterLevel": null`), `canyon`. Add `grass` and `flowers` generators (`onTerrain: true`) for a close-up meadow; `city` for skylines.
+- `reveal` (implies `splitLetters`) makes each glyph an object `title/<n>` (non-space characters, from 0); a timeline can then target `children:title` (all letters) or a list like `title/6,title/7,title/8` with `stagger`.
+- Relative keys (`"+=0.3"`) move letters from where the reveal left them; `outBounce` on the settle key gives the wave its snap.
+- Pick a `posterTime` after the last animation (here 3.2) so the poster and reduced-motion still show the final state.
+- Knobs: `reveal.effect` (rise, fade, scale, spin, drop), `order` (`center`, `random`), the accent colour and which letters get it.
 
-## Character (card 1:1): waving mascot
+## Scroll story (16:9): camera shots driven by scroll
 
-The built-in procedural character (styles humanoid, robot, blob, cat, bird) waving on a clay pedestal, eyes following the pointer, slight grow on hover, soft shadows on a shadow-only ground.
+A marble bust on a plinth; scrolling the page orbits the camera, pushes in on the face and cranes up.
+
+```json
+{
+  "version": 1,
+  "id": "museum-scroll",
+  "title": "Marble bust scroll story",
+  "ariaLabel": "A classical marble bust on a plinth; scrolling the page orbits the camera around it, pushes in on the face and cranes up",
+  "target": {"kind": "hero", "aspect": "16:9", "reducedMotion": "static", "posterTime": 0},
+  "camera": {
+    "type": "perspective",
+    "fov": 32,
+    "position": [1.8, 1.75, 4.6],
+    "target": [0, 1.45, 0],
+    "shots": [
+      {"type": "orbit", "at": 0, "duration": 3, "angle": -50, "elevation": 4},
+      {"type": "pushIn", "at": 3, "duration": 3, "distance": 1.5},
+      {"type": "crane", "at": 6.5, "duration": 3.5, "height": 0.9, "distance": -1.2}
+    ]
+  },
+  "environment": {
+    "background": {"radial": ["#3a3430", "#121012"], "center": [0.5, 0.6], "radius": 0.85, "grain": 0.03},
+    "lighting": "studio",
+    "lightingIntensity": 0.35,
+    "rig": {"preset": "dramatic", "intensity": 1.3},
+    "contactShadows": {"opacity": 0.75, "blur": 2.5, "y": 0}
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "plinth",
+      "kind": "mesh",
+      "geometry": {"type": "box", "width": 1, "height": 1, "depth": 1},
+      "position": [0, 0.5, 0],
+      "material": {"preset": "marble", "color": "#3a3632"},
+      "receiveShadow": true
+    },
+    {
+      "id": "bust",
+      "kind": "model",
+      "src": "library:models/props/marble-bust.glb",
+      "fit": 1.25,
+      "position": [0, 1, 0],
+      "castShadow": true
+    },
+    {
+      "id": "dust",
+      "kind": "particles",
+      "preset": "dust",
+      "count": 60,
+      "area": [5, 3, 3],
+      "position": [0, 1.8, 0],
+      "size": 0.02,
+      "color": "#ffe8cc",
+      "opacity": 0.35
+    }
+  ],
+  "timeline": {
+    "duration": 10,
+    "trigger": "scroll",
+    "loop": false,
+    "scroll": {"start": "top top", "end": "bottom top", "smoothing": 0.85},
+    "tracks": []
+  },
+  "postfx": [{"type": "look", "preset": "cinematic", "intensity": 0.8}]
+}
+```
+
+- With `trigger: "scroll"`, the timeline time is the scroll progress, and `camera.shots` run on that clock (no tracks needed). Shots chain: each starts from the pose the previous one left.
+- In renders, the progress is `t / duration`: `render --count 4` shows the story at 0, 33, 67 and 100 % of the scroll.
+- `contactShadows.y` pins the shadow plane: without it the plane fits all objects, particles included, and may float below the subject.
+- Knobs: shot `angle` / `distance` / `height`, `scroll.start` / `end` (ScrollTrigger-like), `smoothing`.
+
+## Click-to-shop shelf (16:9): hover + openUrl interactions
+
+Three pastries on stands; hovering one grows it, clicking opens its product page.
+
+```json
+{
+  "version": 1,
+  "id": "bakery-shelf",
+  "title": "Bakery shelf",
+  "ariaLabel": "Three pastries on pastel stands: a cupcake, a donut and a croissant with their prices; click one to open its shop page",
+  "target": {"kind": "hero", "aspect": "16:9", "reducedMotion": "static", "posterTime": 1},
+  "camera": {
+    "type": "perspective",
+    "fov": 30,
+    "position": [0, 2.5, 9.2],
+    "target": [0, 0.85, 0],
+    "controls": "parallax",
+    "parallax": {"strength": 0.25, "smoothing": 0.92}
+  },
+  "environment": {
+    "background": {"gradient": ["#ffe9ef", "#fff6ea"], "angle": 0, "grain": 0.02},
+    "lighting": "soft",
+    "lightingIntensity": 0.8,
+    "rig": {"preset": "softbox", "intensity": 0.9, "rotation": -15},
+    "contactShadows": {"opacity": 0.45, "blur": 2.5, "color": "#7a3a4c", "y": 0}
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "headline",
+      "kind": "text",
+      "text": "Fresh this morning",
+      "font": "serif-bold",
+      "size": 0.5,
+      "depth": 0.08,
+      "position": [0, 2.35, -0.6],
+      "material": {"type": "standard", "color": "#7a2944", "roughness": 0.5}
+    },
+    {
+      "id": "cupcakeStand",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.9, "radiusBottom": 0.9, "height": 0.25, "segments": 64},
+      "position": [-2.6, 0.125, 0],
+      "material": {"preset": "clay", "color": "#f59ab5"}
+    },
+    {
+      "id": "cupcake",
+      "kind": "model",
+      "src": "library:models/food/cupcake.glb",
+      "fit": 1.3,
+      "position": [-2.6, 0.25, 0],
+      "castShadow": true,
+      "behaviours": [{"type": "float", "amplitude": 0.04, "speed": 0.4, "phase": -2.6}]
+    },
+    {
+      "id": "cupcakeLabel",
+      "kind": "text",
+      "text": "Cupcake  $4",
+      "font": "display",
+      "size": 0.18,
+      "depth": 0,
+      "position": [-2.6, -0.25, 0.9],
+      "material": {"type": "basic", "color": "#5a2a3c"}
+    },
+    {
+      "id": "donutStand",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.9, "radiusBottom": 0.9, "height": 0.25, "segments": 64},
+      "position": [0, 0.125, 0],
+      "material": {"preset": "clay", "color": "#ffc46b"}
+    },
+    {
+      "id": "donut",
+      "kind": "model",
+      "src": "library:models/food/donut.glb",
+      "fit": 1.3,
+      "position": [0, 0.25, 0],
+      "castShadow": true,
+      "behaviours": [{"type": "float", "amplitude": 0.04, "speed": 0.4, "phase": 0}]
+    },
+    {
+      "id": "donutLabel",
+      "kind": "text",
+      "text": "Donut  $3",
+      "font": "display",
+      "size": 0.18,
+      "depth": 0,
+      "position": [0, -0.25, 0.9],
+      "material": {"type": "basic", "color": "#5a2a3c"}
+    },
+    {
+      "id": "croissantStand",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.9, "radiusBottom": 0.9, "height": 0.25, "segments": 64},
+      "position": [2.6, 0.125, 0],
+      "material": {"preset": "clay", "color": "#8cc8f5"}
+    },
+    {
+      "id": "croissant",
+      "kind": "model",
+      "src": "library:models/food/croissant.glb",
+      "fit": 1.3,
+      "position": [2.6, 0.25, 0],
+      "castShadow": true,
+      "behaviours": [{"type": "float", "amplitude": 0.04, "speed": 0.4, "phase": 2.6}],
+      "rotation": [0, -60, 0]
+    },
+    {
+      "id": "croissantLabel",
+      "kind": "text",
+      "text": "Croissant  $3",
+      "font": "display",
+      "size": 0.18,
+      "depth": 0,
+      "position": [2.6, -0.25, 0.9],
+      "material": {"type": "basic", "color": "#5a2a3c"}
+    }
+  ],
+  "interactions": [
+    {
+      "on": "hover",
+      "target": "cupcake",
+      "do": [{"set": {"path": "cupcake.scale", "value": 1.15}, "duration": 0.3, "ease": "outBack"}]
+    },
+    {
+      "on": "hoverEnd",
+      "target": "cupcake",
+      "do": [{"set": {"path": "cupcake.scale", "value": 1}, "duration": 0.3, "ease": "outCubic"}]
+    },
+    {
+      "on": "click",
+      "target": "cupcake",
+      "do": [
+        {"openUrl": "https://shop.example.com/shop/cupcake"},
+        {"emit": "product-click", "payload": {"id": "cupcake"}}
+      ]
+    },
+    {
+      "on": "hover",
+      "target": "donut",
+      "do": [{"set": {"path": "donut.scale", "value": 1.15}, "duration": 0.3, "ease": "outBack"}]
+    },
+    {
+      "on": "hoverEnd",
+      "target": "donut",
+      "do": [{"set": {"path": "donut.scale", "value": 1}, "duration": 0.3, "ease": "outCubic"}]
+    },
+    {
+      "on": "click",
+      "target": "donut",
+      "do": [
+        {"openUrl": "https://shop.example.com/shop/donut"},
+        {"emit": "product-click", "payload": {"id": "donut"}}
+      ]
+    },
+    {
+      "on": "hover",
+      "target": "croissant",
+      "do": [{"set": {"path": "croissant.scale", "value": 1.15}, "duration": 0.3, "ease": "outBack"}]
+    },
+    {
+      "on": "hoverEnd",
+      "target": "croissant",
+      "do": [{"set": {"path": "croissant.scale", "value": 1}, "duration": 0.3, "ease": "outCubic"}]
+    },
+    {
+      "on": "click",
+      "target": "croissant",
+      "do": [
+        {"openUrl": "https://shop.example.com/shop/croissant"},
+        {"emit": "product-click", "payload": {"id": "croissant"}}
+      ]
+    }
+  ],
+  "postfx": [{"type": "look", "preset": "clean"}]
+}
+```
+
+- `interactions` need no script: `hover` / `hoverEnd` tween `scale` with `set`, `click` runs `openUrl` (http(s) or page-relative, user gesture only; renders emit an `openUrl` event instead of navigating) and `emit`s an event the page can track.
+- Check hover in a render: `render --frames 1.2 --input '[{"t": 0.5, "pointer": [0, 0.05]}]'` (coordinates -1..1, y up) shows the hovered state.
+- Labels are flat text (`depth: 0`) with `basic` material: always readable, cheap.
+- Knobs: `value` of the hover scale (1.1–1.2), ease `outBack` for a playful pop, the URLs.
+
+## Physics toss game (16:9)
+
+Click or tap to throw a ball and knock the can pyramid off the table; an autopilot plays until the first click so the poster shows action. Save the script below as `scripts/game.js`.
+
+```json
+{
+  "version": 1,
+  "id": "can-toss",
+  "title": "Can Toss",
+  "ariaLabel": "Can Toss, a physics mini game: click or tap to throw a ball and knock the stacked cans off the table",
+  "target": {"kind": "game", "aspect": "16:9", "reducedMotion": "ignore", "posterTime": 1.5, "quality": "medium"},
+  "camera": {"type": "perspective", "fov": 42, "position": [0, 3, 8.5], "target": [0, 1.8, 0]},
+  "environment": {
+    "background": {"gradient": ["#2a2550", "#5a4fa8"], "angle": 0},
+    "lighting": "studio",
+    "lightingIntensity": 0.6,
+    "rig": {"preset": "studio-3point", "intensity": 1.1},
+    "shadows": {"type": "pcf", "softness": 3},
+    "fog": {"color": "#2a2550", "near": 12, "far": 26}
+  },
+  "lights": [],
+  "objects": [
+    {
+      "id": "table",
+      "kind": "mesh",
+      "geometry": {"type": "roundedBox", "width": 5, "height": 1, "depth": 2.4, "radius": 0.08},
+      "position": [0, 0.5, 0],
+      "material": {"preset": "plastic", "color": "#f6d7b0", "roughness": 0.5},
+      "receiveShadow": true,
+      "body": {"type": "static"}
+    },
+    {
+      "id": "floor",
+      "kind": "mesh",
+      "geometry": {"type": "box", "width": 40, "height": 0.2, "depth": 40},
+      "position": [0, -0.1, 0],
+      "material": {"preset": "matte", "color": "#3a3470"},
+      "receiveShadow": true,
+      "body": {"type": "static"}
+    },
+    {
+      "id": "can0",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.3, "radiusBottom": 0.3, "height": 0.8, "segments": 32},
+      "position": [-0.7, 1.4, 0],
+      "material": {"preset": "carPaint", "color": "#ef476f"},
+      "castShadow": true,
+      "tags": ["can"],
+      "body": {"type": "dynamic", "shape": "cylinder", "mass": 0.4, "friction": 0.4, "restitution": 0.1}
+    },
+    {
+      "id": "can1",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.3, "radiusBottom": 0.3, "height": 0.8, "segments": 32},
+      "position": [0, 1.4, 0],
+      "material": {"preset": "carPaint", "color": "#ef476f"},
+      "castShadow": true,
+      "tags": ["can"],
+      "body": {"type": "dynamic", "shape": "cylinder", "mass": 0.4, "friction": 0.4, "restitution": 0.1}
+    },
+    {
+      "id": "can2",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.3, "radiusBottom": 0.3, "height": 0.8, "segments": 32},
+      "position": [0.7, 1.4, 0],
+      "material": {"preset": "carPaint", "color": "#ef476f"},
+      "castShadow": true,
+      "tags": ["can"],
+      "body": {"type": "dynamic", "shape": "cylinder", "mass": 0.4, "friction": 0.4, "restitution": 0.1}
+    },
+    {
+      "id": "can3",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.3, "radiusBottom": 0.3, "height": 0.8, "segments": 32},
+      "position": [-0.35, 2.2, 0],
+      "material": {"preset": "carPaint", "color": "#ffd166"},
+      "castShadow": true,
+      "tags": ["can"],
+      "body": {"type": "dynamic", "shape": "cylinder", "mass": 0.4, "friction": 0.4, "restitution": 0.1}
+    },
+    {
+      "id": "can4",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.3, "radiusBottom": 0.3, "height": 0.8, "segments": 32},
+      "position": [0.35, 2.2, 0],
+      "material": {"preset": "carPaint", "color": "#ffd166"},
+      "castShadow": true,
+      "tags": ["can"],
+      "body": {"type": "dynamic", "shape": "cylinder", "mass": 0.4, "friction": 0.4, "restitution": 0.1}
+    },
+    {
+      "id": "can5",
+      "kind": "mesh",
+      "geometry": {"type": "cylinder", "radiusTop": 0.3, "radiusBottom": 0.3, "height": 0.8, "segments": 32},
+      "position": [0, 3, 0],
+      "material": {"preset": "carPaint", "color": "#06d6a0"},
+      "castShadow": true,
+      "tags": ["can"],
+      "body": {"type": "dynamic", "shape": "cylinder", "mass": 0.4, "friction": 0.4, "restitution": 0.1}
+    },
+    {
+      "id": "ballProto",
+      "kind": "mesh",
+      "geometry": {"type": "sphere", "radius": 0.26},
+      "position": [0, -5, 8],
+      "visible": false,
+      "material": {"preset": "rubber", "color": "#ff7b54"},
+      "castShadow": true,
+      "body": {"type": "dynamic", "shape": "sphere", "mass": 1.2, "restitution": 0.4, "ccd": true, "sleep": false}
+    }
+  ],
+  "scripts": ["scripts/game.js"],
+  "physics": {"gravity": [0, -9.81, 0], "substeps": 2, "iterations": 12},
+  "ui": {
+    "elements": [
+      {"id": "score", "type": "text", "text": "Down {down}/{total}", "anchor": "top-left", "style": "pill"},
+      {"id": "throws", "type": "text", "text": "Throws {throws}", "anchor": "top-right", "style": "pill"},
+      {
+        "id": "hint",
+        "type": "text",
+        "text": "Click or tap to throw",
+        "anchor": "bottom",
+        "style": "subtitle",
+        "visible": "phase == 'attract'"
+      }
+    ],
+    "color": "#ffffff",
+    "accent": "#ef476f"
+  },
+  "audio": {
+    "sounds": {
+      "throw": {"preset": "whoosh", "volume": 0.4},
+      "hit": {"preset": "hit", "volume": 0.5},
+      "win": {"preset": "win"}
+    }
+  },
+  "data": {"launch": [0, 1.6, 8], "flight": 0.6},
+  "seed": 11
+}
+```
+
+```js
+// Can Toss: click / tap to throw a ball at the point under the pointer and knock
+// every can off the table. Attract mode (no input yet): an autopilot throws, so
+// renders and the poster show action. phase: "attract" -> "play" -> "cleared".
+export default function (api) {
+  const { launch, flight } = api.data;
+  const cans = api.findByTag("can").map((o) => ({ o, p: [o.position.x, o.position.y, o.position.z] }));
+  let balls = [];
+  let n = 0;
+  let phase = "attract";
+  let throws = 0;
+  let nextAuto = 0.6;
+  let lastHit = -1;
+
+  const isDown = (c) => c.o.position.y < 1.2; // fell off the table top
+  function publish() {
+    api.state.phase = phase;
+    api.state.down = cans.filter(isDown).length;
+    api.state.total = cans.length;
+    api.state.throws = throws;
+  }
+
+  function reset() {
+    for (const c of cans) {
+      c.o.position.set(c.p[0], c.p[1], c.p[2]);
+      c.o.rotation.set(0, 0, 0);
+      api.physics.setVelocity(c.o, [0, 0, 0]);
+      api.physics.setAngularVelocity(c.o, [0, 0, 0]);
+    }
+    for (const b of balls) b.remove();
+    balls = [];
+    throws = 0;
+  }
+
+  // Ballistic throw from `launch` that reaches `target` after `flight` seconds.
+  function throwAt(target) {
+    const ball = api.clone("ballProto", { id: "ball" + n++, position: launch });
+    ball.visible = true;
+    const T = flight;
+    api.physics.setVelocity(ball, [(target[0] - launch[0]) / T, (target[1] - launch[1]) / T + 4.905 * T, (target[2] - launch[2]) / T]);
+    balls.push(ball);
+    if (balls.length > 6) balls.shift().remove();
+    throws++;
+    if (phase !== "attract") api.audio.play("throw");
+  }
+
+  function aim() {
+    const hit = api.input.pointerWorld();
+    if (hit && hit.objectId && hit.objectId !== "floor") return [hit.x, hit.y, hit.z];
+    return [api.input.pointer.x * 4, 2.2 + api.input.pointer.y * 2, 0];
+  }
+
+  return {
+    start() {
+      api.physics.onCollision((a, b, info) => {
+        if (phase === "attract" || info.impulse < 1 || api.time() - lastHit < 0.08) return;
+        lastHit = api.time();
+        api.audio.play("hit");
+      });
+      publish();
+    },
+    update() {
+      const t = api.time();
+      const pressed = api.input.pointer.justPressed || api.input.pressed("Space");
+      if (phase === "attract") {
+        if (pressed) {
+          phase = "play";
+          reset();
+          throwAt(aim());
+        } else if (t >= nextAuto) {
+          const standing = cans.filter((c) => !isDown(c));
+          if (!standing.length || throws >= 5) {
+            reset();
+            nextAuto = t + 1;
+          } else {
+            const c = standing[Math.floor(api.random() * standing.length)];
+            throwAt([c.o.position.x, c.o.position.y, c.o.position.z]);
+            nextAuto = t + 1.4;
+          }
+        }
+      } else if (phase === "play") {
+        if (pressed) throwAt(aim());
+        if (cans.every(isDown)) {
+          phase = "cleared";
+          api.audio.play("win");
+          api.ui.toast("Cleared in " + throws + " throws!", 2.5);
+        }
+      } else if (pressed) {
+        reset();
+        phase = "play";
+      }
+      publish();
+    },
+  };
+}
+```
+
+- Cans are `dynamic` rigid bodies (they topple and roll); the table and floor are `static`. The floor is a thin **box**, not a rotated plane: a `body` box is measured in the object's rotated frame, so a plane rotated -90° with a custom `size` becomes a wall.
+- Throws set a ballistic velocity once (`api.physics.setVelocity`); `ccd: true` on the ball prevents tunnelling. Clones of a hidden prototype are the cheap way to spawn.
+- `target.quality: "medium"` and no postfx keep it light (`check` warns about heavy effects in games).
+- Test a real throw: `render --frames 2 --input '[{"t": 0.5, "click": [0, 0.1]}]'` returns `state` (`phase: "play"`, `down`, `throws`).
+
+## Character card (1:1): waving mascot
+
+The built-in procedural character waving on a pedestal, eyes following the pointer, a small grow on hover.
 
 ```json
 {
@@ -281,25 +978,21 @@ The built-in procedural character (styles humanoid, robot, blob, cat, bird) wavi
   "title": "Waving mascot",
   "ariaLabel": "A friendly 3D mascot waving hello",
   "target": {"kind": "card", "aspect": "1:1", "posterTime": 1},
-  "camera": {"type": "perspective", "fov": 32, "position": [0, 1.5, 5.6], "target": [0, 1, 0]},
+  "camera": {"type": "perspective", "fov": 30, "position": [0, 1.5, 5.4], "target": [0, 1.05, 0]},
   "environment": {
-    "background": {"gradient": ["#ffe5ec", "#ffc2d1"], "angle": 0},
+    "background": {"radial": ["#fff0f4", "#ffc2d1"], "center": [0.5, 0.6], "radius": 0.9},
     "lighting": "soft",
-    "ground": {"y": 0, "size": 20, "shadowOnly": true}
+    "rig": {"preset": "studio-3point", "intensity": 1, "color": "#fff1f4"},
+    "contactShadows": {"opacity": 0.5, "blur": 2.5, "color": "#8a3a5c"}
   },
-  "lights": [
-    {"id": "fill", "type": "hemisphere", "skyColor": "#ffffff", "groundColor": "#ffb3c6", "intensity": 1},
-    {"id": "key", "type": "directional", "position": [3, 6, 4], "intensity": 2.2, "castShadow": true},
-    {"id": "rim", "type": "directional", "position": [-4, 3, -4], "color": "#ffd6a5", "intensity": 1.5}
-  ],
+  "lights": [],
   "objects": [
     {
       "id": "pedestal",
       "kind": "mesh",
-      "geometry": {"type": "cylinder", "radiusTop": 1.1, "radiusBottom": 1.2, "height": 0.3, "segments": 48},
-      "material": {"preset": "clay", "color": "#fb6f92"},
-      "position": [0, 0.15, 0],
-      "receiveShadow": true
+      "geometry": {"type": "cylinder", "radiusTop": 0.75, "radiusBottom": 0.82, "height": 0.3, "segments": 64},
+      "material": {"preset": "mattePastel", "color": "#9b8cff"},
+      "position": [0, 0.15, 0]
     },
     {
       "id": "mascot",
@@ -308,7 +1001,7 @@ The built-in procedural character (styles humanoid, robot, blob, cat, bird) wavi
       "position": [0, 0.3, 0],
       "params": {
         "style": "humanoid",
-        "shirt": "#ff8fab",
+        "shirt": "#5fc9b5",
         "pants": "#3d2c4e",
         "hair": "#2b1d14",
         "accent": "#ffd166",
@@ -316,274 +1009,15 @@ The built-in procedural character (styles humanoid, robot, blob, cat, bird) wavi
         "height": 1.8,
         "eyesFollowPointer": true
       },
-      "behaviours": [{"type": "hoverScale", "scale": 1.06}]
-    }
-  ]
-}
-```
-
-Animations: idle, walk, run, wave, jump, dance. For a rigged model instead, use a library character with a clip: `{ "kind": "model", "src": "library:models/characters/robot.glb", "fit": 2, "animation": { "clip": "Wave", "loop": true } }` (the robot's description lists its clips: Idle, Walking, Running, Dance, Jump, Wave…). The knight, mage and skeleton have clips such as `Idle`, `Walking_A`, `Running_A`, `Cheer`, `Jump_Full_Short`; an unknown clip name makes `render` report an `asset-load` issue that lists the model's real clips.
-
-## Product (square 1:1): turntable showcase
-
-A library model fitted to 2.2 units on a light studio backdrop, real studio HDRI reflections, orbit controls (drag to look around, no zoom, limited vertical angle), slow auto-rotation, lift on hover.
-
-```json
-{
-  "version": 1,
-  "id": "bottle-showcase",
-  "title": "Water bottle showcase",
-  "ariaLabel": "A reusable water bottle turning slowly on a studio backdrop; drag to look around",
-  "target": {"kind": "square", "aspect": "1:1"},
-  "camera": {
-    "type": "perspective",
-    "fov": 30,
-    "position": [0, 1.4, 6],
-    "target": [0, 1, 0],
-    "controls": "orbit",
-    "orbitZoom": false,
-    "autoRotate": 12,
-    "orbitLimits": {"minPolar": 50, "maxPolar": 95}
-  },
-  "environment": {
-    "background": {"radial": ["#f4f6f8", "#cfd6de"]},
-    "lighting": {"hdri": "library:hdri/studio.hdr", "intensity": 1},
-    "ground": {"y": 0, "size": 20, "shadowOnly": true}
-  },
-  "lights": [
-    {"id": "key", "type": "directional", "position": [3, 6, 4], "intensity": 2, "castShadow": true},
-    {
-      "id": "rim",
-      "type": "spot",
-      "position": [-3, 4, -3],
-      "target": [0, 1, 0],
-      "intensity": 40,
-      "angle": 35,
-      "penumbra": 0.6
+      "behaviours": [{"type": "hoverScale", "scale": 1.06}],
+      "castShadow": true
     }
   ],
-  "objects": [
-    {
-      "id": "bottle",
-      "kind": "model",
-      "src": "library:models/products/water-bottle.glb",
-      "fit": 2.2,
-      "castShadow": true,
-      "behaviours": [{"type": "hoverLift", "height": 0.15, "tilt": 6}]
-    }
-  ]
+  "postfx": [{"type": "look", "preset": "clean"}]
 }
 ```
 
-With the user's own model: `assets add ./bottle.glb --license proprietary --project …`, then `"src": "assets/models/bottle.glb"`. Keep `fit` so the size is predictable whatever the model's units.
-
-## Game (16:9): lane runner
-
-A complete mini game: three lanes, blocks rush toward the player, switch lanes with the arrow keys or a swipe, score, best score saved, difficulty ramp, synth sounds, and an attract mode (an autopilot plays behind the title) so renders and the poster show action. Details of the patterns: skill `agent3d-game`.
-
-`scene.json`:
-
-```json
-{
-  "version": 1,
-  "id": "runner",
-  "title": "Lane Runner",
-  "ariaLabel": "Lane Runner, a 3D mini game: switch lanes with the arrow keys or by swiping to dodge the blocks",
-  "target": {"kind": "game", "aspect": "16:9", "reducedMotion": "ignore", "posterTime": 3},
-  "camera": {"type": "perspective", "fov": 55, "position": [0, 4.5, 7], "target": [0, 0.5, -4]},
-  "environment": {
-    "background": {"gradient": ["#ffd6a5", "#ff9fb2", "#7b5cff"], "angle": 0},
-    "lighting": "soft",
-    "fog": {"color": "#ff9fb2", "near": 18, "far": 40}
-  },
-  "lights": [
-    {"id": "fill", "type": "hemisphere", "skyColor": "#ffffff", "groundColor": "#6b4f9e", "intensity": 1.1},
-    {"id": "sun", "type": "directional", "position": [5, 10, 6], "intensity": 2, "castShadow": true}
-  ],
-  "objects": [
-    {
-      "id": "road",
-      "kind": "generator",
-      "generator": "road",
-      "params": {"width": 6, "length": 60, "lanes": 3, "color": "#3d405b", "speed": 10}
-    },
-    {
-      "id": "player",
-      "kind": "mesh",
-      "geometry": {"type": "roundedBox", "width": 0.9, "height": 0.9, "depth": 0.9, "radius": 0.15},
-      "material": {"preset": "plastic", "color": "#ffd166"},
-      "position": [0, 0.45, 2],
-      "castShadow": true,
-      "body": {"type": "kinematic", "shape": "box"}
-    },
-    {
-      "id": "block",
-      "kind": "mesh",
-      "geometry": {"type": "box", "width": 1.4, "height": 1, "depth": 1},
-      "material": {"preset": "clay", "color": "#ef476f"},
-      "position": [0, 0.5, -60],
-      "visible": false,
-      "castShadow": true,
-      "tags": ["template"],
-      "body": {"type": "trigger", "shape": "box"}
-    }
-  ],
-  "scripts": ["scripts/game.js"],
-  "physics": {"gravity": [0, -9.81, 0]},
-  "ui": {
-    "elements": [
-      {"id": "score", "type": "text", "text": "Score {score}", "anchor": "top-left", "style": "pill"},
-      {"id": "best", "type": "text", "text": "Best {best}", "anchor": "top-right", "style": "pill"},
-      {
-        "id": "title",
-        "type": "text",
-        "text": "Lane Runner",
-        "anchor": "center",
-        "style": "title",
-        "visible": "phase == 'ready'"
-      },
-      {
-        "id": "hint",
-        "type": "text",
-        "text": "Arrows or swipe to switch lanes",
-        "anchor": "top",
-        "style": "subtitle",
-        "visible": "phase == 'ready'"
-      },
-      {
-        "id": "start",
-        "type": "button",
-        "text": "Play",
-        "anchor": "bottom",
-        "action": "start",
-        "visible": "phase == 'ready'"
-      },
-      {
-        "id": "over",
-        "type": "text",
-        "text": "Game over - {score}",
-        "anchor": "center",
-        "style": "title",
-        "visible": "phase == 'over'"
-      },
-      {
-        "id": "retry",
-        "type": "button",
-        "text": "Retry",
-        "anchor": "bottom",
-        "action": "retry",
-        "visible": "phase == 'over'"
-      }
-    ],
-    "color": "#ffffff",
-    "accent": "#ef476f"
-  },
-  "audio": {
-    "sounds": {
-      "move": {"preset": "whoosh", "volume": 0.4},
-      "hit": {"preset": "lose"},
-      "point": {"preset": "coin", "volume": 0.5}
-    }
-  },
-  "data": {"lanes": [-2, 0, 2], "startSpeed": 9, "maxSpeed": 22, "spawnEvery": 0.9},
-  "seed": 7
-}
-```
-
-`scripts/game.js`:
-
-```js
-// Lane Runner: three lanes, blocks rush toward the player.
-// phase: "ready" (attract mode: an autopilot plays behind the title) → "play" → "over".
-export default function (api) {
-  const { lanes, startSpeed, maxSpeed, spawnEvery } = api.data;
-  const player = api.get("player");
-  let lane = 1;
-  let speed = startSpeed;
-  let spawnTimer = 0;
-  let blocks = [];
-  let n = 0;
-
-  function reset(phase) {
-    for (const b of blocks) b.remove();
-    blocks = [];
-    lane = 1;
-    speed = startSpeed;
-    spawnTimer = 0;
-    api.state.phase = phase;
-    api.state.score = 0;
-    api.state.best = Number(api.storage.get("best") ?? 0);
-  }
-
-  function spawn() {
-    const x = lanes[Math.floor(api.random() * lanes.length)];
-    const b = api.clone("block", { id: `block${n++}`, position: [x, 0.5, -30] });
-    b.visible = true;
-    blocks.push(b);
-  }
-
-  function autopilot() {
-    // Attract mode: dodge the nearest block in the player's lane.
-    const threat = blocks.find((b) => b.position.z > -8 && b.position.z < player.position.z && Math.abs(b.position.x - lanes[lane]) < 0.5);
-    if (!threat) return 0;
-    if (lane === 0) return 1;
-    if (lane === 2) return -1;
-    return api.random() < 0.5 ? -1 : 1;
-  }
-
-  return {
-    start() {
-      reset("ready");
-    },
-    onEvent(name) {
-      if (name === "start" || name === "retry") reset("play");
-    },
-    update(dt) {
-      const phase = api.state.phase;
-      if (phase === "over") return;
-      let move = 0;
-      if (phase === "play") {
-        const swipe = api.input.swipe();
-        if (api.input.pressed("ArrowLeft") || api.input.pressed("KeyA") || swipe === "left") move = -1;
-        if (api.input.pressed("ArrowRight") || api.input.pressed("KeyD") || swipe === "right") move = 1;
-        speed = Math.min(maxSpeed, speed + dt * 0.4); // difficulty ramp
-      } else {
-        move = autopilot();
-      }
-      if (move) {
-        const next = Math.max(0, Math.min(2, lane + move));
-        if (next !== lane && phase === "play") api.audio.play("move");
-        lane = next;
-      }
-      // Ease toward the lane.
-      player.position.x += (lanes[lane] - player.position.x) * Math.min(1, dt * 14);
-
-      spawnTimer -= dt;
-      if (spawnTimer <= 0) {
-        spawn();
-        spawnTimer = spawnEvery * (startSpeed / speed);
-      }
-      for (const b of blocks.slice()) {
-        b.position.z += speed * dt;
-        if (phase === "play" && api.physics.overlaps(player, b)) {
-          api.state.phase = "over";
-          api.audio.play("hit");
-          api.camera.shake(0.3, 0.4);
-          const best = Math.max(Number(api.state.best), Number(api.state.score));
-          api.state.best = best;
-          api.storage.set("best", best);
-          return;
-        }
-        if (b.position.z > 6) {
-          b.remove();
-          blocks.splice(blocks.indexOf(b), 1);
-          if (phase === "play") {
-            api.state.score = Number(api.state.score) + 1;
-            api.audio.play("point");
-          }
-        }
-      }
-    },
-  };
-}
-```
+- `studio-3point` with a warm `color` tint + `contactShadows` replaces hand-placed lights and a shadow ground.
+- `mattePastel` lightens its colour a lot: pick a saturated `color` for it.
+- Animations: idle, walk, run, wave, jump, dance; styles: humanoid, robot, blob, cat, bird (`catalog generators character`).
+- A rigged library model instead: `{ "kind": "model", "src": "library:models/characters/robot.glb", "fit": 2, "animation": { "clip": "Wave", "loop": true } }` (the model's description lists its clips; an unknown clip makes `render` report an `asset-load` issue listing the real ones).

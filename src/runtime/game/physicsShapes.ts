@@ -35,22 +35,55 @@ function frameOf(object: THREE.Object3D): { inv: THREE.Matrix4; scale: THREE.Vec
   return { inv: new THREE.Matrix4().compose(p, q, new THREE.Vector3(1, 1, 1)).invert(), scale: s };
 }
 
-function meshes(object: THREE.Object3D): THREE.Mesh[] {
+// Scene objects nested under another one (ObjectDef.children) carry their
+// own a3dId; text letters ("<id>/<n>", never a valid scene id) belong to their text.
+function isSceneChild(o: THREE.Object3D, rootId: string | undefined): boolean {
+  const id = o.userData?.a3dId as string | undefined;
+  return !!id && id !== rootId && !id.includes("/");
+}
+
+// Collision meshes of an object. "own" (the default) = the object's own
+// geometry (incl. the parts a model / generator / text builds), never the
+// scene objects nested under it: those have their own body, or are merged
+// explicitly with `shape: "compound"`. `skip` prunes subtrees (children with
+// a body when measuring a whole subtree).
+function meshes(object: THREE.Object3D, mode: "own" | "tree" = "own", skip?: (o: THREE.Object3D) => boolean): THREE.Mesh[] {
   const out: THREE.Mesh[] = [];
-  object.traverse((o) => {
+  const rootId = object.userData?.a3dId as string | undefined;
+  const visit = (o: THREE.Object3D) => {
+    if (o !== object && ((mode === "own" && isSceneChild(o, rootId)) || skip?.(o))) return;
     const m = o as THREE.Mesh;
     if (m.isMesh && m.geometry?.getAttribute("position") && !o.userData.noCollide) out.push(m);
-  });
+    for (const c of o.children) visit(c);
+  };
+  visit(object);
   return out;
 }
 
-// Bounding box in the object frame (scaled).
-export function frameBox(object: THREE.Object3D): THREE.Box3 {
-  const { inv } = frameOf(object);
+// Own meshes, or — for an object without geometry of its own (a group) —
+// the whole subtree minus children that have their own body.
+function colliderMeshes(src: { object: THREE.Object3D; objectDef?: ObjectDef }): THREE.Mesh[] {
+  const own = meshes(src.object);
+  return own.length ? own : meshes(src.object, "tree", bodySkipper(src.objectDef));
+}
+
+function bodySkipper(def: ObjectDef | undefined): (o: THREE.Object3D) => boolean {
+  const withBody = new Set<string>();
+  const walk = (list: ObjectDef[] | undefined) => {
+    for (const c of list ?? []) {
+      if (c.body) withBody.add(c.id);
+      walk(c.children);
+    }
+  };
+  walk(def?.children);
+  return (o) => withBody.has(o.userData?.a3dId as string);
+}
+
+function boxOf(list: THREE.Mesh[], inv: THREE.Matrix4): THREE.Box3 {
   const box = new THREE.Box3();
   const tmp = new THREE.Box3();
   const m = new THREE.Matrix4();
-  for (const mesh of meshes(object)) {
+  for (const mesh of list) {
     const inst = mesh as THREE.InstancedMesh;
     if (inst.isInstancedMesh) {
       if (!inst.boundingBox) inst.computeBoundingBox();
@@ -65,14 +98,38 @@ export function frameBox(object: THREE.Object3D): THREE.Box3 {
   return box;
 }
 
-// Every triangle of the object in the object frame (scaled), non-indexed.
-function triangles(object: THREE.Object3D, limit: number): Float32Array | null {
+// Bounding box of the collider meshes in the object frame (scaled).
+export function frameBox(object: THREE.Object3D, objectDef?: ObjectDef): THREE.Box3 {
+  return boxOf(colliderMeshes({ object, objectDef }), frameOf(object).inv);
+}
+
+// `compound` without `shapes`: one box for the object's own geometry plus one
+// per nested scene object without a body of its own (decorations merged into
+// the collider), each in the body frame.
+function autoCompound(object: THREE.Object3D, objectDef: ObjectDef | undefined): { size: THREE.Vector3; center: THREE.Vector3 }[] {
   const { inv } = frameOf(object);
+  const parts: THREE.Box3[] = [boxOf(meshes(object), inv)];
+  const skip = bodySkipper(objectDef);
+  const rootId = object.userData?.a3dId as string | undefined;
+  const visit = (o: THREE.Object3D) => {
+    for (const c of o.children) {
+      if (skip(c)) continue;
+      if (isSceneChild(c, rootId)) parts.push(boxOf(meshes(c, "tree", skip), inv));
+      else visit(c);
+    }
+  };
+  visit(object);
+  return parts.filter((b) => !b.isEmpty()).map((b) => ({ size: b.getSize(new THREE.Vector3()), center: b.getCenter(new THREE.Vector3()) }));
+}
+
+// Every triangle of the object in the object frame (scaled), non-indexed.
+function triangles(src: ShapeSource, limit: number): Float32Array | null {
+  const { inv } = frameOf(src.object);
   const m = new THREE.Matrix4();
   const v = new THREE.Vector3();
   const chunks: Float32Array[] = [];
   let total = 0;
-  for (const mesh of meshes(object)) {
+  for (const mesh of colliderMeshes(src)) {
     if ((mesh as THREE.InstancedMesh).isInstancedMesh) continue;
     const g = mesh.geometry;
     const pos = g.getAttribute("position") as THREE.BufferAttribute;
@@ -96,11 +153,11 @@ function triangles(object: THREE.Object3D, limit: number): Float32Array | null {
   return all;
 }
 
-function points(object: THREE.Object3D, max: number): THREE.Vector3[] {
-  const { inv } = frameOf(object);
+function points(src: ShapeSource, max: number): THREE.Vector3[] {
+  const { inv } = frameOf(src.object);
   const m = new THREE.Matrix4();
   const list: THREE.Vector3[] = [];
-  const ms = meshes(object);
+  const ms = colliderMeshes(src);
   const total = ms.reduce((s, x) => s + x.geometry.getAttribute("position").count, 0);
   const stride = Math.max(1, Math.ceil(total / max));
   for (const mesh of ms) {
@@ -198,7 +255,7 @@ export function autoShape(src: ShapeSource): NonNullable<BodyDef["shape"]> {
 
 export function buildShapes(src: ShapeSource): ShapeResult {
   const def = src.def;
-  const box = frameBox(src.object);
+  const box = frameBox(src.object, src.objectDef);
   const empty = box.isEmpty();
   const size = empty ? new THREE.Vector3(1, 1, 1) : box.getSize(new THREE.Vector3());
   const center = empty ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
@@ -216,6 +273,10 @@ export function buildShapes(src: ShapeSource): ShapeResult {
       return { shapes: [{ type: "capsule", radius: def.radius ?? Math.max(size.x, size.z) / 2, height: def.height ?? size.y }], offset };
     case "compound": {
       const origin = def.offset ? new THREE.Vector3(...def.offset) : new THREE.Vector3();
+      if (!def.shapes?.length) {
+        const parts = autoCompound(src.object, src.objectDef);
+        if (parts.length) return { shapes: parts.map((p) => ({ type: "box", half: [p.size.x / 2, p.size.y / 2, p.size.z / 2], offset: [p.center.x - origin.x, p.center.y - origin.y, p.center.z - origin.z] })), offset: origin };
+      }
       const shapes = (def.shapes ?? []).map((c) => {
         const s = collider(c, size);
         const o = c.offset ?? [0, 0, 0];
@@ -224,7 +285,7 @@ export function buildShapes(src: ShapeSource): ShapeResult {
       return shapes.length ? { shapes, offset: origin } : { shapes: [boxShape()], offset };
     }
     case "convex": {
-      const hull = convexHull(points(src.object, MAX_HULL_POINTS), offset);
+      const hull = convexHull(points(src, MAX_HULL_POINTS), offset);
       return hull ? { shapes: [{ type: "convex", ...hull }], offset } : { shapes: [boxShape()], offset, note: "convex hull failed (too few points): using the bounding box" };
     }
     case "heightfield": {
@@ -239,7 +300,7 @@ export function buildShapes(src: ShapeSource): ShapeResult {
   }
 
   function trimesh(s: ShapeSource, note?: string): ShapeResult {
-    const tris = triangles(s.object, MAX_TRIMESH_TRIS);
+    const tris = triangles(s, MAX_TRIMESH_TRIS);
     if (!tris || tris.length === 0) return { shapes: [boxShape()], offset, note: tris ? "no triangles: using the bounding box" : `more than ${MAX_TRIMESH_TRIS} triangles: using the bounding box (use a simpler collision mesh, "compound" or "box")` };
     for (let k = 0; k < tris.length; k += 3) {
       tris[k]! -= offset.x;

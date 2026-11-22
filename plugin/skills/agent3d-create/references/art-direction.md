@@ -64,7 +64,7 @@ Hand-placed studio set (when no rig fits):
 ]
 ```
 
-- **Physical sky**: `preset` sets the sun; `sun.elevation` 3–12 for golden hour, 40+ for noon; `sun.azimuth` 0 = towards a camera on +Z. Keep the sun out of frame (azimuth 50–130 or 230–310 from a +Z camera): a low sun in view with fog or bloom washes the image out. The sky adds its own sun light — no extra directional needed.
+- **Physical sky**: `preset` sets the sun; `sun.elevation` 3–12 for golden hour, 40+ for noon; `sun.azimuth` 0 = towards a camera on +Z. Keep the sun out of frame (azimuth 50–130 or 230–310 from a +Z camera): a low sun in view with fog or bloom washes the image out. The sky adds its own sun light — no extra directional needed. Every preset is tuned to look rich at the default `exposure` (1, a multiplier of the preset's own value): leave it, or nudge it (0.7 deeper, 1.3 brighter) instead of fighting a washed-out sky with grading.
 - **Fog**: linear `{ color, near, far }` to fade the far floor / horizon only (start it beyond the subject); exponential `{ density }` for haze (0.02–0.05 reads; it also dims near objects); height fog `{ density, height, falloff }` for valleys and ground mist. Without `color`, fog takes the sky's horizon.
 - **Rect lights** (`type: "rect"`, `width`, `height`, `panel: true`): visible light strips and softboxes. They face their `target` (default: the origin) — set a target at their own height to keep vertical strips upright.
 - **Volumetric spots** (`volumetric: { intensity }`): a glowing cone from the light to its target; reads best on a dark background with a little fog.
@@ -114,7 +114,7 @@ Too bright? Lower `environment.lightingIntensity` first (IBL adds up with every 
 
 ## Performance budgets
 
-`check` warns above these limits (`target.budgetKb` overrides the KB one); the "aim for" column is what keeps a page fast on a mid-range phone.
+`check` warns above these limits (`target.budgetKb` overrides the KB one); the "aim for" column (triangles per frame, every pass included: shadow maps, the ao / dof pre-pass, contact shadows) is what keeps a page fast on a mid-range phone — `check` says so above it (a warning with `--render`).
 
 | Target | KB budget (assets + scripts + scene, runtime excluded) | Triangle limit in `check` | Aim for |
 |---|---|---|---|
@@ -126,6 +126,6 @@ Too bright? Lower `environment.lightingIntensity` first (IBL adds up with every 
 | game | 4000 | 2 M | ≤ 200 k, draw calls < 150 (`check` warns above 150) |
 
 - The shared runtime (`agent3d-runtime/`, loaded lazily in chunks: only what the scene uses is fetched) is not counted: it is downloaded once per site and cached.
-- `check` estimates triangles from catalog cost formulas, measured glyph costs (a bevelled serif headline costs far more than a flat sans one) and model counts; `check --render` and `render` report the real counts (`stats.triangles`, `stats.drawCalls`), which include every pass. The GPU side is `budget.gpu` (post-processing passes per frame).
+- `check` estimates triangles from catalog cost formulas, measured glyph costs (a bevelled serif headline costs far more than a flat sans one) and model counts, then per frame (`budget.estimatedFrameTriangles`, `budget.passes`: each shadow-casting light, `ao` / `dof` / `godrays` / `outline` and `contactShadows` re-draw the scene or its casters); `check --render` and `render` report the real counts (`stats.triangles`, `stats.drawCalls`), which include every pass. The GPU side is `budget.gpu` (post-processing passes per frame).
 - Cheap: primitives, `instances`, generators, particles, procedural textures, small library models, `flat` / `basic` materials. Expensive: HDRI files, photoreal library models (0.4–1.8 MB, `assets optimize` helps), high `segments`, transmission, `ao` / `dof`, many shadow casters.
 - `target.maxDpr` (default 2) caps the pixel ratio; `target.quality` picks the tier (see Premium defaults).

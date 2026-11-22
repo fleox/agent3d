@@ -10,7 +10,8 @@ import { paramUpdate, paramValue } from "../lib/params";
 import type { PatchOp } from "../../ops/scene";
 import { fieldOps } from "../lib/patches";
 import { useEditor, useSnapshot } from "../state/context";
-import { pretty } from "../lib/labels";
+import { fieldLabel } from "../lib/labels";
+import { useI18n } from "../i18n";
 
 export type OnValue = (value: unknown, final: boolean) => void;
 
@@ -107,8 +108,9 @@ export function JsonField({ value, onCommit, rows = 3 }: { value: unknown; onCom
 }
 
 export function ParamRow({ spec, value, onChange }: { spec: ParamSpec; value: unknown; onChange: OnValue }) {
+  useI18n(); // re-render on language change
   return (
-    <Row label={pretty(spec.name)} hint={spec.description} overridden={value !== undefined} onReset={() => onChange(undefined, true)} align={(spec.type === "array" && !spec.options?.length) || spec.type === "object" ? "start" : "center"}>
+    <Row label={fieldLabel(spec.name)} hint={spec.description} overridden={value !== undefined} onReset={() => onChange(undefined, true)} align={(spec.type === "array" && !spec.options?.length) || spec.type === "object" ? "start" : "center"}>
       <ParamControl spec={spec} value={value} onChange={onChange} />
     </Row>
   );

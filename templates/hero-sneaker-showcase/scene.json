@@ -1,8 +1,8 @@
 {
   "version": 1,
   "id": "hero-sneaker-showcase",
-  "title": "{data.title|Stride Runner}",
-  "ariaLabel": "Product hero: the {data.title|Stride Runner} sneaker spinning onto a studio pedestal, with its price and a Shop now button",
+  "title": "Stride Runner sneaker showcase",
+  "ariaLabel": "Product hero: a running sneaker spinning onto a studio pedestal, with its price and a Shop now button",
   "seed": 3,
   "data": {
     "title": "STRIDE RUNNER",

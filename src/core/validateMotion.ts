@@ -19,7 +19,8 @@ const show = (v: unknown) => {
 };
 
 export const TIMELINE_KEYS = ["duration", "loop", "autoplay", "trigger", "speed", "markers", "segments", "scroll", "tracks"];
-export const TRACK_KEYS = ["target", "keys", "ease", "stagger", "staggerFrom"];
+export const TRACK_KEYS = ["target", "keys", "ease", "stagger", "staggerFrom", "colorSpace"];
+export const COLOR_SPACES = ["oklch", "oklab", "rgb", "hsl"] as const;
 export const STAGGER_FROM = ["start", "end", "center", "edges", "random"] as const;
 export const INTERACTION_ON = ["click", "hover", "hoverEnd", "visible", "scroll", "key", "event"] as const;
 export const INTERACTION_ACTIONS = ["play", "toggle", "seek", "set", "emit", "openUrl", "playClip"] as const;
@@ -362,6 +363,7 @@ function track(c: C, tr: unknown, path: string, duration: number, seen: Set<stri
   c.ease(tr.ease, `${path}.ease`);
   c.number(tr.stagger, `${path}.stagger`, { min: 0 });
   if (tr.staggerFrom !== undefined && !(STAGGER_FROM as readonly string[]).includes(tr.staggerFrom as string)) c.error("enum", `${path}.staggerFrom`, `Invalid value ${show(tr.staggerFrom)}.`, `Valid values: ${listOptions(STAGGER_FROM)}.`);
+  if (tr.colorSpace !== undefined && !(COLOR_SPACES as readonly string[]).includes(tr.colorSpace as string)) c.error("enum", `${path}.colorSpace`, `Invalid value ${show(tr.colorSpace)}.`, `Valid values: ${listOptions(COLOR_SPACES)} (default "oklch").`);
   let kind: ValueKind | undefined;
   if (tr.target === undefined || tr.target === null) c.error("required", `${path}.target`, 'Missing required field "target" ("<id>.<property>").', 'Add "target": "<id>.<property>".');
   else if (typeof tr.target !== "string") c.error("type", `${path}.target`, `Expected a string, got ${show(tr.target)}.`);

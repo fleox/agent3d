@@ -68,7 +68,9 @@ Real rigid-body physics (cannon-es, fixed step, deterministic): bodies rotate, t
 
 `type`: `static` (walls, ground), `dynamic` (simulated), `kinematic` (moved by your script — set its position every step or give it a velocity — and pushes dynamic bodies), `trigger` (detects overlaps, no response). Shapes (`box`, `sphere`, `cylinder`, `capsule`, `convex`, `trimesh`, `heightfield`, `compound`, `auto`), materials, collision layers, joints (hinge, point, distance, lock, spring) and `physics.debug` wireframes are described in [scene-format.md](scene-format.md#physics). Angles and angular velocities are in degrees (/ s), like rotations everywhere.
 
-Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports it (dynamic bodies keep their velocity; kinematic bodies sweep to the new pose so they push what they touch). A player whose velocity you set every step should have `"fixedRotation": true` (or `"character": true`), otherwise friction makes it tumble.
+Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports it (dynamic bodies keep their velocity; kinematic bodies sweep to the new pose so they push what they touch). A character keeps its contacts and `grounded()` state through small corrections (under 0.5 m: clamping z every step, snapping to a lane), so jumps keep working; a longer teleport (respawn) clears them until the next step. A player whose velocity you set every step should have `"fixedRotation": true` (or `"character": true`), otherwise friction makes it tumble.
+
+**Moving platforms carry characters.** A character standing on a `kinematic` body — moved by `position.set` every step or by a velocity, sliding, lifting or turning — rides it: the platform's motion is added for the step, `moveCharacter` steering stays relative to the platform, and `grounded()` / `contacts()` report the platform every step (even while it moves down). Do not carry the hero yourself.
 
 | Member | Description |
 |---|---|
@@ -79,7 +81,7 @@ Moving a body from a script (`obj.position.set`, `obj.rotation.set`) teleports i
 | `api.physics.applyForce(obj, [x, y, z], point?)` / `applyTorque(obj, [x, y, z])` | Continuous push for the next step (call every update: thrusters, wind) |
 | `api.physics.setVelocity(obj, v)` / `getVelocity(obj)` | Linear velocity (m/s) — also `obj.velocity.x = …` |
 | `api.physics.setAngularVelocity(obj, deg)` / `getAngularVelocity(obj)` | Spin in degrees / s |
-| `api.physics.grounded(obj)` | Standing on something (a contact pushing up) |
+| `api.physics.grounded(obj)` | Standing on something (a contact pushing up; characters also count ground within a few cm under their feet, so it does not flicker on moving platforms) |
 | `api.physics.moveCharacter(obj, { x, z }, { speed?, acceleration?, airControl? }?)` | Character controller: steer horizontally toward `move × speed` (move length ≤ 1, default speed 5), keeps the vertical velocity, reduced control in the air; turns the body into a character (no rotation, no friction). Call once per update |
 | `api.physics.jump(obj, speed?)` | Jumps (default 6 m/s) when grounded or within 0.12 s of leaving the ground (coyote time); no double jump; returns `true` when it jumped |
 | `api.physics.wake(obj)` | Wake a sleeping body |
@@ -181,5 +183,11 @@ npx -y @fleox/agent3d@0.2.0 render --project my-game --frames 0,1,2 --input '[{"
 | `{ "t": 2, "pointerUp": [0.4, 0] }` | release it there (`"pointerUp": true`: where the pointer is) |
 | `{ "t": 1, "drag": { "from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4 } }` | press at `from`, move to `to` over `duration` s (default 0.3; 30 pointer moves per second), release |
 | `{ "t": 1, "swipe": "left" }` | a swipe gesture: `api.input.swipe()` returns `"left"` / `"right"` / `"up"` / `"down"` during the next step |
+| `{ "t": 1, "scroll": 0.5 }` | page scroll progress 0..1 (scroll-driven scenes; `null` = back to t / duration) |
+| `{ "t": 3, "ui": "retryBtn" }` | click the HUD button `retryBtn` (scene.ui element of type `button`): its `action` is emitted. Unknown ids are a usage error with a "did you mean"; a button hidden at that time is reported in `inputWarnings` |
+| `{ "t": 3, "emit": "retry", "payload"?: … }` | emit an event (`api.on`, interactions `{ "on": "event" }`) |
+| `{ "t": 0, "segment": "intro", "reverse"?: true }` | play a timeline segment (`--segment intro` adds this at t = 0) |
+
+The same events apply to `--video` / `--gif` / `--webp` captures, each at its own time. `--reduced-motion` mounts the scene as prefers-reduced-motion visitors see it; `--scroll 0.9` names frames by progress (`<stamp>-s0_9.png`, `scroll` in the result).
 
 An event with an unknown field (`{"t": 1, "tap": [0, 0]}`, `{"t": 1, "click": [0, 0], "hold": 1}`) is a usage error (exit 2) whose hint lists the valid shapes. `render_preview` (MCP) takes the same events as `input`. The `Player` API (`src/runtime/api.ts`) exposes the same `input.pointer/key/click/down/up/swipe` and `state()` for browser-based tests.

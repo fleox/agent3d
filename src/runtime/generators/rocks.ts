@@ -29,7 +29,7 @@ export const rocks: GeneratorImpl = (raw, ctx) => {
   const b = new MeshBuilder();
   const m = new THREE.Matrix4();
   for (let k = 0; k < count; k++) {
-    const pt = scatterPoint(rng, area, ground, -10);
+    const pt = scatterPoint(rng, area, ground, -10, false);
     // Mostly small rocks, a few big boulders.
     const size = minS + (maxS - minS) * Math.pow(rng.next(), 1.8);
     const g = rng.pick(variants);

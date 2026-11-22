@@ -63,6 +63,41 @@ export function rangeTime(r: Range, elapsed: number, startLocal?: number): numbe
   return r.from + dir * p;
 }
 
+// Timeline state read by HUD expressions (`timeline.segment == 'intro'`).
+export interface TimelineInfo {
+  time: number;
+  duration: number;
+  progress: number;
+  segment: string;
+  marker: string;
+}
+
+// segment: the explicitly played segment, else the first declared segment
+// whose range contains the time ([from, to), the timeline end included),
+// else "". marker: the last marker at or before the time ("" before the first).
+export function timelineInfo(def: TimelineDef, local: number, playing?: string | null): TimelineInfo {
+  const duration = Math.max(def.duration || 0, 1e-3);
+  let segment = playing && playing !== "seek" && playing !== "timeline" && def.segments?.[playing] ? playing : "";
+  if (!segment)
+    for (const name of Object.keys(def.segments ?? {})) {
+      const r = resolveSegment(def, name);
+      if (!r) continue;
+      const a = Math.min(r.from, r.to), b = Math.max(r.from, r.to);
+      if (local >= a && (local < b || (b >= duration - 1e-6 && local <= b))) {
+        segment = name;
+        break;
+      }
+    }
+  let marker = "";
+  let best = -Infinity;
+  for (const [name, time] of Object.entries(def.markers ?? {}))
+    if (typeof time === "number" && time <= local + 1e-6 && time >= best) {
+      best = time;
+      marker = name;
+    }
+  return { time: local, duration, progress: clamp(local / duration, 0, 1), segment, marker };
+}
+
 export class TimelineController {
   private hoverClock = 0;
   private clickAt = -1;
@@ -190,6 +225,11 @@ export class TimelineController {
   private isLoopingForward(): boolean {
     const r = this.active ?? this.autoRange();
     return !!r.loop && r.loop !== "pingpong" && r.to >= r.from;
+  }
+
+  // Timeline state at the last computed time (HUD `timeline.*`).
+  info(): TimelineInfo {
+    return timelineInfo(this.def, this.lastLocal, this.active?.name);
   }
 
   // Markers crossed since the last call.

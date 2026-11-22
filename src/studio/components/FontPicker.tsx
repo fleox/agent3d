@@ -6,6 +6,7 @@ import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FONTS } from "../../core/catalog";
 import { textPath, type Typeface } from "../lib/typeface";
+import { fieldLabel } from "../lib/labels";
 import { libraryUrl, useLibraryBase } from "../state/useLibraryBase";
 import { PickerButton, Popover } from "./ui/Popover";
 
@@ -64,7 +65,7 @@ export function FontPicker({ value, onChange }: { value: string; onChange(id: st
     <Popover
       width={268}
       trigger={(open, isOpen) => (
-        <PickerButton onClick={open} open={isOpen} ariaLabel="font">
+        <PickerButton onClick={open} open={isOpen} ariaLabel={fieldLabel("font")}>
           <FontPreview id={value} height={15} className="text-fg" />
         </PickerButton>
       )}

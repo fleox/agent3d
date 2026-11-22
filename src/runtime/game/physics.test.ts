@@ -386,3 +386,160 @@ describe("physics bridge: scripted scale", () => {
     expect(issues).toEqual([]);
   });
 });
+
+describe("physics: character controller robustness", () => {
+  const hero = (w: PhysicsWorld) => w.add({ id: "hero", type: "dynamic", position: [0, 1, 0], shapes: [{ type: "capsule", radius: 0.38, height: 1.45 }], character: true });
+
+  it("small scripted corrections every step keep grounded() and jumps", () => {
+    const w = new PhysicsWorld({ gravity: [0, -20, 0] });
+    floor(w);
+    hero(w);
+    let grounded = 0, jumps = 0;
+    for (let i = 0; i < 240; i++) {
+      w.moveCharacter("hero", [1, 0.3], { speed: 6 });
+      const p = w.get("hero")!.position;
+      // clamp z and nudge up 2 mm (what an object ↔ body round trip can do)
+      w.setPose("hero", [p[0], p[1] + 0.002, 0]);
+      if (i % 60 === 30 && w.jump("hero", 10)) jumps++;
+      w.step(1 / 60);
+      if (i >= 20 && i < 30) grounded += w.grounded("hero") ? 1 : 0;
+    }
+    expect(grounded).toBe(10);
+    expect(jumps).toBe(4);
+    expect(Math.abs(w.get("hero")!.position[2])).toBeLessThan(0.05); // one step of drift after the last clamp
+  });
+
+  it("a respawn teleport clears the ground state until the next step", () => {
+    const w = new PhysicsWorld({ gravity: [0, -20, 0] });
+    floor(w);
+    hero(w);
+    run(w, 0.5);
+    expect(w.grounded("hero")).toBe(true);
+    w.setPose("hero", [0, 6, 0]);
+    expect(w.grounded("hero")).toBe(false);
+    expect(w.jump("hero", 8)).toBe(false);
+  });
+
+  it("rebuilding a body in place (scripted scale) keeps contacts and ground state", () => {
+    const w = new PhysicsWorld({ gravity: [0, -20, 0] });
+    floor(w);
+    hero(w);
+    run(w, 0.5);
+    const ends: string[] = [];
+    w.onCollisionEnd((a, b) => ends.push(`${a.id}|${b.id}`));
+    const p = w.get("hero")!.position;
+    w.add({ id: "hero", type: "dynamic", position: p, shapes: [{ type: "capsule", radius: 0.4, height: 1.5 }], character: true });
+    expect(w.grounded("hero")).toBe(true);
+    expect(w.contactsOf("hero").map((b) => b.id)).toEqual(["floor"]);
+    w.step(1 / 60);
+    expect(w.grounded("hero")).toBe(true);
+    expect(ends).toEqual([]);
+    expect(w.jump("hero", 8)).toBe(true);
+  });
+
+  it("moving lifts carry the character (scripted position, velocity, vertical) and stay its reported contact", () => {
+    for (const mode of ["slide", "elevator", "velocity"] as const) {
+      const w = new PhysicsWorld({ gravity: [0, -20, 0] });
+      w.add(box("lift", "kinematic", [0, 1, 0], [3, 0.4, 3]));
+      const h = w.add({ id: "hero", type: "dynamic", position: [0, 2.2, 0], shapes: [{ type: "capsule", radius: 0.38, height: 1.45 }], character: true });
+      let t = 0, rel0 = 0, drift = 0, grounded = 0, touching = 0, heightErr = 0;
+      for (let i = 0; i < 300; i++) {
+        t += 1 / 60;
+        if (mode === "slide") w.setPose("lift", [Math.sin(t * 0.9) * 1.6, 1, 0]);
+        if (mode === "elevator") w.setPose("lift", [0, 2.5 - Math.cos(t * 0.8) * 1.5, 0]);
+        if (mode === "velocity") w.setVelocity("lift", [Math.cos(t) * 2, 0, 0]);
+        w.moveCharacter("hero", [0, 0]);
+        w.step(1 / 60);
+        const lift = w.get("lift")!;
+        const rel = h.position[0] - lift.position[0];
+        if (i === 30) rel0 = rel;
+        if (i > 30) {
+          drift = Math.max(drift, Math.abs(rel - rel0));
+          grounded += w.grounded("hero") ? 1 : 0;
+          touching += w.contactsOf("hero").some((b) => b.id === "lift") ? 1 : 0;
+          heightErr = Math.max(heightErr, Math.abs(h.position[1] - (lift.position[1] + 0.2 + 0.725)));
+        }
+      }
+      expect(drift, mode).toBeLessThan(0.02);
+      expect(grounded, mode).toBe(269);
+      expect(touching, mode).toBe(269);
+      expect(heightErr, mode).toBeLessThan(0.08);
+      expect(w.groundOf("hero")?.id, mode).toBe("lift");
+    }
+  });
+});
+
+describe("physics bridge: collider measurement and scripted lifts", () => {
+  async function world(defs: { def: Record<string, unknown>; size?: [number, number, number]; pos: [number, number, number]; children?: { id: string; size: [number, number, number]; pos: [number, number, number]; body?: unknown }[] }[]) {
+    const THREE = await import("three");
+    const { PhysicsBridge } = await import("./physicsHost");
+    const scene = new THREE.Scene();
+    const entries = new Map<string, unknown>();
+    const add = (id: string, def: Record<string, unknown>, size: [number, number, number] | undefined, pos: [number, number, number], parent: import("three").Object3D) => {
+      const obj = size ? new THREE.Mesh(new THREE.BoxGeometry(...size), new THREE.MeshBasicMaterial()) : new THREE.Group();
+      obj.position.set(...pos);
+      obj.userData.a3dId = id;
+      parent.add(obj);
+      entries.set(id, { id, kind: def.kind, def, object: obj, rest: {}, runners: [], animated: false, topLevel: parent === scene, interactive: false });
+      return obj;
+    };
+    for (const d of defs) {
+      const children = (d.children ?? []).map((c) => ({ id: c.id, kind: "mesh", geometry: { type: "box" }, body: c.body }));
+      const o = add(d.def.id as string, { ...d.def, children }, d.size, d.pos, scene);
+      for (const c of d.children ?? []) add(c.id, { id: c.id, kind: "mesh", geometry: { type: "box" }, body: c.body }, c.size, c.pos, o);
+    }
+    const bridge = new PhysicsBridge({ gravity: [0, -20, 0] }, { scene, entries } as never, () => {});
+    bridge.attachAll();
+    return { bridge, entries: entries as Map<string, { object: import("three").Object3D }> };
+  }
+  const dirt = { id: "dirt", size: [4, 1.2, 2] as [number, number, number], pos: [0, -0.8, 0] as [number, number, number] };
+
+  it("box / auto shapes measure the object's own geometry, not its decorative children", async () => {
+    for (const shape of ["box", "auto"]) {
+      const { bridge } = await world([{ def: { id: "plat", kind: "mesh", geometry: { type: "box" }, body: { type: "static", shape } }, size: [4, 0.4, 2], pos: [0, 0, 0], children: [dirt] }]);
+      const b = bridge.engine.get("plat")!;
+      expect(b.position[1], shape).toBeCloseTo(0, 5); // centred on the slab, not on slab + dirt
+      expect((b.shapes[0] as { half: number[] }).half[1], shape).toBeCloseTo(0.2, 5);
+      expect(bridge.engine.get("dirt"), shape).toBeUndefined();
+    }
+  });
+
+  it("compound without shapes merges the children without a body; children with a body get their own", async () => {
+    const { bridge } = await world([
+      { def: { id: "plat", kind: "mesh", geometry: { type: "box" }, body: { type: "static", shape: "compound" } }, size: [4, 0.4, 2], pos: [0, 0, 0], children: [dirt, { id: "crate", size: [1, 1, 1], pos: [0, 2, 0], body: { type: "dynamic", shape: "box" } }] },
+    ]);
+    const shapes = bridge.engine.get("plat")!.shapes as { half: number[]; offset: number[] }[];
+    expect(shapes).toHaveLength(2);
+    expect(shapes[1]!.half[1]).toBeCloseTo(0.6, 5);
+    expect(shapes[1]!.offset[1]).toBeCloseTo(-0.8, 5);
+    expect(bridge.engine.get("crate")).toBeDefined();
+  });
+
+  it("a group body still measures its children (it has no geometry of its own)", async () => {
+    const { bridge } = await world([{ def: { id: "g", kind: "group", body: { type: "static", shape: "box" } }, pos: [0, 0, 0], children: [{ id: "part", size: [2, 1, 2], pos: [0, 0.5, 0] }] }]);
+    const b = bridge.engine.get("g")!;
+    expect((b.shapes[0] as { half: number[] }).half).toEqual([1, 0.5, 1]);
+    expect(b.position[1]).toBeCloseTo(0.5, 5);
+  });
+
+  it("a lift moved with position.set carries a character standing on it", async () => {
+    const { bridge, entries } = await world([
+      { def: { id: "lift", kind: "mesh", geometry: { type: "box" }, body: { type: "kinematic", shape: "auto" } }, size: [3, 0.4, 3], pos: [0, 1, 0], children: [dirt] },
+      { def: { id: "hero", kind: "mesh", geometry: { type: "box" }, body: { type: "dynamic", shape: "capsule", radius: 0.38, height: 1.45, character: true } }, size: [0.76, 1.45, 0.76], pos: [0, 2.2, 0] },
+    ]);
+    const lift = entries.get("lift")!.object, hero = entries.get("hero")!.object;
+    let t = 0, ok = 0, rel0 = 0;
+    for (let i = 0; i < 240; i++) {
+      t += 1 / 60;
+      lift.position.set(Math.sin(t) * 2, 1 + Math.sin(t * 0.7), 0);
+      bridge.moved("lift");
+      bridge.engine.moveCharacter("hero", [0, 0]);
+      bridge.step(1 / 60);
+      if (i === 30) rel0 = hero.position.x - lift.position.x;
+      if (i > 30 && bridge.engine.grounded("hero") && bridge.engine.groundOf("hero")?.id === "lift") ok++;
+    }
+    expect(ok).toBe(209);
+    expect(Math.abs(hero.position.x - lift.position.x - rel0)).toBeLessThan(0.02);
+    expect(hero.position.y).toBeGreaterThan(lift.position.y);
+  });
+});

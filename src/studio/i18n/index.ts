@@ -60,6 +60,11 @@ export function translate(lang: Lang, key: MessageKey, vars?: Record<string, str
   return vars ? raw.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : raw;
 }
 
+// A message by a key built at run time (e.g. "fields.<param>"), or undefined when no bundle has it.
+export function tryTranslate(key: string, lang: Lang = current): string | undefined {
+  return lookup(BUNDLES[lang], key) ?? lookup(en, key);
+}
+
 export function t(key: MessageKey, vars?: Record<string, string | number>): string {
   return translate(current, key, vars);
 }

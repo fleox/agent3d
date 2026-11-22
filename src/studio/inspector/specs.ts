@@ -153,6 +153,8 @@ export const JOINT_SPECS: ParamSpec[] = [
   b("collideConnected", false),
 ];
 
+// Top-level objects only: ride with the camera (position / rotation in camera space, -z forward).
+export const ATTACH_SPEC: ParamSpec = e("attach", ["none", "camera"], "none", "camera: the object rides with the camera (position / rotation in camera space: x right, y up, -z forward). Captions and labels that stay on screen during camera moves.");
 export const OBJECT_FLAGS: ParamSpec[] = [b("castShadow", false), b("receiveShadow", false), s("href", "Clicking the object opens this URL.")];
 
 export const TARGET_SPECS: ParamSpec[] = [
@@ -235,13 +237,15 @@ export const PHYSICS_SPECS: ParamSpec[] = [
   b("sleep", true, "Let resting bodies sleep."),
   b("debug", false, "Draw collider wireframes."),
 ];
-export const UI_THEME_SPECS: ParamSpec[] = [s("font", "CSS font-family (system stacks)."), c("color", "#ffffff"), c("accent", "#7c8cff")];
+export const UI_THEME_SPECS: ParamSpec[] = [s("font", "CSS font-family (system stacks)."), c("color", "#ffffff"), c("accent", "#7c8cff"), c("buttonText", undefined, "Button label colour (default: white or near-black, whichever contrasts best with the accent).")];
 export const UI_ELEMENT_SPECS: ParamSpec[] = [
   e("type", ["text", "button", "bar"], "text"),
   s("text", "May contain {state.key} placeholders."),
   e("anchor", ["top-left", "top", "top-right", "left", "center", "right", "bottom-left", "bottom", "bottom-right"], "top-left"),
-  e("style", ["plain", "pill", "title", "subtitle"], "plain"),
+  e("style", ["plain", "pill", "title", "subtitle", "panel"], "plain", "panel = a backdrop card (game-over / pause screens; \\n breaks lines)."),
   s("value", "Bar: state key holding 0..1."),
   s("action", "Button: event emitted to scripts."),
+  c("color", undefined, "Text colour of this element."),
+  c("background", undefined, "Background of a button / pill / panel / bar track."),
 ];
 export const SCENE_META_SPECS: ParamSpec[] = [s("title"), s("description"), s("ariaLabel", "Accessible label (defaults to the title)."), i("seed", undefined, 0, undefined, "Seed for generators / particles.")];

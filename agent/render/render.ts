@@ -74,6 +74,9 @@ export function frameTimes(scene: Pick<SceneDoc, "timeline" | "target"> | null, 
 //   { "t": 1, "drag": { "from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4 } }   press, move (30 steps/s), release
 //   { "t": 1, "swipe": "left" }                          a swipe gesture: "left" | "right" | "up" | "down"
 //   { "t": 1, "scroll": 0.5 }                            page scroll progress 0..1 (scroll-driven scenes; null = back to t / duration)
+//   { "t": 2, "emit": "retry", "payload"?: … }           emit an event (scripts api.on, interactions { on: "event" }) — what a HUD button does
+//   { "t": 2, "ui": "retryBtn" }                         click a HUD button (scene.ui element of type "button") by id
+//   { "t": 0, "segment": "intro", "reverse"?: true }     play a timeline segment (timeline.segments, or "timeline") — Player.playSegment
 
 export type Point = [number, number];
 export type SwipeDirection = "left" | "right" | "up" | "down";
@@ -84,13 +87,16 @@ export type InputEvent =
   | { t: number; pointerDown: Point }
   | { t: number; pointerUp: Point | null }
   | { t: number; swipe: SwipeDirection }
-  | { t: number; scroll: number | null };
+  | { t: number; scroll: number | null }
+  | { t: number; emit: string; payload?: unknown }
+  | { t: number; ui: string }
+  | { t: number; segment: string; reverse?: boolean };
 
 const pair = (v: unknown): v is Point => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
 const SWIPES: SwipeDirection[] = ["left", "right", "up", "down"];
 
 export const INPUT_SHAPES =
-  'Events: {"t": 0.5, "key": "ArrowRight", "down": true} | {"t": 0.5, "key": "Space", "hold": 0.3} | {"t": 1, "click": [0, 0]} | {"t": 1, "pointer": [0.5, -0.2], "down"?: true} | {"t": 1, "pointerDown": [0, 0]} | {"t": 2, "pointerUp": [0.4, 0]} | {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}} | {"t": 1, "swipe": "left"|"right"|"up"|"down"} | {"t": 1, "scroll": 0.5} (coordinates -1..1, y up; key = KeyboardEvent.code).';
+  'Events: {"t": 0.5, "key": "ArrowRight", "down": true} | {"t": 0.5, "key": "Space", "hold": 0.3} | {"t": 1, "click": [0, 0]} | {"t": 1, "pointer": [0.5, -0.2], "down"?: true} | {"t": 1, "pointerDown": [0, 0]} | {"t": 2, "pointerUp": [0.4, 0]} | {"t": 1, "drag": {"from": [-0.5, 0], "to": [0.5, 0], "duration": 0.4}} | {"t": 1, "swipe": "left"|"right"|"up"|"down"} | {"t": 1, "scroll": 0.5} | {"t": 2, "emit": "retry", "payload"?: …} | {"t": 2, "ui": "<HUD button id>"} | {"t": 0, "segment": "<timeline segment>", "reverse"?: true} (coordinates -1..1, y up; key = KeyboardEvent.code).';
 
 // Allowed fields per event kind (anything else is a usage error).
 const FIELDS: Record<string, string[]> = {
@@ -102,6 +108,9 @@ const FIELDS: Record<string, string[]> = {
   drag: ["t", "drag"],
   swipe: ["t", "swipe"],
   scroll: ["t", "scroll"],
+  emit: ["t", "emit", "payload"],
+  ui: ["t", "ui"],
+  segment: ["t", "segment", "reverse"],
 };
 
 export function parseInputScript(raw: unknown): InputEvent[] {
@@ -154,6 +163,16 @@ export function parseInputScript(raw: unknown): InputEvent[] {
     } else if (kind === "scroll") {
       if (ev.scroll !== null && (typeof ev.scroll !== "number" || !(ev.scroll >= 0 && ev.scroll <= 1))) throw bad(i, '"scroll" must be a progress between 0 and 1 (or null)');
       out.push({ t, scroll: ev.scroll as number | null });
+    } else if (kind === "emit") {
+      if (typeof ev.emit !== "string" || !ev.emit) throw bad(i, '"emit" must be an event name, e.g. "retry"');
+      out.push(ev.payload === undefined ? { t, emit: ev.emit } : { t, emit: ev.emit, payload: ev.payload });
+    } else if (kind === "ui") {
+      if (typeof ev.ui !== "string" || !ev.ui) throw bad(i, '"ui" must be the id of a HUD button (scene.ui.elements, type "button")');
+      out.push({ t, ui: ev.ui });
+    } else if (kind === "segment") {
+      if (typeof ev.segment !== "string" || !ev.segment) throw bad(i, '"segment" must be a timeline segment name (timeline.segments) or "timeline"');
+      if (ev.reverse !== undefined && typeof ev.reverse !== "boolean") throw bad(i, '"reverse" must be true or false');
+      out.push(ev.reverse ? { t, segment: ev.segment, reverse: true } : { t, segment: ev.segment });
     } else {
       if (typeof ev.swipe !== "string" || !SWIPES.includes(ev.swipe as SwipeDirection)) throw bad(i, '"swipe" must be "left", "right", "up" or "down"');
       out.push({ t, swipe: ev.swipe as SwipeDirection });
@@ -163,9 +182,33 @@ export function parseInputScript(raw: unknown): InputEvent[] {
   return out.map((e, i) => ({ e, i })).sort((a, b) => a.e.t - b.e.t || a.i - b.i).map((x) => x.e);
 }
 
-// Player.input call(s) for one event.
+// Checks the events that name scene things (HUD buttons, timeline segments)
+// against the scene: unknown ids are usage errors with a "did you mean".
+export function checkInputsForScene(scene: SceneDoc, events: InputEvent[]): void {
+  const buttons = (scene.ui?.elements ?? []).filter((e) => e.type === "button").map((e) => e.id);
+  const segments = ["timeline", ...Object.keys(scene.timeline?.segments ?? {})];
+  for (const ev of events) {
+    if ("ui" in ev && !buttons.includes(ev.ui)) {
+      const s = closest(ev.ui, buttons);
+      throw new CliError("usage", `--input: no HUD button "${ev.ui}" in scene.ui.elements.`, buttons.length ? `${s ? `Did you mean "${s}"? ` : ""}Buttons: ${buttons.join(", ")}.` : 'The scene has no ui button — use {"t": …, "emit": "<action>"} to emit the event directly.', 2);
+    }
+    if ("segment" in ev) {
+      if (!scene.timeline) throw new CliError("usage", `--input / --segment "${ev.segment}": the scene has no timeline.`, "Add a timeline with segments (timeline set), or drop --segment.", 2);
+      if (!segments.includes(ev.segment)) {
+        const s = closest(ev.segment, segments);
+        throw new CliError("usage", `--input / --segment: no timeline segment "${ev.segment}".`, `${s ? `Did you mean "${s}"? ` : ""}Segments: ${segments.join(", ")}.`, 2);
+      }
+    }
+  }
+}
+
+// Player call(s) for one event, evaluated with `p` = the player and `i` = p.input.
+// HUD button clicks (`ui`) return false when the button is not shown.
 export function inputCall(ev: InputEvent): string {
   const p = (pt: Point) => `${pt[0]}, ${pt[1]}`;
+  if ("emit" in ev) return `p.emit?.(${JSON.stringify(ev.emit)}${ev.payload === undefined ? "" : `, ${JSON.stringify(ev.payload)}`})`;
+  if ("ui" in ev) return `window.__agent3dUi(${JSON.stringify(ev.ui)})`;
+  if ("segment" in ev) return `p.playSegment?.(${JSON.stringify(ev.segment)}${ev.reverse ? ", { reverse: true }" : ""})`;
   if ("key" in ev) return `i.key(${JSON.stringify(ev.key)}, ${ev.down})`;
   if ("click" in ev) return `i.click(${p(ev.click)})`;
   if ("pointerDown" in ev) return `(i.pointer(${p(ev.pointerDown)}), i.down?.(${p(ev.pointerDown)}))`;
@@ -203,11 +246,12 @@ export interface RenderSession {
   composite(png: Uint8Array, bg: string): Promise<Uint8Array>;
   // Replace the mounted scene (player.update).
   update(scene: SceneDoc): Promise<void>;
-  // A PNG scaled down to maxWidth CSS pixels (unchanged when narrower).
-  scale(png: Uint8Array, maxWidth: number): Promise<Uint8Array>;
+  // A PNG scaled down to maxWidth CSS pixels (unchanged when narrower), re-encoded when `o.type` is given.
+  scale(png: Uint8Array, maxWidth: number, o?: { type?: "image/png" | "image/jpeg" | "image/webp"; quality?: number; bg?: string }): Promise<Uint8Array>;
   // seek(t) without capturing (to apply input events in between).
   seek(t: number): Promise<void>;
-  input(ev: InputEvent): Promise<void>;
+  // false: the event could not apply (a HUD button that is not shown).
+  input(ev: InputEvent): Promise<boolean>;
   info(): Promise<PageInfo>;
   // seek(t) + capture of the canvas downscaled by `ss` (supersampling) over an optional background.
   grab(t: number, o?: GrabOptions): Promise<Uint8Array>;
@@ -231,6 +275,8 @@ export interface GrabOptions {
 
 export interface OpenOptions {
   projectDir: string;
+  // Mount with reducedMotion: true (prefers-reduced-motion: the static / poster pose).
+  reducedMotion?: boolean;
   scene?: SceneDoc; // default: <projectDir>/scene.json
   viewport: Viewport;
   timeoutMs?: number;
@@ -263,7 +309,7 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
   const timeoutMs = opts.timeoutMs ?? 60_000;
   const log = opts.log ?? (() => undefined);
   const t0 = Date.now();
-  const html = previewHtml({ pixelRatio: opts.viewport.deviceScaleFactor, transparent: !!scene.target?.transparent });
+  const html = previewHtml({ pixelRatio: opts.viewport.deviceScaleFactor, transparent: !!scene.target?.transparent, reducedMotion: !!opts.reducedMotion });
   let server: LocalServer | null = null;
   let browser: LaunchedBrowser | null = null;
   let client: CdpClient | null = null;
@@ -399,20 +445,23 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
       async update(next) {
         await page.evaluate(`window.__agent3d.player.update(${JSON.stringify(next)}).then(() => true)`, timeoutMs);
       },
-      async scale(png, maxWidth) {
+      async scale(png, maxWidth, o = {}) {
         const r = await page.send<{ result: { value?: unknown }; exceptionDetails?: unknown }>(
           "Runtime.callFunctionOn",
           {
-            functionDeclaration: `async function (u, w) {
+            functionDeclaration: `async function (u, w, type, q, bg) {
               const img = new Image(); img.src = u; await img.decode();
-              if (img.naturalWidth <= w) return null;
+              if (img.naturalWidth <= w && !type) return null;
+              w = Math.min(w, img.naturalWidth);
               const h = Math.max(1, Math.round(img.naturalHeight * w / img.naturalWidth));
               const c = document.createElement("canvas"); c.width = w; c.height = h;
-              const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, w, h);
-              return c.toDataURL("image/png");
+              const g = c.getContext("2d");
+              if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
+              g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, w, h);
+              return c.toDataURL(type || "image/png", q);
             }`,
             objectId: await globalObjectId(page),
-            arguments: [{ value: `data:image/png;base64,${b64(png)}` }, { value: Math.round(maxWidth) }],
+            arguments: [{ value: `data:image/png;base64,${b64(png)}` }, { value: Math.round(Math.min(maxWidth, 16384)) }, { value: o.type ?? null }, { value: o.quality ?? null }, { value: o.bg ?? null }],
             awaitPromise: true,
             returnByValue: true,
           },
@@ -425,7 +474,8 @@ export async function openRenderSession(opts: OpenOptions): Promise<RenderSessio
         await page.evaluate(`window.__agent3d.player.seek(${JSON.stringify(t)}).then(() => true)`, timeoutMs);
       },
       async input(ev) {
-        await page.evaluate(`((i) => (${inputCall(ev)}, true))(window.__agent3d.player.input)`, timeoutMs);
+        const r = await page.evaluate<unknown>(`((p) => { const i = p.input; const r = ${inputCall(ev)}; return r === false ? false : true; })(window.__agent3d.player)`, timeoutMs);
+        return r !== false;
       },
       async info() {
         return (await page.evaluate<PageInfo>("window.__agent3dInfo()", timeoutMs)) ?? { stats: null, inspect: null, issues: [], state: null };
@@ -494,6 +544,10 @@ export interface RenderOptions {
   transparent?: boolean;
   // Scroll progress 0..1 (scroll-driven scenes): Player.setScrollProgress, else the matching time.
   scroll?: number;
+  // Mount with reducedMotion: true (what visitors with prefers-reduced-motion see).
+  reducedMotion?: boolean;
+  // Play this timeline segment at t = 0 (scenes whose timeline waits for an interaction).
+  segment?: string;
   timeoutMs?: number;
   log?: (msg: string) => void;
 }
@@ -501,8 +555,13 @@ export interface RenderOptions {
 export interface RenderResult {
   // Paths relative to the project folder (`dir`), absolute when --out is outside it.
   dir: string;
-  frames: { t: number; path: string }[];
+  // scroll: the forced scroll progress of that frame (--scroll / scroll input events).
+  frames: { t: number; path: string; scroll?: number }[];
   sheet?: string;
+  scroll?: number;
+  reducedMotion?: boolean;
+  // Input events that could not apply (e.g. a hidden HUD button).
+  inputWarnings?: string[];
   // render --isolate: the object and the bounding box the camera framed.
   isolated?: { id: string; size: [number, number, number]; center: [number, number, number]; note: string };
   // Down-scaled copy of the sheet / first frame (previewWidth), when it was wider.
@@ -581,6 +640,37 @@ export function frameBox(min: number[], max: number[], fov = 35, aspect = 1): { 
   return { position: [0, 1, 2].map((i) => round(c[i] + (dir[i] / n) * d)) as [number, number, number], target: c.map(round) as [number, number, number] };
 }
 
+// Input playback shared by stills and media: applies every event due at or
+// before `t` (seeking to each event's own time first, so it happens then).
+export interface InputCursor {
+  next: number;
+  // Current forced scroll progress (scroll events / --scroll), for frame labels.
+  scroll?: number;
+  warnings: string[];
+}
+
+export async function applyInputsUpTo(session: Pick<RenderSession, "seek" | "input">, inputs: InputEvent[], cursor: InputCursor, t: number): Promise<void> {
+  for (; cursor.next < inputs.length && inputs[cursor.next].t <= t + 1e-9; cursor.next++) {
+    const ev = inputs[cursor.next];
+    await session.seek(ev.t);
+    const ok = await session.input(ev);
+    if ("scroll" in ev) cursor.scroll = ev.scroll === null ? undefined : ev.scroll;
+    if (!ok && "ui" in ev && cursor.warnings.length < 20) cursor.warnings.push(`t=${ev.t}: HUD button "${ev.ui}" is not shown at that time (its "visible" condition is false, or the HUD is not mounted) — nothing was clicked.`);
+  }
+}
+
+// The events --segment adds: play that segment at the start time.
+export function segmentInputs(segment: string | undefined, start = 0): InputEvent[] {
+  return segment ? [{ t: start, segment }] : [];
+}
+
+// Frame file suffix: the time, plus the scroll progress when it is forced (-s0_9 / -s0_9-t1_5).
+export function frameSuffix(t: number, scroll: number | undefined, scrollOnly: boolean): string {
+  const f = (v: number) => String(Math.round(v * 1000) / 1000).replace(/\./g, "_");
+  if (scroll === undefined) return `t${f(t)}`;
+  return scrollOnly ? `s${f(scroll)}` : `s${f(scroll)}-t${f(t)}`;
+}
+
 export async function renderProject(opts: RenderOptions): Promise<RenderResult> {
   const t0 = Date.now();
   const original = sceneForRender(opts.scene ?? readScene(opts.projectDir), { transparent: opts.transparent });
@@ -593,15 +683,18 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
   const ss = clampSs(QUALITY_SS[opts.quality ?? "standard"], outViewport);
   const viewport = { ...outViewport, deviceScaleFactor: outViewport.deviceScaleFactor * ss };
   if (opts.scroll !== undefined && !(opts.scroll >= 0 && opts.scroll <= 1)) throw new CliError("usage", "--scroll must be a progress between 0 and 1.", "e.g. --scroll 0.5 (half-way through the page scroll).", 2);
-  const inputs = opts.input ?? [];
+  const inputs = [...segmentInputs(opts.segment), ...(opts.input ?? [])].map((e, i) => ({ e, i })).sort((a, b) => a.e.t - b.e.t || a.i - b.i).map((x) => x.e);
+  if (!opts.isolate) checkInputsForScene(scene, inputs);
   let times = frameTimes(scene, { frames: opts.frames, count: opts.count ?? (opts.isolate ? 1 : undefined) });
   // Seeking backwards restarts the game: with inputs, render in time order.
   if (inputs.length) times = [...times].sort((a, b) => a - b);
   const capture = !opts.capture || opts.capture === "auto" ? (scene.ui?.elements?.length ? "page" : "canvas") : opts.capture;
   const outDir = resolve(opts.outDir ?? join(opts.projectDir, "renders"));
-  const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, timeoutMs: opts.timeoutMs, log: opts.log });
+  const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, reducedMotion: opts.reducedMotion, timeoutMs: opts.timeoutMs, log: opts.log });
   try {
     if (opts.scroll !== undefined && !(await session.setScroll(opts.scroll)) && !opts.frames) times = [scrollTime(scene, opts.scroll)];
+    // One frame for a --scroll position alone: it is named and labelled by its progress.
+    const scrollOnly = opts.scroll !== undefined && times.length === 1 && (!opts.frames || opts.frames.trim() === "0") && !inputs.some((e) => "scroll" in e);
     let isolated: RenderResult["isolated"];
     if (opts.isolate) {
       // Frame the object's real bounds, then re-mount with that camera.
@@ -620,12 +713,11 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
     }
     const tf = Date.now();
     const shots: Uint8Array[] = [];
-    let next = 0;
+    const cursor: InputCursor = { next: 0, scroll: opts.scroll, warnings: [] };
+    const frameScroll: (number | undefined)[] = [];
     for (const t of times) {
-      for (; next < inputs.length && inputs[next].t <= t + 1e-9; next++) {
-        await session.seek(inputs[next].t);
-        await session.input(inputs[next]);
-      }
+      await applyInputsUpTo(session, inputs, cursor, t);
+      frameScroll.push(cursor.scroll);
       const shot =
         capture === "page"
           ? ss > 1
@@ -641,29 +733,32 @@ export async function renderProject(opts: RenderOptions): Promise<RenderResult> 
     mkdirSync(outDir, { recursive: true });
     const stamp = timestamp();
     const frames = times.map((t, i) => {
-      const path = join(outDir, `${stamp}-t${String(t).replace(/\./g, "_")}.png`);
+      const path = join(outDir, `${stamp}-${frameSuffix(t, frameScroll[i], scrollOnly)}.png`);
       writeFileSync(path, shots[i]);
-      return { t, path };
+      return { t, path, ...(frameScroll[i] !== undefined ? { scroll: frameScroll[i] } : {}) };
     });
     let sheet: string | undefined;
     if (opts.sheet) {
-      const bytes = await session.sheet(shots, times.map((t) => `t = ${t.toFixed(2)} s`), opts.cols, frameBg ? undefined : sheetBg);
+      const label = (t: number, i: number) => (frameScroll[i] === undefined ? `t = ${t.toFixed(2)} s` : scrollOnly ? `scroll = ${frameScroll[i]!.toFixed(2)}` : `scroll ${frameScroll[i]!.toFixed(2)} · t = ${t.toFixed(2)} s`);
+      const bytes = await session.sheet(shots, times.map(label), opts.cols, frameBg ? undefined : sheetBg);
       sheet = join(outDir, `${stamp}-sheet.png`);
       writeFileSync(sheet, bytes);
     }
     let preview: string | undefined;
-    if (opts.previewWidth && opts.previewWidth > 0) {
+    if (opts.previewWidth !== undefined) {
+      // A compact JPEG of the sheet / first frame for the client (MCP image block); the PNGs stay on disk.
       const src = sheet ? readFileSync(sheet) : shots[0];
-      const small = await session.scale(src, opts.previewWidth);
-      if (small !== src) {
-        preview = join(outDir, `${stamp}-preview.png`);
-        writeFileSync(preview, small);
-      }
+      const small = await session.scale(src, opts.previewWidth > 0 ? opts.previewWidth : 1e9, { type: "image/jpeg", quality: 0.82, bg: transparent ? "#ffffff" : undefined });
+      preview = join(outDir, `${stamp}-preview.jpg`);
+      writeFileSync(preview, small);
     }
     const projectDir = resolve(opts.projectDir);
     return {
       dir: projectDir,
-      frames: frames.map((f) => ({ t: f.t, path: projectPath(projectDir, f.path) })),
+      frames: frames.map((f) => ({ ...f, path: projectPath(projectDir, f.path) })),
+      ...(opts.scroll !== undefined ? { scroll: opts.scroll } : {}),
+      ...(opts.reducedMotion ? { reducedMotion: true } : {}),
+      ...(cursor.warnings.length ? { inputWarnings: cursor.warnings } : {}),
       ...(sheet ? { sheet: projectPath(projectDir, sheet) } : {}),
       ...(preview ? { preview: projectPath(projectDir, preview) } : {}),
       ...(isolated ? { isolated } : {}),
@@ -774,6 +869,14 @@ export interface MediaOptions {
   loop?: number; // GIF / WebP: 0 = forever (default)
   bitrate?: number; // video bits per second
   write?: boolean; // write `out` (default true)
+  // Simulated input applied at each event's time during the capture (games, HUD buttons, segments).
+  input?: InputEvent[];
+  // Play this timeline segment at the start time (scenes whose timeline waits for a trigger).
+  segment?: string;
+  // Mount with reducedMotion: true.
+  reducedMotion?: boolean;
+  // Force the scroll progress 0..1 for the whole capture.
+  scroll?: number;
   timeoutMs?: number;
   log?: (msg: string) => void;
 }
@@ -789,6 +892,9 @@ export interface MediaResult {
   supersampling: number;
   bytes: number;
   ms: number;
+  inputs?: number;
+  inputWarnings?: string[];
+  state?: Record<string, unknown> | null;
 }
 
 const even = (n: number) => n - (n % 2);
@@ -814,16 +920,24 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
   const bg = parseBg(opts.bg);
   const bgFill = bg && bg !== "none" ? bg : !animated && transparentScene ? "#ffffff" : undefined;
   const start = Math.max(0, opts.start ?? 0);
-  const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, timeoutMs: opts.timeoutMs, log: opts.log });
+  const inputs = [...segmentInputs(opts.segment, start), ...(opts.input ?? [])].map((e, i) => ({ e, i })).sort((a, b) => a.e.t - b.e.t || a.i - b.i).map((x) => x.e);
+  checkInputsForScene(scene, inputs);
+  if (opts.scroll !== undefined && !(opts.scroll >= 0 && opts.scroll <= 1)) throw new CliError("usage", "--scroll must be a progress between 0 and 1.", undefined, 2);
+  const session = await openRenderSession({ projectDir: opts.projectDir, scene, viewport, reducedMotion: opts.reducedMotion, timeoutMs: opts.timeoutMs, log: opts.log });
+  const cursor: InputCursor = { next: 0, warnings: [] };
+  // Events due by frame time t are applied (each at its own time) before the frame is captured.
+  const due = (t: number) => (inputs.length ? applyInputsUpTo(session, inputs, cursor, t) : Promise.resolve());
   const progress = (i: number) => {
     if (i % Math.max(1, fps) === 0) opts.log?.(`[agent3d render] ${format} frame ${i + 1}/${count}`);
   };
   try {
+    if (opts.scroll !== undefined) await session.setScroll(opts.scroll);
     let data: Uint8Array;
     let codec: string;
     if (format === "gif") {
       const frames = [];
       for (let i = 0; i < count; i++) {
+        await due(start + i / fps);
         const f = await session.grabRgba(start + i / fps, { ss, bg: bgFill });
         frames.push({ rgba: f.rgba });
         progress(i);
@@ -834,6 +948,7 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
     } else if (format === "webp") {
       const frames: Uint8Array[] = [];
       for (let i = 0; i < count; i++) {
+        await due(start + i / fps);
         frames.push(await session.grab(start + i / fps, { ss, bg: bgFill, type: "image/webp", quality: opts.quality === "ultra" || opts.quality === "high" ? 0.92 : 0.85 }));
         progress(i);
       }
@@ -850,6 +965,7 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
         // No WebCodecs: VP8 key frames taken from lossy WebP stills.
         const frames = [];
         for (let i = 0; i < count; i++) {
+          await due(start + i / fps);
           frames.push(webpToVp8(await session.grab(start + i / fps, { ss, bg: bgFill ?? "#000000", type: "image/webp", quality: 0.9 })));
           progress(i);
         }
@@ -862,6 +978,7 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
         type Chunk = { b64: string; key: boolean };
         const chunks: Chunk[] = [];
         for (let i = 0; i < count; i++) {
+          await due(start + i / fps);
           await session.evaluate(`window.__agent3dVideoFrame(${JSON.stringify(start + i / fps)}, ${i})`);
           if (i % 30 === 29) chunks.push(...((await session.evaluate<Chunk[]>("window.__agent3dVideoDrain()")) ?? []));
           progress(i);
@@ -884,7 +1001,8 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
       mkdirSync(join(opts.out, ".."), { recursive: true });
       writeFileSync(opts.out, data);
     }
-    return { path: opts.out, format, codec, frames: count, fps, duration, size: out, supersampling: ss, bytes: data.byteLength, ms: Date.now() - t0, data };
+    const state = inputs.length ? ((await session.info()).state ?? null) : undefined;
+    return { path: opts.out, format, codec, frames: count, fps, duration, size: out, supersampling: ss, bytes: data.byteLength, ms: Date.now() - t0, ...(inputs.length ? { inputs: inputs.length, state } : {}), ...(cursor.warnings.length ? { inputWarnings: cursor.warnings } : {}), data };
   } finally {
     await session.close();
   }

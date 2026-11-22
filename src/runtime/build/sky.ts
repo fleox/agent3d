@@ -19,14 +19,17 @@ export interface SkyPresetValues {
   haze: string;
 }
 
+// Tuned for ACES / AgX at `exposure: 1` (a multiplier of these values): the
+// Preetham radiance grows with the sun's elevation, so bright presets get a low
+// exposure and every preset enough Rayleigh scattering for a deep sky colour.
 export const SKY_PRESETS: Record<SkyPreset, SkyPresetValues> = {
-  sunrise: { elevation: 2.5, azimuth: 70, turbidity: 5, rayleigh: 2.2, mieCoefficient: 0.004, mieDirectionalG: 0.92, exposure: 0.75, haze: "#f1c1a0" },
-  morning: { elevation: 18, azimuth: 110, turbidity: 3.5, rayleigh: 1.6, mieCoefficient: 0.004, mieDirectionalG: 0.82, exposure: 0.9, haze: "#cfdcea" },
-  noon: { elevation: 62, azimuth: 150, turbidity: 2.4, rayleigh: 1.2, mieCoefficient: 0.003, mieDirectionalG: 0.8, exposure: 0.8, haze: "#c9d9ec" },
-  afternoon: { elevation: 32, azimuth: 220, turbidity: 3, rayleigh: 1.4, mieCoefficient: 0.004, mieDirectionalG: 0.8, exposure: 0.85, haze: "#d3dce6" },
-  "golden-hour": { elevation: 6, azimuth: 235, turbidity: 3.2, rayleigh: 3.2, mieCoefficient: 0.003, mieDirectionalG: 0.95, exposure: 0.6, haze: "#f4c08c" },
+  sunrise: { elevation: 2.5, azimuth: 70, turbidity: 5, rayleigh: 2.4, mieCoefficient: 0.004, mieDirectionalG: 0.9, exposure: 0.7, haze: "#f1c1a0" },
+  morning: { elevation: 18, azimuth: 110, turbidity: 2.6, rayleigh: 2.4, mieCoefficient: 0.003, mieDirectionalG: 0.8, exposure: 0.2, haze: "#b9cde4" },
+  noon: { elevation: 62, azimuth: 150, turbidity: 2, rayleigh: 2.6, mieCoefficient: 0.003, mieDirectionalG: 0.8, exposure: 0.11, haze: "#a9c3e3" },
+  afternoon: { elevation: 32, azimuth: 220, turbidity: 2.4, rayleigh: 2.6, mieCoefficient: 0.003, mieDirectionalG: 0.8, exposure: 0.15, haze: "#b4c8de" },
+  "golden-hour": { elevation: 6, azimuth: 235, turbidity: 5, rayleigh: 3.6, mieCoefficient: 0.004, mieDirectionalG: 0.8, exposure: 0.36, haze: "#f4c08c" },
   sunset: { elevation: 1.5, azimuth: 250, turbidity: 8, rayleigh: 3, mieCoefficient: 0.005, mieDirectionalG: 0.94, exposure: 0.8, haze: "#e9a07e" },
-  dusk: { elevation: -3, azimuth: 255, turbidity: 6, rayleigh: 3, mieCoefficient: 0.005, mieDirectionalG: 0.85, exposure: 2.4, haze: "#5a5f86" },
+  dusk: { elevation: -3, azimuth: 255, turbidity: 6, rayleigh: 3, mieCoefficient: 0.005, mieDirectionalG: 0.85, exposure: 6, haze: "#5a5f86" },
 };
 
 export function isPhysicalSky(p: SkyParams | undefined): boolean {

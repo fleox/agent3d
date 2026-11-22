@@ -31,6 +31,9 @@ export interface BuildContext {
   // position / scale): scatterers convert their local points to the terrain's
   // frame with it ("onTerrain"). Absent = at the origin, unscaled.
   placement?: { position: [number, number, number]; scale: [number, number, number] };
+  // Quality tier the player started with (absent = "high"): costly optional
+  // features (water reflections) scale down or turn off on "low".
+  quality?: "low" | "medium" | "high" | "ultra";
 }
 
 export interface BuiltObject {

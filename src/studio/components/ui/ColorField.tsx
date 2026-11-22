@@ -6,6 +6,7 @@ import { Plus, X } from "lucide-react";
 import { useRef } from "react";
 import { isValidColor, parseColor, toHex } from "../../../core/color";
 import { TextField } from "./controls";
+import { t } from "../../i18n";
 
 export function hexOf(c: string | undefined): string {
   const p = c ? parseColor(c) : null;
@@ -33,7 +34,7 @@ export function ColorField({ value, onChange, placeholder }: { value: string; on
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1">
       <Swatch value={value} onChange={onChange} />
-      <TextField value={value} onCommit={(v) => isValidColor(v.trim()) && onChange(v.trim(), true)} className={clsx("font-mono text-xs", placeholder && "text-fg-faint")} ariaLabel="Colour value" />
+      <TextField value={value} onCommit={(v) => isValidColor(v.trim()) && onChange(v.trim(), true)} className={clsx("font-mono text-xs", placeholder && "text-fg-faint")} ariaLabel={t("ui.colourValue")} />
     </div>
   );
 }
@@ -52,13 +53,13 @@ export function ColorsField({ value, onChange }: { value: string[]; onChange(v: 
             }}
           />
           {value.length > 1 && (
-            <button type="button" aria-label="Remove colour" onClick={() => onChange(value.filter((_, j) => j !== i), true)} className="absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-ink-4 text-fg group-hover/sw:flex">
+            <button type="button" aria-label={t("ui.removeColour")} onClick={() => onChange(value.filter((_, j) => j !== i), true)} className="absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-ink-4 text-fg group-hover/sw:flex">
               <X size={9} />
             </button>
           )}
         </div>
       ))}
-      <button type="button" aria-label="Add colour" onClick={() => onChange([...value, value[value.length - 1] ?? "#ffffff"], true)} className="flex h-6 w-6 items-center justify-center rounded-[5px] border border-dashed border-line text-fg-faint hover:border-fg-faint hover:text-fg">
+      <button type="button" aria-label={t("ui.addColour")} onClick={() => onChange([...value, value[value.length - 1] ?? "#ffffff"], true)} className="flex h-6 w-6 items-center justify-center rounded-[5px] border border-dashed border-line text-fg-faint hover:border-fg-faint hover:text-fg">
         <Plus size={11} />
       </button>
     </div>

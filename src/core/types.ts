@@ -104,7 +104,7 @@ export interface CameraDef {
   controls?: "none" | "orbit" | "parallax" | "scroll" | "follow";
   autoRotate?: number; // deg/s around target (orbit / none)
   orbitZoom?: boolean;
-  orbitLimits?: { minDistance?: number; maxDistance?: number; minPolar?: number; maxPolar?: number };
+  orbitLimits?: { minDistance?: number; maxDistance?: number; minPolar?: number; maxPolar?: number; minAzimuth?: number; maxAzimuth?: number }; // polar / azimuth in degrees (azimuth 0 = camera on +Z, 90 = +X)
   parallax?: { strength?: number; smoothing?: number };
   scrollPath?: { position: Vec3; target?: Vec3 }[];
   follow?: { target: string; offset?: Vec3; smoothing?: number; lookAhead?: number };
@@ -293,6 +293,12 @@ export interface BaseObjectDef extends TransformDef {
   href?: string;
   // Arbitrary data scripts can read (`obj.userData`).
   userData?: Record<string, unknown>;
+  // "camera" (top-level objects only): the object rides with the camera —
+  // position / rotation are in camera space (x right, y up, -z forward:
+  // [0, -1, -6] is 6 m in front of the lens, 1 m below its axis). Chapter
+  // labels, 3D captions and HUD-like text stay on screen during camera moves
+  // and scroll stories.
+  attach?: "camera";
 }
 
 export interface MeshObjectDef extends BaseObjectDef {
@@ -577,6 +583,11 @@ export interface TrackDef {
   stagger?: number;
   // Order of the stagger: "start" (default), "end", "center", "edges", "random" (seeded).
   staggerFrom?: "start" | "end" | "center" | "edges" | "random";
+  // Colour keys: blend space. "oklch" (default, perceptual with chroma kept:
+  // orange → teal stays saturated), "oklab" (perceptual straight line),
+  // "rgb" (straight linear-light RGB blend, the pre-0.2 behaviour), "hsl"
+  // (around the hue wheel, shortest way).
+  colorSpace?: "oklch" | "oklab" | "rgb" | "hsl";
 }
 
 // A named range of the timeline. from / to: seconds or marker names; to < from plays backwards.
@@ -751,10 +762,16 @@ export interface UiElementDef {
   type: "text" | "button" | "bar";
   text?: string; // may contain {state.key} placeholders, e.g. "Score: {score}"
   anchor?: "top-left" | "top" | "top-right" | "left" | "center" | "right" | "bottom-left" | "bottom" | "bottom-right";
-  style?: "plain" | "pill" | "title" | "subtitle";
+  // panel = a backdrop card (game-over / pause screens; multi-line text, "\n" breaks lines).
+  style?: "plain" | "pill" | "title" | "subtitle" | "panel";
   value?: string; // bar: state key holding 0..1
   action?: string; // button: event name emitted to scripts (api.on(action))
   visible?: boolean | string; // or a state key / expression "state.phase == 'over'"
+  // (expressions and {placeholders} can also read timeline.time, .progress, .segment, .marker)
+  // Per-element theme (CSS colours): text colour, and the background of a
+  // button / pill / panel / bar track.
+  color?: Color;
+  background?: Color;
 }
 
 export interface UiDef {
@@ -763,6 +780,9 @@ export interface UiDef {
   font?: string; // CSS font-family (system stacks only — no web font fetch)
   color?: Color;
   accent?: Color;
+  // Button label colour. Default: white or near-black, whichever contrasts
+  // best with the accent (WCAG contrast ≥ 4.5 whenever one of them can).
+  buttonText?: Color;
 }
 
 export interface AudioDef {

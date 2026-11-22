@@ -14,6 +14,7 @@ import { loadTexture } from "../assets";
 import { colors, DEG, num, toColor } from "../util";
 import type { RuntimeContext } from "./context";
 import { createProceduralTexture, TEXTURE_SLOTS } from "./textures";
+import { createToonMaterial } from "./toon";
 
 export const MATERIAL_PRESET_IDS = MATERIAL_PRESETS.map((p) => p.id);
 
@@ -50,19 +51,6 @@ export function addShaderPatch(mat: THREE.Material, key: string, patch: Patch): 
   };
   mat.customProgramCacheKey = () => "agent3d:" + patches.map((p) => p.key).join("+");
   mat.needsUpdate = true;
-}
-
-let toonRamp: THREE.DataTexture | null = null;
-function toonGradient(): THREE.DataTexture {
-  if (!toonRamp) {
-    const data = new Uint8Array([90, 170, 255]);
-    toonRamp = new THREE.DataTexture(data, data.length, 1, THREE.RedFormat);
-    toonRamp.minFilter = THREE.NearestFilter;
-    toonRamp.magFilter = THREE.NearestFilter;
-    toonRamp.generateMipmaps = false;
-    toonRamp.needsUpdate = true;
-  }
-  return toonRamp;
 }
 
 let matcapTex: THREE.Texture | null = null;
@@ -259,6 +247,13 @@ function applyTextures(mat: THREE.Material, def: MaterialDef, ctx: RuntimeContex
   }
 }
 
+// Drop undefined values: three's Material.setValues warns "parameter 'x' has value of undefined".
+export function definedOnly<T extends object>(params: T): T {
+  const out = {} as T;
+  for (const [k, v] of Object.entries(params)) if (v !== undefined) (out as Record<string, unknown>)[k] = v;
+  return out;
+}
+
 export interface MaterialOptions {
   defaultColor?: string;
   vertexColors?: boolean;
@@ -325,7 +320,10 @@ export async function createMaterial(input: MaterialDef | undefined, ctx: Runtim
       if (def.iridescence !== undefined) {
         p.iridescence = def.iridescence;
         p.iridescenceIOR = num(def.iridescenceIOR, 1.6);
-        p.iridescenceThicknessRange = def.iridescenceThicknessRange ?? [180, 600];
+        // three r187 renamed the range (the old setter warns): min / max.
+        const [lo, hi] = def.iridescenceThicknessRange ?? [180, 600];
+        p.iridescenceThicknessMinimum = lo;
+        p.iridescenceThicknessMaximum = hi;
       }
       if (def.sheen !== undefined) {
         p.sheen = def.sheen;
@@ -342,6 +340,7 @@ export async function createMaterial(input: MaterialDef | undefined, ctx: Runtim
       if (def.specularColor !== undefined) p.specularColor = toColor(def.specularColor);
       if (def.dispersion !== undefined) p.dispersion = def.dispersion;
       mat = new THREE.MeshPhysicalMaterial(p as THREE.MeshPhysicalMaterialParameters);
+      if (def.transmission && !isGemLike(def)) applyTransmissionClamp(mat as THREE.MeshPhysicalMaterial);
       break;
     }
     case "basic":
@@ -351,13 +350,15 @@ export async function createMaterial(input: MaterialDef | undefined, ctx: Runtim
       mat = new THREE.MeshLambertMaterial(lit as THREE.MeshLambertMaterialParameters);
       break;
     case "toon":
-      mat = new THREE.MeshToonMaterial({ ...(lit as THREE.MeshToonMaterialParameters), gradientMap: toonGradient() });
+      // Cel bands on a standard material (IBL fill kept: brand colours stay true, see toon.ts).
+      mat = createToonMaterial({ ...(pbr as THREE.MeshStandardMaterialParameters), roughness: num(def.roughness, 0.75) });
       break;
     case "normal":
-      mat = new THREE.MeshNormalMaterial({ flatShading: !!def.flatShading, wireframe: !!def.wireframe, side: common.side as THREE.Side | undefined, transparent: common.transparent as boolean | undefined, opacity: def.opacity ?? 1 });
+      // Only defined keys: three warns on every `undefined` constructor parameter.
+      mat = new THREE.MeshNormalMaterial(definedOnly({ flatShading: !!def.flatShading, wireframe: !!def.wireframe, side: common.side as THREE.Side | undefined, transparent: common.transparent as boolean | undefined, opacity: def.opacity ?? 1 }));
       break;
     case "matcap":
-      mat = new THREE.MeshMatcapMaterial({ ...(common as THREE.MeshMatcapMaterialParameters), flatShading: !!def.flatShading, matcap: defaultMatcap() ?? undefined });
+      mat = new THREE.MeshMatcapMaterial(definedOnly({ ...(common as THREE.MeshMatcapMaterialParameters), flatShading: !!def.flatShading, matcap: defaultMatcap() ?? undefined }));
       break;
     case "gradient": {
       mat = new THREE.MeshStandardMaterial({ ...(pbr as THREE.MeshStandardMaterialParameters), color: toColor(def.color ?? "#ffffff") });
@@ -411,6 +412,25 @@ export function envScaleUniform(mat: THREE.MeshStandardMaterial): { value: numbe
       );
   });
   return uEnv;
+}
+
+// ─── Transmission clamp ──────────────────────────────────────────────────
+//
+// Transmission samples the opaque scene rendered in HDR (half float). Behind a
+// thin pane (a backboard, a window) a strong spot lighting the parts behind it
+// leaves values of 10–100 in that buffer; the roughness blur spreads them over
+// the whole pane and bloom turns it into a white glare. The sample is soft-
+// clipped above 1 (asymptote 2): ordinary scenes (values ≤ 1) are unchanged.
+export const TRANSMISSION_CLIP_GLSL = `vec3 a3dSoftClip(vec3 c) { vec3 e = max(c - 1.0, 0.0); return min(c, 1.0) + e / (1.0 + e); }`;
+export function applyTransmissionClamp(mat: THREE.MeshPhysicalMaterial): void {
+  addShaderPatch(mat, "transmission-clamp", (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>\n${TRANSMISSION_CLIP_GLSL}`)
+      .replace(
+        "#include <transmission_fragment>",
+        THREE.ShaderChunk.transmission_fragment.replace("material.transmissionAlpha = mix(", "transmitted.rgb = a3dSoftClip( transmitted.rgb );\n\tmaterial.transmissionAlpha = mix("),
+      );
+  });
 }
 
 // ─── Gem sparkle (diamond / gem presets and any clear high-IOR solid) ────

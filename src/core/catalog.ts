@@ -227,8 +227,8 @@ export const BEHAVIOURS: CatalogEntry[] = [
 export const GENERATORS: CatalogEntry[] = [
   {
     id: "terrain",
-    description: "Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes.",
-    params: [n("size", "Width/depth.", 40, 0), i("resolution", "Grid cells per side.", 96, 8, 512), n("height", "Max height.", 6, 0), n("scale", "Noise scale (bigger = wider features).", 1, 0), i("octaves", "Detail levels.", 5, 1, 8), e("shape", "Overall shape.", ["hills", "mountains", "island", "dunes", "canyon", "flat"], "hills"), cs("palette", "Colours from low to high (sand, grass, rock, snow).", ["#e2c290", "#6aa84f", "#38761d", "#7f6a5d", "#ffffff"]), b("lowpoly", "Faceted shading.", true), n("waterLevel", "Water surface height in world units (absolute, not a fraction of height); null = no water.", 0.6), c("waterColor", "Water colour.", "#3d9bd6"), n("snowLine", "Height fraction (0..1, above the water) where the last palette colour (snow) caps the peaks; 1 = summit only.", 1, 0, 1)],
+    description: "Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes, canyons, a lake basin ringed by mountains, a valley. Trees / rocks / grass / flowers with onTerrain sit on it (and stay below its snow).",
+    params: [n("size", "Width/depth.", 40, 0), i("resolution", "Grid cells per side.", 96, 8, 512), n("height", "Max height.", 6, 0), n("scale", "Noise scale (bigger = wider features).", 1, 0), i("octaves", "Detail levels.", 5, 1, 8), e("shape", "Overall shape. basin = low flat floor in the middle (a lake with waterLevel ≈ 0.1 × height) ringed by mountains; valley = flat-floored valley running along z between mountain walls, closed by mountains at the far end (-z): a camera on +z looks down it.", ["hills", "mountains", "island", "dunes", "canyon", "basin", "valley", "flat"], "hills"), n("edgeFalloff", "Fraction (0..1) of the half-size over which the borders sink smoothly below 0 (no vertical cut walls at the edge). Default per shape: mountains 0.3, basin 0.2, valley 0.15, others 0.", undefined, 0, 1), cs("palette", "Colours from low to high (sand, grass, rock, snow).", ["#e2c290", "#6aa84f", "#38761d", "#7f6a5d", "#ffffff"]), b("lowpoly", "Faceted shading.", true), n("waterLevel", "Water surface height in world units (absolute, not a fraction of height); null = no water.", 0.6), c("waterColor", "Water colour.", "#3d9bd6"), b("waterPlane", "Draw the built-in water plane at waterLevel. false = add your own `water` object at y = waterLevel (full control of colours, waves, foam); waterLevel still colours the shore and keeps trees / grass / flowers out of the lake.", true), n("snowLine", "Height fraction (0..1, above the water) where the last palette colour (snow) caps the peaks; 1 = summit only. Relative to this terrain's own relief: use snowHeight for the same snow altitude across terrains.", 1, 0, 1), n("snowHeight", "Absolute snow altitude in terrain units (like waterLevel): everything above is snow-capped. Overrides snowLine.", undefined, 0)],
     cost: "resolution^2*2",
     material: "The ground (not the water plane). Without colour / preset / map the palette bands are kept (e.g. { \"roughness\": 0.6, \"flatShading\": false }).",
   },
@@ -236,7 +236,7 @@ export const GENERATORS: CatalogEntry[] = [
   { id: "rocks", description: "Scattered low-poly rocks.", params: [i("count", "How many.", 20, 1, 2000), v3("area", "Scatter box.", [20, 0, 20]), n("minSize", "Min size.", 0.3, 0), n("maxSize", "Max size.", 1.5, 0), cs("colors", "Colours.", ["#8d8d8d", "#757575", "#9e9e9e"]), b("onTerrain", "Drop onto a sibling terrain.", true)], cost: "count*80", material: "Every rock. Without colour / preset / map the per-rock colours are kept." },
   { id: "grass", description: "Instanced grass blades swaying in the wind.", params: [i("count", "Blades.", 5000, 1, 100000), v3("area", "Area.", [20, 0, 20]), n("height", "Blade height.", 0.4, 0), cs("colors", "Colours (base → tip).", ["#2d6a1f", "#8bc34a"]), n("wind", "Wind strength.", 0.5, 0), b("onTerrain", "Follow a sibling terrain.", true)], cost: "count*1" },
   { id: "flowers", description: "Scattered little flowers.", params: [i("count", "How many.", 200, 1, 20000), v3("area", "Area.", [20, 0, 20]), cs("colors", "Petal colours.", ["#ff5d8f", "#ffd166", "#ffffff", "#9b5de5"]), b("onTerrain", "Follow a sibling terrain.", true)], cost: "count*40" },
-  { id: "water", description: "Animated stylised water: waves, shallow → deep colour from the terrain depth below, animated shore foam lines, ripple normals with a moving sun glint, fresnel.", params: [n("size", "Width/depth.", 40, 0), c("color", "Deep colour.", "#1e6fa8"), c("shallowColor", "Shallow / crest colour.", "#5ec8e5"), c("foamColor", "Foam colour.", "#ffffff"), n("waveHeight", "Wave height.", 0.15, 0), n("waveSpeed", "Wave speed.", 1, 0), n("foam", "Shore foam band width (depth units; 0 = none). Needs a sibling terrain below.", 0.6, 0), n("ripples", "Ripple normal strength (sun glint).", 1, 0), n("depthRange", "Depth at which the colour is fully deep.", 3, 0.01), n("opacity", "Opacity.", 0.9, 0, 1), b("lowpoly", "Faceted low-poly water (no ripples).", false)], cost: "~20000" },
+  { id: "water", description: "Animated stylised water: waves, shallow → deep colour from the terrain depth below, animated shore foam lines, ripple normals with a moving sun glint, fresnel.", params: [n("size", "Width/depth.", 40, 0), c("color", "Deep colour.", "#1e6fa8"), c("shallowColor", "Shallow / crest colour.", "#5ec8e5"), c("foamColor", "Foam colour.", "#ffffff"), n("waveHeight", "Wave height.", 0.15, 0), n("waveSpeed", "Wave speed.", 1, 0), n("foam", "Shore foam band width (depth units; 0 = none). Needs a sibling terrain below.", 0.6, 0), n("ripples", "Ripple normal strength (sun glint).", 1, 0), n("depthRange", "Depth at which the colour is fully deep.", 3, 0.01), n("opacity", "Opacity.", 0.9, 0, 1), b("lowpoly", "Faceted low-poly water (no ripples).", false), b("reflections", "Planar mirror reflections of the scene (mirror lakes at sunrise; lower waveHeight / ripples for a calm mirror). Costly: the scene is rendered a second time each frame (half resolution on the medium tier, off on the low tier).", false), n("reflectivity", "Reflection strength with reflections on (fresnel: stronger at grazing angles).", 0.8, 0, 1)], cost: "~20000" },
   { id: "clouds", description: "Drifting clouds: soft puffy cotton balls (or faceted low-poly), bright tops, cool shadowed undersides, silver-lining rim.", params: [i("count", "Clouds.", 8, 1, 200), v3("area", "Area.", [40, 6, 40]), n("height", "Altitude.", 10), n("size", "Cloud size factor.", 1, 0), c("color", "Colour (lit tops).", "#ffffff"), c("shadowColor", "Underside colour.", "#a9bdd6"), n("speed", "Drift speed.", 0.3, 0), e("style", "puffy = smooth soft puffs, lowpoly = faceted.", ["puffy", "lowpoly"], "puffy")], cost: "count*1500" },
   { id: "city", description: "Procedural city blocks with buildings (skylines, isometric towns).", params: [i("blocks", "Blocks per side.", 6, 1, 40), n("blockSize", "Block size.", 4, 0), n("street", "Street width.", 1.2, 0), n("minHeight", "Min building height.", 1, 0), n("maxHeight", "Max building height.", 8, 0), cs("colors", "Building colours.", ["#e0e1dd", "#778da9", "#415a77", "#ffd6a5"]), b("windows", "Lit windows (emissive).", true), c("windowColor", "Window colour.", "#ffe8a3"), b("trees", "Street trees.", true)], cost: "blocks^2*4*12" },
   {
@@ -266,7 +266,26 @@ export const GENERATORS: CatalogEntry[] = [
   { id: "blob", description: "Organic animated blob (noise-displaced sphere) — modern hero banners.", params: [n("radius", "Radius.", 1.2, 0), n("noise", "Displacement amount.", 0.3, 0), n("speed", "Morph speed.", 0.4, 0), i("detail", "Smoothness.", 64, 8, 256), cs("colors", "Colour ramp flowing over the surface (brand colours).", ["#ff7eb3", "#a78bfa", "#60a5fa", "#5eead4"])], cost: "detail^2*2", material: "The whole blob; the morph keeps running with any material, shaders included (e.g. { \"type\": \"shader\", \"shader\": \"gradientFlow\" }, { \"preset\": \"chrome\" }). Without colour / preset / map the colour ramp is kept (e.g. { \"type\": \"toon\" })." },
   { id: "waveGrid", description: "Grid of points / bars rippling like a wave (tech / data banners).", params: [i("columns", "Columns.", 60, 2, 400), i("rows", "Rows.", 30, 2, 400), n("spacing", "Spacing.", 0.3, 0), n("amplitude", "Wave height.", 0.5, 0), n("speed", "Speed.", 1, 0), e("shape", "Element.", ["dots", "bars", "lines"], "dots"), cs("colors", "Colour ramp.", ["#3a86ff", "#ff006e"]), b("pointerRipple", "Ripple under the pointer.", true)], cost: "columns*rows*2" },
   { id: "maze", description: "Grid maze walls from a seed (games).", params: [i("columns", "Cells on X.", 10, 2, 60), i("rows", "Cells on Z.", 10, 2, 60), n("cellSize", "Cell size.", 2, 0), n("wallHeight", "Wall height.", 1.5, 0), c("wallColor", "Walls.", "#5e548e"), c("floorColor", "Floor.", "#e0b1cb"), b("bodies", "Add static physics bodies to walls.", true)], cost: "columns*rows*24" },
-  { id: "road", description: "Endless-runner road made of tiles that scroll toward the camera.", params: [n("width", "Road width.", 6, 0), n("length", "Visible length.", 60, 0), i("lanes", "Lanes.", 3, 1, 8), c("color", "Asphalt.", "#3d405b"), c("lineColor", "Lane lines.", "#f4f1de"), n("speed", "Scroll speed (units/s), read by scripts as state.speed when set.", 10, 0)], cost: "~200" },
+  { id: "road", description: "Endless-runner road made of tiles that scroll toward the camera.", params: [n("width", "Road width.", 6, 0), n("length", "Visible length.", 60, 0), i("lanes", "Lanes.", 3, 1, 8), c("color", "Asphalt.", "#3d405b"), c("lineColor", "Lane lines.", "#f4f1de"), n("speed", "Scroll speed (units/s), read by scripts as state.speed when set.", 10, 0), cs("curbColors", "Curb colours: two alternate (red / white kerbs); one = a solid curb (e.g. neon yellow).", ["#e63946", "#f1faee"]), b("verge", "Striped verges on both sides (false = road and curbs only, e.g. over a dark ground or a grid).", true), cs("vergeColor", "Verge colours: two alternating stripes; one = that colour plus a slightly darker stripe.", ["#7cc45a", "#6bb44c"])], cost: "~200" },
+  {
+    id: "birds",
+    description: "Flock of stylised birds (one instanced draw call): V-shaped wings with a dihedral (a chevron from every angle), flapping in the shader and alternating with glides; boids-like flight (loose cloud or V formation, wander, banking into turns) that is a pure function of time. Modes: orbit (circle the area), path (closed loop through points), drift (cross the sky and wrap).",
+    params: [
+      i("count", "Birds.", 12, 1, 500),
+      e("mode", "Flight: orbit = flock circles an ellipse of radii area x/2, z/2 around the object position; path = closed loop through `points`; drift = crosses `area` x along `heading`, each bird wrapping around (keep the area wider than the view).", ["orbit", "path", "drift"], "orbit"),
+      v3("area", "Orbit ellipse (x, z = diameters) / drift length (x) and vertical drift range (y).", [40, 4, 30]),
+      { name: "points", type: "array", description: "path mode: [[x, y, z], …] (≥ 2 points, local to the object), flown as a closed smooth loop.", default: [] },
+      n("heading", "drift mode: direction in degrees around Y (0 = +x, left → right for a camera on +z; 180 = right → left; 90 = away from the camera).", 0),
+      n("speed", "Flight speed (units/s).", 4, 0),
+      e("formation", "loose = a cloud of radius `spread` where each bird wanders; v = V formation (geese).", ["loose", "v"], "loose"),
+      n("spread", "loose formation radius.", 3, 0),
+      n("size", "Wingspan.", 1, 0.01),
+      c("color", "Bird colour (each bird varies ±10 %). Dark reads as a silhouette against a bright sky.", "#22252e"),
+      n("flapSpeed", "Wing beats per second (each bird varies ±18 %).", 2.5, 0),
+    ],
+    example: { count: 9, mode: "drift", formation: "v", area: [80, 2, 0], heading: 10, speed: 5, size: 1.2 },
+    cost: "count*18",
+  },
   {
     id: "floatingIsland",
     description: "Stylised floating island diorama (hero favourite): grassy rolling top with a noisy outline, dirt band, rocky underside tapering to stalactite tips with coloured strata; optional trees, rocks, flowers, grass, a pond with a waterfall, floating debris and a slow bob.",
@@ -312,24 +331,44 @@ export const GENERATORS: CatalogEntry[] = [
 
 // ─── Particles presets ──────────────────────────────────────────────────
 
+// Sprite shapes of the particle system (object field `shape`).
+export const PARTICLE_SHAPES = ["point", "soft", "square", "circle", "star", "spark", "streak", "heart", "bubble", "smoke", "petal", "leaf", "ring"] as const;
+
+// Object fields that override a preset (`{ "kind": "particles", "preset": "snow", "count": 400, … }`).
+// Every preset takes them all; an omitted field keeps the preset's value.
+export const PARTICLE_PARAMS: ParamSpec[] = [
+  i("count", "Number of particles (preset value when omitted; e.g. stars 900, snow 1200, fireflies 90).", undefined, 1, 200000),
+  v3("area", "Size [x, y, z] of the box the particles live in / are emitted from, centred on the object."),
+  { name: "size", type: "number", description: "Sprite size in units (world space).", min: 0 },
+  { name: "color", type: "colors", description: 'A colour or a list of colours (each particle picks one), e.g. "#ffffff" or ["#ff006e", "#ffbe0b"].' },
+  n("speed", "Speed in units/s along `direction` (0 = static).", undefined, 0),
+  v3("direction", "Main direction of motion, e.g. [0, -1, 0] falls, [0, 1, 0] rises."),
+  n("spread", "Direction randomness 0 (parallel) … 1 (any direction).", undefined, 0, 1),
+  { name: "lifetime", type: "number", description: "Seconds a particle lives (emitters: sparks, embers, smoke…); omitted / 0 = forever (positions wrap inside the area).", min: 0 },
+  n("opacity", "Opacity 0…1.", undefined, 0, 1),
+  e("blending", "additive glows (sparks, magic, stars), normal keeps colours (snow, confetti, petals).", ["normal", "additive"]),
+  e("shape", "Sprite shape.", PARTICLE_SHAPES),
+  i("seed", "Random seed (same seed = same particles)."),
+];
+
 export const PARTICLE_PRESETS: CatalogEntry[] = [
-  { id: "stars", description: "Twinkling static stars.", params: [] },
-  { id: "snow", description: "Falling soft snowflakes.", params: [] },
-  { id: "rain", description: "Falling rain streaks (velocity-stretched).", params: [] },
-  { id: "fireflies", description: "Glowing wandering dots.", params: [] },
-  { id: "confetti", description: "Colourful confetti falling and spinning.", params: [] },
-  { id: "sparks", description: "Sparks fountain: fast streaks arcing under gravity, cooling from yellow to red (additive). Small emitter area: place it at the source.", params: [] },
-  { id: "dust", description: "Slow floating dust motes.", params: [] },
-  { id: "bubbles", description: "Rising bubbles.", params: [] },
-  { id: "embers", description: "Rising glowing embers cooling to red.", params: [] },
-  { id: "hearts", description: "Rising little hearts.", params: [] },
-  { id: "magic", description: "Magic sparkles: twinkling star glints rising and shrinking (additive) — wands, reveals, product magic.", params: [] },
-  { id: "smoke", description: "Soft rising smoke puffs that grow and fade (noise-shaped). Small emitter area: place it at the chimney / source.", params: [] },
-  { id: "fire", description: "Flickering flame: additive noisy puffs rising fast, yellow → red, shrinking. Small emitter area: place it at the base of the fire.", params: [] },
-  { id: "petals", description: "Cherry-blossom petals drifting down, fluttering and spinning.", params: [] },
-  { id: "leaves", description: "Autumn leaves falling, fluttering and spinning.", params: [] },
-  { id: "galaxyDust", description: "Flat disc of twinkling cosmic dust slowly swirling (inner faster).", params: [] },
-  { id: "bokeh", description: "Big soft out-of-focus light orbs drifting (dreamy backgrounds).", params: [] },
+  { id: "stars", description: "Twinkling static stars.", params: PARTICLE_PARAMS },
+  { id: "snow", description: "Falling soft snowflakes.", params: PARTICLE_PARAMS },
+  { id: "rain", description: "Falling rain streaks (velocity-stretched).", params: PARTICLE_PARAMS },
+  { id: "fireflies", description: "Glowing wandering dots.", params: PARTICLE_PARAMS },
+  { id: "confetti", description: "Colourful confetti falling and spinning.", params: PARTICLE_PARAMS },
+  { id: "sparks", description: "Sparks fountain: fast streaks arcing under gravity, cooling from yellow to red (additive). Small emitter area: place it at the source.", params: PARTICLE_PARAMS },
+  { id: "dust", description: "Slow floating dust motes.", params: PARTICLE_PARAMS },
+  { id: "bubbles", description: "Rising bubbles.", params: PARTICLE_PARAMS },
+  { id: "embers", description: "Rising glowing embers cooling to red.", params: PARTICLE_PARAMS },
+  { id: "hearts", description: "Rising little hearts.", params: PARTICLE_PARAMS },
+  { id: "magic", description: "Magic sparkles: twinkling star glints rising and shrinking (additive) — wands, reveals, product magic.", params: PARTICLE_PARAMS },
+  { id: "smoke", description: "Soft rising smoke puffs that grow and fade (noise-shaped). Small emitter area: place it at the chimney / source.", params: PARTICLE_PARAMS },
+  { id: "fire", description: "Flickering flame: additive noisy puffs rising fast, yellow → red, shrinking. Small emitter area: place it at the base of the fire.", params: PARTICLE_PARAMS },
+  { id: "petals", description: "Cherry-blossom petals drifting down, fluttering and spinning.", params: PARTICLE_PARAMS },
+  { id: "leaves", description: "Autumn leaves falling, fluttering and spinning.", params: PARTICLE_PARAMS },
+  { id: "galaxyDust", description: "Flat disc of twinkling cosmic dust slowly swirling (inner faster).", params: PARTICLE_PARAMS },
+  { id: "bokeh", description: "Big soft out-of-focus light orbs drifting (dreamy backgrounds).", params: PARTICLE_PARAMS },
 ];
 
 // ─── Post effects ───────────────────────────────────────────────────────
@@ -387,8 +426,8 @@ export const POSTFX_LOOKS: Record<(typeof POSTFX_LOOK_IDS)[number], { descriptio
     effects: [{ type: "grading", look: "vintage" }, { type: "film", intensity: 0.3, scanlines: 0.25 }, { type: "chromatic", amount: 0.0025, radial: false }, { type: "vignette", offset: 0.9, darkness: 1.2 }, { type: "bloom", strength: 0.3, radius: 0.6, threshold: 1.6, smoothing: 0.4 }],
   },
   clean: {
-    description: "Minimal polish for UI-like scenes: FXAA, subtle contrast, light sharpening, supersampled stills.",
-    effects: [{ type: "fxaa" }, { type: "grading", contrast: 1.04, saturation: 1.02 }, { type: "sharpen", amount: 0.15 }, { type: "vignette", offset: 1.2, darkness: 0.25 }, { type: "taa", samples: 8 }],
+    description: "Minimal polish for UI-like scenes: subtle contrast, light sharpening, faint vignette, supersampled stills. No FXAA (it softens small text; MSAA already smooths edges).",
+    effects: [{ type: "grading", contrast: 1.04, saturation: 1.02 }, { type: "sharpen", amount: 0.15 }, { type: "vignette", offset: 1.2, darkness: 0.25 }, { type: "taa", samples: 8 }],
   },
 };
 
@@ -452,6 +491,51 @@ export const SOUND_PRESETS: CatalogEntry[] = [
   { id: "chiptune-loop", description: "Cheerful chiptune loop (music).", params: [] },
 ];
 
+// ─── Instance layouts ───────────────────────────────────────────────────
+
+// `{ "kind": "instances", "geometry": {…}, "layout": { "type": "<id>", …params } }` —
+// one draw call for many copies of a geometry. Params are the layout's fields.
+export const INSTANCE_LAYOUTS: CatalogEntry[] = [
+  {
+    id: "grid",
+    description: "Regular 3D grid centred on the object: count [nx, ny, nz] copies spaced by spacing [sx, sy, sz] (use 1 / 0 for a flat axis).",
+    params: [
+      { name: "count", type: "vec3", description: "Copies per axis [nx, ny, nz] (integers ≥ 1).", required: true },
+      { name: "spacing", type: "vec3", description: "Distance between copies per axis [sx, sy, sz] in units.", required: true },
+    ],
+    cost: "count[0]*count[1]*count[2] * geometry",
+    example: { type: "grid", count: [8, 1, 8], spacing: [1.2, 0, 1.2] },
+  },
+  {
+    id: "scatter",
+    description: "Random positions inside a box (seeded): forests of props, rocks, debris.",
+    params: [
+      { ...i("count", "Number of copies.", undefined, 1, 200000), required: true },
+      { name: "area", type: "vec3", description: "Box size [x, y, z] centred on the object (y 0 = on a plane).", required: true },
+      n("minScale", "Smallest random uniform scale.", 1, 0),
+      n("maxScale", "Largest random uniform scale.", 1, 0),
+      b("randomRotation", "Random rotation around Y.", false),
+      i("seed", "Random seed (same seed = same layout)."),
+    ],
+    cost: "count * geometry",
+    example: { type: "scatter", count: 200, area: [20, 0, 20], minScale: 0.6, maxScale: 1.4, randomRotation: true, seed: 3 },
+  },
+  {
+    id: "circle",
+    description: "Copies evenly spaced on a horizontal circle (XZ plane) around the object.",
+    params: [{ ...i("count", "Number of copies.", undefined, 1, 200000), required: true }, { ...n("radius", "Circle radius in units.", undefined, 0), required: true }],
+    cost: "count * geometry",
+    example: { type: "circle", count: 12, radius: 3 },
+  },
+  {
+    id: "list",
+    description: "Explicit transforms, one copy per item: [{ position, rotation?, scale? }] (rotation in degrees, scale a number or [x, y, z]).",
+    params: [{ name: "items", type: "array", description: "Transforms [{ \"position\": [x, y, z], \"rotation\"?: [x, y, z], \"scale\"?: n | [x, y, z] }, …].", required: true }],
+    cost: "items * geometry",
+    example: { type: "list", items: [{ position: [-1, 0, 0] }, { position: [1, 0, 0], rotation: [0, 45, 0], scale: 1.5 }] },
+  },
+];
+
 export const CATALOG = {
   geometries: GEOMETRIES,
   materialPresets: MATERIAL_PRESETS,
@@ -461,6 +545,7 @@ export const CATALOG = {
   behaviours: BEHAVIOURS,
   generators: GENERATORS,
   particlePresets: PARTICLE_PRESETS,
+  instanceLayouts: INSTANCE_LAYOUTS,
   postfx: POSTFX,
   fonts: FONTS,
   sounds: SOUND_PRESETS,

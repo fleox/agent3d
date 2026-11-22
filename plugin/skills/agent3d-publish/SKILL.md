@@ -62,7 +62,7 @@ Embed / zip options:
 | `--no-extras` | No `EMBED.md` and no `frameworks/` |
 
 - Exporting again into a non-empty folder prints a plan (`needsConfirmation`, with the existing entries): re-run with `--yes` after the user agreed.
-- The result gives `snippet`, `head` (all modulepreload links), `integrity`, `runtimeDir`, `out`, `entry` (the demo page, or the zip / html file), `totalKb`, `sizes` (`runtimeKb`, `sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`), `credits`, `issues` (+ `optimized` with `--optimize`). Media formats return `{ format, path, codec?, frames?, fps?, duration?, size, bytes }`.
+- The result gives `snippet`, `head` (all modulepreload links), `integrity`, `runtimeDir`, `out`, `entry` (the demo page, or the zip / html file), `pageKb` / `pageKbGzip` (what a visitor downloads for this scene: the runtime entry + the lazy chunks it uses + scene, assets, scripts, poster — quote this one as the page weight), `folderKb` (= `totalKb`, every file written, all chunks and og-image included), `page` (runtime files loaded / chunks skipped), `sizes` (`runtimeKb`, `sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`), `credits`, `issues` (+ `optimized` with `--optimize`). Media formats return `{ format, path, codec?, frames?, fps?, duration?, size, bytes }`.
 
 Media straight from `render` (frame-exact, any size / fps; LOOK at a few frames of the result):
 

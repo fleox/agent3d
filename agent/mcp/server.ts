@@ -10,6 +10,9 @@ import { toCliError } from "../output";
 export const SUPPORTED_PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"] as const;
 export const LATEST_PROTOCOL = SUPPORTED_PROTOCOLS[0];
 
+// Results larger than this (serialized) are sent as text only, not duplicated in structuredContent.
+export const STRUCTURED_MAX_CHARS = 8 * 1024;
+
 export type JsonRpcId = string | number | null;
 
 export interface JsonRpcRequest {
@@ -56,7 +59,7 @@ export interface McpServerOptions {
   readOnly?: boolean;
   tools: McpTool[] | (() => McpTool[]);
   // Runs a tool; the result is JSON-able. Images (data from render_preview)
-  // are returned by `images` as base64 PNGs.
+  // are returned by `images` as base64 (JPEG preview, or PNG) with their mimeType.
   call(name: string, input: Record<string, unknown>): Promise<unknown>;
   images?(name: string, result: unknown): Promise<{ data: string; mimeType: string }[]>;
   resources?: McpResource[];
@@ -94,6 +97,12 @@ export function createMcpServer(opts: McpServerOptions) {
   const ok = (id: JsonRpcId, result: unknown): JsonRpcResponse => ({ jsonrpc: "2.0", id, result });
   const fail = (id: JsonRpcId, code: number, message: string, data?: unknown): JsonRpcResponse => ({ jsonrpc: "2.0", id, error: { code, message, ...(data !== undefined ? { data } : {}) } });
 
+  // structuredContent exists since protocol 2025-06-18, which says a tool
+  // returning it SHOULD also return the serialized JSON as a text block (and
+  // most clients only read the text). Without an outputSchema it is optional,
+  // so it is sent only for small results: big payloads are not duplicated.
+  const withStructured = (text: string) => protocol >= "2025-06-18" && text.length <= STRUCTURED_MAX_CHARS;
+
   async function callTool(id: JsonRpcId, params: Record<string, unknown>): Promise<JsonRpcResponse> {
     const name = typeof params.name === "string" ? params.name : "";
     const tool = all().find((t) => t.name === name);
@@ -104,16 +113,18 @@ export function createMcpServer(opts: McpServerOptions) {
       const result = await opts.call(name, args);
       const structured = result && typeof result === "object" && !Array.isArray(result) ? (result as Record<string, unknown>) : { result: result ?? null };
       const images = opts.images ? await opts.images(name, result).catch(() => []) : [];
+      const text = JSON.stringify(result ?? null);
       return ok(id, {
-        content: [{ type: "text", text: JSON.stringify(result ?? null, null, 2) }, ...images.map((img) => ({ type: "image", data: img.data, mimeType: img.mimeType }))],
-        structuredContent: structured,
+        content: [{ type: "text", text }, ...images.map((img) => ({ type: "image", data: img.data, mimeType: img.mimeType }))],
+        ...(withStructured(text) ? { structuredContent: structured } : {}),
         isError: isRefusal(result),
       });
     } catch (err) {
       // Tool failures are results (the model reads them), not protocol errors.
       const e = toCliError(err);
       const error = { code: e.code, message: e.message, ...(e.hint ? { hint: e.hint } : {}), ...(e.details !== undefined ? { details: e.details } : {}) };
-      return ok(id, { content: [{ type: "text", text: JSON.stringify({ error }) }], structuredContent: { error }, isError: true });
+      const text = JSON.stringify({ error });
+      return ok(id, { content: [{ type: "text", text }], ...(withStructured(text) ? { structuredContent: { error } } : {}), isError: true });
     }
   }
 
@@ -121,7 +132,7 @@ export function createMcpServer(opts: McpServerOptions) {
     const r = resources.find((x) => x.uri === uri);
     if (!r) return fail(id, -32002, `Resource not found: ${uri}`, { uri });
     const value = await r.read();
-    return ok(id, { contents: [{ uri, mimeType: r.mimeType, text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }] });
+    return ok(id, { contents: [{ uri, mimeType: r.mimeType, text: typeof value === "string" ? value : JSON.stringify(value) }] });
   }
 
   async function handle(msg: unknown): Promise<JsonRpcResponse | null> {

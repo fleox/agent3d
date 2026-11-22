@@ -201,3 +201,45 @@ describe("export: data-bound labels, absolute og:image, poster cache-bust, wrapp
     }
   });
 });
+
+describe("export page weight (pageKb) and runtime chunks", () => {
+  const big = (n: number, s = "") => enc.encode(s + " ".repeat(n));
+  const rt = {
+    files: {
+      "agent3d-runtime.js": enc.encode('import{a}from"./chunks/three.module-AAAAAAAA.js";const p=()=>import(`./chunks/postfx-BBBBBBBB.js`);const g=()=>import(`./chunks/generators-CCCCCCCC.js`);const m=()=>import(`./chunks/model-DDDDDDDD.js`);'),
+      "chunks/three.module-AAAAAAAA.js": big(5000, "export const a=1;"),
+      "chunks/postfx-BBBBBBBB.js": big(3000),
+      "chunks/generators-CCCCCCCC.js": big(4000),
+      "chunks/model-DDDDDDDD.js": enc.encode("const l=()=>import(`./GLTFLoader-EEEEEEEE.js`);" + " ".repeat(1000)),
+      "chunks/GLTFLoader-EEEEEEEE.js": big(2000),
+    },
+  };
+  it("counts only the chunks the scene loads, separately from the folder", async () => {
+    const fs = await project(); // has models, no generators
+    await patchScene(fs, [{ op: "set", path: "postfx", value: [] }]);
+    const og = new Uint8Array(50_000);
+    const r = await buildExport(fs, { format: "embed", runtime: rt, library, ogImage: og, extras: false });
+    expect(r.page.runtimeFiles.sort()).toEqual(["agent3d-runtime.js", "chunks/GLTFLoader-EEEEEEEE.js", "chunks/model-DDDDDDDD.js", "chunks/three.module-AAAAAAAA.js"]);
+    expect(r.page.skippedChunks.sort()).toEqual(["chunks/generators-CCCCCCCC.js", "chunks/postfx-BBBBBBBB.js"]);
+    expect(r.folderKb).toBe(r.totalKb);
+    expect(r.folderKb - r.pageKb).toBeGreaterThan(50); // og-image + unused chunks + demo page
+    expect(r.pageKbGzip).toBeGreaterThan(0);
+    expect(r.pageKbGzip!).toBeLessThan(r.pageKb);
+    // All chunks are copied by default (the runtime folder is shared by every scene of a site)…
+    expect(Object.keys(r.files)).toContain("agent3d-runtime/chunks/postfx-BBBBBBBB.js");
+    // …only the needed ones with pruneRuntime.
+    const p = await buildExport(fs, { format: "embed", runtime: rt, library, extras: false, pruneRuntime: true });
+    expect(p.page.pruned).toBe(true);
+    expect(Object.keys(p.files)).not.toContain("agent3d-runtime/chunks/postfx-BBBBBBBB.js");
+    expect(Object.keys(p.files)).toContain("agent3d-runtime/chunks/GLTFLoader-EEEEEEEE.js");
+  });
+  it("keeps every chunk when one has an unknown feature", async () => {
+    const fs = await project();
+    await patchScene(fs, [{ op: "set", path: "postfx", value: [] }]);
+    const odd = { files: { ...rt.files, "agent3d-runtime.js": enc.encode(new TextDecoder().decode(rt.files["agent3d-runtime.js"]) + "const z=()=>import(`./chunks/mystery-FFFFFFFF.js`);"), "chunks/mystery-FFFFFFFF.js": big(10) } };
+    const r = await buildExport(fs, { format: "embed", runtime: odd, library, extras: false, pruneRuntime: true });
+    expect(r.page).toMatchObject({ pruned: false, unknownChunks: ["chunks/mystery-FFFFFFFF.js"] });
+    expect(r.issues.some((i) => i.code === "prune-runtime")).toBe(true);
+    expect(Object.keys(r.files)).toContain("agent3d-runtime/chunks/postfx-BBBBBBBB.js");
+  });
+});

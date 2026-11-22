@@ -448,6 +448,15 @@ export class Agent3DSceneElement extends BaseElement {
       let scene: SceneDoc | undefined;
       try {
         scene = await this.fetchScene();
+        // Connected while the parser is still inside the element (the runtime
+        // was already defined: cached / shared runtime, SPA): the inline scene
+        // JSON child or the attributes may not be there yet — retry once the
+        // document is parsed instead of giving up with no status.
+        if (!scene && this.ownerDocument.readyState === "loading") {
+          await new Promise<void>((res) => this.ownerDocument.addEventListener("DOMContentLoaded", () => res(), { once: true }));
+          if (token !== this.loadToken) return;
+          scene = await this.fetchScene();
+        }
       } catch (err) {
         if (token !== this.loadToken) return;
         this.setStatus("error");

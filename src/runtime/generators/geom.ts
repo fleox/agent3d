@@ -139,6 +139,8 @@ export const smoothstep = (a: number, b: number, x: number): number => {
 export interface Ground {
   height(x: number, z: number): number;
   water: number | null;
+  // Lowest snow height (scatter-local y): trees / rocks / flowers stay below it.
+  snow?: number | null;
 }
 
 export function findGround(ctx: BuildContext): Ground | null {
@@ -157,7 +159,9 @@ export function findGround(ctx: BuildContext): Ground | null {
     const fn = s.heightAt.bind(s);
     const toLocalY = (yParent: number) => (yParent - pp[1]) / (ps[1] || 1);
     const water = typeof s.object.userData.waterLevel === "number" ? toLocalY((s.object.userData.waterLevel as number) * sc.y + o.y) : null;
+    const snow = typeof s.object.userData.snowLevel === "number" ? toLocalY((s.object.userData.snowLevel as number) * sc.y + o.y) : null;
     return {
+      snow,
       height: (x, z) => {
         const px = pp[0] + x * ps[0], pz = pp[2] + z * ps[2];
         return toLocalY(fn((px - o.x) / (sc.x || 1), (pz - o.z) / (sc.z || 1)) * sc.y + o.y);
@@ -168,17 +172,24 @@ export function findGround(ctx: BuildContext): Ground | null {
   return null;
 }
 
-// Rejection-samples a scatter position inside the area, avoiding water.
-export function scatterPoint(rng: BuildContext["rng"], area: V3, ground: Ground | null, margin = 0.15): { x: number; y: number; z: number } {
-  let best = { x: 0, y: 0, z: 0 };
+// Rejection-samples a scatter position inside the area, avoiding water (and
+// snow unless avoidSnow is false). When every attempt fails, the lowest dry
+// candidate wins (a tree at the treeline rather than on the summit).
+export function scatterPoint(rng: BuildContext["rng"], area: V3, ground: Ground | null, margin = 0.15, avoidSnow = true): { x: number; y: number; z: number } {
+  let best: { x: number; y: number; z: number } | null = null;
+  let first = { x: 0, y: 0, z: 0 };
   for (let attempt = 0; attempt < 12; attempt++) {
     const x = (rng.next() - 0.5) * area[0];
     const z = (rng.next() - 0.5) * area[2];
     const y = ground ? ground.height(x, z) : (rng.next() - 0.5) * area[1];
-    best = { x, y, z };
-    if (!ground || ground.water === null || y > ground.water + margin) return best;
+    if (attempt === 0) first = { x, y, z };
+    if (!ground) return { x, y, z };
+    const dry = ground.water === null || y > ground.water + margin;
+    const snowFree = !avoidSnow || ground.snow === null || ground.snow === undefined || y < ground.snow;
+    if (dry && snowFree) return { x, y, z };
+    if (dry && (!best || y < best.y)) best = { x, y, z };
   }
-  return best;
+  return best ?? first;
 }
 
 export function vertexColorMaterial(opts: { flat?: boolean; roughness?: number; metalness?: number; side?: THREE.Side } = {}): THREE.MeshStandardMaterial {

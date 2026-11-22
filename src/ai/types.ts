@@ -45,14 +45,23 @@ export interface RenderOptions {
   // Games: simulated input applied while seeking (frames render in time order):
   // { t, key, down? | hold? } | { t, click: [x, y] } | { t, pointer: [x, y], down? } | { t, pointerDown: [x, y] }
   // | { t, pointerUp: [x, y] | true } | { t, drag: { from, to, duration? } } | { t, swipe: "left"|"right"|"up"|"down" } (coordinates -1..1).
+  // | { t, scroll: 0..1 } | { t, emit: "<event>", payload? } | { t, ui: "<HUD button id>" } | { t, segment: "<name>", reverse? }.
   input?: Record<string, unknown>[];
+  // Scroll progress 0..1 (scroll-driven scenes); frames carry `scroll`.
+  scroll?: number;
+  // Mount with reducedMotion: true (prefers-reduced-motion).
+  reducedMotion?: boolean;
+  // Play this timeline segment at t = 0.
+  segment?: string;
 }
 
 export interface RenderResult {
   // Absolute project folder; frame / sheet paths are relative to it.
   dir?: string;
-  frames: { t: number; path: string }[];
+  frames: { t: number; path: string; scroll?: number }[];
   sheet?: string;
+  // Input events that could not apply (e.g. a hidden HUD button).
+  inputWarnings?: string[];
   // Down-scaled sheet / first frame (previewWidth) — what MCP shows as the image.
   preview?: string;
   isolated?: { id: string; size: [number, number, number]; center: [number, number, number]; note: string };

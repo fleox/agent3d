@@ -202,7 +202,7 @@ function UrlField({ value, onCommit }: { value: string; onCommit(v: string): voi
         spellCheck={false}
         aria-label="URL"
         aria-invalid={bad}
-        placeholder="https://… or /page"
+        placeholder={t("ui.urlPlaceholder")}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {

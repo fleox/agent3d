@@ -1,5 +1,6 @@
 // Endless-runner road along -z: asphalt tiles, dashed lane lines, edge lines,
-// red/white curbs and striped grass verges, all periodic in TILE so the whole
+// curbs (red / white by default) and striped verges (grass by default;
+// `verge: false` leaves only the road for neon / brand looks), all periodic in TILE so the whole
 // mesh just slides toward the camera (+z) by (distance mod TILE): one draw
 // call, pure function of t while the speed is constant.
 //
@@ -21,15 +22,20 @@ export const road: GeneratorImpl = (raw, ctx) => {
   const color = p.color("color");
   const lineColor = p.color("lineColor");
   const speed = p.num("speed");
+  const showVerge = p.bool("verge");
+  const curbColors = p.colors("curbColors");
+  const vergeColors = p.colors("vergeColor");
 
   const zFar = -Math.ceil(length / TILE) * TILE - TILE;
   const zNear = TILE * 3;
   const hw = width / 2;
   const b = new MeshBuilder();
-  const grassA = new THREE.Color("#7cc45a");
-  const grassB = new THREE.Color("#6bb44c");
-  const red = new THREE.Color("#e63946");
-  const white = new THREE.Color("#f1faee");
+  // Verge stripes alternate between two tones (one colour → that colour + a 10 % darker stripe).
+  const grassA = vergeColors[0]!;
+  const grassB = vergeColors[1] ?? shade(grassA, 0.9);
+  // Curb halves alternate; one colour → a solid curb.
+  const red = curbColors[0]!;
+  const white = curbColors[1] ?? red;
   const asphaltB = shade(color, 1.06);
   const lw = Math.max(0.06, width * 0.018);
   const verge = Math.max(4, width * 2);
@@ -55,6 +61,7 @@ export const road: GeneratorImpl = (raw, ctx) => {
       const xb = s > 0 ? hw + 0.35 : -hw;
       b.box([xa, -0.02, z1 - TILE / 2], [xb, 0.12, z1], red, red);
       b.box([xa, -0.02, z], [xb, 0.12, z1 - TILE / 2], white, white);
+      if (!showVerge) continue;
       // verge
       const ga = s > 0 ? hw + 0.35 : -hw - 0.35 - verge;
       const gb = s > 0 ? hw + 0.35 + verge : -hw - 0.35;

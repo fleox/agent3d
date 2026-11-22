@@ -5,8 +5,11 @@
 
 import { FsError, type ProjectFs } from "../core/fs";
 import type { Issue } from "../core/types";
+import { version as PACKAGE_VERSION } from "../../package.json";
 
-export const AGENT3D_VERSION = "0.1.0";
+// The engine version written into agent3d.json (`agent3d`): package.json's
+// (named JSON import: bundlers keep only this field).
+export const AGENT3D_VERSION: string = PACKAGE_VERSION;
 
 export type OpsErrorCode = "notFound" | "validation" | "conflict" | "invalid" | "forbidden-script" | "io";
 

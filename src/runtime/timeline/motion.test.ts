@@ -257,3 +257,28 @@ describe("property overrides", () => {
     expect(o.position.y).toBeCloseTo(1);
   });
 });
+
+describe("colour interpolation spaces", () => {
+  const sat = (c: THREE.Color) => {
+    const hsl = { h: 0, s: 0, l: 0 };
+    c.clone().convertLinearToSRGB().getHSL(hsl);
+    return hsl.s;
+  };
+  it("blends orange → teal in OKLCh by default (no grey midpoint)", () => {
+    const keys: [number, string][] = [[0, "#ff7a1a"], [1, "#14b8a6"]];
+    const ok = sampleKeys(keys, 0.5) as THREE.Color;
+    const rgb = sampleKeys(keys, 0.5, "linear", "rgb") as THREE.Color;
+    expect(sat(ok)).toBeGreaterThan(sat(rgb) + 0.1);
+    // End points are exact.
+    expect((sampleKeys(keys, 0) as THREE.Color).getHexString()).toBe("ff7a1a");
+    expect((sampleKeys(keys, 1) as THREE.Color).getHexString()).toBe("14b8a6");
+    expect(sat(sampleKeys(keys, 0.5, "linear", "oklab") as THREE.Color)).toBeLessThan(sat(ok));
+    expect((sampleKeys(keys, 0.9999, "linear", "oklab") as THREE.Color).getHexString()).toBe("14b8a6");
+  });
+  it("hsl goes the short way round the hue wheel", () => {
+    const c = sampleKeys([[0, "#ff0000"], [1, "#ff00ff"]], 0.5, "linear", "hsl") as THREE.Color;
+    const hsl = { h: 0, s: 0, l: 0 };
+    c.getHSL(hsl);
+    expect(hsl.h).toBeGreaterThan(0.8);
+  });
+});

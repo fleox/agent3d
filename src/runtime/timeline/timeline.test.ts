@@ -43,10 +43,14 @@ describe("sampleKeys", () => {
     expect(sampleKeys([[0, [0, 0, 0]], [1, [2, 4, 6]]], 0.5)).toEqual([1, 2, 3]);
     expect(interpolate(1, [3, 3, 3], 0.5)).toEqual([2, 2, 2]);
   });
-  it("interpolates colours in linear space", () => {
-    const c = sampleKeys([[0, "#000000"], [1, "#ffffff"]], 0.5) as THREE.Color;
+  it("interpolates colours in linear space with colorSpace rgb", () => {
+    const c = sampleKeys([[0, "#000000"], [1, "#ffffff"]], 0.5, "linear", "rgb") as THREE.Color;
     expect(c.r).toBeCloseTo(0.5);
     expect(c.getHexString()).toBe("bcbcbc"); // linear 0.5 → sRGB ≈ #bc
+  });
+  it("interpolates colours perceptually by default (OKLCh)", () => {
+    const c = sampleKeys([[0, "#000000"], [1, "#ffffff"]], 0.5) as THREE.Color;
+    expect(c.getHexString()).toBe("636363"); // OKLab L = 0.5
   });
   it("steps booleans", () => {
     expect(sampleKeys([[0, false], [1, true]], 0.99)).toBe(false);

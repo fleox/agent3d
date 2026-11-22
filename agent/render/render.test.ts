@@ -6,7 +6,7 @@ import { decodePng, pngVariance } from "./png";
 import { MINIMAL_SCENE, writeFakeDist } from "../testing/fakeRuntime";
 import { findBrowser } from "./browser";
 import { CliError } from "../output";
-import { frameBox, frameTimes, inputCall, isolateScene, parseBg, parseInputScript, projectPath, renderExportImages, renderMedia, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
+import { applyInputsUpTo, checkInputsForScene, frameSuffix, segmentInputs, frameBox, frameTimes, inputCall, isolateScene, parseBg, parseInputScript, projectPath, renderExportImages, renderMedia, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
 import { decodeGifInfo } from "./gif";
 import { readMp4Boxes } from "./mp4";
 
@@ -115,6 +115,44 @@ describe("render --input scripts and paths", () => {
     expect(inputCall({ t: 0, pointerUp: null })).toBe("i.up?.()");
     expect(inputCall({ t: 0, pointer: [0, 0], down: false })).toBe("(i.pointer(0, 0), i.up?.())");
   });
+  it("parses emit / ui / segment events, maps them to player calls and checks them against the scene", () => {
+    expect(parseInputScript([{ t: 3, emit: "retry" }, { t: 2, ui: "retryBtn" }, { t: 0, segment: "intro", reverse: true }, { t: 1, emit: "x", payload: { a: 1 } }])).toEqual([
+      { t: 0, segment: "intro", reverse: true },
+      { t: 1, emit: "x", payload: { a: 1 } },
+      { t: 2, ui: "retryBtn" },
+      { t: 3, emit: "retry" },
+    ]);
+    expect(() => parseInputScript([{ t: 1, emit: "" }])).toThrow(/event name/);
+    expect(() => parseInputScript([{ t: 1, ui: "b", extra: 1 }])).toThrow(/unknown field "extra"/);
+    expect(inputCall({ t: 0, emit: "retry" })).toBe('p.emit?.("retry")');
+    expect(inputCall({ t: 0, emit: "go", payload: { n: 1 } })).toBe('p.emit?.("go", {"n":1})');
+    expect(inputCall({ t: 0, ui: "retryBtn" })).toBe('window.__agent3dUi("retryBtn")');
+    expect(inputCall({ t: 0, segment: "intro", reverse: true })).toBe('p.playSegment?.("intro", { reverse: true })');
+    const scene = { version: 1, target: { kind: "game" }, camera: {}, objects: [], lights: [], ui: { elements: [{ id: "retryBtn", type: "button", action: "retry" }] }, timeline: { duration: 4, tracks: [], segments: { intro: [0, 2] } } } as never;
+    expect(() => checkInputsForScene(scene, [{ t: 0, ui: "retryBtn" }, { t: 0, segment: "intro" }, { t: 0, segment: "timeline" }])).not.toThrow();
+    expect(() => checkInputsForScene(scene, [{ t: 0, ui: "retyBtn" }])).toThrow(/no HUD button "retyBtn"/);
+    expect(() => checkInputsForScene(scene, [{ t: 0, segment: "intr" }])).toThrow(/no timeline segment "intr"/);
+    expect(segmentInputs("intro", 1.5)).toEqual([{ t: 1.5, segment: "intro" }]);
+    expect(segmentInputs(undefined)).toEqual([]);
+  });
+
+  it("names scroll frames by progress", () => {
+    expect(frameSuffix(0, 0.9, true)).toBe("s0_9");
+    expect(frameSuffix(1.5, 0.9, false)).toBe("s0_9-t1_5");
+    expect(frameSuffix(2.8, undefined, false)).toBe("t2_8");
+  });
+
+  it("applies input events at their own times before a frame (media capture)", async () => {
+    const log: string[] = [];
+    const session = { seek: async (t: number) => void log.push(`seek ${t}`), input: async (e: unknown) => (log.push(`in ${JSON.stringify(e)}`), !("ui" in (e as object))) };
+    const inputs = parseInputScript([{ t: 2.8, click: [0, 0] }, { t: 0.5, scroll: 0.4 }, { t: 1, ui: "b" }]);
+    const cursor = { next: 0, warnings: [] as string[], scroll: undefined as number | undefined };
+    for (const t of [0, 1, 2, 3]) await applyInputsUpTo(session, inputs, cursor, t);
+    expect(log).toEqual(["seek 0.5", 'in {"t":0.5,"scroll":0.4}', "seek 1", 'in {"t":1,"ui":"b"}', "seek 2.8", 'in {"t":2.8,"click":[0,0]}']);
+    expect(cursor.scroll).toBe(0.4);
+    expect(cursor.warnings[0]).toMatch(/HUD button "b" is not shown/);
+  });
+
   it("returns project-relative paths when inside the project", () => {
     expect(projectPath("/p/proj", "/p/proj/renders/a.png")).toBe("renders/a.png");
     expect(projectPath("/p/proj", "/tmp/out/a.png")).toBe("/tmp/out/a.png");

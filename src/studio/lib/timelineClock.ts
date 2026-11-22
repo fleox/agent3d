@@ -66,11 +66,23 @@ export function sceneTimeFor(T: number, scene: SceneDoc | null): number {
   return clamp(T, 0, tl.duration) / timelineSpeed(tl);
 }
 
-// The scene the editing viewport plays: the whole timeline from load (any
-// trigger / autoplay segment), so the clock is scene time × speed.
+// The scene the editing (non-interact) viewport shows: the whole timeline
+// from load (any trigger / autoplay segment) so the scrubber maps to scene
+// time × speed, and no game scripts — they would move objects away from where
+// the user clicks; scripts only run in interact mode (I).
 export function editingScene(scene: SceneDoc): SceneDoc {
   const tl = scene.timeline;
-  if (!tl || ((tl.trigger === undefined || tl.trigger === "load" || tl.trigger === "visible") && tl.autoplay === undefined)) return scene;
-  const { autoplay: _a, ...rest } = tl;
-  return { ...scene, timeline: { ...rest, trigger: "load" } };
+  const tlOk = !tl || ((tl.trigger === undefined || tl.trigger === "load" || tl.trigger === "visible") && tl.autoplay === undefined);
+  const scripts = !!scene.scripts?.length;
+  if (tlOk && !scripts) return scene;
+  let out: SceneDoc = scene;
+  if (!tlOk && tl) {
+    const { autoplay: _a, ...rest } = tl;
+    out = { ...out, timeline: { ...rest, trigger: "load" } };
+  }
+  if (scripts) {
+    const { scripts: _s, ...rest } = out;
+    out = rest as SceneDoc;
+  }
+  return out;
 }

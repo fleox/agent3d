@@ -90,23 +90,32 @@ function instanceCount(layout: unknown): number {
   return typeof l.count === "number" ? l.count : 0;
 }
 
-// 3D text, measured with the runtime (geometry of "ABCDEFGHIJ", size 1, default
-// curve sampling): triangles per glyph of a flat (depth 0) face. Extruding adds
-// the side walls (×8); the bevel (on by default when depth > 0) ×33; an outline
-// adds an unbevelled back layer (×8).
-export const TRIS_PER_GLYPH: Record<string, number> = {
-  "sans-bold": 33, sans: 35, "inter-black": 32, "montserrat-extrabold": 29, "space-grotesk-bold": 26, "bebas-neue": 19, anton: 20,
-  "serif-bold": 77, serif: 74, mono: 28, display: 49, pacifico: 108, lobster: 70,
+// 3D text, measured with the runtime (mixed-case sample "Hamburgefonstiv
+// ABCDEFGHIJ"): triangles of a flat (depth 0) face per glyph and per curve
+// segment. The runtime samples curves with `curveSegments` = 8 + 4 × size flat,
+// 5 + 3 × size extruded (2…32, overridable). Extruding adds the side walls
+// (×4.1 the face), the bevel (on by default when depth > 0) ×16.6; an outline
+// adds ~4.8 faces (offset glyph layer).
+export const TRIS_PER_GLYPH_SEGMENT: Record<string, number> = {
+  "sans-bold": 9.9, sans: 10.4, "inter-black": 9.4, "montserrat-extrabold": 9.2, "space-grotesk-bold": 8.4, "bebas-neue": 5.1, anton: 6.5,
+  "serif-bold": 18.3, serif: 18.1, mono: 8.4, display: 13.4, pacifico: 24, lobster: 14.9,
 };
-export const TRIS_PER_GLYPH_DEFAULT = 50;
+export const TRIS_PER_GLYPH_SEGMENT_DEFAULT = 12;
 
-export function textTriangles(o: { text?: unknown; font?: unknown; depth?: unknown; bevel?: unknown; outline?: unknown }): number {
+export function textCurveSegments(o: { size?: unknown; depth?: unknown; curveSegments?: unknown }): number {
+  const size = typeof o.size === "number" ? o.size : 1;
+  const depth = typeof o.depth === "number" ? o.depth : 0.2;
+  const cs = typeof o.curveSegments === "number" ? o.curveSegments : depth > 0 ? 5 + size * 3 : 8 + size * 4;
+  return Math.round(Math.max(2, Math.min(32, cs)));
+}
+
+export function textTriangles(o: { text?: unknown; font?: unknown; size?: unknown; depth?: unknown; bevel?: unknown; outline?: unknown; curveSegments?: unknown }): number {
   const chars = String(o.text ?? "").replace(/\s/g, "").length;
-  const face = TRIS_PER_GLYPH[typeof o.font === "string" ? o.font : "sans-bold"] ?? TRIS_PER_GLYPH_DEFAULT;
+  const face = (TRIS_PER_GLYPH_SEGMENT[typeof o.font === "string" ? o.font : "sans-bold"] ?? TRIS_PER_GLYPH_SEGMENT_DEFAULT) * textCurveSegments(o);
   const depth = typeof o.depth === "number" ? o.depth : 0.2;
   const bevel = depth > 0 && (typeof o.bevel === "number" ? o.bevel : 1) > 0;
-  const body = depth <= 0 ? 1 : bevel ? 33 : 8;
-  return Math.round(chars * face * (body + (o.outline ? 8 : 0)));
+  const body = depth <= 0 ? 1 : bevel ? 16.6 : 4.1;
+  return Math.round(chars * face * (body + (o.outline ? 4.8 : 0)));
 }
 
 // Triangles of a model file by its `src` (library index / parsed GLB), when known.
@@ -156,6 +165,62 @@ export function estimateTriangles(scene: Pick<SceneDoc, "objects">, opts: { mode
   byObject.sort((a, b) => b.triangles - a.triangles);
   return { total: byObject.reduce((a, b) => a + b.triangles, 0), byObject };
 }
+
+// ─── Per-frame estimate (every render pass) ─────────────────────────────
+//
+// What the runtime's stats count: the main pass, one shadow-map pass per
+// shadow-casting light (point lights: 6 cube faces) re-drawing the casters,
+// the normal / depth pre-pass of ao / dof / godrays / outline re-drawing the
+// scene, and contact shadows re-drawing the casters from above. Measured on
+// real scenes within ~10 %.
+export interface FrameTriangleEstimate {
+  perFrame: number;
+  passes: { main: number; shadowMaps: number; prepass: number; contactShadows: number };
+  shadowLights: number;
+}
+
+const PREPASS_EFFECTS = new Set(["ao", "dof", "godrays", "outline"]);
+// `expandPostFx` expands look presets (src/core/postfx.ts expandPostFx).
+export function frameTriangles(scene: Pick<SceneDoc, "objects" | "lights" | "environment" | "postfx" | "target">, geometry: TriangleEstimate, opts: { expandPostFx?: (defs: SceneDoc["postfx"]) => { type: string }[] } = {}): FrameTriangleEstimate {
+  // Shadow casters: every mesh-like object unless castShadow: false (particles / generators default off,
+  // generators decide themselves — counted as casters, most cast).
+  const noCast = new Set<string>();
+  walkObjects(scene.objects ?? [], (o) => {
+    const d = o as { castShadow?: boolean; kind?: string };
+    if (d.castShadow === false || d.kind === "particles") {
+      noCast.add(o.id);
+      if (d.castShadow === false) walkObjects(o.children ?? [], (c) => void noCast.add(c.id));
+    }
+  });
+  const casters = geometry.byObject.filter((o) => !noCast.has(o.id)).reduce((a, o) => a + o.triangles, 0);
+  const env = (scene.environment ?? {}) as { rig?: unknown; background?: unknown; contactShadows?: unknown };
+  let shadowLights = 0;
+  if (scene.target?.shadows !== false) {
+    for (const l of scene.lights ?? []) if ((l as { castShadow?: boolean }).castShadow && ["directional", "spot", "point"].includes(l.type)) shadowLights += l.type === "point" ? 6 : 1;
+    const rig = env.rig as { castShadow?: boolean } | string | undefined;
+    if (rig && (typeof rig === "string" || rig.castShadow !== false)) shadowLights += 1;
+    const sky = env.background && typeof env.background === "object" ? (env.background as { sky?: { physical?: boolean; preset?: string; sun?: false | { light?: boolean; castShadow?: boolean } } }).sky : undefined;
+    if (sky && (sky.physical || sky.preset) && sky.sun !== false && sky.sun?.light !== false && sky.sun?.castShadow !== false) shadowLights += 1;
+  }
+  const fx = opts.expandPostFx ? opts.expandPostFx(scene.postfx) : (scene.postfx ?? []);
+  const prepass = fx.some((d) => PREPASS_EFFECTS.has(d.type)) ? geometry.total : 0;
+  const contact = env.contactShadows ? casters : 0;
+  const passes = { main: geometry.total, shadowMaps: casters * shadowLights, prepass, contactShadows: contact };
+  return { perFrame: passes.main + passes.shadowMaps + passes.prepass + passes.contactShadows, passes, shadowLights };
+}
+
+// "Aim for" per kind (the table in plugin/skills/agent3d-create/references/art-direction.md —
+// keep both in sync): triangles per frame, all passes, that keep a page fast on a mid-range
+// phone. check warns above it with runtime stats (info on the estimate); TRIANGLE_LIMIT is the ceiling.
+export const TRIANGLE_AIM: Record<string, number> = {
+  banner: 50_000,
+  card: 50_000,
+  square: 80_000,
+  inline: 80_000,
+  hero: 150_000,
+  fullscreen: 300_000,
+  game: 200_000,
+};
 
 // Triangle ceilings per target kind (estimate and runtime stats).
 export const TRIANGLE_LIMIT: Record<string, number> = {

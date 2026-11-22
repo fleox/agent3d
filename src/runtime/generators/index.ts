@@ -3,6 +3,7 @@
 import type { GeneratorImpl } from "../registry";
 import { abstractShapes } from "./abstractShapes";
 import { bars3d } from "./bars3d";
+import { birds } from "./birds";
 import { blob } from "./blob";
 import { character } from "./character";
 import { city } from "./city";
@@ -45,4 +46,5 @@ export const GENERATOR_IMPLS: Record<string, GeneratorImpl> = {
   galaxy,
   bars3d,
   abstractShapes,
+  birds,
 };

@@ -133,7 +133,7 @@ This page documents every field once, in the order a scene is usually built. Cat
 | `position`, `target` | Camera position and look-at point (default origin) |
 | `near`, `far` | Clipping planes |
 | `controls` | `none` (fixed, default), `orbit` (drag), `parallax` (drifts with the pointer), `scroll` (follows `scrollPath` with the page scroll), `follow` (games: tracks `follow.target`) |
-| `orbitZoom`, `orbitLimits` | `orbit`: wheel / pinch zoom (default on); `{ minDistance, maxDistance, minPolar, maxPolar }` |
+| `orbitZoom`, `orbitLimits` | `orbit`: wheel / pinch zoom (default on); `{ minDistance, maxDistance, minPolar, maxPolar, minAzimuth, maxAzimuth }` (degrees; polar 0 = from above, azimuth 0 = camera on +Z, 90 = +X) |
 | `parallax` | `{ strength, smoothing }` |
 | `scrollPath` | `[{ position, target? }, …]` for `controls: "scroll"` |
 | `follow` | `{ target: "<objectId>", offset, smoothing, lookAhead }` |
@@ -201,7 +201,7 @@ Camera timeline tracks (`camera.position`, …) apply after the shots.
 
 A **colour-gradient sky**: `top`, `horizon`, `bottom`, `sun: { direction | elevation + azimuth, color, size } | false`, `stars` (count).
 
-A **physical sky** (Preetham atmosphere) when `preset` (`sunrise`, `morning`, `noon`, `afternoon`, `golden-hour`, `sunset`, `dusk`) or `physical: true` is set. Its sun (`sun.elevation` degrees above the horizon, `sun.azimuth` degrees, 0 = towards the default camera at +Z, 90 = +X) also adds a matching directional **sun light** (warmer and dimmer near the horizon; `sun.light: false` skips it; `sun.intensity`, `sun.color`, `sun.castShadow` — default true) and lights the scene through `lighting: "sky"` (the default with a physical sky). Tuning: `turbidity` (haze, 1..20), `rayleigh` (blue scattering, 0..4), `mieCoefficient`, `mieDirectionalG`, `exposure` (default 1), `clouds` (0..1), `stars`.
+A **physical sky** (Preetham atmosphere) when `preset` (`sunrise`, `morning`, `noon`, `afternoon`, `golden-hour`, `sunset`, `dusk`) or `physical: true` is set. Its sun (`sun.elevation` degrees above the horizon, `sun.azimuth` degrees, 0 = towards the default camera at +Z, 90 = +X) also adds a matching directional **sun light** (warmer and dimmer near the horizon; `sun.light: false` skips it; `sun.intensity`, `sun.color`, `sun.castShadow` — default true) and lights the scene through `lighting: "sky"` (the default with a physical sky). Tuning: `turbidity` (haze, 1..20), `rayleigh` (blue scattering, 0..4), `mieCoefficient`, `mieDirectionalG`, `exposure` (default 1: a multiplier of the preset's own exposure — every preset is tuned to look rich with ACES / AgX at 1; 0.7 for deeper colours, 1.3 for a brighter sky), `clouds` (0..1), `stars`.
 
 ```json
 "environment": {
@@ -229,7 +229,7 @@ Bundled HDRIs (`library:hdri/<name>.hdr` for lighting and blurred backgrounds, `
 
 | Field | Meaning |
 |---|---|
-| `contactShadows` | `true` or `{ "opacity": 0.6, "blur": 2.5, "far": 1.5, "y": n, "size": n, "center": [x, z], "resolution": 512, "color": "#000", "frames": 0 }` — soft blurred shadows right under the objects (product shots), no shadow-casting light needed. The plane is fitted to the solid objects (particles / points ignored) and fades out radially; it is centred on them (also with an explicit `size`) unless `center` places it; `far` = how high above the plane objects still darken it; `frames` = re-render every frame (0, default) or only the first N (`1` for static scenes, cheaper) |
+| `contactShadows` | `true` or `{ "opacity": 0.6, "blur": 2.5, "far": 1.5, "y": n, "size": n, "center": [x, z], "resolution": 512, "color": "#000", "frames": 0 }` — soft blurred shadows right under the objects (product shots), no shadow-casting light needed. The plane is fitted to the solid objects (particles / points ignored) and fades out radially; it is centred on them (also with an explicit `size`) unless `center` places it; `far` = how high above the plane (scene units) the shadow reaches: the darkness fades from full at the plane to nothing at `far`. Default ≈ 0.9 × the height of what stands on the plane (meshes touching it), so a title floating above a product doesn't count; meshes whose bottom is higher than 0.6 × `far` above the plane never cast (floating objects leave no smudge). Raise `far` for a taller, softer shadow, lower it for a tight contact line; `frames` = re-render every frame (0, default) or only the first N (`1` for static scenes, cheaper) |
 | `rig` | A light rig from the catalog (`agent3d catalog lightRigs`): `studio-3point`, `softbox`, `product-top`, `rim`, `dramatic`, `golden-hour`, `noon`, `overcast`, `neon`, `moonlight` — or `{ "preset": "softbox", "intensity": 1, "rotation": deg, "scale": 1, "castShadow": true, "color": tint }`. Its lights are added to `lights` (positions assume a subject ~1–3 units around the origin; `scale` for bigger scenes) |
 | `shadows` | Shadow-map quality for every shadow-casting light: `{ "type": "pcf" \| "vsm", "softness": 3, "mapSize": 2048, "intensity": 1 }` (`vsm` = smooth blurred shadows; `softness` 0 = hard). Directional shadow cameras are fitted to the scene automatically |
 
@@ -285,6 +285,7 @@ Common fields (every kind):
 | `body` | Physics body — [Physics](#physics) |
 | `href` | Clicking the object (or a child) opens this URL, pointer cursor; never in headless renders. `javascript:` URLs are refused; cross-origin URLs open in a new tab. For http(s)-only links with `newTab` control use an `openUrl` [interaction](#interactions) |
 | `userData` | Free data scripts read and write (`obj.userData`) |
+| `attach` | `"camera"` (top-level objects only): the object rides with the camera. `position` / `rotation` are then in **camera space** — x right, y up, **-z forward**: `[0, -1.2, -6]` sits 6 units in front of the lens, a little below the centre. Captions, chapter labels and HUD-like 3D text stay on screen while the camera moves (timeline tracks, shots, scroll stories, parallax). Timeline tracks on the object animate it in camera space too. `check` warns when z ≥ -0.2 (behind / inside the lens) |
 
 | `kind` | Specific fields | See |
 |---|---|---|
@@ -332,7 +333,7 @@ One `geometry` + `material` drawn many times in a single draw call:
 | Field | Meaning |
 |---|---|
 | `preset` | `agent3d catalog materialPresets`: plastic, matte, clay, chrome, brushedMetal, gold, copper, glass, frostedGlass, rubber, pearl, holographic, neon, toon, flat, lowpoly, velvet, wireframe, normal, and the photoreal set carPaint, ceramic, marble, terrazzo, wood, carbonFiber, leather, satin, silk, brushedAluminium, ice, water, diamond, gem, jelly, chromeGradient, soapBubble, mattePastel, emissiveGradient. Explicit fields override it |
-| `type` | `standard`, `physical`, `basic`, `lambert`, `toon`, `normal`, `matcap`, `gradient` (`gradient: [colours]`: vertical ramp in object space; `gradientEmissive: true` makes the ramp drive the glow too), `shader` (`shader: <catalog id>`, `uniforms`) |
+| `type` | `standard`, `physical`, `basic`, `lambert`, `toon` (cel bands on the direct light, environment fill kept, so the lit band shows the colour as given; `roughness` default 0.75), `normal`, `matcap`, `gradient` (`gradient: [colours]`: vertical ramp in object space; `gradientEmissive: true` makes the ramp drive the glow too), `shader` (`shader: <catalog id>`, `uniforms`) |
 | `color`, `metalness`, `roughness`, `emissive`, `emissiveIntensity`, `opacity`, `transparent`, `wireframe`, `flatShading`, `side` (`front`, `back`, `double`) | Common |
 | `envMapIntensity` | Reflection strength of the environment lighting |
 | `transmission`, `thickness`, `ior`, `dispersion` (0..10, rainbow fire in gems), `attenuationColor`, `attenuationDistance` | Physical: glass, liquids, gems, jelly |
@@ -427,7 +428,28 @@ Compressed models: `.glb` files with `EXT_meshopt_compression` (made by `assets 
 { "id": "land", "kind": "generator", "generator": "terrain", "seed": 7, "params": { "size": 40, "height": 6 } }
 ```
 
-Procedural content built at load time, deterministic with `seed` (default: derived from `scene.seed` and the object id), zero bytes: `terrain`, `trees`, `rocks`, `grass`, `flowers`, `water`, `clouds`, `city`, `character`, `planet`, `starfield`, `blob`, `waveGrid`, `maze`, `road`, `floatingIsland`, `globe`, `crystals`, `galaxy`, `bars3d`, `abstractShapes`. `agent3d catalog generators <id>` lists each one's `params`.
+Procedural content built at load time, deterministic with `seed` (default: derived from `scene.seed` and the object id), zero bytes: `terrain`, `trees`, `rocks`, `grass`, `flowers`, `water`, `clouds`, `city`, `character`, `planet`, `starfield`, `blob`, `waveGrid`, `maze`, `road`, `floatingIsland`, `globe`, `crystals`, `galaxy`, `bars3d`, `abstractShapes`, `birds`. `agent3d catalog generators <id>` lists each one's `params`.
+
+**Landscapes** are one `terrain` plus scatterers and water, all at the **same `position`** (scatterers with `onTerrain` sit on the terrain sharing their parent, but keep one frame so `area` covers the terrain you see):
+
+- `shape`: `basin` (a lake ringed by mountains — set `waterLevel` ≈ 0.1 × `height`), `valley` (flat floor along z, mountain walls, a range closing the far end — a camera on +z looks down it), `mountains`, `hills`, `island`, `dunes`, `canyon`, `flat`.
+- `edgeFalloff` (0..1) sinks the borders smoothly below 0 instead of ending in vertical cut walls (default 0.3 for `mountains`, 0.2 `basin`, 0.15 `valley`).
+- `snowHeight` puts snow above an absolute altitude (same units as `waterLevel`), so two terrains of different `height` share one snow line; `snowLine` stays a 0..1 fraction of each terrain's own relief. Trees, grass and flowers stay a little below the snow (a treeline) and out of the water; rocks may sit on snow.
+- `waterPlane: false` drops the terrain's own water plane while `waterLevel` keeps shaping the shore and keeping scatterers dry: add a `water` object at `y = waterLevel` for full control of the lake.
+- Mirror lakes: a `water` object with `"reflections": true` (+ `reflectivity`, default 0.8) reflects the scene in a planar mirror; keep `waveHeight` / `ripples` low for a calm mirror. Cost: the scene is rendered a second time every frame (half resolution on the `medium` quality tier, off on `low`); deterministic, no extra download. The terrain's own water plane has no reflections: use `waterPlane: false` + a `water` object.
+
+```json
+{ "id": "basin", "kind": "generator", "generator": "terrain", "seed": 7,
+  "params": { "shape": "basin", "size": 160, "resolution": 160, "height": 34, "lowpoly": false, "waterLevel": 3.5, "waterPlane": false, "snowHeight": 18,
+    "palette": ["#9a9378", "#4f6b47", "#36503a", "#6f6a78", "#f6f2f4"] } },
+{ "id": "lake", "kind": "generator", "generator": "water", "position": [0, 3.5, 0], "params": { "size": 160, "color": "#34506e", "shallowColor": "#a9bccd", "waveHeight": 0.02, "ripples": 0.35 } },
+{ "id": "pines", "kind": "generator", "generator": "trees", "params": { "count": 900, "area": [150, 0, 150], "style": "pine", "minScale": 0.55, "maxScale": 1.15 } },
+{ "id": "flock", "kind": "generator", "generator": "birds", "position": [0, 14, -5], "params": { "count": 9, "mode": "drift", "formation": "v", "area": [70, 3, 0], "heading": 12, "speed": 5 } }
+```
+
+With a camera at `[0, 5, 22]` looking at `[0, 9, -40]`, a `sunrise` sky and fog `{ "density": 0.016, "height": 7 }`, that is a misty mountain lake at dawn.
+
+`birds` is a flock in one instanced draw call: chevron-shaped birds flapping (and gliding) in the shader, flying a pure function of time — `orbit` around the object, `path` through `points`, or `drift` across `area` along `heading` — in a `loose` cloud or a `v` formation. `road` restyles with `color`, `lineColor`, `curbColors` (one colour = solid curbs), `vergeColor` and `verge: false` (road only, e.g. a neon runner on black).
 
 `material` overrides the main surface of the generators that support it (`blob`, `rocks`, `terrain`, `planet`, `floatingIsland`, `globe`, `crystals`, `bars3d`, `abstractShapes`; the catalog entry says which part) — e.g. `{ "type": "shader", "shader": "gradientFlow" }` on a blob keeps its morph. Without a colour / preset / map, lit materials keep the generator's own vertex colours. Generators that publish collision boxes (the maze with `bodies: true`) get a static compound body.
 
@@ -484,13 +506,14 @@ Procedural animation and interaction on objects and lights: `type` (catalog id),
 
 ### Tracks
 
-`{ "target": "<selector>.<property>", "keys": [...], "ease"?, "stagger"?, "staggerFrom"? }`
+`{ "target": "<selector>.<property>", "keys": [...], "ease"?, "stagger"?, "staggerFrom"?, "colorSpace"? }`
 
 - **Selector**: an object / light id, `camera`, `environment`, `postfx`, a comma list `a,b,c`, `tag:<tag>` (objects with that tag, scene order), `children:<id>` (direct children — text letters with `splitLetters` too), or a letter `<textId>/<n>`.
 - **Object properties**: `position`, `rotation` (degrees), `scale` (number = uniform) and their `.x` / `.y` / `.z`, `visible`, `material.<prop>` (`opacity`, `color`, `emissive`, `emissiveIntensity`, `metalness`, `roughness`, `transmission`, `iridescence`, `clearcoat`, `sheen`, …), `material.uniforms.<name>`; models: `morph.<name>`, `animation.<clip>.weight | speed | time` (blend clips, scrub a clip by scroll).
 - **Lights**: `intensity`, `color`, `position`, `target`, `angle` (degrees), `penumbra`, `distance`, `decay`. **Camera**: `position`, `target`, `fov`, `zoom` (orthographic), `focus` (depth-of-field distance → postfx `dof`). **Environment**: `fog.color | near | far | density`, `lightingIntensity`, `exposure`, `background` (solid colours). **Post effects**: `postfx.<type>.<param>` (numeric / colour params of an effect present in `postfx`).
 - **Keys**: `[time, value]` or `[time, value, ease]`, sorted by time — a key's ease shapes the segment that *ends* at it (overriding the track ease). Values: numbers, `[x, y, z]`, colours, booleans, or relative strings `"+=1"`, `"-=0.5"`, `"*=1.2"` (from the property's rest value; vec3 keys may mix numbers and relative strings).
 - **Stagger**: `stagger` (s) offsets each target of a multi-target selector; `staggerFrom`: `start` (default), `end`, `center`, `edges`, `random` (seeded).
+- **Colour keys** blend in `colorSpace`: `oklch` (default — perceptual, keeps the chroma, so orange → teal stays saturated instead of passing through grey), `oklab` (perceptual straight line), `rgb` (linear-light RGB, the old behaviour), `hsl` (around the hue wheel, the short way). Interaction `set` transitions and the `colorCycle` behaviour blend in OKLCh too.
 
 ### Eases
 
@@ -603,7 +626,7 @@ Objects with a `body` are simulated as real rigid bodies (position **and rotatio
 | `body` field | Default | Meaning |
 |---|---|---|
 | `type` | (required) | `dynamic` (simulated), `static` (immovable), `kinematic` (moved by scripts / velocity, pushes dynamic bodies, ignores gravity), `trigger` (detects overlaps, never pushes) |
-| `shape` | `box` | `box` (the object's bounding box, in its rotated frame), `sphere`, `cylinder`, `capsule` (Y-up), `convex` (hull of the mesh / model — good for dynamic models), `trimesh` (exact triangles; static / kinematic only — level geometry), `heightfield` (terrain generators; static / kinematic only), `compound` (`shapes`), `auto` (sphere / capsule / cylinder / box geometry → that shape; terrain → heightfield; other meshes, models, SVGs → trimesh when static / kinematic, convex when dynamic; generators → trimesh when static; else box) |
+| `shape` | `box` | `box` (the bounding box of the object's **own** geometry, in its rotated frame), `sphere`, `cylinder`, `capsule` (Y-up), `convex` (hull of the mesh / model — good for dynamic models), `trimesh` (exact triangles; static / kinematic only — level geometry), `heightfield` (terrain generators; static / kinematic only), `compound` (`shapes`, or without `shapes`: one box for the object plus one per child object without a body — merges decorative children), `auto` (sphere / capsule / cylinder / box geometry → that shape; terrain → heightfield; other meshes, models, SVGs → trimesh when static / kinematic, convex when dynamic; generators → trimesh when static; else box) |
 | `size`, `radius`, `height` | measured | Override the box size / the sphere, cylinder, capsule radius / the cylinder, capsule height (world units) |
 | `offset` | bounding-box centre | Collider centre relative to the object origin |
 | `shapes` | | `compound`: `[{ "shape": "box" \| "sphere" \| "cylinder" \| "capsule", "size"?, "radius"?, "height"?, "offset"?, "rotation"? }]` (offsets from the object origin) |
@@ -617,6 +640,8 @@ Objects with a `body` are simulated as real rigid bodies (position **and rotatio
 | `sleep` | true | `false` keeps it always awake |
 | `ccd` | false | Fast object (bullets, thrown balls): extra sub-steps against tunnelling |
 | `layer`, `collidesWith` | `"default"`, all | Collision layer name and the layers it collides with |
+
+Measured shapes use the object's own geometry (with the parts a model, generator or text builds), never its child objects: a child with a `body` gets its own collider, a child without one is decoration unless the parent uses `"shape": "compound"` without `shapes` (each such child becomes a box of the compound). A `group` has no geometry of its own, so its body measures its children (those without a body).
 
 **Scaling a body from a script** (`obj.scale.set(…)`) rebuilds its collider at the new size (velocity kept). A body held by a joint keeps its start-size collider (a `physics` warning says so); timeline / behaviour scale animations never resize colliders.
 
@@ -655,7 +680,35 @@ Objects with a `body` are simulated as real rigid bodies (position **and rotatio
 ```
 
 - **`scripts`**: project paths of ES modules whose default export receives the `ScriptApi`. The contract, the sandbox rules and headless testing are in [scripting.md](scripting.md).
-- **`ui.elements[]`**: `id`, `type` (`text`, `button`, `bar`), `text` with `{key}` placeholders from `api.state` (`{score}`, `{state.lives}`, or an expression), `anchor` (`top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right`), `style` (`plain`, `pill`, `title`, `subtitle`), `value` (bar: state key holding 0..1), `action` (button: event sent to scripts), `visible` (boolean, state key or expression such as `"phase == 'over'"`). `ui.font` takes CSS system font stacks only (no web font is fetched); `ui.color`, `ui.accent` theme it.
+- **`ui.elements[]`**: `id`, `type` (`text`, `button`, `bar`), `text` with `{key}` placeholders from `api.state` (`{score}`, `{state.lives}`, or an expression), `anchor` (`top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right`), `style` (`plain`, `pill` — always one line, the side columns grow to fit it and the centre title wraps instead —, `title`, `subtitle`, `panel` — a backdrop card for game-over / pause screens: multi-line text with `\n`, the first line set as a heading), `value` (bar: state key holding 0..1), `action` (button: event sent to scripts), `visible` (boolean, state key or expression such as `"phase == 'over'"`), `color` / `background` (per element: text colour; background of a pill, panel, button or bar track — a bar's `color` is its fill; a button with only `background` gets an auto-contrast label). `ui.font` takes CSS system font stacks only (no web font is fetched); `ui.color` (text), `ui.accent` (buttons, bar fills) and `ui.buttonText` theme it — without `buttonText`, button labels are white or near-black, whichever contrasts best with the accent (WCAG ≥ 4.5 whenever one of them can).
+- **Timeline state in the HUD** (no script needed): expressions and placeholders read `timeline.time`, `timeline.duration`, `timeline.progress` (0..1), `timeline.segment` (the segment being played, else the first declared segment containing the current time, else `""`) and `timeline.marker` (the last marker at or before the current time, `""` before the first). A script's own `state.timeline` key wins.
+
+### Pattern: scroll-story chapter labels
+
+A scroll-driven story (`timeline.trigger: "scroll"`) whose chapter label stays on screen while the camera travels — a 3D caption attached to the camera, plus HUD pills that follow the segments:
+
+```json
+"timeline": {
+  "duration": 10, "trigger": "scroll",
+  "segments": { "design": [0, 3], "build": [3, 7], "launch": [7, 10] },
+  "markers": { "design": 1, "build": 5, "launch": 9 },
+  "tracks": [{ "target": "camera.position", "keys": [[0, [0, 1.2, 8]], [4, [14, 1.6, 8]], [8, [28, 1, 8]]], "ease": "inOutCubic" }]
+},
+"objects": [
+  { "id": "kicker", "kind": "text", "attach": "camera", "text": "OUR PROCESS", "size": 0.12, "depth": 0, "align": "left", "position": [-1.55, 0.78, -4] }
+],
+"ui": {
+  "accent": "#ffd400",
+  "elements": [
+    { "id": "ch1", "type": "text", "style": "pill", "anchor": "top-left", "text": "01 · Design", "visible": "timeline.segment == 'design'" },
+    { "id": "ch2", "type": "text", "style": "pill", "anchor": "top-left", "text": "02 · Build", "visible": "timeline.segment == 'build'" },
+    { "id": "ch3", "type": "text", "style": "pill", "anchor": "top-left", "text": "03 · Launch", "visible": "timeline.segment == 'launch'", "background": "#ffd400", "color": "#111111" },
+    { "id": "cta", "type": "button", "anchor": "bottom", "text": "Start a project", "action": "cta", "visible": "timeline.progress >= 0.9" }
+  ]
+}
+```
+
+The camera-attached kicker never leaves the frame; each pill shows only during its chapter; the button appears for the last 10 % of the scroll and emits `cta` (scripts `api.on("cta")`, interactions `{ "on": "event", "event": "cta" }`, the page's `agent3d:event`). For a link, a clickable 3D object with `href` (or an `openUrl` click interaction) is the no-script way.
 - **`audio`**: `sounds` are named sounds scripts play with `api.audio.play(name)` — synthesised presets (`agent3d catalog sounds`: coin, jump, hit, explosion, click, powerup, laser, win, lose, whoosh, ambient-pad, chiptune-loop; zero bytes) or project files, each with `volume`; `music` (`src` or `preset`, `volume`, `loop`) starts with `api.audio.music(true)`; `muted` sets the initial state of the HUD's mute button. Audio never starts before a user gesture.
 
 ## Data bindings

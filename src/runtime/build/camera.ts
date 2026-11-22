@@ -17,6 +17,7 @@ export function createCamera(def: CameraDef, aspect: number): THREE.PerspectiveC
   } else cam = new THREE.PerspectiveCamera(num(def.fov, 45), aspect, near, far);
   cam.position.set(...def.position);
   const t = def.target ?? [0, 0, 0];
+  nudgeOffPlanes(cam.position, new THREE.Vector3(t[0], t[1], t[2]));
   cam.lookAt(t[0], t[1], t[2]);
   return cam;
 }
@@ -63,6 +64,22 @@ export interface CameraRig {
   dispose(): void;
 }
 
+// A vertex lying exactly in the plane through the camera perpendicular to its
+// view axis gets clip w = 0; some rasterizers (SwiftShader — headless renders —
+// and a few mobile GPUs) then draw its triangles as screen-filling garbage
+// (a box floor whose front face is at the camera's z: wrong material, objects
+// cut as if inside a volume). Authored scenes hit it with round numbers (camera
+// z = 10, floor edge z = 10), so the camera is moved 1e-4 units back along its
+// view axis — invisible, and never an exact authored value.
+export const CAMERA_PLANE_NUDGE = 1e-4;
+export function nudgeOffPlanes(pos: THREE.Vector3, target: THREE.Vector3): void {
+  const dx = target.x - pos.x, dy = target.y - pos.y, dz = target.z - pos.z;
+  const len = Math.hypot(dx, dy, dz);
+  if (len < 1e-9) return;
+  const k = -CAMERA_PLANE_NUDGE / len;
+  pos.set(pos.x + dx * k, pos.y + dy * k, pos.z + dz * k);
+}
+
 export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | THREE.OrthographicCamera, dom: HTMLElement | null, deterministic: boolean): Promise<CameraRig> {
   const target0 = new THREE.Vector3(...(def.target ?? [0, 0, 0]));
   const rest: CameraRig["rest"] = { position: new THREE.Vector3(...def.position), target: target0.clone(), fov: num(def.fov, 45), zoom: num(def.zoom, 10) };
@@ -87,6 +104,8 @@ export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | T
     if (lim.maxDistance !== undefined) oc.maxDistance = lim.maxDistance;
     if (lim.minPolar !== undefined) oc.minPolarAngle = lim.minPolar * DEG;
     if (lim.maxPolar !== undefined) oc.maxPolarAngle = lim.maxPolar * DEG;
+    if (lim.minAzimuth !== undefined) oc.minAzimuthAngle = lim.minAzimuth * DEG;
+    if (lim.maxAzimuth !== undefined) oc.maxAzimuthAngle = lim.maxAzimuth * DEG;
     if (def.autoRotate) {
       oc.autoRotate = true;
       oc.autoRotateSpeed = (def.autoRotate / 360) * 60; // OrbitControls: 2.0 = 30 s per orbit at 60fps
@@ -182,6 +201,7 @@ export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | T
         handheld.copy(target).addScaledVector(right, Math.tan(n(2) * rot) * d).addScaledVector(up, Math.tan(n(3) * rot) * d);
       } else handheld.copy(target);
       cam.position.copy(pos).add(shake);
+      nudgeOffPlanes(cam.position, handheld);
       cam.lookAt(handheld);
       first = false;
     },

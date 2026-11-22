@@ -2,13 +2,14 @@
 // the depth of a sibling terrain below (baked on the first frame, once the
 // object's transform is known), animated shore foam lines, ripple normals
 // with a moving sun glint and fresnel — see waterMaterial.ts. Without a
-// terrain below, the water is uniformly deep (no shore foam).
+// terrain below, the water is uniformly deep (no shore foam). `reflections`
+// adds a planar mirror pass (waterMaterial.ts attachReflection).
 
 import * as THREE from "three";
 import type { GeneratorImpl } from "../registry";
 import { generatorParams } from "./params";
-import { built, findGround } from "./geom";
-import { bakeDepth, createWaterMaterial, waveHeight } from "./waterMaterial";
+import { built, disposeObject, findGround } from "./geom";
+import { attachReflection, bakeDepth, createWaterMaterial, reflectionScale, waveHeight } from "./waterMaterial";
 
 export { waveHeight } from "./waterMaterial";
 
@@ -18,6 +19,7 @@ export const water: GeneratorImpl = (raw, ctx) => {
   const amp = p.num("waveHeight");
   const speed = p.num("waveSpeed");
   const lowpoly = p.bool("lowpoly");
+  const reflScale = p.bool("reflections") ? reflectionScale(ctx.quality) : 0;
   const segs = Math.max(8, Math.min(160, Math.round(size * (lowpoly ? 1.4 : 3))));
   const geometry = new THREE.PlaneGeometry(size, size, segs, segs);
   geometry.rotateX(-Math.PI / 2);
@@ -33,8 +35,11 @@ export const water: GeneratorImpl = (raw, ctx) => {
     ripples: p.num("ripples"),
     flat: lowpoly,
     depthRange: p.num("depthRange"),
+    reflection: reflScale > 0 ? p.num("reflectivity") : 0,
   });
   const mesh = new THREE.Mesh(geometry, material);
+  // Planar reflections (opt-in, one extra scene render per frame; off on the low tier).
+  const mirror = reflScale > 0 ? attachReflection(mesh, uniforms, reflScale) : null;
   mesh.name = "water";
   mesh.receiveShadow = true;
   mesh.renderOrder = 1;
@@ -63,5 +68,9 @@ export const water: GeneratorImpl = (raw, ctx) => {
       }
     },
     heightAt: (x, z) => waveHeight(x, z, time, amp, speed),
+    dispose: () => {
+      mirror?.dispose();
+      disposeObject(group);
+    },
   });
 };

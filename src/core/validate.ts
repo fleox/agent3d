@@ -8,7 +8,7 @@
 // ("objects#logo.material.roughness") whenever an object has a valid id.
 
 import { isValidAspect } from "./aspect";
-import { CATALOG, catalogEntry, materialPreset, type CatalogEntry, type CatalogSection, type ParamSpec } from "./catalog";
+import { CATALOG, catalogEntry, materialPreset, PARTICLE_PARAMS, PARTICLE_SHAPES, type CatalogEntry, type CatalogSection, type ParamSpec } from "./catalog";
 import { isValidColor } from "./color";
 import { EASE_EXAMPLES, parseEase } from "./ease";
 import { ID_RE, isValidId } from "./ids";
@@ -65,19 +65,29 @@ const AUDIO_EXT = [".mp3", ".ogg", ".wav", ".m4a", ".aac", ".opus", ".webm"];
 const SVG_EXT = [".svg"];
 
 // Allowed keys per section (unknown keys → warnings with suggestions).
-const BASE_OBJECT_KEYS = ["id", "kind", "name", "visible", "castShadow", "receiveShadow", "behaviours", "children", "tags", "body", "href", "userData", "position", "rotation", "scale"];
+const BASE_OBJECT_KEYS = ["id", "kind", "name", "visible", "castShadow", "receiveShadow", "behaviours", "children", "tags", "body", "href", "userData", "attach", "position", "rotation", "scale"];
 const OBJECT_KEYS: Record<(typeof OBJECT_KINDS)[number], string[]> = {
   mesh: ["geometry", "material"],
   text: ["text", "font", "size", "depth", "bevel", "align", "letterSpacing", "lineHeight", "kerning", "maxWidth", "curveSegments", "outline", "splitLetters", "reveal", "material"],
   model: ["src", "fit", "center", "animation", "morph", "material"],
   group: [],
   generator: ["generator", "params", "seed", "material"],
-  particles: ["preset", "count", "area", "size", "color", "speed", "direction", "spread", "lifetime", "opacity", "blending", "shape", "seed"],
+  particles: ["preset", ...PARTICLE_PARAMS.map((x) => x.name)],
   instances: ["geometry", "material", "layout", "colors"],
   svg: ["src", "size", "fit", "depth", "bevel", "keepColors", "strokes", "curveSegments", "layerGap", "material"],
 };
 const SCENE_KEYS = ["version", "id", "title", "description", "target", "camera", "environment", "lights", "objects", "timeline", "interactions", "postfx", "physics", "scripts", "ui", "audio", "data", "ariaLabel", "seed"];
 const TARGET_KEYS = ["kind", "aspect", "budgetKb", "height", "transparent", "lazy", "pauseOffscreen", "maxDpr", "reducedMotion", "posterTime", "antialias", "shadows", "toneMapping", "exposure", "quality"];
+// Geometry parameter names from three.js → the catalog's name (first one the entry has).
+const PARAM_ALIASES: Record<string, string[]> = {
+  radialSegments: ["segments"],
+  widthSegments: ["segments"],
+  capSegments: ["segments"],
+  heightSegments: ["segments"],
+  tubularSegments: ["segments"],
+  thetaLength: ["arc"],
+};
+
 const CAMERA_KEYS = ["type", "fov", "zoom", "position", "target", "near", "far", "controls", "autoRotate", "orbitZoom", "orbitLimits", "parallax", "scrollPath", "follow", "lookAt", "shake", "shots"];
 const ENV_KEYS = ["background", "lighting", "lightingIntensity", "fog", "ground", "rig", "contactShadows", "shadows"];
 const LIGHT_KEYS = ["id", "type", "color", "intensity", "position", "target", "castShadow", "skyColor", "groundColor", "distance", "decay", "angle", "penumbra", "width", "height", "panel", "volumetric", "shadow", "behaviours"];
@@ -97,7 +107,7 @@ const PHYSICS_KEYS = ["gravity", "step", "substeps", "iterations", "sleep", "deb
 const JOINT_KEYS = ["id", "type", "a", "b", "pivot", "axis", "distance", "restLength", "stiffness", "damping", "motor", "limits", "maxForce", "collideConnected"];
 // Bodies seen while walking objects (joints / materials / layers are checked in physics()).
 const bodiesSeen = new WeakMap<object, { id: string; path: string; body: Record<string, unknown> }[]>();
-const UI_ELEMENT_KEYS = ["id", "type", "text", "anchor", "style", "value", "action", "visible"];
+const UI_ELEMENT_KEYS = ["id", "type", "text", "anchor", "style", "value", "action", "visible", "color", "background"];
 
 // Animatable track properties: src/core/validateMotion.ts.
 
@@ -301,6 +311,12 @@ class V {
     }
     for (const k of Object.keys(params)) {
       if (names.includes(k) || reserved.includes(k)) continue;
+      // three.js parameter names agents carry over (radialSegments on a cylinder…).
+      const alias = section === "geometries" ? PARAM_ALIASES[k]?.find((x) => names.includes(x)) : undefined;
+      if (alias) {
+        this.warn("unknown-param", join(path, k), `"${k}" is not a parameter of ${sectionLabel(section)} "${entry.id}": it is called "${alias}" here (the value is ignored as written).`, `Rename "${k}" to "${alias}".`);
+        continue;
+      }
       const s = closest(k, names);
       this.warn(
         "unknown-param",
@@ -387,6 +403,7 @@ function sectionLabel(s: CatalogSection): string {
       behaviours: "behaviour",
       generators: "generator",
       particlePresets: "particle preset",
+      instanceLayouts: "instance layout",
       postfx: "post effect",
       fonts: "font",
       sounds: "sound",
@@ -450,6 +467,7 @@ export function validateScene(scene: unknown): Issue[] {
   const lights = Array.isArray(s.lights) ? s.lights : [];
   lights.forEach((l, i) => light(v, l, `lights[${i}]`));
   const objects = Array.isArray(s.objects) ? s.objects : [];
+  topLevelObjects.set(v, new Set(objects.filter(isObj)));
   objects.forEach((o, i) => object(v, o, `objects[${i}]`));
 
   // References now that every id is known.
@@ -509,11 +527,13 @@ function camera(v: V, c: unknown, path: string) {
   if (c.orbitLimits !== undefined) {
     if (!isObj(c.orbitLimits)) v.error("type", `${path}.orbitLimits`, "orbitLimits must be an object.");
     else {
-      v.unknownKeys(c.orbitLimits, ["minDistance", "maxDistance", "minPolar", "maxPolar"], `${path}.orbitLimits`, "orbitLimits");
+      v.unknownKeys(c.orbitLimits, ["minDistance", "maxDistance", "minPolar", "maxPolar", "minAzimuth", "maxAzimuth"], `${path}.orbitLimits`, "orbitLimits");
       v.number(c.orbitLimits.minDistance, `${path}.orbitLimits.minDistance`, { min: 0 });
       v.number(c.orbitLimits.maxDistance, `${path}.orbitLimits.maxDistance`, { min: 0 });
       v.number(c.orbitLimits.minPolar, `${path}.orbitLimits.minPolar`, { min: 0, max: 180 });
       v.number(c.orbitLimits.maxPolar, `${path}.orbitLimits.maxPolar`, { min: 0, max: 180 });
+      v.number(c.orbitLimits.minAzimuth, `${path}.orbitLimits.minAzimuth`, { min: -360, max: 360 });
+      v.number(c.orbitLimits.maxAzimuth, `${path}.orbitLimits.maxAzimuth`, { min: -360, max: 360 });
     }
   }
   if (c.parallax !== undefined) {
@@ -779,6 +799,9 @@ function objectPath(o: Obj, fallback: string): string {
   return isValidId(o.id) ? `objects#${o.id}` : fallback;
 }
 
+// Root entries of objects[] (attach: "camera" is only valid there).
+const topLevelObjects = new WeakMap<V, Set<unknown>>();
+
 function object(v: V, o: unknown, fallback: string) {
   if (!isObj(o)) return v.error("type", fallback, "An object must be a JSON object.", 'Example: { "id": "box", "kind": "mesh", "geometry": { "type": "box" } }.');
   const p = objectPath(o, fallback);
@@ -811,6 +834,16 @@ function object(v: V, o: unknown, fallback: string) {
     else if (/^\s*javascript:/i.test(o.href)) v.error("forbidden", `${p}.href`, "javascript: links are not allowed.", 'Use an http(s) URL, a relative page path or "#anchor".');
   }
   if (o.userData !== undefined && !isObj(o.userData)) v.error("type", `${p}.userData`, "userData must be an object.");
+  if (o.attach !== undefined) {
+    v.enumOf(o.attach, ["camera"], `${p}.attach`);
+    if (o.attach === "camera") {
+      if (!topLevelObjects.get(v)?.has(o)) v.error("invalid", `${p}.attach`, 'Only top-level objects can be attached to the camera.', "Move the object (or its group) to the root of objects[] and set attach there.");
+      const pos = o.position;
+      if (Array.isArray(pos) && isNum(pos[2]) && (pos[2] as number) > -0.2)
+        v.warn("framing", `${p}.position`, `A camera-attached object at z = ${String(pos[2])} is behind or inside the lens: camera space looks down -z.`, `Use a negative z, e.g. [${isNum(pos[0]) ? pos[0] : 0}, ${isNum(pos[1]) ? pos[1] : 0}, -6] (6 units in front of the camera).`);
+      else if (pos === undefined) v.warn("framing", `${p}.position`, "A camera-attached object without position sits inside the lens.", "Set position in camera space, e.g. [0, -1.5, -6] (6 units in front, a bit below centre).");
+    }
+  }
   if (o.body !== undefined) {
     body(v, o.body, `${p}.body`);
     bodySizeFrame(v, o, `${p}.body`);
@@ -889,7 +922,7 @@ function object(v: V, o: unknown, fallback: string) {
       v.number(o.lifetime, `${p}.lifetime`, { min: 0, exclusiveMin: true });
       v.number(o.opacity, `${p}.opacity`, { min: 0, max: 1 });
       v.enumOf(o.blending, ["normal", "additive"], `${p}.blending`);
-      v.enumOf(o.shape, ["point", "soft", "square", "circle", "star", "spark", "streak", "heart", "bubble", "smoke", "petal", "leaf", "ring"], `${p}.shape`);
+      v.enumOf(o.shape, PARTICLE_SHAPES, `${p}.shape`);
       v.number(o.seed, `${p}.seed`, { integer: true });
       if (o.preset === undefined && o.count === undefined) v.info("default", p, "Particles without preset or count use runtime defaults.", `Set a preset (${listOptions(CATALOG.particlePresets.map((x) => x.id))}) and/or count.`);
       break;
@@ -1029,45 +1062,32 @@ function behaviours(v: V, list: unknown, path: string) {
   });
 }
 
+// Instance layouts are declared in the catalog (CATALOG.instanceLayouts):
+// field names, types, ranges and required fields come from there; unknown
+// fields get a "did you mean".
 function layout(v: V, l: unknown, path: string) {
-  if (!isObj(l)) return v.error("type", path, "layout must be an object.", 'Example: { "type": "grid", "count": [5, 1, 5], "spacing": [1.2, 0, 1.2] }.');
-  const types = ["grid", "scatter", "circle", "list"];
+  if (!isObj(l)) return v.error("type", path, "layout must be an object.", 'Example: { "type": "grid", "count": [5, 1, 5], "spacing": [1.2, 0, 1.2] }. See `agent3d catalog instanceLayouts`.');
+  const types = CATALOG.instanceLayouts.map((x) => x.id);
   if (!v.required(l, "type", path, listOptions(types)) || !v.enumOf(l.type, types, `${path}.type`)) return;
+  const entry = catalogEntry("instanceLayouts", l.type as string)!;
+  v.params("instanceLayouts", entry, l, path, ["type"]);
   switch (l.type) {
     case "grid":
-      v.unknownKeys(l, ["type", "count", "spacing"], path, "a grid layout");
-      if (v.required(l, "count", path, "[nx, ny, nz]") && v.vec(l.count, 3, `${path}.count`)) {
-        if (!(l.count as number[]).every((x) => Number.isInteger(x) && x >= 1)) v.error("range", `${path}.count`, "grid count values must be integers ≥ 1.", "Use 1 for a flat axis, e.g. [8, 1, 8].");
-      }
-      if (v.required(l, "spacing", path, "[sx, sy, sz]")) v.vec(l.spacing, 3, `${path}.spacing`);
+      if (Array.isArray(l.count) && l.count.length === 3 && !(l.count as unknown[]).every((x) => Number.isInteger(x) && (x as number) >= 1)) v.error("range", `${path}.count`, "grid count values must be integers ≥ 1.", "Use 1 for a flat axis, e.g. [8, 1, 8].");
       break;
     case "scatter":
-      v.unknownKeys(l, ["type", "count", "area", "minScale", "maxScale", "randomRotation", "seed"], path, "a scatter layout");
-      if (v.required(l, "count", path, "number of instances")) v.number(l.count, `${path}.count`, { integer: true, min: 1, max: 200000 });
-      if (v.required(l, "area", path, "[x, y, z] box size")) v.vec(l.area, 3, `${path}.area`);
-      v.number(l.minScale, `${path}.minScale`, { min: 0 });
-      v.number(l.maxScale, `${path}.maxScale`, { min: 0 });
-      v.boolean(l.randomRotation, `${path}.randomRotation`);
-      v.number(l.seed, `${path}.seed`, { integer: true });
-      break;
-    case "circle":
-      v.unknownKeys(l, ["type", "count", "radius"], path, "a circle layout");
-      if (v.required(l, "count", path, "number of instances")) v.number(l.count, `${path}.count`, { integer: true, min: 1, max: 200000 });
-      if (v.required(l, "radius", path, "circle radius")) v.number(l.radius, `${path}.radius`, { min: 0 });
+      if (isNum(l.minScale) && isNum(l.maxScale) && l.minScale > l.maxScale) v.warn("range", `${path}.minScale`, `minScale (${l.minScale}) is larger than maxScale (${l.maxScale}).`, "Swap them.");
       break;
     case "list":
-      v.unknownKeys(l, ["type", "items"], path, "a list layout");
-      if (!v.required(l, "items", path, "[{ position, rotation?, scale? }, …]")) break;
-      if (!Array.isArray(l.items)) v.error("type", `${path}.items`, "items must be an array of transforms.");
-      else
-        l.items.forEach((it, i) => {
-          const ip = `${path}.items[${i}]`;
-          if (!isObj(it)) return v.error("type", ip, "Expected { position?, rotation?, scale? }.");
-          v.unknownKeys(it, ["position", "rotation", "scale"], ip, "a transform");
-          v.vec(it.position, 3, `${ip}.position`);
-          v.vec(it.rotation, 3, `${ip}.rotation`);
-          if (it.scale !== undefined && !isNum(it.scale)) v.vec(it.scale, 3, `${ip}.scale`);
-        });
+      if (!Array.isArray(l.items)) break;
+      l.items.forEach((it, i) => {
+        const ip = `${path}.items[${i}]`;
+        if (!isObj(it)) return v.error("type", ip, "Expected { position?, rotation?, scale? }.");
+        v.unknownKeys(it, ["position", "rotation", "scale"], ip, "a transform");
+        v.vec(it.position, 3, `${ip}.position`);
+        v.vec(it.rotation, 3, `${ip}.rotation`);
+        if (it.scale !== undefined && !isNum(it.scale)) v.vec(it.scale, 3, `${ip}.scale`);
+      });
       break;
   }
 }
@@ -1363,11 +1383,12 @@ function scripts(v: V, list: unknown) {
 
 function ui(v: V, u: unknown) {
   if (!isObj(u)) return v.error("type", "ui", "ui must be an object.", 'Example: { "elements": [{ "id": "score", "type": "text", "text": "Score: {score}", "anchor": "top-left" }] }.');
-  v.unknownKeys(u, ["elements", "font", "color", "accent"], "ui", "ui");
+  v.unknownKeys(u, ["elements", "font", "color", "accent", "buttonText"], "ui", "ui");
   v.string(u.font, "ui.font");
   if (typeof u.font === "string" && /url\(|@import|https?:/i.test(u.font)) v.error("forbidden", "ui.font", "ui.font must be a CSS font-family list (no web fonts).", 'Use a system stack, e.g. "system-ui, sans-serif".');
   v.color(u.color, "ui.color");
   v.color(u.accent, "ui.accent");
+  v.color(u.buttonText, "ui.buttonText");
   if (!v.required(u, "elements", "ui", "an array of HUD elements")) return;
   if (!Array.isArray(u.elements)) return v.error("type", "ui.elements", "elements must be an array.");
   const ids = new Set<string>();
@@ -1383,7 +1404,9 @@ function ui(v: V, u: unknown) {
     if (v.required(el, "type", p, '"text" | "button" | "bar"')) v.enumOf(el.type, ["text", "button", "bar"], `${p}.type`);
     v.string(el.text, `${p}.text`);
     v.enumOf(el.anchor, UI_ANCHORS, `${p}.anchor`);
-    v.enumOf(el.style, ["plain", "pill", "title", "subtitle"], `${p}.style`);
+    v.enumOf(el.style, ["plain", "pill", "title", "subtitle", "panel"], `${p}.style`);
+    v.color(el.color, `${p}.color`);
+    v.color(el.background, `${p}.background`);
     v.string(el.value, `${p}.value`);
     v.string(el.action, `${p}.action`);
     if (el.visible !== undefined && typeof el.visible !== "boolean" && typeof el.visible !== "string") v.error("type", `${p}.visible`, "visible must be a boolean or a state expression string.");

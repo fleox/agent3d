@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { IconButton } from "./controls";
+import { t } from "../../i18n";
 
 export function Dialog({ title, onClose, children, footer, width = 560 }: { title: ReactNode; onClose(): void; children: ReactNode; footer?: ReactNode; width?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -19,7 +20,7 @@ export function Dialog({ title, onClose, children, footer, width = 560 }: { titl
       <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" className="toast-in flex max-h-[86vh] w-full flex-col overflow-hidden rounded-xl border border-line bg-ink-1 shadow-2xl shadow-black/50 outline-none focus-visible:outline-none" style={{ maxWidth: width }}>
         <div className="flex h-11 shrink-0 items-center justify-between border-b border-line pl-4 pr-2">
           <div className="text-base font-semibold">{title}</div>
-          <IconButton label="Close" onClick={onClose}>
+          <IconButton label={t("ui.close")} onClick={onClose}>
             <X size={15} />
           </IconButton>
         </div>

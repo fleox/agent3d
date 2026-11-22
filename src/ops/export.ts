@@ -33,6 +33,7 @@ import { MANIFEST_FILE, readSceneFile } from "./project";
 import { gltfDependencies, mimeFromPath, visitAssetRefs } from "./refs";
 import { readAssetManifest } from "./assets";
 import { crc32 } from "./zip";
+import { gzipSize, pageRuntime } from "./runtimeChunks";
 import { ELEMENT_DTS, embedGuide, reactWrapper, svelteWrapper, vueWrapper, type EmbedDocInput } from "./exportFrameworks";
 
 export type ExportFormat = "embed" | "single-html" | "zip";
@@ -67,6 +68,12 @@ export interface ExportOptions {
   version?: string;
   // zip: raw-deflate function (default CompressionStream("deflate-raw") when available, else stored).
   deflate?: (data: Uint8Array) => Promise<Uint8Array>;
+  // gzip for pageKbGzip (default CompressionStream("gzip") when available).
+  gzip?: (data: Uint8Array) => Promise<Uint8Array>;
+  // embed / zip: copy only the runtime chunks this scene loads (default false: the
+  // runtime folder is shared by every scene of a site). Falls back to every chunk
+  // when one has no known feature.
+  pruneRuntime?: boolean;
 }
 
 export interface ExportCredit {
@@ -84,8 +91,19 @@ export interface ExportResult {
   files: Record<string, Uint8Array | string>;
   snippet: string;
   entry: string; // the file to open: "index.html" or "<name>.html"
+  // Every file written (the whole export folder / file) — same as folderKb.
   totalKb: number;
+  folderKb: number;
+  // What a visitor downloads for this scene: the runtime entry + the chunks this
+  // scene loads (from its features) + scene.json + assets + scripts + poster
+  // (og-image, EMBED.md, frameworks/, index.html excluded). single-html: the file.
+  pageKb: number;
+  // The same, gzip-compressed (what a server sending Content-Encoding: gzip transfers); absent without CompressionStream.
+  pageKbGzip?: number;
   sizes: { runtimeKb: number; sceneKb: number; assetsKb: number; scriptsKb: number; posterKb: number };
+  // The runtime part of pageKb: loaded files, lazy chunks this scene never loads,
+  // chunks of unknown feature (counted as loaded), and whether unused ones were left out (pruneRuntime).
+  page: { runtimeKb: number; runtimeFiles: string[]; skippedChunks: string[]; unknownChunks: string[]; pruned: boolean };
   credits: ExportCredit[];
   issues: Issue[];
   // embed / zip: the folder holding the runtime ("agent3d-runtime" or "agent3d-runtime-<hash>"),
@@ -353,10 +371,18 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
   let runtimeBytes = 0;
 
   let runtimeDirName: string | undefined;
+  let pageRt: ReturnType<typeof pageRuntime> | null = null;
+  let pruned = false;
   let integrity: string | undefined;
   let head: string | undefined;
   if (format === "embed" || format === "zip") {
-    const runtimeFiles = Object.entries(opts.runtime.files).filter(([k]) => !k.endsWith(".single.js"));
+    const allRuntime = Object.entries(opts.runtime.files).filter(([k]) => !k.endsWith(".single.js"));
+    pageRt = pageRuntime(Object.fromEntries(allRuntime), runtimeEntry, scene);
+    pruned = !!opts.pruneRuntime && !pageRt.unknown.length;
+    if (opts.pruneRuntime && pageRt.unknown.length) outIssues.push({ severity: "info", code: "prune-runtime", path: "runtime", message: `Kept every runtime chunk: ${pageRt.unknown.join(", ")} ${pageRt.unknown.length > 1 ? "have" : "has"} no known feature.`, hint: "Nothing to do — the export works; report it so the chunk gets mapped (src/ops/runtimeChunks.ts)." });
+    const keep = new Set(pageRt.loaded);
+    // Non-JS runtime files (none today) are always kept.
+    const runtimeFiles = pruned ? allRuntime.filter(([k]) => keep.has(k) || !k.endsWith(".js")) : allRuntime;
     runtimeDirName = opts.cacheBust ? `agent3d-runtime-${await shortHash(runtimeFiles.map(([k, v]) => [enc.encode(k), v]).flat())}` : "agent3d-runtime";
     for (const [k, v] of runtimeFiles) {
       out[`${runtimeDirName}/${k}`] = v;
@@ -470,6 +496,14 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     if (c.license === "unknown") outIssues.push({ severity: "warning", code: "unknown-licence", path: c.path, message: `${c.path} has no licence in assets/manifest.json.`, hint: "Register it with assets_add (license + author) before publishing." });
   }
   const totalBytes = Object.values(out).reduce((a, v) => a + byteLen(v), 0);
+  // Page weight: single-html = the file; embed = loaded runtime + scene content + poster.
+  const pageParts: (Uint8Array | string)[] =
+    format === "single-html"
+      ? [out[entry]]
+      : [...(pageRt?.loaded ?? []).map((f) => opts.runtime.files[f]).filter(Boolean), sceneJson, ...assetFiles.values(), ...scriptFiles.values(), ...(opts.poster ? [opts.poster] : [])];
+  const pageBytes = pageParts.reduce((a, v) => a + byteLen(v), 0);
+  const pageRuntimeBytes = format === "single-html" ? runtimeBytes : (pageRt?.loaded ?? []).reduce((a, f) => a + (opts.runtime.files[f]?.byteLength ?? 0), 0);
+  const gz = await gzipSize(pageParts, opts.gzip).catch(() => undefined);
   return {
     format,
     name,
@@ -477,6 +511,10 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     snippet,
     entry,
     totalKb: KB(totalBytes),
+    folderKb: KB(totalBytes),
+    pageKb: KB(pageBytes),
+    ...(gz !== undefined ? { pageKbGzip: KB(gz) } : {}),
+    page: { runtimeKb: KB(pageRuntimeBytes), runtimeFiles: format === "single-html" ? [runtimeEntry] : (pageRt?.loaded ?? []), skippedChunks: format === "single-html" ? [] : (pageRt?.skipped ?? []), unknownChunks: pageRt?.unknown ?? [], pruned },
     sizes: { runtimeKb: KB(runtimeBytes), sceneKb: KB(byteLen(sceneJson)), assetsKb: KB(assetsBytes), scriptsKb: KB(scriptsBytes), posterKb: KB(posterBytes) },
     credits,
     issues: outIssues,

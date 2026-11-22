@@ -12,8 +12,19 @@ import { type EffectHandle, type FxRuntime, fsMaterial, GLSL_COMMON, halfTarget,
 
 // ─── Antialiasing ──────────────────────────────────────────────────────
 
+// three's FXAA assumes a gamma-encoded input, but this pipeline's LDR buffer
+// is linear (sRGB is applied by the FinishPass): edge detection runs on a
+// perceptual luma (sqrt ≈ gamma 2), and the sub-pixel blend is cut to 0.35 so 1–2 px
+// strokes (small text, thin lines) keep their colour instead of being smeared
+// into the background.
+export function fxaaFragment(): string {
+  return FXAAShader.fragmentShader
+    .replace("return dot( Sample( tex2D, uv ).rgb, vec3( 0.3, 0.59, 0.11 ) );", "return dot( sqrt( max( Sample( tex2D, uv ).rgb, vec3( 0.0 ) ) ), vec3( 0.3, 0.59, 0.11 ) );")
+    .replace("float _SubpixelBlending = 1.0;", "float _SubpixelBlending = 0.35;");
+}
+
 export function createFxaa(_d: PostFxDef, rt: FxRuntime): EffectHandle {
-  const mat = new THREE.ShaderMaterial({ ...FXAAShader, uniforms: THREE.UniformsUtils.clone(FXAAShader.uniforms), depthTest: false, depthWrite: false });
+  const mat = new THREE.ShaderMaterial({ ...FXAAShader, fragmentShader: fxaaFragment(), uniforms: THREE.UniformsUtils.clone(FXAAShader.uniforms), depthTest: false, depthWrite: false });
   const pass = new ShaderFxPass(mat);
   const res = mat.uniforms.resolution.value as THREE.Vector2;
   res.set(1 / rt.width, 1 / rt.height);
