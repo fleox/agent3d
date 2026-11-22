@@ -157,7 +157,7 @@ Also: `agent3d export --format poster` (PNG/WebP still) and `--format video` (We
 
 ## AI tools (src/ai/tools.ts)
 
-`project_info`, `scene_get`, `scene_summary`, `scene_apply`, `scene_patch`, `scene_validate`, `object_add`, `object_update`, `object_remove`, `object_list`, `timeline_set`, `catalog_get`, `templates_list`, `project_create`, `check`, `assets_list`, `assets_search`, `assets_add`, `library_list`, `export` — plus `render_preview` registered by the CLI/MCP host only (it needs Chrome; the tool returns image paths, and MCP returns the contact sheet as an `image` content block so multimodal clients see it). Tools take `ToolContext { fs, fetch?, host: { render?, runtimeFiles?, library?, templates? } }`.
+`project_info`, `scene_get`, `scene_summary`, `scene_apply`, `scene_patch`, `scene_validate`, `object_add`, `object_update`, `object_remove`, `object_list`, `timeline_set`, `catalog_get`, `templates_list`, `project_create`, `check`, `assets_list`, `assets_search`, `assets_add`, `assets_optimize` (needs the host's `withImageCodec`, i.e. headless Chrome), `library_list`, `export` — plus `render_preview` registered by the CLI/MCP host only (it needs Chrome; the tool returns image paths, and MCP returns the contact sheet as an `image` content block so multimodal clients see it). Tools take `ToolContext { fs, fetch?, host: { render?, runtimeFiles?, library?, templates? } }`.
 
 ## Ownership boundaries (parallel work)
 

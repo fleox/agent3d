@@ -12,6 +12,8 @@ import { ASSET_MANIFEST_FILE, readSceneFile, SCENE_FILE } from "./project";
 import { collectAssetRefs, kindFromPath } from "./refs";
 import { SOURCE_IDS, SOURCES, SourceError, score, type AssetHit, type FetchLike, type SourceId } from "./sources";
 import { readZip, type InflateRaw } from "./zip";
+import { optimizeAssets, type ImageCodec, type OptimizeResult } from "./optimize";
+import { modelFileBounds, type ModelBounds } from "./gltf";
 
 export type { AssetHit, SourceId } from "./sources";
 
@@ -24,7 +26,20 @@ export async function readAssetManifest(fs: ProjectFs): Promise<AssetManifest> {
 
 async function writeAssetManifest(fs: ProjectFs, m: AssetManifest): Promise<void> {
   m.assets.sort((a, b) => a.path.localeCompare(b.path));
+  // Sizes always come from the files on disk (they may have been replaced or optimised).
+  for (const a of m.assets) if (await fs.exists(a.path)) a.bytes = await fs.size(a.path);
   await writeJson(fs, ASSET_MANIFEST_FILE, m);
+}
+
+// Rewrites assets/manifest.json when a registered file's size changed on
+// disk (edited, replaced, `assets optimize`). Returns the refreshed paths.
+export async function refreshAssetManifest(fs: ProjectFs): Promise<string[]> {
+  if (!(await fs.exists(ASSET_MANIFEST_FILE))) return [];
+  const m = await readAssetManifest(fs);
+  const changed: string[] = [];
+  for (const a of m.assets) if ((await fs.exists(a.path)) && (await fs.size(a.path)) !== a.bytes) changed.push(a.path);
+  if (changed.length) await writeAssetManifest(fs, m);
+  return changed;
 }
 
 export interface AssetListing extends AssetEntry {
@@ -33,19 +48,23 @@ export interface AssetListing extends AssetEntry {
 }
 
 // Manifest entries + files present under assets/ but unregistered (license "unknown").
-export async function listAssets(fs: ProjectFs): Promise<{ assets: AssetListing[]; totalKb: number }> {
+// Sizes are the files' sizes on disk; stale manifest sizes are rewritten (`refreshed`).
+export async function listAssets(fs: ProjectFs): Promise<{ assets: AssetListing[]; totalKb: number; refreshed?: string[] }> {
+  const refreshed = await refreshAssetManifest(fs);
   const manifest = await readAssetManifest(fs);
   const refs = (await fs.exists(SCENE_FILE)) ? collectAssetRefs(await readSceneFile(fs)) : [];
   const files = new Set((await fs.list("assets/")).filter((f) => f !== ASSET_MANIFEST_FILE));
   const out: AssetListing[] = [];
   for (const a of manifest.assets) {
-    out.push({ ...a, exists: files.has(a.path), usedBy: refs.filter((r) => r.path === a.path).map((r) => r.at) });
+    const exists = files.has(a.path);
+    // Report the size on disk (the manifest may be stale after an edit).
+    out.push({ ...a, ...(exists ? { bytes: await fs.size(a.path) } : {}), exists, usedBy: refs.filter((r) => r.path === a.path).map((r) => r.at) });
     files.delete(a.path);
   }
   for (const f of files) {
     out.push({ path: f, kind: kindFromPath(f), bytes: await fs.size(f), source: "local", license: "unknown", addedAt: "", exists: true, usedBy: refs.filter((r) => r.path === f).map((r) => r.at) });
   }
-  return { assets: out, totalKb: KB(out.reduce((a, b) => a + (b.exists ? b.bytes : 0), 0)) };
+  return { assets: out, totalKb: KB(out.reduce((a, b) => a + (b.exists ? b.bytes : 0), 0)), ...(refreshed.length ? { refreshed } : {}) };
 }
 
 export interface AddAssetInput {
@@ -146,6 +165,11 @@ export async function searchAssets(input: SearchInput, fetchImpl: FetchLike): Pr
 export interface DownloadResult extends AssetEntry {
   // Every file written (the main one first).
   files: string[];
+  // Textures downscaled after the download (resolution below the source's minimum, or maxSize).
+  optimized?: OptimizeResult;
+  // Models: size of the bounding box in scene units (node transforms applied) + up-axis guess.
+  bounds?: ModelBounds;
+  note?: string;
   // Ready-to-use scene snippet, e.g. { material: { map, normalMap, roughnessMap } }.
   suggestion?: Record<string, unknown>;
 }
@@ -157,7 +181,25 @@ function substitute(v: unknown, map: (s: string) => string): unknown {
   return v;
 }
 
-export async function downloadAsset(fs: ProjectFs, hit: AssetHit, fetchImpl: FetchLike, opts: { resolution?: string; name?: string; inflate?: InflateRaw } = {}): Promise<DownloadResult> {
+// "512", "512px", "0.5k" → 512 pixels; "1k", "2k"… → the source resolution as is.
+export function parseResolution(resolution: string | undefined): { resolution?: string; maxSize?: number } {
+  if (!resolution) return {};
+  const r = resolution.trim().toLowerCase();
+  const px = /^(\d+)\s*(px)?$/.exec(r);
+  const k = /^(\d*\.?\d+)\s*k$/.exec(r);
+  const pixels = px ? Number(px[1]) : k ? Math.round(Number(k[1]) * 1024) : NaN;
+  if (!Number.isFinite(pixels)) return { resolution: r };
+  // Below 1k (Poly Haven / ambientCG minimum): download 1k, then downscale.
+  if (pixels < 1024) return { resolution: "1k", maxSize: Math.max(16, pixels) };
+  return { resolution: k ? r : `${Math.round(pixels / 1024)}k` };
+}
+
+export async function downloadAsset(
+  fs: ProjectFs,
+  hit: AssetHit,
+  fetchImpl: FetchLike,
+  opts: { resolution?: string; name?: string; inflate?: InflateRaw; maxSize?: number; quality?: number; codec?: ImageCodec } = {},
+): Promise<DownloadResult> {
   const source = SOURCES[hit?.source as SourceId];
   if (!hit || !source) throw new OpsError("invalid", "Pass an asset hit returned by assets_search (source, id, kind, downloads…).", `Sources: ${SOURCE_IDS.join(", ")}.`);
   if (hit.manual || !source.download || !Object.keys(hit.downloads ?? {}).length) {
@@ -167,9 +209,11 @@ export async function downloadAsset(fs: ProjectFs, hit: AssetHit, fetchImpl: Fet
       `Ask the user to download the pack from ${hit.pageUrl ?? "the source website"}, then import the zip: \`agent3d assets add <file.zip> --source ${hit.source} --license ${hit.license}\` (importAssetZip).`,
     );
   }
+  const res = parseResolution(opts.resolution);
+  const maxSize = opts.maxSize ?? res.maxSize;
   let downloaded;
   try {
-    downloaded = await source.download(hit, fetchImpl, { resolution: opts.resolution, inflate: opts.inflate });
+    downloaded = await source.download(hit, fetchImpl, { resolution: res.resolution, inflate: opts.inflate });
   } catch (e) {
     if (e instanceof SourceError) throw new OpsError("io", `Download from ${hit.source} failed: ${e.message}`, "Retry, pick another resolution (1k, 2k) or another asset.");
     throw e;
@@ -204,7 +248,18 @@ export async function downloadAsset(fs: ProjectFs, hit: AssetHit, fetchImpl: Fet
     if (rel === downloaded.main) mainEntry = entry;
   }
   const suggestion = downloaded.suggestion ? (substitute(downloaded.suggestion, (s) => (s === "<path>" ? mainEntry!.path : downloaded.files[s] ? target(s) : s)) as Record<string, unknown>) : undefined;
-  return { ...mainEntry!, files: written, ...(suggestion ? { suggestion } : {}) };
+  let optimized: OptimizeResult | undefined;
+  let note: string | undefined;
+  const images = written.filter((p) => /\.(png|jpe?g|webp|glb)$/i.test(p));
+  if (maxSize && images.length) {
+    if (opts.codec) {
+      optimized = await optimizeAssets(fs, { paths: images, maxSize, quality: opts.quality }, opts.codec);
+      mainEntry = (await readAssetManifest(fs)).assets.find((a) => a.path === mainEntry!.path) ?? mainEntry;
+    } else note = `Not downscaled to ${maxSize} px here (needs headless Chrome): run \`agent3d assets optimize ${images.join(" ")} --max-size ${maxSize} --yes\`.`;
+  }
+  let bounds: ModelBounds | undefined;
+  if (hit.kind === "model") bounds = (await modelFileBounds(fs, mainEntry!.path)) ?? undefined;
+  return { ...mainEntry!, files: written, ...(suggestion ? { suggestion } : {}), ...(optimized ? { optimized } : {}), ...(bounds ? { bounds } : {}), ...(note ? { note } : {}) };
 }
 
 // ─── Zip import (Kenney / Quaternius packs, any zip of glTF files) ──────

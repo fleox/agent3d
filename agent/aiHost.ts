@@ -61,6 +61,10 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
     library: libraryProvider(),
     templates: { index: readTemplatesIndex(), files: async (id) => readTemplateFiles(id) },
     inflate: (data) => new Uint8Array(inflateRawSync(data)),
+    async withImageCodec(fn) {
+      const { withImageCodec } = await import("./render/imageCodec");
+      return withImageCodec(fn, { log: (m) => void process.stderr.write(`${m}\n`) });
+    },
     readLocalFile: async (path) => new Uint8Array(readFileSync(resolve(path))),
   };
 }

@@ -26,7 +26,16 @@ npx -y @fleox/agent3d@0.1.0 assets list --project my-banner --json
 npx -y @fleox/agent3d@0.1.0 assets remove assets/svg/logo.svg --yes --project my-banner --json
 ```
 
-`--license` is required for local files. Files go to `assets/models|textures|hdri|audio|fonts|svg|other/` by kind unless `--path` is given. `assets list` reports `exists` and `usedBy` for each entry.
+`--license` is required for local files. Files go to `assets/models|textures|hdri|audio|fonts|svg|other/` by kind unless `--path` is given. `assets list` reports `exists`, `usedBy` and the size on disk for each entry (stale manifest sizes are rewritten; `refreshed` lists them). Models (`assets add <file>.glb` or a downloaded hit) return `bounds` — `size` (w × h × d, node transforms applied), `center`, `min`, `max` and an `upAxis` guess (`"y"`, or `"z?"` for models that may have been exported Z-up) — and `agent3d render --isolate <objectId>` shows one object alone, auto-framed, to check its orientation.
+
+### Shrinking textures
+
+```bash
+npx -y @fleox/agent3d@0.1.0 assets optimize assets/textures/wood_planks --max-size 512 --yes --project my-banner --json
+npx -y @fleox/agent3d@0.1.0 assets optimize --all --max-size 1024 --quality 80 --yes --project my-hero --json
+```
+
+`assets optimize [<path>…] [--all] [--max-size 1024] [--quality 80]` decodes, downscales (longest side, never upscales) and re-encodes textures in headless Chrome (canvas): standalone `.jpg` / `.png` / `.webp` keep their format and path; images embedded in `.glb` models are rewritten inside the binary chunk (bufferViews re-packed, opaque PNGs become JPEG). A file changes only when the result is smaller; manifest sizes are refreshed. It is lossy, so it prints a plan unless `--yes`. `check`'s budget warning names the heaviest files and points here. `assets add --hit … --resolution 512` (below the 1k minimum of Poly Haven / ambientCG) downloads 1k and downscales it the same way; `--max-size` does it for any resolution.
 
 ## Free online sources
 

@@ -64,7 +64,7 @@ Generated from the CLI's own command list (`help --json`); `npm test` fails when
 | [`assets`](#assets) | Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), remove, and browse the built-in library. |
 | [`tools`](#tools) | The AI tool catalog (src/ai/tools.ts + render_preview) — exactly what the MCP server and the Studio assistant expose: list the tools with their JSON schemas, or call one with a JSON input. |
 | [`mcp`](#mcp) | Run the MCP server on stdio (JSON-RPC 2.0, protocol 2025-06-18 / 2025-03-26 / 2024-11-05): tools = the AI catalog + render_preview (returns the contact sheet as an image), resources = scene, summary, catalog. For Claude Desktop / Claude Code / Cursor. |
-| [`doctor`](#doctor) | Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene. |
+| [`doctor`](#doctor) | Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene (in a temp folder). A failed required check makes the command fail (exit 1, error code doctor-failed, one hint per failed check, every check in error.details.checks). |
 
 Global options (every command): `--json` (Print one JSON object on stdout: { ok, data } or { ok: false, error: { code, message, hint } }), `--help` (Show the command's usage and options instead of running it).
 
@@ -384,7 +384,7 @@ agent3d mcp [--project <dir>] [--read-only]
 
 ### doctor
 
-Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene.
+Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene (in a temp folder). A failed required check makes the command fail (exit 1, error code doctor-failed, one hint per failed check, every check in error.details.checks).
 
 ```
 agent3d doctor [--no-render]

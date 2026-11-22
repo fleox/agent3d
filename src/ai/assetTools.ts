@@ -1,7 +1,9 @@
 // Asset, library, export and render tools.
 
 import type { AssetEntry } from "../core/types";
-import { downloadAsset, importAssetZip, listAssets, listLibrary, searchAssetsDetailed, addAsset, type AssetHit } from "../ops/assets";
+import { downloadAsset, importAssetZip, listAssets, listLibrary, parseResolution, searchAssetsDetailed, addAsset, type AssetHit } from "../ops/assets";
+import { modelFileBounds } from "../ops/gltf";
+import { DEFAULT_MAX_SIZE, optimizeAssets } from "../ops/optimize";
 import { OpsError } from "../ops/context";
 import { buildExport, prefixFiles, type ExportFormat } from "../ops/export";
 import { SOURCE_IDS, type SourceId } from "../ops/sources";
@@ -14,12 +16,12 @@ const KINDS: AssetEntry["kind"][] = ["model", "texture", "hdri", "audio", "font"
 export const ASSET_TOOLS: AiTool[] = [
   {
     name: "assets_list",
-    description: "List the project's assets (assets/manifest.json + unregistered files): path, kind, size, source, licence, author, and which scene paths use each one.",
+    description: "List the project's assets (assets/manifest.json + unregistered files): path, kind, size on disk, source, licence, author, and which scene paths use each one (stale manifest sizes are refreshed).",
     inputSchema: { type: "object", properties: {} },
     mutating: false,
     async handler(ctx) {
       const r = await listAssets(ctx.fs);
-      return { count: r.assets.length, totalKb: r.totalKb, assets: r.assets.map((a) => ({ path: a.path, kind: a.kind, kb: Math.round(a.bytes / 102.4) / 10, source: a.source, license: a.license, ...(a.author ? { author: a.author } : {}), ...(a.exists ? {} : { missing: true }), usedBy: a.usedBy })) };
+      return { count: r.assets.length, totalKb: r.totalKb, ...(r.refreshed ? { refreshed: r.refreshed } : {}), assets: r.assets.map((a) => ({ path: a.path, kind: a.kind, kb: Math.round(a.bytes / 102.4) / 10, source: a.source, license: a.license, ...(a.author ? { author: a.author } : {}), ...(a.exists ? {} : { missing: true }), usedBy: a.usedBy })) };
     },
   },
   {
@@ -51,7 +53,7 @@ export const ASSET_TOOLS: AiTool[] = [
         count: r.hits.length,
         hits: r.hits,
         ...(r.errors.length ? { sourceErrors: r.errors } : {}),
-        hint: 'Download with assets_add { "hit": <hit>, "resolution": "1k" } (pass the hit object as returned; resolutions are the keys of `downloads`). 1k is plenty for web embeds.',
+        hint: 'Download with assets_add { "hit": <hit>, "resolution": "1k" } (pass the hit object as returned; resolutions are the keys of `downloads`). 1k is plenty for web embeds; "512" downloads 1k and downscales it. Models come back with `bounds` (size + up-axis guess).',
       };
     },
   },
@@ -63,7 +65,8 @@ export const ASSET_TOOLS: AiTool[] = [
       type: "object",
       properties: {
         hit: { type: "object", description: "A hit from assets_search (source, id, kind, license, downloads…).", additionalProperties: true },
-        resolution: { type: "string", description: 'Download key, e.g. "1k", "2k", "1K-JPG", "glb" (default 1k).' },
+        resolution: { type: "string", description: 'Download key, e.g. "1k", "2k", "1K-JPG", "glb" (default 1k). Below the source minimum ("512", "256"): downloads 1k, then downscales (needs a host with headless Chrome).' },
+        maxSize: { type: "integer", minimum: 16, maximum: 8192, description: "Downscale the downloaded textures (also inside .glb) to this longest side in pixels." },
         name: { type: "string", description: "File / folder name in the project (default: the asset id)." },
         file: { type: "string", description: "Local file to import (needs a CLI/MCP host)." },
         source: { type: "string", description: 'Where the local file comes from: "kenney", "quaternius", "local", a URL…' },
@@ -77,8 +80,11 @@ export const ASSET_TOOLS: AiTool[] = [
       if (input.hit) {
         if (!ctx.fetch) throw new OpsError("io", "Network access is not available to this tool host.");
         const hit = input.hit as AssetHit;
-        const r = await downloadAsset(ctx.fs, hit, ctx.fetch, { resolution: optStr(input, "resolution"), name: optStr(input, "name"), inflate: ctx.host?.inflate });
-        return { path: r.path, files: r.files, kind: r.kind, license: r.license, ...(r.attribution ? { attribution: r.attribution } : {}), ...(r.suggestion ? { suggestion: r.suggestion } : {}), hint: r.kind === "model" ? `Use it: object_add { "object": { "id": "…", "kind": "model", "src": "${r.path}", "fit": 2 } }.` : "Reference the path(s) in the scene (see suggestion)." };
+        const resolution = optStr(input, "resolution");
+        const maxSize = num(input, "maxSize") ?? parseResolution(resolution).maxSize;
+        const dl = (codec?: Parameters<typeof optimizeAssets>[2]) => downloadAsset(ctx.fs, hit, ctx.fetch!, { resolution, maxSize, codec, name: optStr(input, "name"), inflate: ctx.host?.inflate });
+        const r = maxSize && ctx.host?.withImageCodec ? await ctx.host.withImageCodec((codec) => dl(codec)) : await dl();
+        return { path: r.path, files: r.files, kind: r.kind, license: r.license, kb: Math.round(r.bytes / 102.4) / 10, ...(r.bounds ? { bounds: r.bounds } : {}), ...(r.optimized ? { optimized: { maxSize: r.optimized.maxSize, savedKb: r.optimized.savedKb, afterKb: r.optimized.afterKb } } : {}), ...(r.note ? { note: r.note } : {}), ...(r.attribution ? { attribution: r.attribution } : {}), ...(r.suggestion ? { suggestion: r.suggestion } : {}), hint: r.kind === "model" ? `Use it: object_add { "object": { "id": "…", "kind": "model", "src": "${r.path}", "fit": 2 } }.` : "Reference the path(s) in the scene (see suggestion)." };
       }
       const file = optStr(input, "file");
       if (!file) throw new OpsError("invalid", 'assets_add needs "hit" (from assets_search) or "file" (a local file to import).');
@@ -92,7 +98,38 @@ export const ASSET_TOOLS: AiTool[] = [
         return { imported: r.assets.length, models: r.models.slice(0, 60), ...(r.models.length > 60 ? { moreModels: r.models.length - 60 } : {}), skipped: r.skipped, hint: 'Use a model: object_add { "object": { "id": "…", "kind": "model", "src": "<one of models>", "fit": 2 } }.' };
       }
       const entry = await addAsset(ctx.fs, { path: optStr(input, "name") ?? base, bytes, source, license, author: optStr(input, "author") });
-      return { path: entry.path, kind: entry.kind, license: entry.license };
+      const bounds = entry.kind === "model" ? await modelFileBounds(ctx.fs, entry.path) : null;
+      return { path: entry.path, kind: entry.kind, license: entry.license, ...(bounds ? { bounds } : {}) };
+    },
+  },
+  {
+    name: "assets_optimize",
+    description:
+      'Shrink project textures in place when `check` reports the KB budget is exceeded: downscales .jpg / .png / .webp files to `maxSize` px (format and path kept) and the images embedded in .glb models (opaque PNGs become JPEG), re-encoding at `quality`. A file only changes when it gets smaller; assets/manifest.json sizes are refreshed. Lossy — pass `paths` (files or folders) or `all: true`. Needs a host with headless Chrome (CLI / MCP).',
+    inputSchema: {
+      type: "object",
+      properties: {
+        paths: { type: "array", items: { type: "string" }, description: 'Project paths, e.g. ["assets/textures/wood/wood_diff_1k.jpg", "assets/models/fox.glb"] (folders: every image / .glb inside).' },
+        all: { type: "boolean", description: "Every texture and .glb under assets/." },
+        maxSize: { type: "integer", minimum: 16, maximum: 8192, description: `Longest side in pixels (default ${DEFAULT_MAX_SIZE}; 512 suits banners and small props). Never upscales.` },
+        quality: { type: "integer", minimum: 1, maximum: 100, description: "JPEG / WebP quality (default 80)." },
+      },
+    },
+    mutating: true,
+    async handler(ctx, input) {
+      if (!ctx.host?.withImageCodec) throw new OpsError("invalid", "This host cannot re-encode images (it needs headless Chrome).", "Use the CLI: agent3d assets optimize <path>… --max-size 512 --yes.");
+      const raw = Array.isArray(input.paths) ? (input.paths as string[]) : [];
+      const paths: string[] = [];
+      for (const p of raw) {
+        const clean = p.replace(/^\.\//, "").replace(/\/+$/, "");
+        if (await ctx.fs.exists(clean)) paths.push(clean);
+        else {
+          const inside = (await ctx.fs.list(`${clean}/`)).filter((f) => /\.(png|jpe?g|webp|glb)$/i.test(f));
+          paths.push(...(inside.length ? inside : [clean]));
+        }
+      }
+      const r = await ctx.host.withImageCodec((codec) => optimizeAssets(ctx.fs, { paths, all: input.all === true, maxSize: num(input, "maxSize"), quality: num(input, "quality") }, codec));
+      return { ...r, hint: "Run check again to see the new budget." };
     },
   },
   {

@@ -83,10 +83,14 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
   const addLicence = (l: LicenceInfo) => {
     if (!licences.some((x) => x.path === l.path)) licences.push(l);
   };
+  const fileBytes = new Map<string, number>();
   const countFile = async (path: string) => {
     if (counted.has(path)) return;
     counted.add(path);
-    assetBytes += await fs.size(path);
+    // Size on disk (the manifest's bytes may be stale).
+    const n = await fs.size(path);
+    fileBytes.set(path, n);
+    assetBytes += n;
   };
 
   for (const ref of collectAssetRefs(scene)) {
@@ -165,12 +169,13 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
   const budgetKb = scene.target?.budgetKb ?? DEFAULT_BUDGET_KB[kind] ?? 600;
   const totalKb = KB(assetBytes + scriptBytes + sceneBytes);
   if (totalKb > budgetKb) {
+    const heaviest = [...fileBytes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
     issues.push({
       severity: "warning",
       code: "budget",
       path: "target.budgetKb",
       message: `The bundle weighs ~${totalKb} KB (runtime excluded), above the ${budgetKb} KB budget for a ${kind}.`,
-      hint: "Use smaller textures (1k instead of 2k/4k, .webp/.jpg), compress models (glTF Draco/meshopt) or replace them with catalog geometries / generators (zero bytes). Raise target.budgetKb only if the page can afford it.",
+      hint: `${heaviest.length ? `Heaviest files: ${heaviest.map(([p, n]) => `${p} (${KB(n)} KB)`).join(", ")}. ` : ""}Shrink textures (also those inside .glb models) with \`agent3d assets optimize <path>… --max-size 512 --yes\` (or --all), download smaller resolutions (\`assets add --hit … --resolution 512\`), or replace heavy models with catalog geometries / generators (zero bytes). Raise target.budgetKb only if the page can afford it.`,
     });
   }
   const triLimit = TRIANGLE_LIMIT[kind] ?? 500_000;

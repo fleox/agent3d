@@ -63,7 +63,11 @@ Download one hit into the project (licence recorded in `assets/manifest.json`):
 npx -y @fleox/agent3d@0.1.0 assets add --hit @hit.json --resolution 1k --project my-scene --json
 ```
 
-`@hit.json` is a file holding one hit object from the search (or pass the JSON inline). Textures from ambientCG / Poly Haven download the whole set (colour, normal, roughness, AO) and return `data.asset.suggestion.material`, a ready material to `set` on an object. Poly Haven models download as `.gltf` + `.bin` + textures in a folder: use the returned `path` as the model `src`. Keep `--resolution 1k` for the web (2k only for a hero close-up).
+`@hit.json` is a file holding one hit object from the search (or pass the JSON inline). Models come back with `data.asset.bounds`: `size` (w × h × d in model units, node transforms applied), `center`, `min` / `max` and `upAxis` (`"y"`, or `"z?"` when the model is much deeper than tall — it may lie on its back; check it with `render --isolate <objectId>`). Local `.glb` / `.gltf` files added with `assets add <file>` return the same `bounds`. Textures from ambientCG / Poly Haven download the whole set (colour, normal, roughness, AO) and return `data.asset.suggestion.material`, a ready material to `set` on an object. Poly Haven models download as `.gltf` + `.bin` + textures in a folder: use the returned `path` as the model `src`. Keep `--resolution 1k` for the web (2k only for a hero close-up). Sources start at 1k: `--resolution 512` (or `256`) downloads 1k and downscales every texture to that size with headless Chrome (`data.asset.optimized`); `--max-size <px>` does the same for any resolution.
+
+```bash
+npx -y @fleox/agent3d@0.1.0 assets add --hit @hit.json --resolution 512 --project my-banner --json
+```
 
 ## Kenney and Quaternius packs (manual zip)
 
@@ -93,7 +97,22 @@ npx -y @fleox/agent3d@0.1.0 assets remove assets/textures/old.jpg --project my-s
 npx -y @fleox/agent3d@0.1.0 assets remove assets/textures/old.jpg --yes --project my-scene --json
 ```
 
-`assets list` shows each file's size, licence, whether it exists and which objects use it (`usedBy`). `remove` prints a plan (with `usedBy`) unless `--yes`: fix the references first.
+`assets list` shows each file's size on disk, licence, whether it exists and which objects use it (`usedBy`); sizes that changed on disk are rewritten into `assets/manifest.json` (`refreshed`). `remove` prints a plan (with `usedBy`) unless `--yes`: fix the references first.
+
+## Shrinking textures (over budget)
+
+When `check` reports `budget`, its hint names the heaviest files. Downscale them in place (lossy, so it prints a plan unless `--yes`):
+
+```bash
+npx -y @fleox/agent3d@0.1.0 assets optimize assets/textures/wood_planks --max-size 512 --project my-banner --json
+npx -y @fleox/agent3d@0.1.0 assets optimize assets/textures/wood_planks --max-size 512 --yes --project my-banner --json
+npx -y @fleox/agent3d@0.1.0 assets optimize --all --max-size 1024 --quality 75 --yes --project my-hero --json
+```
+
+- Paths are files or folders; `--all` takes every texture and `.glb` under `assets/`. `--max-size` (default 1024) is the longest side in pixels, never upscaled; `--quality` (default 80) applies to JPEG / WebP.
+- Standalone `.jpg` / `.png` / `.webp` keep their format and path (the scene does not change). Images embedded in a `.glb` are re-encoded inside the binary (an opaque PNG becomes a JPEG). A file is only rewritten when it gets smaller; `assets/manifest.json` sizes follow.
+- The result lists every file (`beforeBytes`, `afterBytes`, `changed`) and image (`from` / `to` as `WxH type KB`), plus `savedKb`. Run `check` again, then `render` to make sure the textures still look right (512 suits banners and small props; keep 1024 for a hero's main surface).
+- Needs headless Chrome (like `render`). MCP: the `assets_optimize` tool takes `{ "paths": [...] | "all": true, "maxSize", "quality" }`.
 
 ## Licences and attribution
 

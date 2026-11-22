@@ -8,7 +8,7 @@ import type { RenderResult, ToolContext, ToolHost } from "./types";
 
 const EXPECTED = [
   "project_info", "scene_get", "scene_summary", "scene_apply", "scene_patch", "scene_validate", "object_add", "object_update", "object_remove", "object_list",
-  "timeline_set", "catalog_get", "templates_list", "project_create", "check", "assets_list", "assets_search", "assets_add", "library_list", "export",
+  "timeline_set", "catalog_get", "templates_list", "project_create", "check", "assets_list", "assets_search", "assets_add", "assets_optimize", "library_list", "export",
 ];
 
 // Structural JSON-schema sanity: known keywords, valid types, required ⊆ properties.

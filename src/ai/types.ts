@@ -8,6 +8,7 @@ import type { ExportFormat } from "../ops/export";
 import type { FetchLike } from "../ops/sources";
 import type { TemplateIndex } from "../ops/templates";
 import type { InflateRaw } from "../ops/zip";
+import type { ImageCodec } from "../ops/optimize";
 import type { FrameStats, InspectResult } from "../runtime/api";
 
 export type JsonSchema = {
@@ -86,6 +87,9 @@ export interface ToolHost {
   templates?: { index: TemplateIndex; files(id: string): Promise<Record<string, Uint8Array | string>> };
   // Raw-deflate decompressor for zips (default: DecompressionStream when available).
   inflate?: InflateRaw;
+  // Runs `fn` with an image decoder / resizer / encoder (CLI / MCP: headless
+  // Chrome). Enables assets_optimize and assets_add { maxSize }.
+  withImageCodec?<T>(fn: (codec: ImageCodec) => Promise<T>): Promise<T>;
   // Reads a file from the user's disk (CLI / MCP) — used by assets_add { file }.
   readLocalFile?(path: string): Promise<Uint8Array>;
 }

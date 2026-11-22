@@ -67,7 +67,8 @@ Exactly the AI tool catalog of `src/ai/tools.ts` (`agent3d tools list` prints th
 | `templates_list` | | Starter templates |
 | `check` | | Validation, sandbox lint, budgets, framing, licences, web settings |
 | `assets_list`, `assets_search`, `library_list` | | Project assets, free CC0 sources (network), built-in library |
-| `assets_add` | yes | Download a search hit, or import a local file / Kenney / Quaternius zip |
+| `assets_add` | yes | Download a search hit (`resolution` below 1k / `maxSize` downscales; models return `bounds`), or import a local file / Kenney / Quaternius zip |
+| `assets_optimize` | yes | Downscale / re-encode textures in place (also inside `.glb`) when the KB budget is exceeded — needs headless Chrome |
 | `export` | yes | Embed or single-HTML export into the project; `poster` (still image) and `video` (WebM) into `dist/` when the host can render |
 | `render_preview` | | Headless render (frames + contact sheet) |
 

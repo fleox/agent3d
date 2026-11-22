@@ -33,6 +33,7 @@ const ORDER = [
   "assets_list",
   "assets_search",
   "assets_add",
+  "assets_optimize",
   "library_list",
   "export",
 ];
