@@ -1,0 +1,199 @@
+{
+  "version": 1,
+  "id": "diorama-city",
+  "title": "Isometric city diorama",
+  "ariaLabel": "Isometric miniature city with buildings, parks and cars driving around",
+  "seed": 12,
+  "target": {
+    "kind": "square",
+    "aspect": "1:1",
+    "budgetKb": 700,
+    "reducedMotion": "static",
+    "posterTime": 0,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "orthographic",
+    "zoom": 38,
+    "position": [30, 27.5, 30],
+    "target": [0, 2.5, 0],
+    "near": 0.1,
+    "far": 200,
+    "controls": "orbit",
+    "autoRotate": 3,
+    "orbitZoom": false,
+    "orbitLimits": {"minPolar": 35, "maxPolar": 65}
+  },
+  "environment": {"background": {"radial": ["#fff4e6", "#f3d9c4"]}, "lighting": "soft", "lightingIntensity": 0.7},
+  "lights": [
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#fff7ef",
+      "groundColor": "#b9a4c9",
+      "intensity": 1
+    },
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [18, 30, 10],
+      "color": "#fff1dc",
+      "intensity": 2.4,
+      "castShadow": true
+    }
+  ],
+  "objects": [
+    {
+      "id": "slab",
+      "kind": "mesh",
+      "geometry": {"type": "roundedBox", "width": 26.6, "height": 2.4, "depth": 26.6, "radius": 0.4, "segments": 3},
+      "position": [0, -1.25, 0],
+      "material": {"preset": "clay", "color": "#e9d8c4"},
+      "receiveShadow": true
+    },
+    {
+      "id": "city",
+      "kind": "generator",
+      "generator": "city",
+      "params": {
+        "blocks": 4,
+        "blockSize": 4,
+        "street": 1.8,
+        "minHeight": 0.8,
+        "maxHeight": 6,
+        "colors": ["#f6bd9b", "#f7e3b5", "#a8d5c9", "#e9a6a6", "#c9b8e8", "#fdf3e7"],
+        "windows": true,
+        "windowColor": "#ffe6a8",
+        "trees": true
+      },
+      "seed": 7,
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    {
+      "id": "taxi",
+      "kind": "model",
+      "src": "library:models/vehicles/taxi.glb",
+      "fit": 1.25,
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "path",
+          "points": [
+            [-5.35, 0.02, -4.15],
+            [-4.15, 0.02, -5.35],
+            [4.15, 0.02, -5.35],
+            [5.35, 0.02, -4.15],
+            [5.35, 0.02, 4.15],
+            [4.15, 0.02, 5.35],
+            [-4.15, 0.02, 5.35],
+            [-5.35, 0.02, 4.15]
+          ],
+          "duration": 9,
+          "loop": true,
+          "faceDirection": true
+        }
+      ]
+    },
+    {
+      "id": "sedan",
+      "kind": "model",
+      "src": "library:models/vehicles/car.glb",
+      "fit": 1.25,
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "path",
+          "points": [
+            [5.35, 0.02, 4.15],
+            [4.15, 0.02, 5.35],
+            [-4.15, 0.02, 5.35],
+            [-5.35, 0.02, 4.15],
+            [-5.35, 0.02, -4.15],
+            [-4.15, 0.02, -5.35],
+            [4.15, 0.02, -5.35],
+            [5.35, 0.02, -4.15]
+          ],
+          "duration": 9,
+          "loop": true,
+          "faceDirection": true
+        }
+      ]
+    },
+    {
+      "id": "police",
+      "kind": "model",
+      "src": "library:models/vehicles/police-car.glb",
+      "fit": 1.25,
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "path",
+          "points": [
+            [-11.15, 0.02, -9.95],
+            [-9.95, 0.02, -11.15],
+            [9.95, 0.02, -11.15],
+            [11.15, 0.02, -9.95],
+            [11.15, 0.02, 9.95],
+            [9.95, 0.02, 11.15],
+            [-9.95, 0.02, 11.15],
+            [-11.15, 0.02, 9.95]
+          ],
+          "duration": 18,
+          "loop": true,
+          "faceDirection": true
+        }
+      ]
+    },
+    {
+      "id": "hatch",
+      "kind": "model",
+      "src": "library:models/vehicles/hatchback.glb",
+      "fit": 1.25,
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "path",
+          "points": [
+            [11.15, 0.02, -9.95],
+            [11.15, 0.02, 9.95],
+            [9.95, 0.02, 11.15],
+            [-9.95, 0.02, 11.15],
+            [-11.15, 0.02, 9.95],
+            [-11.15, 0.02, -9.95],
+            [-9.95, 0.02, -11.15],
+            [9.95, 0.02, -11.15]
+          ],
+          "duration": 18,
+          "loop": true,
+          "faceDirection": true
+        }
+      ]
+    },
+    {
+      "id": "truck",
+      "kind": "model",
+      "src": "library:models/vehicles/car.glb",
+      "fit": 1.25,
+      "castShadow": true,
+      "behaviours": [
+        {
+          "type": "path",
+          "points": [
+            [-9.95, 0.02, 11.15],
+            [-11.15, 0.02, 9.95],
+            [-11.15, 0.02, -9.95],
+            [-9.95, 0.02, -11.15],
+            [9.95, 0.02, -11.15],
+            [11.15, 0.02, -9.95],
+            [11.15, 0.02, 9.95],
+            [9.95, 0.02, 11.15]
+          ],
+          "duration": 18,
+          "loop": true,
+          "faceDirection": true
+        }
+      ]
+    }
+  ]
+}

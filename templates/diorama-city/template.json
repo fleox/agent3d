@@ -1,0 +1,17 @@
+{
+  "id": "diorama-city",
+  "title": "Isometric city diorama",
+  "description": "A Townscaper-like isometric city block: procedural buildings, parks and street trees on a floating slab, with library cars, a taxi, a police car and a truck driving around the streets.",
+  "kind": "square",
+  "tags": [
+    "diorama",
+    "city",
+    "isometric",
+    "orthographic",
+    "cars",
+    "vehicles",
+    "urban",
+    "procedural"
+  ],
+  "aspect": "1:1"
+}
