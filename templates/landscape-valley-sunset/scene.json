@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "id": "landscape-valley-sunset",
+  "title": "Mountain valley at sunset",
+  "ariaLabel": "Snowy mountains around a forested valley and a lake at sunset",
+  "seed": 8,
+  "target": {
+    "kind": "hero",
+    "aspect": "21:9",
+    "budgetKb": 300,
+    "reducedMotion": "static",
+    "posterTime": 0,
+    "maxDpr": 2
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 40,
+    "position": [0, 16, 40],
+    "target": [0, 6, -10],
+    "controls": "parallax",
+    "parallax": {"strength": 1.2, "smoothing": 0.95}
+  },
+  "environment": {
+    "background": {
+      "sky": {
+        "top": "#2b3a78",
+        "horizon": "#ffb070",
+        "bottom": "#f08a5d",
+        "sun": {"direction": [0.15, 0.08, -1], "color": "#ffd9a0", "size": 1.6}
+      }
+    },
+    "lighting": "sunset",
+    "lightingIntensity": 0.8,
+    "fog": {"color": "#e9a27f", "near": 35, "far": 130}
+  },
+  "lights": [
+    {
+      "id": "sky",
+      "type": "hemisphere",
+      "skyColor": "#ffcfa0",
+      "groundColor": "#3b2a4a",
+      "intensity": 0.8
+    },
+    {
+      "id": "sun",
+      "type": "directional",
+      "position": [8, 10, -40],
+      "color": "#ffb36b",
+      "intensity": 3,
+      "castShadow": true
+    },
+    {
+      "id": "front",
+      "type": "directional",
+      "position": [-10, 12, 30],
+      "color": "#9fb2ff",
+      "intensity": 0.6
+    }
+  ],
+  "objects": [
+    {
+      "id": "valley",
+      "kind": "generator",
+      "generator": "terrain",
+      "params": {
+        "size": 110,
+        "resolution": 120,
+        "height": 26,
+        "scale": 1.4,
+        "shape": "mountains",
+        "palette": ["#b9a77a", "#5f8a3e", "#3d6b35", "#7a6a6e", "#fff6ef"],
+        "lowpoly": true,
+        "waterLevel": 3,
+        "waterColor": "#5d7fb8"
+      },
+      "seed": 14,
+      "position": [0, 0, -20],
+      "receiveShadow": true
+    },
+    {
+      "id": "pines",
+      "kind": "generator",
+      "generator": "trees",
+      "params": {
+        "count": 260,
+        "area": [90, 0, 70],
+        "style": "pine",
+        "minScale": 0.8,
+        "maxScale": 1.6,
+        "leafColors": ["#26492c", "#2f5a33", "#3c6b3a"],
+        "trunkColor": "#4a3326",
+        "onTerrain": true,
+        "sway": true
+      },
+      "seed": 3,
+      "position": [0, 0, -20],
+      "castShadow": true
+    },
+    {
+      "id": "fireflies",
+      "kind": "particles",
+      "preset": "fireflies",
+      "count": 70,
+      "area": [30, 4, 10],
+      "position": [0, 8, 20],
+      "color": "#ffd27a",
+      "size": 0.12
+    },
+    {
+      "id": "clouds",
+      "kind": "generator",
+      "generator": "clouds",
+      "params": {"count": 6, "area": [120, 6, 40], "height": 26, "color": "#ffd2b0", "speed": 0.15},
+      "seed": 2,
+      "position": [0, 0, -40]
+    }
+  ],
+  "timeline": {
+    "duration": 14,
+    "loop": true,
+    "tracks": [
+      {
+        "target": "camera.position",
+        "keys": [[0, [-4, 16, 40]], [7, [4, 17, 38]], [14, [-4, 16, 40]]],
+        "ease": "inOutSine"
+      }
+    ]
+  },
+  "postfx": [
+    {"type": "bloom", "strength": 0.4, "radius": 0.7, "threshold": 0.85},
+    {"type": "vignette", "darkness": 0.9}
+  ]
+}
