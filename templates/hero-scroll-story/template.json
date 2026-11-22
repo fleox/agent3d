@@ -1,0 +1,16 @@
+{
+  "id": "hero-scroll-story",
+  "title": "Scroll story hero",
+  "description": "Scroll-driven 3D story: as the page scrolls, the camera glides across three chapters \u2014 Design, Build, Launch \u2014 each with its own object and 3D title.",
+  "kind": "hero",
+  "tags": [
+    "hero",
+    "scroll",
+    "story",
+    "timeline",
+    "camera",
+    "storytelling",
+    "landing"
+  ],
+  "aspect": "16:9"
+}
