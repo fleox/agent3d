@@ -1,0 +1,18 @@
+{
+  "id": "game-runner",
+  "title": "Endless runner",
+  "description": "Playable endless runner: switch lanes and jump over barriers on a scrolling road, grab coins, speed ramps up, best score saved, game over + retry, synth sounds, keyboard + touch, self-playing attract mode.",
+  "kind": "game",
+  "tags": [
+    "game",
+    "runner",
+    "endless",
+    "arcade",
+    "mobile",
+    "touch",
+    "keyboard",
+    "score",
+    "road"
+  ],
+  "aspect": "16:9"
+}

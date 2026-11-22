@@ -1,0 +1,538 @@
+{
+  "version": 1,
+  "id": "game-runner",
+  "title": "Endless runner",
+  "ariaLabel": "Endless runner mini game: change lanes with the arrow keys or by tapping, jump with Space or a swipe up",
+  "seed": 3,
+  "target": {
+    "kind": "game",
+    "aspect": "16:9",
+    "budgetKb": 400,
+    "reducedMotion": "ignore",
+    "maxDpr": 2,
+    "lazy": true
+  },
+  "camera": {"type": "perspective", "fov": 55, "position": [0, 3.6, 6.5], "target": [0, 1, -6]},
+  "environment": {
+    "background": {
+      "sky": {"top": "#5aa9e6", "horizon": "#ffe6c7", "sun": {"direction": [0.3, 0.25, -1], "size": 1.2}}
+    },
+    "lighting": "soft",
+    "lightingIntensity": 0.6,
+    "fog": {"color": "#ffe6c7", "near": 30, "far": 70}
+  },
+  "lights": [
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "skyColor": "#e3f2ff",
+      "groundColor": "#7cb35b",
+      "intensity": 1
+    },
+    {"id": "sun", "type": "directional", "position": [5, 10, 4], "intensity": 2, "castShadow": true}
+  ],
+  "objects": [
+    {
+      "id": "road",
+      "kind": "generator",
+      "generator": "road",
+      "params": {"width": 6, "length": 80, "lanes": 3, "color": "#3d405b", "lineColor": "#f4f1de", "speed": 11},
+      "receiveShadow": true
+    },
+    {
+      "id": "hillsL",
+      "kind": "generator",
+      "generator": "trees",
+      "params": {"count": 40, "area": [14, 0, 70], "style": "round", "onTerrain": false, "sway": true},
+      "position": [-13, 0, -30],
+      "seed": 2
+    },
+    {
+      "id": "hillsR",
+      "kind": "generator",
+      "generator": "trees",
+      "params": {"count": 40, "area": [14, 0, 70], "style": "mixed", "onTerrain": false, "sway": true},
+      "position": [13, 0, -30],
+      "seed": 5
+    },
+    {
+      "id": "runner",
+      "kind": "generator",
+      "generator": "character",
+      "params": {
+        "style": "humanoid",
+        "shirt": "#ffd166",
+        "pants": "#26547c",
+        "skin": "#f1c27d",
+        "hair": "#3b2a20",
+        "accent": "#ef476f",
+        "animation": "run",
+        "animationSpeed": 1.4,
+        "height": 1.5
+      },
+      "rotation": [0, 180, 0],
+      "castShadow": true
+    },
+    {
+      "id": "obstacles",
+      "kind": "group",
+      "children": [
+        {
+          "id": "barrier0",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier0Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier0Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier0LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier0LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        },
+        {
+          "id": "barrier1",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier1Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier1Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier1LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier1LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        },
+        {
+          "id": "barrier2",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier2Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier2Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier2LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier2LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        },
+        {
+          "id": "barrier3",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier3Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier3Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier3LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier3LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        },
+        {
+          "id": "barrier4",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier4Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier4Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier4LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier4LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        },
+        {
+          "id": "barrier5",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier5Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier5Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier5LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier5LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        },
+        {
+          "id": "barrier6",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier6Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier6Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier6LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier6LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        },
+        {
+          "id": "barrier7",
+          "kind": "group",
+          "tags": ["barrier"],
+          "visible": false,
+          "children": [
+            {
+              "id": "barrier7Board",
+              "kind": "mesh",
+              "geometry": {"type": "roundedBox", "width": 1.7, "height": 0.5, "depth": 0.25, "radius": 0.06},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ef476f"}
+            },
+            {
+              "id": "barrier7Stripe",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 1.72, "height": 0.12, "depth": 0.27},
+              "position": [0, 0.55, 0],
+              "material": {"preset": "plastic", "color": "#ffffff"}
+            },
+            {
+              "id": "barrier7LegL",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [-0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            },
+            {
+              "id": "barrier7LegR",
+              "kind": "mesh",
+              "geometry": {"type": "box", "width": 0.12, "height": 0.4, "depth": 0.12},
+              "position": [0.65, 0.2, 0],
+              "material": {"preset": "matte", "color": "#3d405b"}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pickups",
+      "kind": "group",
+      "children": [
+        {
+          "id": "coin0",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin1",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin2",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin3",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin4",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin5",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin6",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin7",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin8",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin9",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin10",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        },
+        {
+          "id": "coin11",
+          "kind": "mesh",
+          "tags": ["coin"],
+          "visible": false,
+          "geometry": {"type": "cylinder", "radiusTop": 0.32, "radiusBottom": 0.32, "height": 0.08, "segments": 24},
+          "rotation": [90, 0, 0],
+          "material": {"preset": "gold", "emissive": "#ffb703", "emissiveIntensity": 0.25}
+        }
+      ]
+    }
+  ],
+  "scripts": ["scripts/runner.js"],
+  "data": {
+    "runner": {"startSpeed": 11, "maxSpeed": 30, "accel": 0.35, "coinValue": 10}
+  },
+  "ui": {
+    "color": "#1d2240",
+    "accent": "#ef476f",
+    "elements": [
+      {"id": "score", "type": "text", "text": "Score {score}", "anchor": "top-left", "style": "pill"},
+      {"id": "best", "type": "text", "text": "Best {best}", "anchor": "top-right", "style": "pill"},
+      {
+        "id": "title",
+        "type": "text",
+        "text": "Lane Dash",
+        "anchor": "center",
+        "style": "title",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "hint",
+        "type": "text",
+        "text": "Press Space or tap to play",
+        "anchor": "bottom",
+        "style": "subtitle",
+        "visible": "phase == 'attract'"
+      },
+      {
+        "id": "over",
+        "type": "text",
+        "text": "Game over — {score} pts",
+        "anchor": "center",
+        "style": "title",
+        "visible": "phase == 'over'"
+      },
+      {
+        "id": "retry",
+        "type": "button",
+        "text": "Play again",
+        "anchor": "bottom",
+        "action": "retry",
+        "visible": "phase == 'over'"
+      }
+    ]
+  },
+  "audio": {
+    "sounds": {
+      "coin": {"preset": "coin", "volume": 0.5},
+      "jump": {"preset": "jump", "volume": 0.4},
+      "lose": {"preset": "lose", "volume": 0.6},
+      "click": {"preset": "click"},
+      "whoosh": {"preset": "whoosh", "volume": 0.25}
+    }
+  }
+}
