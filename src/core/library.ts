@@ -21,6 +21,8 @@ export interface LibraryAsset {
   animations?: string[];
   triangles?: number;
   skinned?: boolean;
+  // Bounding box size w × h × d (glTF units, Y-up, node transforms applied).
+  size?: [number, number, number];
 }
 
 export interface LibraryIndex {

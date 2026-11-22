@@ -323,7 +323,7 @@ export const LIBRARY_DEFAULT_LIMIT = 50;
 export function listLibrary(
   index: LibraryIndex,
   filter: { query?: string; kind?: AssetEntry["kind"]; limit?: number; offset?: number } = {},
-): { assets: (Pick<LibraryAsset, "id" | "kind" | "license" | "tags" | "description"> & { ref: string; kb: number; author?: string; animations?: string[]; triangles?: number })[]; total: number; offset: number; more: boolean } {
+): { assets: (Pick<LibraryAsset, "id" | "kind" | "license" | "tags" | "description"> & { ref: string; kb: number; author?: string; animations?: string[]; triangles?: number; size?: [number, number, number] })[]; total: number; offset: number; more: boolean } {
   let list = (index?.assets ?? []).filter((a) => !filter.kind || a.kind === filter.kind);
   if (filter.query?.trim()) {
     list = list
@@ -351,6 +351,7 @@ export function listLibrary(
       kb: KB(a.bytes),
       ...(a.animations?.length ? { animations: a.animations } : {}),
       ...(typeof a.triangles === "number" ? { triangles: a.triangles } : {}),
+      ...(Array.isArray(a.size) ? { size: a.size } : {}),
     })),
   };
 }

@@ -30,7 +30,7 @@ npx -y @fleox/agent3d@0.1.0 assets library --kind hdri --json
 npx -y @fleox/agent3d@0.1.0 assets library --query character --kind model --json
 ```
 
-The answer lists the matches in `data.assets[]` (with `data.total` and `data.more`; `assets search` below names its list `data.hits[]` instead). Each entry has `ref` (use it as is in the scene), `description` (with the bounding box), `tags`, `license`, `kb`, and for models `triangles` and `animations` (the clip names of animated models). Listings show 50 results per page: narrow with `--query` and `--kind`; when `more` is true, page with `--offset 50` (or `--limit 100`, `--all`).
+The answer lists the matches in `data.assets[]` (with `data.total` and `data.more`; `assets search` below names its list `data.hits[]` instead). Each entry has `ref` (use it as is in the scene), `description` (with the bounding box), `tags`, `license`, `kb`, and for models `triangles`, `size` (bounding box w × h × d in model units, Y-up) and `animations` (the clip names of animated models). Listings show 50 results per page: narrow with `--query` and `--kind`; when `more` is true, page with `--offset 50` (or `--limit 100`, `--all`).
 
 ```bash
 npx -y @fleox/agent3d@0.1.0 assets library --kind model --offset 50 --json
