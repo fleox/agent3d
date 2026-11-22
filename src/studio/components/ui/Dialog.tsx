@@ -16,7 +16,7 @@ export function Dialog({ title, onClose, children, footer, width = 560 }: { titl
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" className="toast-in flex max-h-[86vh] w-full flex-col overflow-hidden rounded-xl border border-line bg-ink-1 shadow-2xl shadow-black/50 outline-none" style={{ maxWidth: width }}>
+      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" className="toast-in flex max-h-[86vh] w-full flex-col overflow-hidden rounded-xl border border-line bg-ink-1 shadow-2xl shadow-black/50 outline-none focus-visible:outline-none" style={{ maxWidth: width }}>
         <div className="flex h-11 shrink-0 items-center justify-between border-b border-line pl-4 pr-2">
           <div className="text-base font-semibold">{title}</div>
           <IconButton label="Close" onClick={onClose}>

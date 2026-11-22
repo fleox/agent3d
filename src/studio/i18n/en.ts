@@ -264,6 +264,8 @@ export const en = {
     noRecent: "Nothing yet.",
     remove: "Remove from this browser",
     otherFolder: "Open it with: agent3d studio --project {dir}",
+    continue: "Open {title}",
+    replaceConfirm: "This replaces the project in {dir} with a new one. Continue?",
     agentTitle: "Working with an agent",
     agentBody: "Ask Claude Code (or any MCP client) to edit the scene while the Studio is open: changes appear live, highlighted, and you can undo them here.",
     kinds: { banner: "Wide 4:1 strip", hero: "16:9 page header", card: "Product card", square: "Square tile", fullscreen: "Landscape, full page", game: "Mini game" },

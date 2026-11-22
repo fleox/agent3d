@@ -17,8 +17,8 @@ import { useEditor, useSnapshot } from "../state/context";
 import { ParamForm, useBinder } from "./fields";
 import { CAMERA_SPECS, GROUND_SPECS, LIGHT_SPECS, PHYSICS_SPECS, SCENE_META_SPECS, TARGET_SPECS, UI_ELEMENT_SPECS, UI_THEME_SPECS } from "./specs";
 import { DEFAULT_ASPECT } from "../../core/validate";
+import { pretty } from "../lib/labels";
 
-const pretty = (s: string) => s.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 const rec = (v: unknown) => v as Record<string, unknown> | undefined;
 
 export function SceneSettings() {

@@ -54,6 +54,8 @@ export function StartScreen({ backend, onOpened }: { backend: Backend; onOpened(
   }, [backend]);
 
   const create = async (key: string, opts: { template?: string; kind?: TargetKind; title: string }) => {
+    // A CLI server edits one folder: a new project replaces the current one there.
+    if (backend.mode === "cli" && backend.hasProject() && !window.confirm(t("start.replaceConfirm", { dir: backend.location ?? "" }))) return;
     setBusy(key);
     setError(null);
     try {
@@ -81,9 +83,16 @@ export function StartScreen({ backend, onOpened }: { backend: Backend; onOpened(
               <p className="mt-0.5 max-w-xl text-sm text-fg-muted">{t("start.tagline")}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+          {backend.hasProject() && (
+            <button type="button" onClick={onOpened} className="flex h-8 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-ink-0 hover:bg-accent/90">
+              <FolderOpen size={14} /> {t("start.continue", { title: backend.projectTitle() })}
+            </button>
+          )}
           <div className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-xs text-fg-muted">
             {backend.mode === "cli" ? <HardDrive size={12} /> : <Cloud size={12} />}
             {backend.mode === "cli" ? t("start.cliMode", { v: backend.version ?? "" }) : t("start.localMode")}
+          </div>
           </div>
         </header>
 

@@ -72,7 +72,10 @@ export class PlayerController {
     cancelAnimationFrame(this.raf);
     const tick = () => {
       if (!this.player) return;
-      const t = timelineTime(this.player.time(), this.scene);
+      const raw = this.player.time();
+      // Runtime clock can drift below 0 when its RAF loop restarts (first dt < 0): snap back.
+      if (raw < 0 && !this.updating) void this.player.seek(0);
+      const t = timelineTime(Math.max(0, raw), this.scene);
       this.timeListeners.forEach((l) => l(t));
       this.raf = requestAnimationFrame(tick);
     };

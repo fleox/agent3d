@@ -265,6 +265,8 @@ export const fr: Messages = {
     noRecent: "Rien pour l'instant.",
     remove: "Retirer de ce navigateur",
     otherFolder: "Ouvrez-le avec : agent3d studio --project {dir}",
+    continue: "Ouvrir {title}",
+    replaceConfirm: "Cela remplace le projet de {dir} par un nouveau. Continuer ?",
     agentTitle: "Travailler avec un agent",
     agentBody: "Demandez à Claude Code (ou à tout client MCP) de modifier la scène pendant que le Studio est ouvert : les changements apparaissent en direct, mis en évidence, et vous pouvez les annuler ici.",
     kinds: { banner: "Bandeau large 4:1", hero: "En-tête de page 16:9", card: "Carte produit", square: "Tuile carrée", fullscreen: "Paysage, pleine page", game: "Mini-jeu" },

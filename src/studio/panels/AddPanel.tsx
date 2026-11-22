@@ -16,6 +16,7 @@ import { useI18n, type MessageKey } from "../i18n";
 import { newObject, takenIds, type NewObjectSpec } from "../lib/patches";
 import { findObject } from "../../ops/tree";
 import { useEditor, useSnapshot, useUi } from "../state/context";
+import { pretty } from "../lib/labels";
 
 const GEO_ICONS: Record<string, LucideIcon> = {
   box: Box, roundedBox: SquareRoundCorner, sphere: Circle, cylinder: Cylinder, cone: Cone, capsule: Pill, torus: Donut, torusKnot: InfinityIcon,
@@ -44,7 +45,6 @@ const TABS: { id: string; icon: LucideIcon; label: MessageKey }[] = [
   { id: "lights", icon: Lightbulb, label: "add.lights" },
 ];
 
-const pretty = (id: string) => id.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 
 export function AddPanel() {
   const { t } = useI18n();

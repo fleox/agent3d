@@ -10,10 +10,10 @@ import { paramUpdate, paramValue } from "../lib/params";
 import type { PatchOp } from "../../ops/scene";
 import { fieldOps } from "../lib/patches";
 import { useEditor, useSnapshot } from "../state/context";
+import { pretty } from "../lib/labels";
 
 export type OnValue = (value: unknown, final: boolean) => void;
 
-const pretty = (s: string) => s.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 
 export function ParamControl({ spec, value, onChange }: { spec: ParamSpec; value: unknown; onChange: OnValue }) {
   const shown = paramValue(spec, value);

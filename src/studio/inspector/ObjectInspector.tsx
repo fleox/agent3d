@@ -12,8 +12,8 @@ import { behaviourFromEntry, MATERIAL_KINDS, objPath } from "../lib/patches";
 import { useEditor, useSnapshot } from "../state/context";
 import { JsonField, ParamForm, ParamRow, useBinder } from "./fields";
 import { BODY_SPECS, MATERIAL_MAIN, MATERIAL_MORE, MATERIAL_TYPE_SPEC, MODEL_ANIM_SPECS, MODEL_SPECS, OBJECT_FLAGS, PARTICLE_SPECS, SVG_SPECS, TEXT_SPECS } from "./specs";
+import { pretty } from "../lib/labels";
 
-const pretty = (s: string) => s.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 const SAMPLE_REQUIRED: Record<string, Record<string, unknown>> = {
   lathe: { points: [[0, 0], [0.4, 0], [0.5, 0.3], [0.3, 0.8], [0.35, 1.2], [0, 1.2]] },
   extrude: { shape: [[0, 0.5], [0.15, 0.15], [0.5, 0.1], [0.2, -0.12], [0.3, -0.5], [0, -0.25], [-0.3, -0.5], [-0.2, -0.12], [-0.5, 0.1], [-0.15, 0.15]] },

@@ -112,7 +112,8 @@ export function Editor({ backend, onClose }: { backend: Backend; onClose(): void
       if (opts.toast !== false) toast({ tone: "agent", title: t("external.title"), detail: plan.summary, action: { label: t("external.undo"), run: () => store.undo() } }, 6000);
     };
     reloadRef = reloadScene;
-    const off = backend.onChange((paths) => {
+    // ?events=0: no SSE (headless screenshots never go idle with an open stream).
+    const off = urlParam("events") === "0" ? () => undefined : backend.onChange((paths) => {
       if (paths.includes("scene.json")) {
         void reloadScene().catch(() => undefined);
       } else if (paths.some((p) => p.startsWith("assets/") || p.startsWith("scripts/"))) {

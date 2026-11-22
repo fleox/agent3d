@@ -102,3 +102,23 @@ describe("timeline helpers", () => {
     expect(rulerStep(4)).toBe(0.25);
   });
 });
+
+import { pretty } from "./labels";
+describe("labels", () => {
+  it("prettifies catalog / field names", () => {
+    expect(pretty("reducedMotion")).toBe("Reduced motion");
+    expect(pretty("budgetKb")).toBe("Budget KB");
+    expect(pretty("torusKnot")).toBe("Torus knot");
+    expect(pretty("sans-bold")).toBe("Sans bold");
+  });
+});
+
+import { projectBox } from "./project";
+describe("projectBox", () => {
+  it("centres a box in front of the camera", () => {
+    const r = projectBox([-1, -1, -1], [1, 1, 1], { type: "perspective", position: [0, 0, 10], target: [0, 0, 0], fov: 45 }, 1)!;
+    expect(r.x + r.w / 2).toBeCloseTo(0.5);
+    expect(r.y + r.h / 2).toBeCloseTo(0.5);
+    expect(projectBox([-1, -1, 20], [1, 1, 22], { type: "perspective", position: [0, 0, 10], target: [0, 0, 0] }, 1)).toBeNull();
+  });
+});

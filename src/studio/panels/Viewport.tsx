@@ -11,6 +11,8 @@ import { IconButton } from "../components/ui/controls";
 import { useI18n } from "../i18n";
 import { useEditor, useSnapshot, useUi, type Device } from "../state/context";
 import type { FrameStats, RuntimeIssue } from "../../runtime/api";
+import { findObject } from "../../ops/tree";
+import { projectBox } from "../lib/project";
 
 const DEVICE_WIDTH: Record<Device, number> = { desktop: 0, tablet: 820, phone: 390 };
 
@@ -72,6 +74,34 @@ export function Viewport() {
     const id = setInterval(() => setStats(player.stats()), 1000);
     return () => clearInterval(id);
   }, [player]);
+
+  // Selection outline: the selected object's top-level ancestor bounding box, projected.
+  const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const selId = snap.selection;
+  useEffect(() => {
+    if (!selId) {
+      setBox(null);
+      return;
+    }
+    const tick = () => {
+      const s = store.getSnapshot().scene;
+      const p = player.player;
+      if (!s || !p) return setBox(null);
+      let top = selId;
+      for (let loc = findObject(s.objects, top); loc?.parent; loc = findObject(s.objects, loc.parent.id)) top = loc.parent.id;
+      try {
+        const ins = p.inspect();
+        const o = ins.objects.find((x) => x.id === top);
+        const a = parseAspect(s.target?.aspect) ?? { width: 16, height: 9 };
+        setBox(o ? projectBox(o.min, o.max, { ...ins.camera, type: s.camera.type, fov: s.camera.fov, zoom: s.camera.zoom }, a.width / a.height) : null);
+      } catch {
+        setBox(null);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 200);
+    return () => clearInterval(id);
+  }, [selId, player, store, snap.revision]);
 
   // Frame size: the target aspect inside the stage (and the device width).
   const aspect = parseAspect(scene.target?.aspect) ?? { width: 16, height: 9 };
@@ -143,11 +173,21 @@ export function Viewport() {
       </div>
       <div ref={stageRef} className="viewport-stage relative flex min-h-0 flex-1 items-center justify-center overflow-hidden">
         <div style={{ width: w, height: h, transform: scale !== 1 ? `scale(${scale})` : undefined }} className="relative shrink-0">
-          <div key={pulse} className={clsx("absolute inset-0 overflow-hidden rounded-[3px] shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_20px_60px_-20px_rgb(0_0_0/0.8)]", pulse > 0 && "agent-pulse")}>
+          {/* Agent activity ring: keyed so the animation replays; never key the canvas host. */}
+          {pulse > 0 && <div key={pulse} className="agent-pulse pointer-events-none absolute inset-0 rounded-[3px]" />}
+          <div className="absolute inset-0 overflow-hidden rounded-[3px] shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_20px_60px_-20px_rgb(0_0_0/0.8)]">
             <div ref={hostRef} className="absolute inset-0" />
+            {box && (
+              <div className="pointer-events-none absolute rounded-[2px] border border-accent shadow-[0_0_0_1px_rgb(0_0_0/0.35)]" style={{ left: `${box.x * 100}%`, top: `${box.y * 100}%`, width: `${box.w * 100}%`, height: `${box.h * 100}%` }}>
+                {[["-left-[3px] -top-[3px]"], ["-right-[3px] -top-[3px]"], ["-left-[3px] -bottom-[3px]"], ["-right-[3px] -bottom-[3px]"]].map(([c]) => (
+                  <span key={c} className={`absolute h-[5px] w-[5px] bg-accent ${c}`} />
+                ))}
+                <span className={clsx("absolute left-[-1px] whitespace-nowrap rounded-[3px] bg-accent px-1 text-2xs font-medium leading-4 text-ink-0", box.y > 0.12 ? "-top-[18px]" : "top-1 left-1")}>{selected}</span>
+              </div>
+            )}
             {!interact && <div className="absolute inset-0 cursor-crosshair" onPointerDown={onPointerDown} onPointerUp={onPointerUp} aria-label={t("viewport.clickToSelect")} />}
           </div>
-          {selected && (
+          {selected && !box && (
             <div className="pointer-events-none absolute -top-6 left-0 flex items-center gap-1 text-2xs text-accent">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               {selected}

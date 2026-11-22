@@ -57,6 +57,7 @@ export function JsonPanel() {
         <textarea
           value={draft}
           spellCheck={false}
+          wrap="off"
           aria-label="scene.json"
           onChange={(e) => onChange(e.target.value)}
           onScroll={(e) => {
@@ -73,7 +74,7 @@ export function JsonPanel() {
               requestAnimationFrame(() => el.setSelectionRange(a + 2, a + 2));
             }
           }}
-          className="min-w-0 flex-1 resize-none bg-transparent p-2 font-mono text-xs leading-[18px] text-fg outline-none"
+          className="min-w-0 flex-1 resize-none overflow-auto whitespace-pre bg-transparent p-2 font-mono text-xs leading-[18px] text-fg outline-none"
         />
       </div>
       <div className="flex w-[340px] shrink-0 flex-col border-l border-line">

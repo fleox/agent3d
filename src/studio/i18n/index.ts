@@ -17,6 +17,8 @@ export type MessageKey = Leaves<Messages>;
 
 export function detectLang(): Lang {
   try {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "fr") return q;
     const saved = localStorage.getItem(KEY);
     if (saved === "en" || saved === "fr") return saved;
   } catch {

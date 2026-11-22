@@ -59,7 +59,7 @@ export function Timeline() {
   useEffect(() => {
     const el = laneRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth - 16));
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth - 40));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -120,7 +120,7 @@ export function Timeline() {
                 className="w-[96px]"
                 ariaLabel={t("timeline.loop")}
               />
-              <Select value={tl.trigger ?? "visible"} options={TIMELINE_TRIGGERS.map((x) => ({ value: x, label: t(`trigger.${x}`) }))} onChange={(v) => edit([{ op: "set", path: "timeline.trigger", value: v }])} className="w-[110px]" ariaLabel={t("timeline.trigger")} />
+              <Select value={tl.trigger ?? "visible"} options={TIMELINE_TRIGGERS.map((x) => ({ value: x, label: t(`trigger.${x}`) }))} onChange={(v) => edit([{ op: "set", path: "timeline.trigger", value: v }])} className="w-[124px]" ariaLabel={t("timeline.trigger")} />
               <label className="flex items-center gap-1" title={t("timeline.autoplay")}>
                 <Toggle checked={tl.autoplay !== false} onChange={(v) => edit(v ? (tl.autoplay === false ? [{ op: "remove", path: "timeline.autoplay" }] : []) : [{ op: "set", path: "timeline.autoplay", value: false }])} ariaLabel={t("timeline.autoplay")} />
               </label>
