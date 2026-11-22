@@ -49,7 +49,7 @@ export async function createProject(fs: ProjectFs, opts: CreateProjectOptions): 
     const tf = opts.templateFiles;
     if (!tf[SCENE_FILE]) throw new OpsError("invalid", `Template "${opts.template ?? "?"}" has no scene.json.`, "A template folder holds agent3d.json, scene.json, template.json and optional scripts/ and assets/.");
     for (const [path, content] of Object.entries(tf)) {
-      if (path === SCENE_FILE || path === MANIFEST_FILE || path === "template.json") continue;
+      if (path === SCENE_FILE || path === MANIFEST_FILE || path === "template.json" || path === "preview.png") continue;
       if (typeof content === "string") await fs.writeText(path, content);
       else await fs.writeBytes(path, content);
       files.push(path);
