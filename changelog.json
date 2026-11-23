@@ -1,6 +1,19 @@
 {
   "versions": [
     {
+      "version": "0.2.2",
+      "date": "2026-11-23",
+      "breaking": false,
+      "changes": [
+        "Node.js 22 or newer is now required (`engines`); `doctor` fails its Node check below 22. Headless renders already needed it.",
+        "`check` triangle estimates for generators recalibrated from measurements (city, road, grass, clouds, character, bars3d, waveGrid…): cost formulas now weigh styles and options (character style and low-poly shading, tree style, bar shape, wave-grid shape, smooth terrain and islands, globe without continents), and a test keeps every generator within ×0.6–×1.6 of what it builds.",
+        "`check --render` reuses one temporary folder per project, emptied on each run, instead of a new one each time; headless Chrome profiles are removed even when the process exits abruptly, and stale ones are swept."
+      ],
+      "actions": [
+        "Use Node.js 22 or newer (`node --version`)."
+      ]
+    },
+    {
       "version": "0.2.1",
       "date": "2026-11-22",
       "breaking": false,
