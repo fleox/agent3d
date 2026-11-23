@@ -1,5 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { COMMANDS } from "./commands";
@@ -8,6 +7,7 @@ import { CliError } from "./output";
 import { parseScalar, setPairs } from "./commands/util";
 import { cli, ok } from "./testing/cli";
 import { writeZipStored } from "../src/ops/zip";
+import { tempDir } from "./testing/tmp";
 
 // The JSON contract agents rely on: exactly one {ok,data} / {ok:false,
 // error:{code,message,hint}} object on stdout, exit 2 for usage /
@@ -15,7 +15,7 @@ import { writeZipStored } from "../src/ops/zip";
 
 const REQUIRED = ["help", "version", "new", "info", "scene", "object", "timeline", "catalog", "templates", "check", "render", "serve", "studio", "export", "assets", "tools", "mcp", "doctor"];
 
-const tmp = () => mkdtempSync(join(tmpdir(), "agent3d-cli-"));
+const tmp = () => tempDir("agent3d-cli-");
 
 describe("CLI contract", () => {
   it("help --json lists every command with usage, options and subcommands", async () => {

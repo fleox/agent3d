@@ -36,7 +36,7 @@ src/
   ops/         engine: project.ts, scene.ts (get/apply/patch), objects.ts, timeline.ts, check.ts (+ budget.ts, postfxCheck.ts), assets.ts (+ sources/), optimize.ts (+ optimizeGlb.ts, optimizeSizing.ts), templates.ts, export.ts (+ exportFrameworks.ts, zip.ts), docs.ts
   ai/          tools.ts — the AI tool catalog (+ sceneTools.ts, assetTools.ts)
   studio/      Studio SPA (React + Tailwind): viewport (+ transform gizmos from runtime/editor/), outliner, inspector, timeline, catalog browser, templates gallery, assistant
-agent/         `agent3d` CLI (Node ≥ 20, bundled to dist/agent/agent3d.mjs) — commands/, mcp/, render/ (CDP headless Chrome), serve, nodeFs
+agent/         `agent3d` CLI (Node ≥ 22, bundled to dist/agent/agent3d.mjs) — commands/, mcp/, render/ (CDP headless Chrome), serve, nodeFs
 library/       built-in CC0 / CC-BY assets shipped in the npm package (fonts/, models/, textures/, hdri/) + library/index.json (id, path, licence, author, tags)
 templates/     starter projects (folder per template: agent3d.json, scene.json, scripts/, template.json {id,title,description,kind,tags})
 plugin/skills/ Claude Code skills (single source)          hermes/  generated Python-agent skills (+ python/ wrapper, tests/)

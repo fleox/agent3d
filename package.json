@@ -5,7 +5,7 @@
   "description": "The 3D studio your AI agent can run: describe a scene as JSON (banners, characters, landscapes, mini games), preview and screenshot it headless, and export a self-contained embed for any website. No server, no account.",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bin": {
     "agent3d": "dist/agent/agent3d.mjs"

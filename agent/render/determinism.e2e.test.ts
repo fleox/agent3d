@@ -1,5 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createProject } from "../../src/ops/project";
@@ -7,6 +6,7 @@ import { NodeFs } from "../nodeFs";
 import { runtimeBuilt, templatesDir } from "../paths";
 import { findBrowser } from "./browser";
 import { renderProject } from "./render";
+import { tempDir } from "../testing/tmp";
 
 // Deterministic seeks: the same frames rendered several times from fresh page
 // loads must give the same game state. Regression for game-platformer, whose
@@ -33,7 +33,7 @@ function templateFiles(id: string): Record<string, Uint8Array> {
 describe.skipIf(!browser || !runtimeBuilt())("deterministic game state across renders", () => {
   for (const [id, n] of [["game-platformer", 3], ["game-basket", 2], ["game-physics-playground", 2]] as const) {
     it(`${id}: ${n} renders of the same frames give the same state`, async () => {
-      const base = mkdtempSync(join(tmpdir(), "agent3d-determinism-"));
+      const base = tempDir("agent3d-determinism-");
       try {
         const dir = join(base, id);
         mkdirSync(dir, { recursive: true });

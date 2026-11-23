@@ -1,6 +1,7 @@
-import { mkdtempSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
+import { basename, isAbsolute, join, resolve } from "node:path";
 import { readLibraryIndex, readRuntimeFiles } from "../host";
 import { printResult } from "../output";
 import { runtimeBuilt } from "../paths";
@@ -13,7 +14,7 @@ export const checkCommand: Command = {
   summary: "Pre-export checks: validation, missing assets / scripts, script sandbox lint, budget (triangles per frame with every pass — shadow maps, ao / dof pre-pass, contact shadows — against the per-kind aim and limit; KB), licences needing attribution; with --render also framing and runtime stats from a headless render. Exit 1 when not ok.",
   options: [
     PROJECT_OPTION,
-    { name: "render", type: "boolean", description: "Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). The frame goes to a temporary folder (its absolute path is in `render`) unless --out is given." },
+    { name: "render", type: "boolean", description: "Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). The frame goes to a temporary folder, one per project and emptied on each run (its absolute path is in `render`), unless --out is given." },
     { name: "out", type: "string", description: "--render: folder for the frame, relative to the project folder (e.g. renders)." },
   ],
   async run({ io, options }) {
@@ -25,7 +26,8 @@ export const checkCommand: Command = {
       const { renderProject } = await import("../render/render");
       const out = strOpt(options, "out");
       // A check must not leave files in the project: temp folder unless --out.
-      const outDir = out ? (isAbsolute(out) ? out : resolve(fs.root, out)) : mkdtempSync(join(tmpdir(), "agent3d-check-"));
+      // One folder per project, emptied on each run, so repeated checks don't pile up.
+      const outDir = out ? (isAbsolute(out) ? out : resolve(fs.root, out)) : checkRenderDir(fs.root);
       const r = await renderProject({ projectDir: fs.root, count: 1, outDir });
       extra = { ...extra, ...(r.stats ? { runtimeStats: r.stats } : {}), ...(r.inspect ? { inspect: r.inspect } : {}) };
       const f = r.frames[0]?.path;
@@ -50,4 +52,12 @@ function runtimeKb(): number | undefined {
   if (!runtimeBuilt()) return undefined;
   const bytes = Object.values(readRuntimeFiles("embed")).reduce((a, f) => a + f.byteLength, 0);
   return Math.round((bytes / 1024) * 10) / 10;
+}
+
+function checkRenderDir(projectRoot: string): string {
+  const id = createHash("sha1").update(resolve(projectRoot)).digest("hex").slice(0, 10);
+  const dir = join(tmpdir(), "agent3d-check", `${basename(projectRoot).replace(/[^\w.-]/g, "_") || "project"}-${id}`);
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  return dir;
 }

@@ -1,5 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { decodePng, pngVariance } from "./png";
@@ -9,6 +8,7 @@ import { CliError } from "../output";
 import { applyInputsUpTo, checkInputsForScene, frameSuffix, segmentInputs, frameBox, frameTimes, inputCall, isolateScene, parseBg, parseInputScript, projectPath, renderExportImages, renderMedia, renderPoster, renderProject, renderVideo, viewportFor } from "./render";
 import { decodeGifInfo } from "./gif";
 import { readMp4Boxes } from "./mp4";
+import { tempDir } from "../testing/tmp";
 
 // The render pipeline (server → Chrome → CDP → page → PNG files) against a
 // stand-in runtime. Runs only when a Chromium-family browser is installed.
@@ -18,7 +18,7 @@ const prevDist = process.env.AGENT3D_DIST;
 let project = "";
 
 beforeAll(() => {
-  const dir = mkdtempSync(join(tmpdir(), "agent3d-render-"));
+  const dir = tempDir("agent3d-render-");
   process.env.AGENT3D_DIST = writeFakeDist(dir);
   project = join(dir, "project");
   mkdirSync(project, { recursive: true });

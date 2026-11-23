@@ -1,5 +1,5 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { CliError } from "../output";
@@ -159,16 +159,25 @@ export interface LaunchedBrowser {
 }
 
 export function launchBrowser(info: BrowserInfo, opts: { timeoutMs?: number; extraArgs?: string[] } = {}): Promise<LaunchedBrowser> {
-  const profileDir = mkdtempSync(join(tmpdir(), "agent3d-chrome-"));
+  sweepStaleProfiles();
+  const profileDir = mkdtempSync(join(tmpdir(), PROFILE_PREFIX));
   const args = [...HEADLESS_ARGS, `--user-data-dir=${profileDir}`, ...(isRoot() ? ["--no-sandbox"] : []), ...(opts.extraArgs ?? []), "about:blank"];
   const child = spawn(info.path, args, { stdio: ["ignore", "ignore", "pipe"] });
   let closed = false;
   const close = async () => {
     if (closed) return;
     closed = true;
+    process.off("exit", onExit);
     await killProcess(child);
     removeDir(profileDir);
   };
+  // The CLI exiting without close() (an uncaught error, process.exit) must not
+  // leave Chrome running or its profile behind.
+  const onExit = () => {
+    child.kill("SIGKILL");
+    removeDir(profileDir);
+  };
+  process.once("exit", onExit);
   return new Promise((resolve, reject) => {
     let stderr = "";
     const fail = (message: string) => {
@@ -227,6 +236,24 @@ function killProcess(child: ChildProcess): Promise<void> {
       setTimeout(resolve, 200);
     }, 2000);
   });
+}
+
+const PROFILE_PREFIX = "agent3d-chrome-";
+const STALE_PROFILE_MS = 24 * 3600_000;
+
+// Profiles left by a killed process (Ctrl-C, a crash): removed by the next
+// launch once they are a day old, so a render still running elsewhere keeps its own.
+function sweepStaleProfiles(): void {
+  try {
+    const now = Date.now();
+    for (const name of readdirSync(tmpdir())) {
+      if (!name.startsWith(PROFILE_PREFIX)) continue;
+      const dir = join(tmpdir(), name);
+      if (now - statSync(dir).mtimeMs > STALE_PROFILE_MS) removeDir(dir);
+    }
+  } catch {
+    /* best effort */
+  }
 }
 
 function removeDir(dir: string): void {

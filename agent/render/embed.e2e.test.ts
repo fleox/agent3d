@@ -1,5 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { mkdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -12,12 +11,13 @@ import { runtimeBuilt, runtimeDir, templatesDir } from "../paths";
 import { findBrowser, launchBrowser } from "./browser";
 import { CdpClient, type CdpSession } from "./cdp";
 import { startLocalServer } from "./server";
+import { tempDir } from "../testing/tmp";
 
 // End-to-end: export real templates with the real runtime (dist/runtime, or
 // AGENT3D_DIST), serve the export folder, open index.html in headless Chrome
 // and drive the <agent3d-scene> element's public API. Skipped without a
 // browser or a runtime build that has the element API (stale dist/).
-// A3D_E2E_KEEP=1 keeps the export folders and screenshots (paths on stderr).
+// A3D_E2E_KEEP=1 keeps the export folders and screenshots (paths on stderr; temp folders are kept too).
 
 const browser = findBrowser();
 const runtimeOk = (() => {
@@ -70,7 +70,7 @@ async function waitFor<T>(page: CdpSession, expr: string, ms = 60_000): Promise<
 
 describe.skipIf(!browser || !runtimeOk)("exported embed in a real browser", () => {
   it("loads three exported templates, exposes the element API and frees WebGL on removal", async () => {
-    const base = mkdtempSync(join(tmpdir(), "agent3d-embed-"));
+    const base = tempDir("agent3d-embed-");
     const keep = !!process.env.A3D_E2E_KEEP;
     const ids = ["banner-neon-title", "hero-product-turntable", "game-coin-collector"];
     const outs: string[] = [];
@@ -176,7 +176,7 @@ describe.skipIf(!browser || !runtimeOk)("exported embed in a real browser", () =
   }, 240_000);
 
   it("starts reliably: 20 consecutive page loads all reach ready (lazy start race)", async () => {
-    const base = mkdtempSync(join(tmpdir(), "agent3d-embed-loop-"));
+    const base = tempDir("agent3d-embed-loop-");
     const out = await exportTemplate(base, "banner-neon-title");
     const server = await startLocalServer({ mounts: { "/": out } });
     const b = await launchBrowser(browser!);
@@ -203,7 +203,7 @@ describe.skipIf(!browser || !runtimeOk)("exported embed in a real browser", () =
   }, 600_000);
 
   it("shares one runtime between scenes, pauses off-screen, honours reduced motion and print, falls back without WebGL", async () => {
-    const base = mkdtempSync(join(tmpdir(), "agent3d-embed-multi-"));
+    const base = tempDir("agent3d-embed-multi-");
     const banner = await exportTemplate(base, "banner-neon-title");
     await exportTemplate(base, "hero-product-turntable");
     const html = `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0">

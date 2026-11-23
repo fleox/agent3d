@@ -1,11 +1,11 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runtimeBuilt } from "./paths";
 import { findBrowser } from "./render/browser";
 import { decodePng, pngVariance, type DecodedPng } from "./render/png";
 import { cli, ok } from "./testing/cli";
+import { tempDir } from "./testing/tmp";
 
 // End to end with the REAL runtime (dist/runtime, `npm run build:runtime`)
 // and the installed Chrome: new → render --sheet → non-blank PNGs → export.
@@ -15,7 +15,7 @@ const ready = !!findBrowser() && !process.env.AGENT3D_DIST && runtimeBuilt();
 
 describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
   it("renders a new banner project to non-blank frames and exports it", async () => {
-    const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "banner");
+    const dir = join(tempDir("agent3d-e2e-"), "banner");
     await ok(["new", dir, "--target", "banner", "--title", "E2E"]);
     const r = await ok(["render", "--project", dir, "--count", "2", "--sheet"]);
     expect(r.frames).toHaveLength(2);
@@ -42,7 +42,7 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
   }, 120_000);
 
   it("render --isolate frames one object; --bg paints under transparent frames", async () => {
-    const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "iso");
+    const dir = join(tempDir("agent3d-e2e-"), "iso");
     await ok(["new", dir, "--target", "banner", "--title", "Iso"]);
     const r = await ok(["render", "--project", dir, "--isolate", "title", "--size", "200x200"]);
     expect(r.frames).toHaveLength(1);
@@ -55,7 +55,7 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
   }, 120_000);
 
   it("plays a game headlessly with --input and returns its state", async () => {
-    const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "game");
+    const dir = join(tempDir("agent3d-e2e-"), "game");
     await ok(["new", dir, "--target", "game"]);
     // The starter player walks down (+z) to z=3, then right to x=2: the third coin.
     const input = JSON.stringify([{ t: 0.1, key: "ArrowDown", hold: 0.75 }, { t: 1, key: "ArrowRight", hold: 0.5 }]);
@@ -77,7 +77,7 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
   }, 120_000);
 
   it("keeps the exact background colour with post effects (not tone mapped)", async () => {
-    const dir = join(mkdtempSync(join(tmpdir(), "agent3d-e2e-")), "bg");
+    const dir = join(tempDir("agent3d-e2e-"), "bg");
     await ok(["new", dir, "--target", "banner"]);
     const pixel = (png: DecodedPng, x: number, y: number) => {
       const i = (y * png.width + x) * png.channels;

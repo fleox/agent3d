@@ -58,6 +58,17 @@ export function evalCost(formula: string, vars: Record<string, number>): number 
     }
     i += m[0].length;
     if (m[1]) return Number(m[1]);
+    // min(a, b, …) / max(a, b, …): caps like a generator's clamped resolution.
+    if ((m[2] === "min" || m[2] === "max") && peek() === "(") {
+      i++;
+      const args = [expr()];
+      while (peek() === ",") {
+        i++;
+        args.push(expr());
+      }
+      if (peek() === ")") i++;
+      return m[2] === "min" ? Math.min(...args) : Math.max(...args);
+    }
     const v = vars[m[2]];
     return typeof v === "number" && Number.isFinite(v) ? v : 0;
   };
@@ -70,6 +81,10 @@ function paramVars(entry: CatalogEntry, params: Record<string, unknown>): Record
   for (const p of entry.params) {
     const v = params[p.name] !== undefined ? params[p.name] : p.default;
     if (typeof v === "number") vars[p.name] = v;
+    // Booleans are 0 / 1 and an enum sets `<name>_<option>` to 1, so a formula
+    // can weigh a style: "count*(70*style_pine+460*style_palm)".
+    else if (typeof v === "boolean") vars[p.name] = v ? 1 : 0;
+    else if (typeof v === "string" && p.type === "enum") vars[`${p.name}_${v}`] = 1;
     else if (Array.isArray(v)) {
       vars[p.name] = v.length;
       // `<name>Cells`: leaf items of a nested array (bars3d grid data [[…], […]]).

@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolveUnder, startLocalServer, type LocalServer } from "./server";
+import { tempDir } from "../testing/tmp";
 
 // Raw HTTP (fetch would normalise "..").
 function get(port: number, path: string, headers: Record<string, string> = {}): Promise<{ status: number; body: string }> {
@@ -22,7 +22,7 @@ let server: LocalServer;
 let root = "";
 
 beforeAll(async () => {
-  root = mkdtempSync(join(tmpdir(), "agent3d-srv-"));
+  root = tempDir("agent3d-srv-");
   mkdirSync(join(root, "project", "assets"), { recursive: true });
   writeFileSync(join(root, "project", "scene.json"), '{"ok":1}');
   writeFileSync(join(root, "secret.txt"), "secret");

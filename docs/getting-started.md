@@ -1,6 +1,6 @@
 # Getting started
 
-Agent3D is meant to be driven by an AI agent, but every step is a plain command you can run yourself. You need **Node.js 22+** (the CLI runs on Node 20, but headless previews need Node 22's built-in `WebSocket`) and **Google Chrome** (or Chromium / Edge / Brave) for previews, posters and videos.
+Agent3D is meant to be driven by an AI agent, but every step is a plain command you can run yourself. You need **Node.js 22+** and **Google Chrome** (or Chromium / Edge / Brave) for previews, posters and videos.
 
 ```bash
 npx -y @fleox/agent3d@0.2.1 doctor

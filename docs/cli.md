@@ -7,7 +7,7 @@ npx -y @fleox/agent3d@0.2.1 help
 npx -y @fleox/agent3d@0.2.1 help scene --json
 ```
 
-Requirements: Node.js 22+ (20 works for everything except renders, which drive Chrome through Node's global `WebSocket`); Google Chrome, Chromium, Edge or Brave for `render`, `check --render`, posters and videos (`agent3d doctor` checks both).
+Requirements: Node.js 22+; Google Chrome, Chromium, Edge or Brave for `render`, `check --render`, posters and videos (`agent3d doctor` checks both).
 
 ## Conventions
 
@@ -235,7 +235,7 @@ agent3d check [--project <dir>] [--render [--out <dir>]]
 | Option | Description |
 |---|---|
 | `--project <value>` | Project folder (default: the current directory). |
-| `--render` | Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). The frame goes to a temporary folder (its absolute path is in `render`) unless --out is given. |
+| `--render` | Also render one frame headless (Chrome) for real triangle counts and framing (objects out of view, camera inside an object). The frame goes to a temporary folder, one per project and emptied on each run (its absolute path is in `render`), unless --out is given. |
 | `--out <value>` | --render: folder for the frame, relative to the project folder (e.g. renders). |
 
 ### render

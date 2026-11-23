@@ -39,7 +39,7 @@ export default defineConfig({
   },
   build: {
     ssr: "agent/bin.ts",
-    target: "node20",
+    target: "node22",
     outDir: "dist/agent",
     emptyOutDir: true,
     minify: false,

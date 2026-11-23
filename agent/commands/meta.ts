@@ -66,8 +66,8 @@ export const doctorCommand: Command = {
     const major = Number(process.versions.node.split(".")[0]);
     checks.push({
       id: "node",
-      ok: major >= 20,
-      message: `Node ${process.versions.node}${major >= 22 ? "" : major >= 20 ? " (headless renders need Node 22+: global WebSocket)" : ""}`,
+      ok: major >= 22,
+      message: `Node ${process.versions.node}${major >= 22 ? "" : " (Agent3D needs Node 22+)"}`,
       ...(major < 22 ? { hint: "Install Node 22 or newer (https://nodejs.org)." } : {}),
     });
     const { findBrowser, browserVersion, noBrowserError } = await import("../render/browser");

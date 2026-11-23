@@ -1,12 +1,12 @@
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { NodeFs } from "./nodeFs";
+import { tempDir } from "./testing/tmp";
 
 describe("NodeFs", () => {
   it("reads, writes, lists recursively and removes inside the root", async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent3d-fs-"));
+    const root = tempDir("agent3d-fs-");
     const fs = new NodeFs(root);
     await fs.writeText("scene.json", "{}");
     await fs.writeBytes("assets/models/a.glb", new Uint8Array([1, 2, 3]));
@@ -27,8 +27,8 @@ describe("NodeFs", () => {
   });
 
   it("refuses paths that leave the project", async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent3d-fs-"));
-    const outside = mkdtempSync(join(tmpdir(), "agent3d-out-"));
+    const root = tempDir("agent3d-fs-");
+    const outside = tempDir("agent3d-out-");
     writeFileSync(join(outside, "secret.txt"), "secret");
     symlinkSync(outside, join(root, "link"));
     const fs = new NodeFs(root);

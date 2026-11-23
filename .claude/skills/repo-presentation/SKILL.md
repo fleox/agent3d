@@ -77,5 +77,5 @@ Built like AgentCRM's: Kokoro TTS (`kokoro-onnx`, voice `af_heart`, speed 0.95, 
 - The licence is **PolyForm Noncommercial 1.0.0**: say "source available", never "open source"; commercial use needs written authorization.
 - No hosted service: never describe an Agent3D server, account, cloud or subscription. The network claims must match `docs/security.md` (optional CC0 asset search / download, the optional Studio assistant with the user's own key, nothing else; exports never call a third party).
 - Comparisons (Spline, hand-coded Three.js, Lottie / video) stay factual and fair: what each one is good for, no disparagement.
-- Requirements: Node.js 22+ for renders (the CLI runs on 20), Chrome / Chromium / Edge / Brave.
+- Requirements: Node.js 22+ (`engines`), Chrome / Chromium / Edge / Brave.
 - No Claude attribution anywhere (commits, PRs, docs). The film and the GIFs may show Claude Code being used; that is the product's use case, not an attribution.

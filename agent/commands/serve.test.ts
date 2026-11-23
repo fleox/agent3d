@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startPreviewServer, startStudioServer, type PreviewServer, type StudioServer } from "./serve";
+import { tempDir } from "../testing/tmp";
 
 function http(port: number, method: string, path: string, opts: { headers?: Record<string, string>; body?: string } = {}): Promise<{ status: number; body: string; type: string }> {
   return new Promise((resolve, reject) => {
@@ -46,7 +46,7 @@ let studio: StudioServer;
 let preview: PreviewServer;
 
 beforeAll(async () => {
-  root = mkdtempSync(join(tmpdir(), "agent3d-studio-"));
+  root = tempDir("agent3d-studio-");
   project = join(root, "project");
   mkdirSync(join(root, "studio"), { recursive: true });
   mkdirSync(project, { recursive: true });
@@ -118,7 +118,7 @@ describe("studio API", () => {
 
 describe("studio API without a project / template previews", () => {
   it("creates a project in an empty folder through project_create", async () => {
-    const empty = mkdtempSync(join(tmpdir(), "agent3d-studio-empty-"));
+    const empty = tempDir("agent3d-studio-empty-");
     const s = await startStudioServer({ project: empty, studioRoot: join(root, "studio") });
     try {
       const info = JSON.parse((await http(s.port, "GET", "/api/info")).body);
@@ -134,7 +134,7 @@ describe("studio API without a project / template previews", () => {
 
   it("serves templates/<id>/preview.png (404 when missing)", async () => {
     const prev = process.env.AGENT3D_TEMPLATES;
-    const tpl = mkdtempSync(join(tmpdir(), "agent3d-templates-"));
+    const tpl = tempDir("agent3d-templates-");
     mkdirSync(join(tpl, "neon-folder"), { recursive: true });
     writeFileSync(join(tpl, "neon-folder", "template.json"), JSON.stringify({ id: "neon", title: "Neon", description: "x", kind: "banner", tags: [] }));
     writeFileSync(join(tpl, "neon-folder", "preview.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));

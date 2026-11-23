@@ -5,7 +5,7 @@
 # Idempotent: wipes and rebuilds /tmp/a3d-cli-demo/work every time
 # (render.sh runs it before each tape).
 #   .github/demos/setup.sh
-# Needs Node >= 20, an installed Chrome / Chromium (headless renders), jq.
+# Needs Node >= 22, an installed Chrome / Chromium (headless renders), jq.
 set -euo pipefail
 VERSION="${AGENT3D_DEMO_VERSION:-0.2.0}"
 PKG="@fleox/agent3d@$VERSION"

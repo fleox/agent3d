@@ -82,6 +82,9 @@ describe("budget", () => {
     expect(evalCost("~500", {})).toBe(500);
     expect(evalCost("count*~150", { count: 10 })).toBe(1500);
     expect(evalCost("resolution^2*2", { resolution: 96 })).toBe(18432);
+    expect(evalCost("min(size*3, 160)^2*2", { size: 40 })).toBe(28800);
+    expect(evalCost("min(size*3, 160)^2*2", { size: 200 })).toBe(51200);
+    expect(evalCost("max(count, 10)+~5", { count: 2 })).toBe(15);
     expect(geometryTriangles({ type: "sphere" })).toBe(32 * 24 * 2);
   });
   it("estimates a scene (text, instances, generators, particles)", () => {
@@ -96,9 +99,9 @@ describe("budget", () => {
     });
     expect(est.byObject.find((o) => o.id === "t")!.triangles).toBe(6574); // 5 glyphs × 9.9 × 8 curve segments × 16.6 (bevelled)
     expect(est.byObject.find((o) => o.id === "i")!.triangles).toBe(1200);
-    expect(est.byObject.find((o) => o.id === "g")!.triangles).toBe(20000);
+    expect(est.byObject.find((o) => o.id === "g")!.triangles).toBe(23200); // 100² × 2 + the low-poly skirt
     expect(est.byObject.find((o) => o.id === "h")).toBeUndefined();
-    expect(est.total).toBe(6574 + 1200 + 20000 + 100);
+    expect(est.total).toBe(6574 + 1200 + 23200 + 100);
   });
   it("estimates text per glyph like the runtime (font, size, flat, extruded, bevel, outline)", () => {
     // Measured with the runtime (geometry triangles of "Hamburgefonstiv ABCDEFGHIJ", 25 glyphs).

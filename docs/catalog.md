@@ -576,7 +576,7 @@ Procedural content, zero download: `{ "kind": "generator", "generator": "<id>", 
 
 ### `terrain`
 
-Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes, canyons, a lake basin ringed by mountains, a valley. Trees / rocks / grass / flowers with onTerrain sit on it (and stay below its snow). _Cost: ~resolution^2*2 triangles._
+Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, islands, dunes, canyons, a lake basin ringed by mountains, a valley. Trees / rocks / grass / flowers with onTerrain sit on it (and stay below its snow). _Cost: ~resolution^2*2+(1-lowpoly)*max(resolution, 48)^2*2+~3200*lowpoly triangles._
 
 **`material` override** (object-level `"material": { … }`): The ground (not the water plane). Without colour / preset / map the palette bands are kept (e.g. { "roughness": 0.6, "flatShading": false }).
 
@@ -599,7 +599,7 @@ Heightmap terrain with colour bands (low-poly or smooth): hills, mountains, isla
 
 ### `trees`
 
-Scattered stylised trees. _Cost: ~count*~150 triangles._
+Scattered stylised trees. _Cost: ~count*(70*style_pine+200*style_round+460*style_palm+430*style_birch+220*style_dead+212*style_mixed) triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -615,7 +615,7 @@ Scattered stylised trees. _Cost: ~count*~150 triangles._
 
 ### `rocks`
 
-Scattered low-poly rocks. _Cost: ~count*80 triangles._
+Scattered low-poly rocks. _Cost: ~count*40 triangles._
 
 **`material` override** (object-level `"material": { … }`): Every rock. Without colour / preset / map the per-rock colours are kept.
 
@@ -630,7 +630,7 @@ Scattered low-poly rocks. _Cost: ~count*80 triangles._
 
 ### `grass`
 
-Instanced grass blades swaying in the wind. _Cost: ~count*1 triangles._
+Instanced grass blades swaying in the wind. _Cost: ~count*3 triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -643,7 +643,7 @@ Instanced grass blades swaying in the wind. _Cost: ~count*1 triangles._
 
 ### `flowers`
 
-Scattered little flowers. _Cost: ~count*40 triangles._
+Scattered little flowers. _Cost: ~count*56 triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -654,7 +654,7 @@ Scattered little flowers. _Cost: ~count*40 triangles._
 
 ### `water`
 
-Animated stylised water: waves, shallow → deep colour from the terrain depth below, animated shore foam lines, ripple normals with a moving sun glint, fresnel. _Cost: ~20000 triangles._
+Animated stylised water: waves, shallow → deep colour from the terrain depth below, animated shore foam lines, ripple normals with a moving sun glint, fresnel. _Cost: ~min(size*(3-1.6*lowpoly), 160)^2*2 triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -674,7 +674,7 @@ Animated stylised water: waves, shallow → deep colour from the terrain depth b
 
 ### `clouds`
 
-Drifting clouds: soft puffy cotton balls (or faceted low-poly), bright tops, cool shadowed undersides, silver-lining rim. _Cost: ~count*1500 triangles._
+Drifting clouds: soft puffy cotton balls (or faceted low-poly), bright tops, cool shadowed undersides, silver-lining rim. _Cost: ~count*(2600-1950*style_lowpoly) triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -689,7 +689,7 @@ Drifting clouds: soft puffy cotton balls (or faceted low-poly), bright tops, coo
 
 ### `city`
 
-Procedural city blocks with buildings (skylines, isometric towns). _Cost: ~blocks^2*4*12 triangles._
+Procedural city blocks with buildings (skylines, isometric towns). _Cost: ~blocks^2*(235+205*trees) triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -705,7 +705,7 @@ Procedural city blocks with buildings (skylines, isometric towns). _Cost: ~block
 
 ### `character`
 
-Chibi character or mascot built from soft clay-like primitives on a real skeleton: expressive face (eyes with highlights, brows, mouth expressions), hair styles, outfits, accessories and procedural animations (idle, walk, run, wave, jump, dance, cheer, celebrate, sit, point, talk). Styles: humanoid, astronaut (bubble helmet), robot (glowing screen face), blob, cat, fox, bird, ghost. _Cost: ~14000 triangles._
+Chibi character or mascot built from soft clay-like primitives on a real skeleton: expressive face (eyes with highlights, brows, mouth expressions), hair styles, outfits, accessories and procedural animations (idle, walk, run, wave, jump, dance, cheer, celebrate, sit, point, talk). Styles: humanoid, astronaut (bubble helmet), robot (glowing screen face), blob, cat, fox, bird, ghost. _Cost: ~(16100*style_humanoid+17300*style_astronaut+11600*style_robot+7700*style_blob+9500*style_cat+9800*style_fox+9100*style_bird+6400*style_ghost)*(1-0.82*shading_lowpoly) triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -727,7 +727,7 @@ Chibi character or mascot built from soft clay-like primitives on a real skeleto
 
 ### `planet`
 
-Small stylised planet with continents, optional rings and atmosphere. _Cost: ~20*4^detail triangles._
+Small stylised planet with continents, optional rings and atmosphere. _Cost: ~20*4^detail+~700 triangles._
 
 **`material` override** (object-level `"material": { … }`): The globe surface (ocean + land; rings and atmosphere keep theirs). Without colour / preset / map the palette is kept.
 
@@ -771,7 +771,7 @@ Organic animated blob (noise-displaced sphere) — modern hero banners. _Cost: ~
 
 ### `waveGrid`
 
-Grid of points / bars rippling like a wave (tech / data banners). _Cost: ~columns*rows*2 triangles._
+Grid of points / bars rippling like a wave (tech / data banners). _Cost: ~columns*rows*(1+shape_lines+11*shape_bars) triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -786,7 +786,7 @@ Grid of points / bars rippling like a wave (tech / data banners). _Cost: ~column
 
 ### `maze`
 
-Grid maze walls from a seed (games). _Cost: ~columns*rows*24 triangles._
+Grid maze walls from a seed (games). _Cost: ~columns*rows*7 triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -800,7 +800,7 @@ Grid maze walls from a seed (games). _Cost: ~columns*rows*24 triangles._
 
 ### `road`
 
-Endless-runner road made of tiles that scroll toward the camera. _Cost: ~200 triangles._
+Endless-runner road made of tiles that scroll toward the camera. _Cost: ~length*14+~220 triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -816,7 +816,7 @@ Endless-runner road made of tiles that scroll toward the camera. _Cost: ~200 tri
 
 ### `birds`
 
-Flock of stylised birds (one instanced draw call): V-shaped wings with a dihedral (a chevron from every angle), flapping in the shader and alternating with glides; boids-like flight (loose cloud or V formation, wander, banking into turns) that is a pure function of time. Modes: orbit (circle the area), path (closed loop through points), drift (cross the sky and wrap). _Cost: ~count*18 triangles._
+Flock of stylised birds (one instanced draw call): V-shaped wings with a dihedral (a chevron from every angle), flapping in the shader and alternating with glides; boids-like flight (loose cloud or V formation, wander, banking into turns) that is a pure function of time. Modes: orbit (circle the area), path (closed loop through points), drift (cross the sky and wrap). _Cost: ~count*15 triangles._
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -838,7 +838,7 @@ Flock of stylised birds (one instanced draw call): V-shaped wings with a dihedra
 
 ### `floatingIsland`
 
-Stylised floating island diorama (hero favourite): grassy rolling top with a noisy outline, dirt band, rocky underside tapering to stalactite tips with coloured strata; optional trees, rocks, flowers, grass, a pond with a waterfall, floating debris and a slow bob. _Cost: ~6000+trees*150+grass+flowers*40 triangles._
+Stylised floating island diorama (hero favourite): grassy rolling top with a noisy outline, dirt band, rocky underside tapering to stalactite tips with coloured strata; optional trees, rocks, flowers, grass, a pond with a waterfall, floating debris and a slow bob. _Cost: ~2500+7300*(1-lowpoly)+trees*220+grass*3+flowers*56 triangles._
 
 **`material` override** (object-level `"material": { … }`): The island body (top + underside). Without colour / preset / map the vertex colours are kept.
 
@@ -864,7 +864,7 @@ Stylised floating island diorama (hero favourite): grassy rolling top with a noi
 
 ### `globe`
 
-Data globe for SaaS / network heroes: dot-matrix Earth (simplified continents), fresnel atmosphere, pulsing location markers and great-circle arcs with travelling light pulses between lat/lon points. _Cost: ~dots*0.35*6+~8000 triangles._
+Data globe for SaaS / network heroes: dot-matrix Earth (simplified continents), fresnel atmosphere, pulsing location markers and great-circle arcs with travelling light pulses between lat/lon points. _Cost: ~dots*(1.9+4.1*(1-continents))+~18000 triangles._
 
 **`material` override** (object-level `"material": { … }`): The globe body sphere (dots, arcs and atmosphere keep theirs).
 
@@ -892,7 +892,7 @@ Data globe for SaaS / network heroes: dot-matrix Earth (simplified continents), 
 
 ### `crystals`
 
-Glowing gem crystals: faceted hexagonal prisms with pointed tips (cluster on a rock base, ring, or scatter), base → tip colour gradient, emissive fresnel glow that pulses. Pair with the bloom post effect. _Cost: ~count*40+~600 triangles._
+Glowing gem crystals: faceted hexagonal prisms with pointed tips (cluster on a rock base, ring, or scatter), base → tip colour gradient, emissive fresnel glow that pulses. Pair with the bloom post effect. _Cost: ~count*16.5+~560*base*layout_cluster triangles._
 
 **`material` override** (object-level `"material": { … }`): The crystals (not the base). Without colour / preset / map the gradients are kept.
 
@@ -929,7 +929,7 @@ Spiral galaxy of soft additive stars: logarithmic arms, warm bulge, star-forming
 
 ### `bars3d`
 
-3D bar chart from data (row or grid) with rounded / box / cylinder bars, colour ramp by value / row / column, base plate and an eased staggered grow entrance (or a looping wave). Dashboards, stats, fintech heroes. _Cost: ~dataCells*1000+~600 triangles._
+3D bar chart from data (row or grid) with rounded / box / cylinder bars, colour ramp by value / row / column, base plate and an eased staggered grow entrance (or a looping wave). Dashboards, stats, fintech heroes. _Cost: ~dataCells*(970*shape_rounded+12*shape_box+128*shape_cylinder)+~590 triangles._
 
 **`material` override** (object-level `"material": { … }`): Every bar (per-bar colours are kept as instance colours).
 
@@ -949,7 +949,7 @@ Spiral galaxy of soft additive stars: logarithmic arms, warm bulge, star-forming
 
 ### `abstractShapes`
 
-Abstract Memphis / pastel composition for banners: spheres, tori, rings, pills, cones, cubes, half-discs, squiggles, triangles and stars evenly spread in a slab, gently floating and turning. _Cost: ~count*1500 triangles._
+Abstract Memphis / pastel composition for banners: spheres, tori, rings, pills, cones, cubes, half-discs, squiggles, triangles and stars evenly spread in a slab, gently floating and turning. _Cost: ~count*1250 triangles._
 
 **`material` override** (object-level `"material": { … }`): Every shape (per-shape palette colours are kept as instance colours).
 
