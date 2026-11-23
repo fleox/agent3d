@@ -1,7 +1,7 @@
 ---
 name: agent3d-game
 description: "Build a mini game or an interactive 3D experience for a web page with Agent3D scripts - a sandboxed ScriptApi (objects, input with keyboard, pointer and touch swipes, rigid-body physics with real shapes, joints, a character controller and collision events, spawning and cloning, HUD with placeholders, synth sounds, best-score storage, events), game patterns (ready / play / over state machine, difficulty ramp, attract mode so screenshots show action), and testing through deterministic headless renders. Use when the user wants a playable game, a quiz-like interaction, a clickable 3D configurator or anything that needs logic beyond behaviours and timelines."
-version: 0.2.1
+version: 0.2.2
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
 platforms: [macos, linux, windows]

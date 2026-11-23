@@ -1,7 +1,7 @@
 ---
 name: agent3d-publish
 description: "Export an Agent3D scene and put it on a website - embed folder (Web Component + static files + generated React / Vue / Svelte wrappers and EMBED.md), zip, single HTML file, poster, MP4 / WebM video, GIF or animated WebP; paste the snippet in plain HTML, WordPress, Webflow, Shopify, AgentCMS, React / Next.js / Astro / Vue / Svelte; personalise texts with data-* attributes, drive it from JavaScript (play, pause, seek, setData, events), base URL, cache-busting, integrity, performance and accessibility checklist, and the Content-Security-Policy the runtime needs. Use when the user wants to publish, embed, ship, download or share a 3D scene they built with Agent3D, or asks why it does not show on their site."
-version: 0.2.1
+version: 0.2.2
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
 platforms: [macos, linux, windows]

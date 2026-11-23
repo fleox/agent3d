@@ -4,7 +4,7 @@ description: Change an existing Agent3D project - summarise the scene, then patc
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
-  version: "0.2.1"
+  version: "0.2.2"
   repository: "https://github.com/fleox/agent3d"
 allowed-tools: Bash Read Write
 ---
@@ -15,23 +15,23 @@ A project is a folder with `agent3d.json`, `scene.json` (the scene), `assets/` (
 
 **Language:** talk to the user in their language; keep commands, ids and files in English.
 
-Every command is `npx -y @fleox/agent3d@0.2.1 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
+Every command is `npx -y @fleox/agent3d@0.2.2 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
 
 ## 1. Understand before changing
 
 ```bash
-npx -y @fleox/agent3d@0.2.1 info --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 scene summary --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 render --project my-banner --sheet --json
+npx -y @fleox/agent3d@0.2.2 info --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 scene summary --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 render --project my-banner --sheet --json
 ```
 
 Look at the sheet (Read the `data.sheet` PNG, relative to the project folder `data.dir`), then tell the user in two or three sentences what the scene contains (target and aspect, the main objects, the motion) before proposing changes. Read details on demand:
 
 ```bash
-npx -y @fleox/agent3d@0.2.1 object get title --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 scene get --path objects#title.material --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 timeline get --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 catalog behaviours float --json
+npx -y @fleox/agent3d@0.2.2 object get title --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 scene get --path objects#title.material --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 timeline get --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 catalog behaviours float --json
 ```
 
 ## 2. Patch
@@ -39,8 +39,8 @@ npx -y @fleox/agent3d@0.2.1 catalog behaviours float --json
 Put the ops in a file (or pass them inline as one JSON argument) and apply:
 
 ```bash
-npx -y @fleox/agent3d@0.2.1 scene patch --project my-banner --file ops.json --dry-run --json
-npx -y @fleox/agent3d@0.2.1 scene patch --project my-banner --file ops.json --json
+npx -y @fleox/agent3d@0.2.2 scene patch --project my-banner --file ops.json --dry-run --json
+npx -y @fleox/agent3d@0.2.2 scene patch --project my-banner --file ops.json --json
 ```
 
 | Op | Shape | Use |
@@ -63,11 +63,11 @@ npx -y @fleox/agent3d@0.2.1 scene patch --project my-banner --file ops.json --js
 Shortcuts for one object (same validation, same plans):
 
 ```bash
-npx -y @fleox/agent3d@0.2.1 object update title --set material.color="#ffd166" --set size=0.9 --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 object add --id ball --geometry sphere --set geometry.radius=0.4 --set 'position=[3,0,0]' --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 object move gem --parent props --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 object remove pill --project my-banner --json
-npx -y @fleox/agent3d@0.2.1 object remove pill --yes --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 object update title --set material.color="#ffd166" --set size=0.9 --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 object add --id ball --geometry sphere --set geometry.radius=0.4 --set 'position=[3,0,0]' --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 object move gem --parent props --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 object remove pill --project my-banner --json
+npx -y @fleox/agent3d@0.2.2 object remove pill --yes --project my-banner --json
 ```
 
 `--set` takes dotted keys and JSON values (`--set 'position=[0,1,0]'`, `--set visible=false`). More recipes per task (materials, lights, camera, timeline, behaviours, post effects): [references/patch-ops.md](references/patch-ops.md).
@@ -80,10 +80,10 @@ npx -y @fleox/agent3d@0.2.1 object remove pill --yes --project my-banner --json
   - property: `position`, `position.x`, `rotation.y` (degrees), `scale`, `visible`, `material.opacity` / `color` / `emissiveIntensity` / `roughness`…, `material.uniforms.<name>`; lights `intensity`, `color`; camera `position`, `target`, `fov`, `focus`; `environment.fog.density`, `environment.exposure`; `postfx.<type>.<param>` (an effect written in `postfx` or brought by a `look` preset, e.g. `postfx.bloom.strength` with `{ "type": "look", "preset": "product" }`); models `morph.<name>`, `animation.<clip>.weight`.
 - **Keys** are `[time, value]` or `[time, value, ease]` (the ease shapes the segment ending at that key) sorted by time. Values: numbers, `[x, y, z]`, colours, booleans, or relative strings `"+=0.5"`, `"-=1"`, `"*=1.2"` (from the rest value). The track `ease` (default `linear`) is `step`, `in` / `out` / `inOut` + `Quad`, `Cubic`, `Quart`, `Quint`, `Sine`, `Expo`, `Circ`, `Back`, `Elastic`, `Bounce`, or `"cubicBezier(0.16, 1, 0.3, 1)"`, `"spring(170, 12)"`, `"steps(4)"`. Multi-target selectors take `stagger` (seconds between targets) and `staggerFrom` (`start`, `end`, `center`, `edges`, `random`). Colour keys blend in OKLCh (saturated midpoints); `"colorSpace": "rgb"|"oklab"|"hsl"` on the track changes it.
   ```bash
-  npx -y @fleox/agent3d@0.2.1 timeline set --duration 10 --loop true --trigger visible --project my-banner --json
-  npx -y @fleox/agent3d@0.2.1 timeline add-track --target logo.rotation.y --keys "[[0,0],[10,360]]" --project my-banner --json
-  npx -y @fleox/agent3d@0.2.1 timeline add-track --target gem.position.y --keys '[[0,"+=0"],[1,"+=0.6","outBack"],[2,"+=0","inOutSine"]]' --project my-banner --json
-  npx -y @fleox/agent3d@0.2.1 timeline remove-track --target logo.rotation.y --yes --project my-banner --json
+  npx -y @fleox/agent3d@0.2.2 timeline set --duration 10 --loop true --trigger visible --project my-banner --json
+  npx -y @fleox/agent3d@0.2.2 timeline add-track --target logo.rotation.y --keys "[[0,0],[10,360]]" --project my-banner --json
+  npx -y @fleox/agent3d@0.2.2 timeline add-track --target gem.position.y --keys '[[0,"+=0"],[1,"+=0.6","outBack"],[2,"+=0","inOutSine"]]' --project my-banner --json
+  npx -y @fleox/agent3d@0.2.2 timeline remove-track --target logo.rotation.y --yes --project my-banner --json
   ```
 - Loops: the last key equals the first. Triggers: `load`, `visible` (default), `hover`, `click`, `scroll` (time = scroll progress; tune with `timeline.scroll`), `manual` (only interactions move it).
 - **Markers and segments** name moments and ranges (`markers: { "lifted": 2.6 }`, `segments: { "hover-in": [2, "lifted"] }`); `autoplay: "intro"` plays only that segment on the trigger. **Interactions** (`scene.interactions`) wire hover / click / scroll / key / marker events to actions: play or toggle a segment, tween a property (`set`), `openUrl` (click / key only), emit an event, play a model clip. Agents on MCP or `tools call` can use the `interactions_set` tool (`{ "add": [...] }` or `{ "interactions": [...] }`, `dryRun`).
@@ -104,14 +104,14 @@ npx -y @fleox/agent3d@0.2.1 object remove pill --yes --project my-banner --json
 The embed keeps the scene's aspect ratio at every width. A 4:1 banner is only ~98 px tall on a 390 px phone:
 
 ```bash
-npx -y @fleox/agent3d@0.2.1 render --project my-banner --size 390x98 --scale 2 --frames 2 --json
+npx -y @fleox/agent3d@0.2.2 render --project my-banner --size 390x98 --scale 2 --frames 2 --json
 ```
 
 If the title becomes unreadable: shorter text, bigger `size`, fewer props, or a separate mobile version (a copy of the project with `target.aspect` "4:3" or `target.height`, exported under another `--name`, switched with CSS media queries on the page).
 
 ## 6. Finish
 
-`npx -y @fleox/agent3d@0.2.1 check --project my-banner --render --json` until no errors and no warnings, then re-export (`export --yes` overwrites the previous export folder; tell the user to re-upload `<name>/` and, after an Agent3D update, `agent3d-runtime/`). Skill `agent3d-publish` covers the site side.
+`npx -y @fleox/agent3d@0.2.2 check --project my-banner --render --json` until no errors and no warnings, then re-export (`export --yes` overwrites the previous export folder; tell the user to re-upload `<name>/` and, after an Agent3D update, `agent3d-runtime/`). Skill `agent3d-publish` covers the site side.
 
 ## Rules
 

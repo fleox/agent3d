@@ -3,14 +3,14 @@
 Each scene below passed `scene validate` (no errors, no warnings) and `check --render`, and was rendered and looked at (the README images in `docs/images/recipe-*.jpg` come from them). Start from the closest one, then change the brand parts (text, colours, model, URLs) with `scene patch` and render again:
 
 ```bash
-npx -y @fleox/agent3d@0.2.1 new my-scene --target hero --json
-npx -y @fleox/agent3d@0.2.1 scene validate --project my-scene --file recipe.json --json
-npx -y @fleox/agent3d@0.2.1 scene apply --project my-scene --file recipe.json --yes --json
-npx -y @fleox/agent3d@0.2.1 check --render --project my-scene --json
-npx -y @fleox/agent3d@0.2.1 render --project my-scene --sheet --count 4 --json
+npx -y @fleox/agent3d@0.2.2 new my-scene --target hero --json
+npx -y @fleox/agent3d@0.2.2 scene validate --project my-scene --file recipe.json --json
+npx -y @fleox/agent3d@0.2.2 scene apply --project my-scene --file recipe.json --yes --json
+npx -y @fleox/agent3d@0.2.2 check --render --project my-scene --json
+npx -y @fleox/agent3d@0.2.2 render --project my-scene --sheet --count 4 --json
 ```
 
-Exact parameters of every rig, look, material, shader, generator and behaviour: `npx -y @fleox/agent3d@0.2.1 catalog <section> [id] --json`. Premium starting points per target kind: [art-direction.md](art-direction.md#premium-defaults).
+Exact parameters of every rig, look, material, shader, generator and behaviour: `npx -y @fleox/agent3d@0.2.2 catalog <section> [id] --json`. Premium starting points per target kind: [art-direction.md](art-direction.md#premium-defaults).
 
 ## Product shot (1:1): softbox packshot
 
