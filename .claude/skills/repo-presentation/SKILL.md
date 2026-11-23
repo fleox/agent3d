@@ -13,7 +13,7 @@ Read [CLAUDE.md](../../../CLAUDE.md) first. Don't commit or push unless asked. E
 
 - npm renders it away from the repository. Every link is **absolute**: `https://github.com/fleox/agent3d/blob/main/…` (files), `https://github.com/fleox/agent3d/tree/main/…` (folders), `https://raw.githubusercontent.com/fleox/agent3d/main/…` (images). The default branch is `main`: `blob/master` links are 404s. Only in-page anchors (`#quick-start`) stay relative.
 - The README ships with a release: a README text fix reaches npm only with the next published version.
-- It is a landing page, same shape as AgentCRM's: logo + tagline + badges + anchor nav → demo video poster → Why (three columns) → Quick start (Claude Code plugin + prompts + the real-session GIFs, agent table, without an agent) → Features (showcase stills grid + loop GIF + grouped bullets: Look, Motion, Content, Games, Web, Quality) → The Studio (screenshots, `<picture>` light / dark) → Templates (grid image, how to build the live gallery, collapsed table of every template) → How it works (diagram + text + snippet) → Compared → CLI (GIFs + collapsed command table) → MCP → Documentation → Contributing → License. Details belong in `docs/`; link them.
+- It is a landing page, same shape as AgentCRM's: logo + tagline + badges + anchor nav → demo video poster → Why (three columns) → Quick start (Claude Code plugin + prompts + the real-session GIFs, agent table, without an agent) → Features (showcase stills grid + loop GIF + grouped bullets: Look, Motion, Content, Games, Web, Quality) → The Studio (dark screenshots: the Studio has no light theme) → Templates (grid image, how to build the live gallery, collapsed table of every template) → How it works (diagram + text + snippet) → Compared → CLI (GIFs + collapsed command table) → MCP → Documentation → Contributing → License. Details belong in `docs/`; link them.
 - Numbers in the README (31 templates, 38 material presets, 29 behaviours, 22 generators, 20 post effects, 13 fonts, 179 library assets…) come from the code: re-count with `agent3d catalog --json`, `agent3d templates list --json` and `agent3d assets library --json` when the catalog, templates or library change.
 - The collapsed templates table is generated from `templates/*/template.json` (title, id, kind, aspect, first sentence of the description) with the template's own `preview.png`; regenerate it when a template is added, renamed or re-described.
 - Pinned commands (`npx -y @fleox/agent3d@x.y.z …`) in the README, `docs/*.md`, `hermes/README.md` and `integrations/agentcms/README.md` are bumped by `scripts/sync-version.mjs` at `npm version`, and the `version` npm script stages `README.md` and `docs`. Write them with the **current** version; never write an unpinned `npx @fleox/agent3d` in the README or docs. Run every command you add with the published package outside the repo (`cd /tmp/x && npx -y @fleox/agent3d@<v> …` — inside the repo, npx resolves the local package).
@@ -46,7 +46,7 @@ Everything lives in `.github/assets/` and is referenced from the README with abs
 | `showcase-<template-id>.jpg` | Hero stills of the best templates (README Features grid; captions name the template) |
 | `showcase-loop.gif` | A short loop of several templates in motion |
 | `templates-grid.jpg` | Every template's still in one grid |
-| `studio-{editor,materials,timeline,postfx,start}-{light,dark}.jpg` | Real Studio screenshots |
+| `studio-{editor,materials,timeline,postfx,start}-dark.jpg` | Real Studio screenshots (dark only: the Studio has no light theme) |
 | `demo-{cli,render,export,mcp}.gif` | Scripted VHS terminal demos |
 | `demo-{create,edit,game}.gif` | Real Claude Code sessions |
 | `agent3d-demo.mp4`, `video-poster.jpg` | The demo film and its README poster |
@@ -57,7 +57,7 @@ Real renders only, never mock-ups or paint-overs: `agent3d render` of each templ
 
 ### Studio screenshots
 
-The published package outside the repo (`cd /tmp/x && npx -y @fleox/agent3d@<v> studio --project <dir> --port <free> --no-open`), a project created from a template, headless Chrome over the DevTools protocol at 1440×900 CSS px, deviceScaleFactor 2, downscaled to 1600 px JPG (~85). Light and dark versions of the same state. Nothing personal on screen (no API key in the assistant panel, no `/Users/…` paths).
+The published package outside the repo (`cd /tmp/x && npx -y @fleox/agent3d@<v> studio --project <dir> --port <free> --no-open`), a project created from a template, headless Chrome over the DevTools protocol at 1440×900 CSS px, deviceScaleFactor 2, downscaled to 1600 px JPG (~85). Dark theme only (the Studio has no light theme). Nothing personal on screen (no API key in the assistant panel, no `/Users/…` paths).
 
 ### Terminal demos
 

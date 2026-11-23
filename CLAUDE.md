@@ -179,3 +179,7 @@ Element API (`src/runtime/element.ts`, docs/export.md): attributes src, poster /
 | Distribution | `plugin/`, `hermes/`, `.claude-plugin/`, `docs/` (except `catalog.md`, `studio-api.md`), `integrations/agentcms/`, `scripts/check-skills.mjs`, `scripts/build-hermes.mjs`, `scripts/build-cli-docs.mjs` (+ `cli-docs.mjs`, `cli-docs.test.ts`), `scripts/sync-version.mjs`, `scripts/write-version.mjs`, `README.md`, `AGENTS.md`, `changelog.json` |
 
 `src/core/types.ts`, `src/core/catalog.ts`, `src/runtime/api.ts`, `src/runtime/registry.ts` are **contracts**: change them only additively and say so in your report. `package.json` dependencies: ask the lead (no new runtime dependency besides `three`, `cannon-es` (lazy physics chunk) and `meshoptimizer` (meshopt decode / optimize), all bundled, without a strong reason).
+
+## Contributor skills
+
+Claude Code, this repo only — not distributed (the agent skills are `plugin/skills/`). In `.claude/skills/`: `agent-cli-internals` (CLI, MCP, headless render, AI tool exposure, skills, Hermes, releases, multi-agent QA), `engine-internals` (core types / catalog / validation, ops, AI tools), `runtime-internals` (player, element, build, behaviours, timeline, postfx, game / physics, editor), `procedural-internals` (generators, shaders, audio, seeded random, fonts), `studio-internals` (Studio SPA + its API), `content-internals` (templates, library, examples gallery, recipes), `repo-presentation` (README / npm page, docs, demos), `create-mr` (review + GitHub PR). `.claude/settings.json` allow-lists the read / check commands.

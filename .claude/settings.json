@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run typecheck)",
+      "Bash(npm run build)",
+      "Bash(npm run build:runtime)",
+      "Bash(npm run build:studio)",
+      "Bash(npm run build:agent)",
+      "Bash(npm test)",
+      "Bash(npm run check:skills)",
+      "Bash(npm run check:hermes)",
+      "Bash(npm run hermes:build)",
+      "Bash(npm run docs:cli)",
+      "Bash(npm run check:docs)",
+      "Bash(npx vitest run *)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(node scripts/build-cli-docs.mjs *)",
+      "Bash(node scripts/build-library.mjs --check)",
+      "Bash(node scripts/build-examples.mjs)",
+      "Bash(node dist/agent/agent3d.mjs help)",
+      "Bash(node dist/agent/agent3d.mjs help *)",
+      "Bash(node dist/agent/agent3d.mjs version *)",
+      "Bash(node dist/agent/agent3d.mjs catalog *)",
+      "Bash(node dist/agent/agent3d.mjs templates *)",
+      "Bash(node dist/agent/agent3d.mjs scene validate *)",
+      "Bash(node dist/agent/agent3d.mjs check *)",
+      "Bash(node dist/agent/agent3d.mjs render *)",
+      "Bash(node dist/agent/agent3d.mjs doctor *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git check-ignore *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)"
+    ]
+  }
+}

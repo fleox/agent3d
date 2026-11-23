@@ -5,3 +5,4 @@ dist
 .agent3d-tmp
 coverage
 examples/site
+.claude/worktrees
