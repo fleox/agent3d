@@ -12,6 +12,7 @@ import { findBrowser, launchBrowser } from "./browser";
 import { CdpClient, type CdpSession } from "./cdp";
 import { startLocalServer } from "./server";
 import { tempDir } from "../testing/tmp";
+import { e2eTimeout } from "../testing/e2e";
 
 // End-to-end: export real templates with the real runtime (dist/runtime, or
 // AGENT3D_DIST), serve the export folder, open index.html in headless Chrome
@@ -59,7 +60,7 @@ async function exportTemplate(base: string, id: string, edit?: (fs: NodeFs) => P
 }
 
 async function waitFor<T>(page: CdpSession, expr: string, ms = 60_000): Promise<T> {
-  const end = Date.now() + ms;
+  const end = Date.now() + e2eTimeout(ms);
   for (;;) {
     const v = await page.evaluate<T>(expr).catch(() => undefined as T);
     if (v) return v;
@@ -173,7 +174,7 @@ describe.skipIf(!browser || !runtimeOk)("exported embed in a real browser", () =
       await b.close();
     }
     expect(existsSync(join(outs[0], "EMBED.md"))).toBe(true);
-  }, 240_000);
+  }, e2eTimeout(240_000));
 
   it("starts reliably: 20 consecutive page loads all reach ready (lazy start race)", async () => {
     const base = tempDir("agent3d-embed-loop-");
@@ -200,7 +201,7 @@ describe.skipIf(!browser || !runtimeOk)("exported embed in a real browser", () =
       await b.close();
       await server.close();
     }
-  }, 600_000);
+  }, e2eTimeout(600_000));
 
   it("shares one runtime between scenes, pauses off-screen, honours reduced motion and print, falls back without WebGL", async () => {
     const base = tempDir("agent3d-embed-multi-");
@@ -304,5 +305,5 @@ describe.skipIf(!browser || !runtimeOk)("exported embed in a real browser", () =
       await noGl.close();
       await server.close();
     }
-  }, 240_000);
+  }, e2eTimeout(240_000));
 });

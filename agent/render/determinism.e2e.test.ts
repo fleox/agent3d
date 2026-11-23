@@ -7,6 +7,7 @@ import { runtimeBuilt, templatesDir } from "../paths";
 import { findBrowser } from "./browser";
 import { renderProject } from "./render";
 import { tempDir } from "../testing/tmp";
+import { e2eTimeout } from "../testing/e2e";
 
 // Deterministic seeks: the same frames rendered several times from fresh page
 // loads must give the same game state. Regression for game-platformer, whose
@@ -48,6 +49,6 @@ describe.skipIf(!browser || !runtimeBuilt())("deterministic game state across re
       } finally {
         rmSync(base, { recursive: true, force: true });
       }
-    }, 240_000);
+    }, e2eTimeout(240_000));
   }
 });

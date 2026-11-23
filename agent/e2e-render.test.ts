@@ -6,6 +6,7 @@ import { findBrowser } from "./render/browser";
 import { decodePng, pngVariance, type DecodedPng } from "./render/png";
 import { cli, ok } from "./testing/cli";
 import { tempDir } from "./testing/tmp";
+import { e2eTimeout } from "./testing/e2e";
 
 // End to end with the REAL runtime (dist/runtime, `npm run build:runtime`)
 // and the installed Chrome: new → render --sheet → non-blank PNGs → export.
@@ -33,13 +34,13 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     expect(ex.body.data.snippet).toContain("<agent3d-scene");
     // Exporting again over the folder needs --yes.
     expect((await ok(["export", "--project", dir])).needsConfirmation).toBe(true);
-  }, 120_000);
+  }, e2eTimeout(120_000));
 
   it("doctor's test render passes (renders into its own temp folder)", async () => {
     const r = await cli(["doctor"]);
     const checks = r.body.ok ? r.body.data.checks : (r.body.error as { details: { checks: unknown[] } }).details.checks as { id: string; ok: boolean; optional?: boolean; hint?: string }[];
     expect(checks.find((c: { id: string }) => c.id === "render")).toMatchObject({ ok: true });
-  }, 120_000);
+  }, e2eTimeout(120_000));
 
   it("render --isolate frames one object; --bg paints under transparent frames", async () => {
     const dir = join(tempDir("agent3d-e2e-"), "iso");
@@ -52,7 +53,7 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     const bg = await ok(["render", "--project", dir, "--frames", "0", "--size", "200x100", "--bg", "#ff0000", "--isolate", "title"]);
     const png = decodePng(readFileSync(resolve(bg.dir, bg.frames[0].path)));
     expect(png.channels === 4 ? png.pixels[3] : 255).toBe(255);
-  }, 120_000);
+  }, e2eTimeout(120_000));
 
   it("plays a game headlessly with --input and returns its state", async () => {
     const dir = join(tempDir("agent3d-e2e-"), "game");
@@ -74,7 +75,7 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     const badInput = await cli(["render", "--project", dir, "--frames", "1", "--input", JSON.stringify([{ t: 0.2, tap: [0, 0] }])]);
     expect(badInput.code).toBe(2);
     expect(badInput.body.error?.hint).toContain("swipe");
-  }, 120_000);
+  }, e2eTimeout(120_000));
 
   it("keeps the exact background colour with post effects (not tone mapped)", async () => {
     const dir = join(tempDir("agent3d-e2e-"), "bg");
@@ -111,5 +112,5 @@ describe.skipIf(!ready)("e2e: real runtime in headless Chrome", () => {
     const g0 = await sample(grad, undefined);
     const g1 = await sample(grad, [{ type: "bloom", strength: 0.6 }, { type: "vignette" }]);
     close(g1.centre, g0.centre);
-  }, 180_000);
+  }, e2eTimeout(180_000));
 });
