@@ -4,7 +4,7 @@ description: Build a mini game or an interactive 3D experience for a web page wi
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   repository: "https://github.com/fleox/agent3d"
 allowed-tools: Bash Read Write
 ---
@@ -15,13 +15,13 @@ A game is an ordinary scene (`target.kind: "game"`) plus **scripts**: ES modules
 
 **Language:** talk to the user in their language; keep commands, ids, code and files in English.
 
-Every command is `npx -y @fleox/agent3d@0.3.0 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
+Every command is `npx -y @fleox/agent3d@0.3.1 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
 
 ## Start
 
 ```bash
-npx -y @fleox/agent3d@0.3.0 new dodge --target game --title "Dodge" --json
-npx -y @fleox/agent3d@0.3.0 scene summary --project dodge --json
+npx -y @fleox/agent3d@0.3.1 new dodge --target game --title "Dodge" --json
+npx -y @fleox/agent3d@0.3.1 scene summary --project dodge --json
 ```
 
 The game starter has a `kinematic` player moved by position, coins with a `coin` tag, a follow camera, a score HUD, a coin sound and `scripts/game.js` (move with arrows / WASD, collect coins). Game templates to start from (`templates list --json`): `game-coin-collector`, `game-runner`, `game-maze`, `game-tap-targets`, `game-physics-playground` (rigid bodies, impulses, impact sounds) — `new my-game --template game-physics-playground --json`. A complete validated example (lane runner: lanes, spawning by cloning, difficulty ramp, best score, attract mode) is in skill `agent3d-create` → `references/recipes.md` ("Lane runner game"; "Physics toss game" for rigid bodies); patterns in [references/game-patterns.md](references/game-patterns.md); the full API in [references/script-api.md](references/script-api.md).
@@ -55,15 +55,15 @@ Scripts only get `api`. `check` fails (`forbidden-script`) on `fetch`, `XMLHttpR
 1. Design the loop with the user in one paragraph: goal, controls (keyboard + touch), how you lose, what the score counts, how long a round lasts (30–90 s for a web page).
 2. Declare the scene: player and obstacle templates (hidden, with `tags` and a `body`), camera, HUD elements per phase, sounds (`catalog sounds`), `data` for tuning.
 3. Write the script (patterns below). Keep it under ~200 lines; one file is fine.
-4. Validate and lint: `npx -y @fleox/agent3d@0.3.0 check --project dodge --json` (sandbox errors carry the line: `scripts/game.js:12`).
+4. Validate and lint: `npx -y @fleox/agent3d@0.3.1 check --project dodge --json` (sandbox errors carry the line: `scripts/game.js:12`).
 5. Render several moments and LOOK:
    ```bash
-   npx -y @fleox/agent3d@0.3.0 render --project dodge --sheet --frames 0,2,4,6 --json
+   npx -y @fleox/agent3d@0.3.1 render --project dodge --sheet --frames 0,2,4,6 --json
    ```
    Plain renders have no player input, so the game must show something on its own: an **attract mode** (an autopilot plays during the `ready` phase, behind the title and Play button). The HUD is captured because the scene has a `ui` (`--capture page` forces it); posters (`export --format poster`, the embed's `poster.webp`) and videos show the canvas only, without the HUD. Check `data.issues` and `data.consoleErrors` for `script-error`. `data.state` is the script's `api.state` after the last frame (e.g. `{ "score": 0, "phase": "ready" }`); frame and sheet paths are relative to the project folder `data.dir`.
 6. **Play it headlessly** with `--input`: a JSON script of simulated keys / clicks applied while seeking (frames are rendered in time order), then check `data.state` and the frames:
    ```bash
-   npx -y @fleox/agent3d@0.3.0 render --project dodge --sheet --frames 0,1,2,3 --input '[{"t": 0.2, "click": [0, -0.3]}, {"t": 0.5, "key": "ArrowLeft", "hold": 0.6}, {"t": 1.5, "key": "Space", "down": true}, {"t": 1.6, "key": "Space", "down": false}]' --json
+   npx -y @fleox/agent3d@0.3.1 render --project dodge --sheet --frames 0,1,2,3 --input '[{"t": 0.2, "click": [0, -0.3]}, {"t": 0.5, "key": "ArrowLeft", "hold": 0.6}, {"t": 1.5, "key": "Space", "down": true}, {"t": 1.6, "key": "Space", "down": false}]' --json
    ```
    Events: `{ "t", "key", "down" }` (`key` is a `KeyboardEvent.code`: `ArrowLeft`, `KeyA`, `Space`…; `down: false` releases), `{ "t", "key", "hold": seconds }` (press and release), `{ "t", "click": [x, y] }`, `{ "t", "pointer": [x, y] }` (add `"down": true` / `false` to press / release there), `{ "t", "pointerDown": [x, y] }` and `{ "t", "pointerUp": [x, y] }` (hold the pointer: `api.input.pointer.down`), `{ "t", "drag": { "from": [x, y], "to": [x, y], "duration": 0.4 } }` (press, move, release), `{ "t", "swipe": "left" | "right" | "up" | "down" }` (what `api.input.swipe()` returns next step), `{ "t", "scroll": 0.5 }` (page scroll progress, scroll-driven scenes), `{ "t", "ui": "retryBtn" }` (click that HUD button by id — a warning in `inputWarnings` when it is hidden at that time), `{ "t", "emit": "retry" }` (emit the event / button action directly), `{ "t", "segment": "intro" }` (play a timeline segment) — canvas coordinates −1..1, y up (a canvas `click` never presses a HUD button: use `ui`). Unknown fields are rejected (exit 2, the hint lists the valid shapes). Test the touch controls too, e.g. `--input '[{"t": 0.5, "swipe": "left"}, {"t": 1.2, "drag": {"from": [0, -0.5], "to": [0, 0.3], "duration": 0.3}}]'`. Use `@inputs.json` for longer scripts. MCP: `render_preview` takes the same events as `input`.
 7. To test a state that is hard to reach with input (game over screen, high score), temporarily set the starting phase in `api.data` (e.g. `"startPhase": "over"`), render, then restore it.

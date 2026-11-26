@@ -109,19 +109,19 @@ Once the scene exists, changing it is a conversation:
 ### Without an agent
 
 ```bash
-npx -y @fleox/agent3d@0.3.0 new bakery --target banner --title "Golden Crust"
-npx -y @fleox/agent3d@0.3.0 studio --project bakery
+npx -y @fleox/agent3d@0.3.1 new bakery --target banner --title "Golden Crust"
+npx -y @fleox/agent3d@0.3.1 studio --project bakery
 ```
 
-The first command creates a project folder with an attractive starter scene for its target (banner, hero, card, square, fullscreen, inline or game); add `--template <id>` to start from one of the [templates](#templates). The second opens the [Studio](#the-studio) on it. You need **Node.js 22+** and **Google Chrome** (or Chromium / Edge / Brave) for renders; `npx -y @fleox/agent3d@0.3.0 doctor` checks your setup with a test render.
+The first command creates a project folder with an attractive starter scene for its target (banner, hero, card, square, fullscreen, inline or game); add `--template <id>` to start from one of the [templates](#templates). The second opens the [Studio](#the-studio) on it. You need **Node.js 22+** and **Google Chrome** (or Chromium / Edge / Brave) for renders; `npx -y @fleox/agent3d@0.3.1 doctor` checks your setup with a test render.
 
 The whole loop from a terminal:
 
 ```bash
-npx -y @fleox/agent3d@0.3.0 scene patch --project bakery '[{"op":"set","path":"objects#title.material","value":{"preset":"gold"}}]'
-npx -y @fleox/agent3d@0.3.0 render --project bakery --sheet     # → renders/…-sheet.png
-npx -y @fleox/agent3d@0.3.0 check --project bakery
-npx -y @fleox/agent3d@0.3.0 export --project bakery             # → dist/embed/ + the snippet
+npx -y @fleox/agent3d@0.3.1 scene patch --project bakery '[{"op":"set","path":"objects#title.material","value":{"preset":"gold"}}]'
+npx -y @fleox/agent3d@0.3.1 render --project bakery --sheet     # → renders/…-sheet.png
+npx -y @fleox/agent3d@0.3.1 check --project bakery
+npx -y @fleox/agent3d@0.3.1 export --project bakery             # → dist/embed/ + the snippet
 ```
 
 Step by step: [docs/getting-started.md](https://github.com/fleox/agent3d/blob/main/docs/getting-started.md).
@@ -194,7 +194,7 @@ Step by step: [docs/getting-started.md](https://github.com/fleox/agent3d/blob/ma
 A visual editor for when you want to see and touch the scene yourself, on the same files and the same validated tools as the agent. Changes your agent makes in a terminal appear live in the open Studio.
 
 ```bash
-npx -y @fleox/agent3d@0.3.0 studio --project bakery
+npx -y @fleox/agent3d@0.3.1 studio --project bakery
 ```
 
 <p align="center">
@@ -323,7 +323,7 @@ Pick Spline when a designer wants a hosted visual tool, hand-written Three.js wh
 
 ## The `agent3d` CLI
 
-The same engine the agents use, by hand: `npx -y @fleox/agent3d@0.3.0 help`. Every command accepts `--json` and prints exactly one `{ ok, data }` or `{ ok: false, error }` object with an actionable hint, and commands that replace or overwrite something print a plan until you add `--yes`.
+The same engine the agents use, by hand: `npx -y @fleox/agent3d@0.3.1 help`. Every command accepts `--json` and prints exactly one `{ ok, data }` or `{ ok: false, error }` object with an actionable hint, and commands that replace or overwrite something print a plan until you add `--yes`.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/demo-cli.gif" width="820" alt="Terminal running the agent3d CLI: a project from the gradient-blob template, its scene summary, a gold torus added, a behaviour patch rejected with an actionable error then fixed, and the pre-export check">
@@ -361,7 +361,7 @@ Full reference: [docs/cli.md](https://github.com/fleox/agent3d/blob/main/docs/cl
 ## MCP server
 
 ```bash
-claude mcp add agent3d -- npx -y @fleox/agent3d@0.3.0 mcp --project ~/agent3d/my-banner
+claude mcp add agent3d -- npx -y @fleox/agent3d@0.3.1 mcp --project ~/agent3d/my-banner
 ```
 
 <p align="center">
