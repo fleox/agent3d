@@ -4,7 +4,7 @@ description: Export an Agent3D scene and put it on a website - embed folder (Web
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
-  version: "0.2.2"
+  version: "0.2.3"
   repository: "https://github.com/fleox/agent3d"
 allowed-tools: Bash Read Write
 ---
@@ -13,12 +13,12 @@ allowed-tools: Bash Read Write
 
 **Language:** talk to the user in their language; keep commands, code and files in English.
 
-Every command is `npx -y @fleox/agent3d@0.2.2 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
+Every command is `npx -y @fleox/agent3d@0.2.3 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
 
 ## Before exporting
 
 ```bash
-npx -y @fleox/agent3d@0.2.2 check --project my-banner --render --json
+npx -y @fleox/agent3d@0.2.3 check --project my-banner --render --json
 ```
 
 No errors, no warnings (or warnings the user accepted). Keep the `licences` list: credits ship in the export.
@@ -37,15 +37,15 @@ No errors, no warnings (or warnings the user accepted). Keep the `licences` list
 Default outputs land in `<project>/dist/`. A relative `--out` is resolved from the **project folder** (like every output path of `render` and `export`): `--project my-banner --out dist/promo.mp4` writes `my-banner/dist/promo.mp4`; absolute paths are kept.
 
 ```bash
-npx -y @fleox/agent3d@0.2.2 export --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 export --project my-banner --name spring-banner --out ./site/agent3d --json
-npx -y @fleox/agent3d@0.2.2 export --project my-banner --base-url /wp-content/uploads/agent3d/ --cache-bust --out ./wp --json
-npx -y @fleox/agent3d@0.2.2 export --project my-banner --optimize --json
-npx -y @fleox/agent3d@0.2.2 export --format zip --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 export --format single-html --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 export --format poster --time 2 --image png --quality high --transparent --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 export --format video --out dist/promo.mp4 --duration 8 --fps 30 --size 1920x1080 --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 export --format gif --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 export --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 export --project my-banner --name spring-banner --out ./site/agent3d --json
+npx -y @fleox/agent3d@0.2.3 export --project my-banner --base-url /wp-content/uploads/agent3d/ --cache-bust --out ./wp --json
+npx -y @fleox/agent3d@0.2.3 export --project my-banner --optimize --json
+npx -y @fleox/agent3d@0.2.3 export --format zip --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 export --format single-html --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 export --format poster --time 2 --image png --quality high --transparent --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 export --format video --out dist/promo.mp4 --duration 8 --fps 30 --size 1920x1080 --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 export --format gif --duration 4 --project my-banner --json
 ```
 
 Embed / zip options:
@@ -68,11 +68,11 @@ Embed / zip options:
 Media straight from `render` (frame-exact, any size / fps; LOOK at a few frames of the result):
 
 ```bash
-npx -y @fleox/agent3d@0.2.2 render --video renders/promo.mp4 --duration 6 --size 1920x1080 --quality high --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 render --gif renders/banner.gif --duration 4 --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 render --webp renders/banner.webp --duration 4 --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 render --frames 2 --size 2400x600 --quality ultra --transparent --project my-banner --json
-npx -y @fleox/agent3d@0.2.2 render --scroll 0.5 --project my-scroll-story --json
+npx -y @fleox/agent3d@0.2.3 render --video renders/promo.mp4 --duration 6 --size 1920x1080 --quality high --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 render --gif renders/banner.gif --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 render --webp renders/banner.webp --duration 4 --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 render --frames 2 --size 2400x600 --quality ultra --transparent --project my-banner --json
+npx -y @fleox/agent3d@0.2.3 render --scroll 0.5 --project my-scroll-story --json
 ```
 
 `--quality high|ultra` supersamples 2× / 3× (smoother edges), `--transparent` gives alpha PNG / GIF / WebP, `--scroll 0.5` holds a scroll-driven scene at that scroll progress, `--fps` / `--start` / `--bitrate` tune videos, `--yes` overwrites an existing media file. `--video`, `--gif` and `--webp` paths (like `--out`) are relative to the project folder. MP4 needs Google Chrome or Edge (H.264 encoder); with Chromium, render `.webm`. Videos and posters capture the WebGL canvas only (no HUD).
@@ -80,8 +80,8 @@ npx -y @fleox/agent3d@0.2.2 render --scroll 0.5 --project my-scroll-story --json
 Scenes whose timeline waits for the visitor (`autoplay: false`, `trigger: "manual"` / `"click"`, segments played by interactions) are still at t = 0 in a plain render: film the segment with `--segment`, or play the interaction with `--input` (frames, `--video`, `--gif` and `--webp` all apply it):
 
 ```bash
-npx -y @fleox/agent3d@0.2.2 render --video renders/celebrate.webm --segment celebrate --duration 4 --project my-mascot --json
-npx -y @fleox/agent3d@0.2.2 render --sheet --frames 0,1,2,3 --input '[{"t": 0, "segment": "celebrate"}]' --project my-mascot --json
+npx -y @fleox/agent3d@0.2.3 render --video renders/celebrate.webm --segment celebrate --duration 4 --project my-mascot --json
+npx -y @fleox/agent3d@0.2.3 render --sheet --frames 0,1,2,3 --input '[{"t": 0, "segment": "celebrate"}]' --project my-mascot --json
 ```
 
 `--reduced-motion` renders what visitors with prefers-reduced-motion see.
@@ -112,7 +112,7 @@ Always paste the snippet from the export result (hashes and file names change wi
 Write `{data.key}` in a text object's `text` (or an `href`), give defaults in `scene.data`, and the page fills them per embed — no re-export:
 
 ```bash
-npx -y @fleox/agent3d@0.2.2 scene patch --project my-banner '[{"op":"set","path":"data","value":{"title":"Spring sale"}},{"op":"updateObject","id":"title","set":{"text":"{data.title}"}}]' --json
+npx -y @fleox/agent3d@0.2.3 scene patch --project my-banner '[{"op":"set","path":"data","value":{"title":"Spring sale"}},{"op":"updateObject","id":"title","set":{"text":"{data.title}"}}]' --json
 ```
 
 ```html
@@ -125,7 +125,7 @@ Placeholders work in text objects' `text`, any object's `href` and HUD texts. `{
 
 Step-by-step per platform (plain HTML, WordPress, AgentCMS, React / Next.js, Astro, Vue / Nuxt, Svelte, static hosts and CDNs): [references/integrations.md](references/integrations.md). In short:
 
-- **Plain HTML / static hosts** (Netlify, GitHub Pages, Cloudflare Pages, S3): copy the export folder next to the page, paste the snippet. Open `index.html` of the export through a local server (`npx -y @fleox/agent3d@0.2.2 serve --project my-banner` previews the project; module scripts don't run from `file://`: opened that way, the demo page only shows the poster and a note asking for a web server).
+- **Plain HTML / static hosts** (Netlify, GitHub Pages, Cloudflare Pages, S3): copy the export folder next to the page, paste the snippet. Open `index.html` of the export through a local server (`npx -y @fleox/agent3d@0.2.3 serve --project my-banner` previews the project; module scripts don't run from `file://`: opened that way, the demo page only shows the poster and a note asking for a web server).
 - **WordPress**: export with `--base-url /wp-content/uploads/agent3d/`, upload the export folder there (SFTP / the host's file manager), then a **Custom HTML** block with the snippet. The media library refuses `.js` / `.json` files.
 - **Webflow / Shopify**: host the folder on a static host or CDN, export with `--base-url https://…/`, paste the snippet in an Embed element / Custom Liquid section.
 - **Squarespace / Wix / Framer**: `single-html` in an `<iframe>`.

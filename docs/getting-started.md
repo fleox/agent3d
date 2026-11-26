@@ -3,7 +3,7 @@
 Agent3D is meant to be driven by an AI agent, but every step is a plain command you can run yourself. You need **Node.js 22+** and **Google Chrome** (or Chromium / Edge / Brave) for previews, posters and videos.
 
 ```bash
-npx -y @fleox/agent3d@0.2.2 doctor
+npx -y @fleox/agent3d@0.2.3 doctor
 ```
 
 `doctor` checks Node, finds your browser, and renders a one-object test scene headless (in a temp folder). It exits 1 when a required check fails, with a hint per failed check (`--json`: `{ ok: false, error: { code: "doctor-failed", details: { checks } } }`).
@@ -26,8 +26,8 @@ The `agent3d-create` skill clarifies the brief, builds the scene, renders it, lo
 ## By hand, in five commands
 
 ```bash
-npx -y @fleox/agent3d@0.2.2 new bakery --target banner --title "Golden Crust" --json
-npx -y @fleox/agent3d@0.2.2 render --project bakery --sheet --json
+npx -y @fleox/agent3d@0.2.3 new bakery --target banner --title "Golden Crust" --json
+npx -y @fleox/agent3d@0.2.3 render --project bakery --sheet --json
 ```
 
 Open the contact sheet the result points to (`data.sheet`, e.g. `bakery/renders/20261122-124337-sheet.png`): the starter is already a complete banner (gradient, studio lights, a floating 3D title, props, dust, an 8-second loop). Change it with a patch:
@@ -40,9 +40,9 @@ cat > ops.json <<'JSON'
   { "op": "updateObject", "id": "title", "set": { "font": "serif-bold" } }
 ]
 JSON
-npx -y @fleox/agent3d@0.2.2 scene patch --project bakery --file ops.json --json
-npx -y @fleox/agent3d@0.2.2 check --project bakery --json
-npx -y @fleox/agent3d@0.2.2 export --project bakery --json
+npx -y @fleox/agent3d@0.2.3 scene patch --project bakery --file ops.json --json
+npx -y @fleox/agent3d@0.2.3 check --project bakery --json
+npx -y @fleox/agent3d@0.2.3 export --project bakery --json
 ```
 
 `bakery/dist/embed/` now holds the runtime, the scene, a poster, a demo page and the snippet to paste into your site:
@@ -61,7 +61,7 @@ Useful render options: `--sheet` (contact sheet), `--size 390x700` (phone), `--i
 
 ## Next
 
-- See it live while you edit: `npx -y @fleox/agent3d@0.2.2 serve --project bakery --open`, or the visual editor: `npx -y @fleox/agent3d@0.2.2 studio --project bakery`.
-- Start from a template: `npx -y @fleox/agent3d@0.2.2 templates list`.
+- See it live while you edit: `npx -y @fleox/agent3d@0.2.3 serve --project bakery --open`, or the visual editor: `npx -y @fleox/agent3d@0.2.3 studio --project bakery`.
+- Start from a template: `npx -y @fleox/agent3d@0.2.3 templates list`.
 - Learn the format: [scene-format.md](scene-format.md) and the [catalog](catalog.md).
 - Put it on your site: [export.md](export.md).

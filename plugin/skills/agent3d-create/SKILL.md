@@ -4,7 +4,7 @@ description: Build a 3D element for a web page from a brief with Agent3D - an an
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
-  version: "0.2.2"
+  version: "0.2.3"
   repository: "https://github.com/fleox/agent3d"
 allowed-tools: Bash Read Write
 ---
@@ -15,9 +15,9 @@ Agent3D turns a JSON **scene** (`scene.json` in a project folder) into a 3D elem
 
 **Language:** talk to the user in their language; keep commands, ids and files in English.
 
-Every command is `npx -y @fleox/agent3d@0.2.2 <command> --json` and prints one object: `{"ok": true, "data": …}` or `{"ok": false, "error": {"code", "message", "hint"}}`. Read `error.hint` when `ok` is false: it says what to do. `npx -y @fleox/agent3d@0.2.2 help scene --json` lists any command's actions and options. Pass `--project <dir>` to every project command (default: the current directory).
+Every command is `npx -y @fleox/agent3d@0.2.3 <command> --json` and prints one object: `{"ok": true, "data": …}` or `{"ok": false, "error": {"code", "message", "hint"}}`. Read `error.hint` when `ok` is false: it says what to do. `npx -y @fleox/agent3d@0.2.3 help scene --json` lists any command's actions and options. Pass `--project <dir>` to every project command (default: the current directory).
 
-First run on a machine: `npx -y @fleox/agent3d@0.2.2 doctor --json` checks Node, Chrome and does a test render: `{ ok: true, data: { checks } }` when everything required passes, else `{ ok: false, error: { code: "doctor-failed", hint } }` (exit 1) with one hint per failed check and every check in `error.details.checks`. Without Chrome, renders and posters fail with a hint (install Chrome, or set `AGENT3D_CHROME`); `export --no-poster` still works.
+First run on a machine: `npx -y @fleox/agent3d@0.2.3 doctor --json` checks Node, Chrome and does a test render: `{ ok: true, data: { checks } }` when everything required passes, else `{ ok: false, error: { code: "doctor-failed", hint } }` (exit 1) with one hint per failed check and every check in `error.details.checks`. Without Chrome, renders and posters fail with a hint (install Chrome, or set `AGENT3D_CHROME`); `export --no-poster` still works.
 
 ## The loop
 
@@ -28,23 +28,23 @@ First run on a machine: `npx -y @fleox/agent3d@0.2.2 doctor --json` checks Node,
    - **Motion**: calm ambient loop (default for banners), interactive (follow the pointer, hover, orbit), scroll-driven, or a game.
 2. **Start** from a template or from the starter for the target:
    ```bash
-   npx -y @fleox/agent3d@0.2.2 templates list --json
-   npx -y @fleox/agent3d@0.2.2 new bakery-banner --target banner --title "Golden Crust Bakery" --json
-   npx -y @fleox/agent3d@0.2.2 new bakery-banner --template banner-neon-title --title "Golden Crust Bakery" --json
+   npx -y @fleox/agent3d@0.2.3 templates list --json
+   npx -y @fleox/agent3d@0.2.3 new bakery-banner --target banner --title "Golden Crust Bakery" --json
+   npx -y @fleox/agent3d@0.2.3 new bakery-banner --template banner-neon-title --title "Golden Crust Bakery" --json
    ```
    Without `--template`, `new` writes an attractive valid starter for the target (banner: gradient background, studio lights, a floating 3D title, a few props, dust particles, a slow loop; game: + `scripts/game.js`). `--aspect 21:9` overrides the aspect.
 3. **Learn what exists** before writing anything. Never guess ids or parameter names:
    ```bash
-   npx -y @fleox/agent3d@0.2.2 catalog --json
-   npx -y @fleox/agent3d@0.2.2 catalog generators terrain --json
-   npx -y @fleox/agent3d@0.2.2 catalog behaviours --json
-   npx -y @fleox/agent3d@0.2.2 catalog postfx look --json
-   npx -y @fleox/agent3d@0.2.2 scene summary --project bakery-banner --json
+   npx -y @fleox/agent3d@0.2.3 catalog --json
+   npx -y @fleox/agent3d@0.2.3 catalog generators terrain --json
+   npx -y @fleox/agent3d@0.2.3 catalog behaviours --json
+   npx -y @fleox/agent3d@0.2.3 catalog postfx look --json
+   npx -y @fleox/agent3d@0.2.3 scene summary --project bakery-banner --json
    ```
    Sections: geometries, materialPresets, shaders, textures (procedural, zero bytes), lightRigs, behaviours, generators, particlePresets, postfx (with the `look` presets and each effect's GPU cost), fonts, sounds. Built-in models, textures and HDRIs: `assets library --query <word>` (skill `agent3d-assets`). The field-by-field scene format is in the `agent3d-edit` skill (`references/patch-ops.md`).
 4. **Build with patches** (small, reviewable, ids stay stable). Write the ops to a file and apply them:
    ```bash
-   npx -y @fleox/agent3d@0.2.2 scene patch --project bakery-banner --file ops.json --json
+   npx -y @fleox/agent3d@0.2.3 scene patch --project bakery-banner --file ops.json --json
    ```
    ```json
    [
@@ -61,7 +61,7 @@ First run on a machine: `npx -y @fleox/agent3d@0.2.2 doctor --json` checks Node,
    - **Gotcha:** `updateObject` and `merge` deep-merge. Switching `material.preset` with `updateObject` keeps the old `color` / `roughness` overrides (gold stays white). To change a look, **replace** the material: `{ "op": "set", "path": "objects#title.material", "value": { "preset": "gold" } }`.
 5. **Render and LOOK** (this is the step that makes it good):
    ```bash
-   npx -y @fleox/agent3d@0.2.2 render --project bakery-banner --sheet --count 4 --json
+   npx -y @fleox/agent3d@0.2.3 render --project bakery-banner --sheet --count 4 --json
    ```
    Then open `data.sheet` (a PNG contact sheet with time labels; paths are relative to the project folder `data.dir`) with the Read tool and judge it like an art director:
    - **Framing at the aspect ratio**: nothing important cut at the edges; the subject reads at a glance; wide banners keep content in the central ~80% of the width.
@@ -76,33 +76,33 @@ First run on a machine: `npx -y @fleox/agent3d@0.2.2 doctor --json` checks Node,
    - To show the user the motion: `--gif renders/preview.gif --duration 4` (or `--video <file>.mp4`, `--webp <file>.webp`); the path is relative to the project folder.
    - `--isolate <objectId>` renders one object alone (no behaviours, scripts or UI), at the origin, auto-framed from the front three-quarter view (+Z front) on a neutral grey background, and returns `data.isolated.size`: the fastest way to check that a downloaded model faces +Z, stands upright and has a sensible size.
      ```bash
-     npx -y @fleox/agent3d@0.2.2 render --project bakery-banner --isolate croissant-left --json
+     npx -y @fleox/agent3d@0.2.3 render --project bakery-banner --isolate croissant-left --json
      ```
    - Transparent scenes (`target.transparent`): frames keep their alpha and the contact sheet gets a checkerboard behind them; `--bg "#ffffff"` (any CSS colour) previews the scene over the host page's colour, frames included; `--bg none` turns it off.
 6. **Fix and repeat** until it looks finished. Two or three iterations are normal; say what you changed and why.
 7. **Check** until there are no errors and no warnings:
    ```bash
-   npx -y @fleox/agent3d@0.2.2 check --project bakery-banner --render --json
+   npx -y @fleox/agent3d@0.2.3 check --project bakery-banner --render --json
    ```
    It validates the scene, missing assets and scripts, the script sandbox, the triangle and KB budgets for the target, framing (with `--render`) and web settings (aria label, reduced motion, lazy start, pixel ratio cap), and lists licences that need attribution (`infos` with code `attribution`: keep those credits; the export writes `CREDITS.txt`).
    - `data.budget.gpu` is the post-processing cost: `effects` (each with its `gpu` tier and passes), `passes`, `level` (`none`, `light`, `moderate`, `heavy`) and `dropped.low` (effects the `low` quality tier switches off on weak devices). A `postfx-cost` issue means too many fullscreen passes (a warning on games and fullscreen targets, an info elsewhere) or `ao` / `dof` on a game: keep the effects that change the image the most. Grading, vignette, film, chromatic and sharpen merge into one nearly free pass.
    - Over the KB budget: `assets optimize` (skill `agent3d-assets`) shrinks project textures and models. Library assets are never shrunk there: the photographic `.hdr` files weigh 0.35 to 1.9 MB, so on banners and cards prefer a procedural `lighting` preset (`studio`, `soft`, `sunset`, `night`: zero bytes) plus a light rig.
 8. **Export** and hand over:
    ```bash
-   npx -y @fleox/agent3d@0.2.2 export --project bakery-banner --json
+   npx -y @fleox/agent3d@0.2.3 export --project bakery-banner --json
    ```
-   `data.snippet` is what goes in the page; `data.out` holds `agent3d-runtime/` (shared by every scene of the site), `<name>/` (scene, assets, poster, `CREDITS.txt`), `index.html` (a demo page), `snippet.html`, `head.html`, `EMBED.md` and `frameworks/` (React / Vue / Svelte wrappers). A second export into the same folder needs `--yes`. Give the user: the snippet, the folder to upload, the total size, the credits, and offer `serve` for a live look (`npx -y @fleox/agent3d@0.2.2 serve --project bakery-banner --open`). Other formats (zip, single HTML file, poster image, MP4 / WebM video, GIF) and site integration: skill `agent3d-publish`.
+   `data.snippet` is what goes in the page; `data.out` holds `agent3d-runtime/` (shared by every scene of the site), `<name>/` (scene, assets, poster, `CREDITS.txt`), `index.html` (a demo page), `snippet.html`, `head.html`, `EMBED.md` and `frameworks/` (React / Vue / Svelte wrappers). A second export into the same folder needs `--yes`. Give the user: the snippet, the folder to upload, the total size, the credits, and offer `serve` for a live look (`npx -y @fleox/agent3d@0.2.3 serve --project bakery-banner --open`). Other formats (zip, single HTML file, poster image, MP4 / WebM video, GIF) and site integration: skill `agent3d-publish`.
 
 ## Other front doors: MCP and the Studio
 
 Everything above also works without the shell:
 
-- **MCP server** — `agent3d mcp` serves one project folder over stdio: the same tools as `tools list` (scene_patch, check, export…) plus `render_preview`, whose contact sheet comes back as an image the client can look at. Claude Code: `claude mcp add agent3d -- npx -y @fleox/agent3d@0.2.2 mcp --project /path/to/my-banner` (add `--scope project` to write `.mcp.json` for the repository). Claude Desktop / Cursor: in `claude_desktop_config.json` / `.cursor/mcp.json`:
+- **MCP server** — `agent3d mcp` serves one project folder over stdio: the same tools as `tools list` (scene_patch, check, export…) plus `render_preview`, whose contact sheet comes back as an image the client can look at. Claude Code: `claude mcp add agent3d -- npx -y @fleox/agent3d@0.2.3 mcp --project /path/to/my-banner` (add `--scope project` to write `.mcp.json` for the repository). Claude Desktop / Cursor: in `claude_desktop_config.json` / `.cursor/mcp.json`:
   ```json
-  { "mcpServers": { "agent3d": { "command": "npx", "args": ["-y", "@fleox/agent3d@0.2.2", "mcp", "--project", "/Users/me/agent3d/my-banner"] } } }
+  { "mcpServers": { "agent3d": { "command": "npx", "args": ["-y", "@fleox/agent3d@0.2.3", "mcp", "--project", "/Users/me/agent3d/my-banner"] } } }
   ```
   `--read-only` exposes only the tools that don't write. Desktop apps may not see the shell's `PATH`: use the absolute path of `npx` as `command` if the server doesn't start.
-- **Studio** — `npx -y @fleox/agent3d@0.2.2 studio --project bakery-banner` opens a visual editor on the same folder (viewport with move / rotate / scale gizmos, outliner, inspector, timeline, catalog and library, templates, check, render and export dialogs; English or French). It prints its local URL and runs until stopped. Edits go through the same validated tools, and changes you make from the CLI appear live in it, so the user can watch and tweak your work. The viewport starts in edit mode (scripts don't run, the timeline is paused and scrubbed); interact mode (`I`) runs the scene as the website does: scripts, hover / click / scroll triggers.
+- **Studio** — `npx -y @fleox/agent3d@0.2.3 studio --project bakery-banner` opens a visual editor on the same folder (viewport with move / rotate / scale gizmos, outliner, inspector, timeline, catalog and library, templates, check, render and export dialogs; English or French). It prints its local URL and runs until stopped. Edits go through the same validated tools, and changes you make from the CLI appear live in it, so the user can watch and tweak your work. The viewport starts in edit mode (scripts don't run, the timeline is paused and scrubbed); interact mode (`I`) runs the scene as the website does: scripts, hover / click / scroll triggers.
 
 ## Art direction that looks professional
 
