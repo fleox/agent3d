@@ -36,6 +36,7 @@ const ORDER = [
   "assets_add",
   "assets_optimize",
   "image_depth",
+  "image_plate",
   "library_list",
   "export",
 ];

@@ -10,7 +10,7 @@ import type { RenderResult, ToolContext, ToolHost } from "./types";
 
 const EXPECTED = [
   "project_info", "scene_get", "scene_summary", "scene_apply", "scene_patch", "scene_validate", "object_add", "object_update", "object_remove", "object_list",
-  "timeline_set", "interactions_set", "catalog_get", "templates_list", "project_create", "check", "assets_list", "assets_search", "assets_add", "assets_optimize", "image_depth", "library_list", "export",
+  "timeline_set", "interactions_set", "catalog_get", "templates_list", "project_create", "check", "assets_list", "assets_search", "assets_add", "assets_optimize", "image_depth", "image_plate", "library_list", "export",
 ];
 
 // Structural JSON-schema sanity: known keywords, valid types, required ⊆ properties.
@@ -204,5 +204,23 @@ describe("AI tool catalog", () => {
     expect(r).toMatchObject({ path: "assets/depth/photo-depth.png", width: 30, input: { width: 140 } });
     expect(await c.fs.exists(r.path)).toBe(true);
     expect(findAiTool("image_depth").mutating).toBe(true);
+    // plate: true → depth + plate in one call (PNG photo: the pure decoder, no codec needed)
+    const pixels: ToolHost["withPixelCodec"] = (fn) => fn({ decode: () => Promise.reject(new Error("unused")) });
+    const both = (await callAiTool({ ...c, host: { ...host, withPixelCodec: pixels } }, "image_depth", { image: "assets/textures/photo.png", size: 140, plate: true })) as { plate: { path: string }; suggestion: Record<string, string> };
+    expect(both.plate.path).toBe("assets/depth/photo-plate.png");
+    expect(both.suggestion).toMatchObject({ kind: "photo", depth: "assets/depth/photo-depth.png", plate: "assets/depth/photo-plate.png", plateDepth: "assets/depth/photo-plate-depth.png" });
+  });
+  it("image_plate: needs a depth map, refused without a decoder, writes plate + depth with one", async () => {
+    const c = await ctx();
+    await c.fs.writeBytes("assets/textures/photo.png", await encodePng(new Uint8Array(30 * 20 * 4).fill(90), 30, 20));
+    await expect(callAiTool(c, "image_plate", { image: "assets/textures/photo.png" })).rejects.toMatchObject({ code: "notFound" });
+    await c.fs.writeBytes("assets/depth/photo-depth.png", await encodePng(new Uint8Array(30 * 20 * 4).fill(200), 30, 20));
+    expect(((await callAiTool(c, "image_plate", { image: "assets/textures/photo.png" })) as { status: string }).status).toBe("refused");
+    const host: ToolHost = { withPixelCodec: (fn) => fn({ decode: () => Promise.reject(new Error("unused")) }) };
+    const r = (await callAiTool({ ...c, host }, "image_plate", { image: "assets/textures/photo.png" })) as { path: string; depthPath: string; suggestion: unknown };
+    expect(r.path).toBe("assets/depth/photo-plate.png");
+    expect(await c.fs.exists(r.depthPath)).toBe(true);
+    await expect(callAiTool({ ...c, host }, "image_plate", { image: "assets/textures/photo.png", format: "gif" })).rejects.toMatchObject({ code: "invalid" });
+    expect(findAiTool("image_plate").mutating).toBe(true);
   });
 });

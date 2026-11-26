@@ -1,5 +1,5 @@
 // Asset references inside a scene (models, svg files, textures, photos and
-// their depth maps, HDRIs, audio): collected by `check` (missing files, budget, licences) and
+// their depth maps / plates, HDRIs, audio): collected by `check` (missing files, budget, licences) and
 // rewritten by `export` (library ids → copied relative paths).
 
 import type { AssetEntry, ObjectDef, SceneDoc } from "../core/types";
@@ -59,6 +59,12 @@ export function visitAssetRefs(scene: SceneDoc, visit: Visitor): void {
       if (typeof o.depth === "string") {
         const r = visit(o.depth, `${at}.depth`, "texture");
         if (typeof r === "string") o.depth = r;
+      }
+      // Its background plate + the plate depth.
+      for (const k of ["plate", "plateDepth"] as const) {
+        if (typeof o[k] !== "string") continue;
+        const r = visit(o[k], `${at}.${k}`, "texture");
+        if (typeof r === "string") o[k] = r;
       }
     }
     if (o.kind === "text") {

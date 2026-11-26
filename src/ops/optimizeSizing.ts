@@ -282,6 +282,16 @@ export async function planTextureSizes(fs: ProjectFs, scene: SceneDoc, ctx: Sizi
         const pixels = projected * ROLE_FACTOR.depth * MARGIN;
         addUse(files, o.depth, { at: `objects#${o.id}.depth`, role: "depth", pixels: round(pixels), why: `depth map of photo "${o.id}" (smooth data, kept lossless) ≈ ${round(pixels)} px` }, TEXTURE_TIERS, DEPTH_MIN_TIER, Math.min(DEPTH_MAX_TIER, max));
       }
+      // The background plate shows next to the photo's own pixels: same size
+      // rules (can be WebP); its depth is a depth map (kept lossless).
+      if (typeof o.plate === "string" && (ctx.includeLibrary || !isLibraryRef(o.plate))) {
+        const pixels = projected * MARGIN * PHOTO_ZOOM_MARGIN;
+        addUse(files, o.plate, { at: `objects#${o.id}.plate`, role: "color", pixels: round(pixels), why: `background plate of photo "${o.id}", sized like the photo ≈ ${round(projected)} px` }, TEXTURE_TIERS, Math.min(PHOTO_MIN_TIER, max), max);
+      }
+      if (typeof o.plateDepth === "string" && (ctx.includeLibrary || !isLibraryRef(o.plateDepth))) {
+        const pixels = projected * ROLE_FACTOR.depth * MARGIN;
+        addUse(files, o.plateDepth, { at: `objects#${o.id}.plateDepth`, role: "depth", pixels: round(pixels), why: `plate depth of photo "${o.id}" (smooth data, kept lossless) ≈ ${round(pixels)} px` }, TEXTURE_TIERS, DEPTH_MIN_TIER, Math.min(DEPTH_MAX_TIER, max));
+      }
     }
 
     const mat = (o as { material?: MaterialDef }).material;

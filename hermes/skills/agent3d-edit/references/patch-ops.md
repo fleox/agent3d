@@ -46,7 +46,7 @@ A 3D photo (the depth map comes from `assets depth <image>`, skill `agent3d-asse
 { "op": "addObject", "object": { "id": "photo", "kind": "photo", "src": "assets/textures/photo.jpg", "depth": "assets/depth/photo-depth.png", "mode": "parallax", "width": 11.9, "strength": 0.3, "focus": 0.5, "motion": { "pointer": 1, "gyro": true, "auto": "sway", "speed": 1 } } }
 ```
 
-Fields: `mode` (`parallax` default, `mesh`, `layers`), `width` / `height` (world units; the height follows the image aspect), `strength` (0..1, default 0.5), `focus` (the depth that stays still, 0 far … 1 near), `segments` (mesh), `layers` (layers), `edgeCut` (mesh / layers: hide stretched edges, default 0.08), `motion` (`pointer`, `scroll`, `gyro`, `auto`: `sway` / `orbit` / `zoom` / `none`, `speed`, `smoothing`), `material` (only `opacity`, `color` tint, `emissiveIntensity`). Photos are unlit and not tone mapped. Without `depth` the photo is flat (`validate` warns).
+Fields: `mode` (`parallax` default, `mesh`, `layers`), `width` / `height` (world units; the height follows the image aspect), `strength` (0..1, default 0.5), `focus` (the depth that stays still, 0 far … 1 near), `segments` (mesh), `layers` (layers), `edgeCut` (mesh / layers: hide stretched edges, default 0.08), `motion` (`pointer`, `scroll`, `gyro`, `auto`: `sway` / `orbit` / `zoom` / `none`, `speed`, `smoothing`), `material` (only `opacity`, `color` tint, `emissiveIntensity`), `plate` + `plateDepth` (the background plate from `assets plate <image>`: shown where moving foreground uncovers the background; both or none). Photos are unlit and not tone mapped. Without `depth` the photo is flat (`validate` warns).
 
 ## Text and letters
 

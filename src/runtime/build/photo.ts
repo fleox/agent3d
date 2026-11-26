@@ -23,6 +23,13 @@
 //     z offsets (scale-compensated for the camera so they line up at rest) and
 //     slide with the view offset.
 //
+// Background plate (`plate` + `plateDepth`, agent3d assets plate): the photo
+// with the foreground removed near depth edges, filled with background. It
+// replaces the "nearest background texel" heuristics where moving foreground
+// uncovers what is behind it: the parallax ray continues behind a wall
+// against the plate depth, the mesh backing sits at the plate depth with the
+// plate colours, and covered layer texels come from the plate.
+//
 // Motion (pure function of t for the auto drift; seek-safe): the view offset
 // (-1..1) mixes the pointer (smoothed live, instant in deterministic mode),
 // device tilt (live only, when the page receives deviceorientation events),
@@ -213,7 +220,7 @@ ${OCCLUDE_FRAG}
 varying vec2 vUv;
 void main() {
   vec4 c = parallaxTexel(vUv);
-  ${fx.call("pxUv", "textureLod(uDepth, pxUv, 0.0).r")}
+  ${fx.call("pxUv", "photoHitDepth")}
   if (c.a * uOpacity < 0.004) discard;
   #ifdef PHOTO_OCCLUDE
   if (c.a < 0.5) discard;
@@ -301,6 +308,8 @@ void main() {
 // parallax shader).
 const BACKING_VERT = /* glsl */ `
 uniform sampler2D uDepth;
+uniform sampler2D uPlateDepth;
+uniform float uPlateOn;
 uniform float uRange;
 uniform float uFocus;
 uniform vec3 uCam;
@@ -311,7 +320,9 @@ varying float vDepth;
 void main() {
   vUv = uv;
   float d = textureLod(uDepth, uv, 0.0).r;
-  for (int i = 1; i <= 2; i++) {
+  // with a plate: its depth is the background behind the foreground
+  if (uPlateOn > 0.5) d = min(d, textureLod(uPlateDepth, uv, 0.0).r);
+  else for (int i = 1; i <= 2; i++) {
     vec2 r = uReach * float(i) * 0.5;
     d = min(d, textureLod(uDepth, uv + vec2(r.x, 0.0), 0.0).r);
     d = min(d, textureLod(uDepth, uv - vec2(r.x, 0.0), 0.0).r);
@@ -335,11 +346,21 @@ const backingFrag = (fx: PhotoFx) => /* glsl */ `
 ${COMMON_FRAG}
 uniform sampler2D uDepth;
 ${fx.glsl}
+uniform sampler2D uPlate;
+uniform float uPlateOn;
 varying vec2 vUv;
 varying float vDepth;
 void main() {
   vec2 uv = vUv;
   float d = textureLod(uDepth, uv, 0.0).r;
+  if (uPlateOn > 0.5) {
+    vec4 pc = texture2D(uPlate, uv);
+    if (pc.a * uOpacity < 0.004) discard;
+    gl_FragColor = shade(pc, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+    return;
+  }
   if (d > vDepth + 0.04) {
     vec2 texel = 1.0 / vec2(textureSize(uDepth, 0));
     vec2 grad = vec2(
@@ -382,6 +403,9 @@ uniform float uHi;
 uniform float uFeather;
 uniform float uBackground;
 ${OCCLUDE_FRAG}
+uniform sampler2D uPlate;
+uniform sampler2D uPlateDepth;
+uniform float uPlateOn;
 varying vec2 vUv;
 void main() {
   // the zoom drift also pushes in slightly (stays inside the inset margin)
@@ -404,8 +428,20 @@ void main() {
   float a = uBackground > 0.5 ? 1.0 : dd.a < 0.5 ? step(uLo, d) : smoothstep(uLo - uFeather, uLo + uFeather, d);
   if (a < 0.004) discard;
   vec2 cuv = uv;
+  bool onPlate = false;
   // covered by nearer content
-  if (d > uHi + uFeather) {
+  if (d > uHi + uFeather && uPlateOn > 0.5) {
+    // the plate holds what is behind the foreground: this layer's surface
+    // continues there when the plate depth falls in its band
+    vec2 puv = base + (uCenter - uFocus) * dir;
+    for (int i = 0; i < 3; i++) puv = base + (clamp(textureLod(uPlateDepth, puv, 0.0).r, uLo, uHi) - uFocus) * dir;
+    float pd = textureLod(uPlateDepth, puv, 0.0).r;
+    // (the background layer always takes the plate: its best guess)
+    if (uBackground > 0.5 || (pd <= uHi + uFeather && pd >= uLo - uFeather)) {
+      cuv = puv;
+      onPlate = true;
+    } else discard;
+  } else if (d > uHi + uFeather) {
     bool found = false;
     vec2 reach = v * uMaxOffset * 1.25;
     for (int k = 1; k <= 16; k++) {
@@ -423,7 +459,8 @@ void main() {
     // background keeps the source texel).
     if (!found && uBackground < 0.5) discard;
   }
-  vec4 c = textureGrad(uMap, cuv, dFdx(base), dFdy(base));
+  vec2 gx = dFdx(base), gy = dFdy(base);
+  vec4 c = onPlate ? textureGrad(uPlate, cuv, gx, gy) : textureGrad(uMap, cuv, gx, gy);
   ${fx.call("cuv", "textureLod(uDepth, cuv, 0.0).r")}
   gl_FragColor = shade(c, a);
   if (gl_FragColor.a < 0.004) discard;
@@ -535,12 +572,17 @@ export function buildMeshGeometry(width: number, height: number, sx: number, sy:
 }
 
 export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Promise<BuiltPhoto> {
-  const [map, depth] = await Promise.all([
-    loadTexture(ctx.resolveAsset(def.src)),
-    def.depth ? loadTexture(ctx.resolveAsset(def.depth)).catch((err: Error) => {
-      ctx.issue("asset-load", `${def.id}: depth map: ${err.message} — showing the photo flat`, `objects#${def.id}.depth`);
+  const optional = (path: string | undefined, what: string, field: string, after: string) =>
+    path ? loadTexture(ctx.resolveAsset(path)).catch((err: Error) => {
+      ctx.issue("asset-load", `${def.id}: ${what}: ${err.message} — ${after}`, `objects#${def.id}.${field}`);
       return null;
-    }) : Promise.resolve(null),
+    }) : Promise.resolve(null);
+  const withPlate = !!(def.depth && def.plate && def.plateDepth);
+  const [map, depth, plateTex, plateDepthTex] = await Promise.all([
+    loadTexture(ctx.resolveAsset(def.src)),
+    optional(def.depth, "depth map", "depth", "showing the photo flat"),
+    optional(withPlate ? def.plate : undefined, "plate", "plate", "edges use the photo"),
+    optional(withPlate ? def.plateDepth : undefined, "plate depth", "plateDepth", "edges use the photo"),
   ]);
   map.colorSpace = THREE.SRGBColorSpace;
   map.wrapS = map.wrapT = THREE.MirroredRepeatWrapping;
@@ -557,6 +599,28 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     depth.magFilter = THREE.LinearFilter;
     depth.needsUpdate = true;
   }
+  // Plate (colour: like the photo; depth: like the depth map). Both or none.
+  const plate = depth && plateTex && plateDepthTex ? { map: plateTex, depth: plateDepthTex } : null;
+  if (!plate) {
+    plateTex?.dispose();
+    plateDepthTex?.dispose();
+  } else {
+    for (const [t, data] of [[plate.map, false], [plate.depth, true]] as const) {
+      t.wrapS = t.wrapT = THREE.MirroredRepeatWrapping;
+      if (data) {
+        t.colorSpace = THREE.NoColorSpace;
+        t.premultiplyAlpha = false;
+        t.generateMipmaps = false;
+        t.minFilter = THREE.LinearFilter;
+        t.magFilter = THREE.LinearFilter;
+      } else {
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 4;
+      }
+      t.needsUpdate = true;
+    }
+  }
+  const plateUniforms = () => ({ uPlate: { value: plate?.map ?? map }, uPlateDepth: { value: plate?.depth ?? depth }, uPlateOn: { value: plate ? 1 : 0 } });
   const img = imageSize(map);
   const { width, height } = photoSize(def, img.w, img.h);
   const strength = clamp(num(def.strength, PHOTO_DEFAULTS.strength), 0, 1);
@@ -641,6 +705,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       // depth change per texel above which a hit is a depth-edge wall
       uWallSlope: { value: PARALLAX_WALL_SLOPE },
       ...fxUniforms,
+      ...plateUniforms(),
     };
     const mat = shaderMaterial(QUAD_VERT, parallaxFrag(fx).replace("__STEPS__", String(parallaxSteps(ctx.quality, strength))), uniforms, blended);
     if (occlude) occludeMaterial(mat, uniforms);
@@ -681,7 +746,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       bgeo.boundingSphere = geo.boundingSphere.clone();
       geometries.push(bgeo);
       const reach = new THREE.Vector2(6 / sx, 6 / sy);
-      const bmat = shaderMaterial(BACKING_VERT, backingFrag(fx), { ...uniforms, uReach: { value: reach } }, opacity < 1 || fx.alpha);
+      const bmat = shaderMaterial(BACKING_VERT, backingFrag(fx), { ...uniforms, uReach: { value: reach }, ...plateUniforms() }, opacity < 1 || fx.alpha);
       if (occlude) bmat.depthWrite = true;
       bmat.side = THREE.DoubleSide;
       materials.push(bmat);
@@ -711,6 +776,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
         uFeather: { value: edgeCut > 0 ? Math.min(band.feather, edgeCut) : 0.002 },
         uBackground: { value: band.background ? 1 : 0 },
         ...fxUniforms,
+        ...plateUniforms(),
       };
       const mat = shaderMaterial(QUAD_VERT, layerFrag(fx), uniforms, band.background ? blended : true);
       if (occlude) occludeMaterial(mat, uniforms);
@@ -844,6 +910,8 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       for (const g of geometries) g.dispose();
       map.dispose();
       depth?.dispose();
+      plate?.map.dispose();
+      plate?.depth.dispose();
     },
   };
 }

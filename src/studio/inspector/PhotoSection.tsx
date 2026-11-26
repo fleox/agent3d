@@ -58,6 +58,12 @@ export function PhotoSection({ object: o }: { object: PhotoObjectDef }) {
           </span>
         </div>
         {!o.depth && <div className="px-3 pb-1 text-2xs leading-snug text-fg-faint">{canDepth ? t("photo.flatHint") : t("photo.depthNeedsCli")}</div>}
+        {(o.depth || o.plate) && (
+          <>
+            <ImageAssetField label={t("photo.plate")} hint={t("photo.plateHint")} value={o.plate} onChange={(v) => bind(objPath(o.id, "plate"), v)} projectAssets={images.assets} onOpen={images.reload} library={false} ariaLabel={t("photo.plate")} />
+            <ImageAssetField label={t("photo.plateDepth")} hint={t("photo.plateDepthHint")} value={o.plateDepth} onChange={(v) => bind(objPath(o.id, "plateDepth"), v)} projectAssets={images.assets} onOpen={images.reload} library={false} ariaLabel={t("photo.plateDepth")} />
+          </>
+        )}
         <ParamRow spec={PHOTO_MODE_SPEC} value={o.mode} onChange={(v) => bind(objPath(o.id, "mode"), v)} />
         <ParamForm specs={photoSpecs(o)} base={base} values={values} />
       </Section>

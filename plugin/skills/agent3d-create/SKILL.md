@@ -119,15 +119,23 @@ When the user gives a photo or an image and wants it in 3D, with parallax, "movi
    npx -y @fleox/agent3d@0.4.0 render --project my-hero --frames 0.5,1,1.5,2 --sheet --input '[{"t": 0.1, "pointer": [-1, 0]}, {"t": 0.9, "pointer": [1, 0]}, {"t": 1.4, "pointer": [0, 1]}, {"t": 1.9, "pointer": [0, -1]}]' --json
    ```
    Near things should slide against far things between frames, without smeared or doubled edges around the subject.
+6. **Bigger moves: add a plate.** For `strength` ≥ 0.7, `mode: "mesh"`, or people / signs / poles in front of the background, build the background plate and set it on the photo (it shows what the foreground uncovers, instead of smears and stretched halos):
+   ```bash
+   npx -y @fleox/agent3d@0.4.0 assets plate assets/textures/photo.jpg --project my-hero --json
+   ```
+   ```json
+   [{ "op": "updateObject", "id": "photo", "set": { "plate": "assets/depth/photo-plate.webp", "plateDepth": "assets/depth/photo-plate-depth.png" } }]
+   ```
+   (`assets depth … --plate` does depth map + plate in one go.) Render again with pointer moves to the corners and compare the silhouettes.
 
 Tips:
 
-- `strength`: 0.5 by default; parallax holds a bold 0.7-0.9 (hero banners), mesh ~0.7 with the photo slightly wider than the frame (its border shows otherwise), layers ~0.6 (halos around subjects above that). Lower it first when silhouettes smear, and check with `render --input` pointer moves to the corners.
+- `strength`: 0.5 by default; parallax holds a bold 0.7-0.9 (hero banners), mesh ~0.7 with the photo slightly wider than the frame (its border shows otherwise), layers ~0.6 (halos around subjects above that). When silhouettes smear, add a plate (step 6) or lower it, and check with `render --input` pointer moves to the corners.
 - `focus` = the subject's depth (0 far … 1 near, read it from the depth map: a mid-grey subject ≈ 0.5): the subject stays put and the rest moves around it, which reads as depth instead of wobble.
 - Headlines: put them over a calm area of the photo (sky, wall, blurred background), use `"material": { "type": "basic", "color": "#ffffff" }` and `target.toneMapping: "none"` so white stays white (photos themselves are never tone mapped), and check the contrast in the render. A kerned 3D title (`depth` > 0, lit material) also works over a darker photo.
 - `check` reports `photo-depth-aspect` (regenerate the depth map after cropping the photo), `photo-heavy` (over 1.5 MB: `assets optimize`) and `photo-depth-lossy` (keep the depth map a PNG). A covering photo is never reported as `clipped`.
 - **Web weight**: before exporting, run `npx -y @fleox/agent3d@0.4.0 assets optimize --all --yes --project my-hero --json`: the photo becomes WebP at the size the hero needs (about 40 % lighter; the scene path is rewritten) and the depth map stays a lossless PNG (already ≤ 1024 px from `assets depth`: the model works at 518 px). A photo-only hero then weighs about 0.4 MB of images plus the runtime.
-- Exports copy the photo and its depth map like any asset; the model never ships.
+- Exports copy the photo, its depth map and its plate like any asset; the model never ships.
 
 **Depth effects** (`"effects"` on the photo object, every mode, kept by the 14 KB photo player; `{}` = defaults; full table in docs/scene-format.md "Photo effects"):
 
