@@ -44,7 +44,7 @@ const DESTRUCTIVE = new Set(["scene_apply", "object_remove", "timeline_set", "ex
 // Calling twice with the same input leaves the same state.
 const IDEMPOTENT = new Set(["scene_apply", "object_update", "timeline_set", "render_preview", "export"]);
 // Tools that reach the network (free CC0 sources).
-const OPEN_WORLD = new Set(["assets_search", "assets_add"]);
+const OPEN_WORLD = new Set(["assets_search", "assets_add", "image_depth"]);
 
 export interface McpResource {
   uri: string;

@@ -7,6 +7,7 @@ import { CliError } from "./output";
 import { parseScalar, setPairs } from "./commands/util";
 import { cli, ok } from "./testing/cli";
 import { writeZipStored } from "../src/ops/zip";
+import { encodePng } from "../src/ops/pngEncode";
 import { tempDir } from "./testing/tmp";
 
 // The JSON contract agents rely on: exactly one {ok,data} / {ok:false,
@@ -138,6 +139,25 @@ describe("assets add <pack.zip>", () => {
     const list = await ok(["assets", "list", "--project", dir]);
     expect(list.assets.find((a: { path: string }) => a.path === "assets/models/platformer/flag.glb")).toMatchObject({ source: "kenney", license: "CC0-1.0", author: "Kenney" });
     expect((await cli(["assets", "add", zip, "--source", "kenney", "--project", dir])).code).toBe(2);
+  });
+});
+
+describe("assets depth", () => {
+  it("fails fast with hints before starting Chrome or downloading the model", async () => {
+    const dir = join(tmp(), "photo");
+    await ok(["new", dir, "--target", "hero"]);
+    const noImage = await cli(["assets", "depth", "--project", dir]);
+    expect(noImage.code).toBe(2);
+    expect(noImage.body.error?.hint).toMatch(/assets depth/);
+    const missing = await cli(["assets", "depth", "assets/textures/nope.jpg", "--project", dir]);
+    expect(missing.body.error).toMatchObject({ code: "notFound", hint: expect.stringContaining("agent3d assets add") });
+    writeFileSync(join(dir, "assets", "not-an-image.jpg"), "hello");
+    expect((await cli(["assets", "depth", "assets/not-an-image.jpg", "--project", dir])).body.error?.message).toMatch(/not a PNG, JPEG or WebP/);
+    const png = await encodePng(new Uint8Array(4 * 4 * 4), 4, 4);
+    writeFileSync(join(dir, "assets", "p.png"), png);
+    expect((await cli(["assets", "depth", "assets/p.png", "--size", "5000", "--project", dir])).body.error?.message).toMatch(/size must be between/);
+    expect((await cli(["assets", "depth", "assets/p.png", "--out", "renders/d.png", "--project", dir])).body.error?.message).toMatch(/under assets/);
+    expect((await cli(["assets", "depth", "assets/p.png", "--size", "big", "--project", dir])).code).toBe(2);
   });
 });
 

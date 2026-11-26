@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { inflateRawSync } from "node:zlib";
+import { deflateSync, inflateRawSync } from "node:zlib";
 import type { ToolContext, ToolHost } from "../src/ai/tools";
 import type { Issue } from "../src/core/types";
 import type { RuntimeIssue } from "../src/runtime/api";
@@ -79,6 +79,11 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
       const { withImageCodec } = await import("./render/imageCodec");
       return withImageCodec(fn, { log: (m) => void process.stderr.write(`${m}\n`) });
     },
+    async withDepthEstimator(fn) {
+      const { withDepthEstimator } = await import("./render/depth");
+      return withDepthEstimator(fn, { log: (m) => void process.stderr.write(`${m}\n`) });
+    },
+    deflate: (data) => new Uint8Array(deflateSync(data)),
     readLocalFile: async (path) => new Uint8Array(readFileSync(resolve(path))),
   };
 }

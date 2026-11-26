@@ -57,6 +57,8 @@ export function objectDetail(o: ObjectDef): string {
       return String(o.preset ?? "custom");
     case "svg":
       return typeof o.src === "string" && o.src.trim().startsWith("<") ? "inline svg" : String(o.src ?? "");
+    case "photo":
+      return `${String(o.src ?? "")} · ${o.mode ?? "parallax"} · depth ${o.depth ? "✓" : "✗ (flat)"}`;
     case "group":
       return `${o.children?.length ?? 0} children`;
     default:

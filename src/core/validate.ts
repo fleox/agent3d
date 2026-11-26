@@ -22,7 +22,7 @@ import { SCENE_VERSION } from "./types";
 // ─── Enumerations (kept next to the validator; types.ts is the contract) ──
 
 export const TARGET_KINDS: readonly TargetKind[] = ["banner", "hero", "card", "square", "fullscreen", "inline", "game"];
-export const OBJECT_KINDS = ["mesh", "text", "model", "group", "generator", "particles", "instances", "svg"] as const;
+export const OBJECT_KINDS = ["mesh", "text", "model", "group", "generator", "particles", "instances", "svg", "photo"] as const;
 export const LIGHT_TYPES = ["ambient", "directional", "point", "spot", "hemisphere", "rect"] as const;
 export const MATERIAL_TYPES = ["standard", "physical", "basic", "lambert", "toon", "normal", "matcap", "gradient", "shader"] as const;
 // Named easings (parametric ones too: "cubicBezier(…)", "spring(…)", "steps(n)" — src/core/ease.ts).
@@ -63,6 +63,11 @@ const TEXTURE_EXT = [".png", ".jpg", ".jpeg", ".webp", ".ktx2", ".avif"];
 const HDRI_EXT = [".hdr", ".exr", ".jpg", ".jpeg", ".png", ".webp"];
 const AUDIO_EXT = [".mp3", ".ogg", ".wav", ".m4a", ".aac", ".opus", ".webm"];
 const SVG_EXT = [".svg"];
+const PHOTO_EXT = [".jpg", ".jpeg", ".png", ".webp"];
+export const PHOTO_MODES = ["parallax", "mesh", "layers"] as const;
+export const PHOTO_AUTO_MOTIONS = ["none", "sway", "orbit", "zoom"] as const;
+const PHOTO_MOTION_KEYS = ["pointer", "scroll", "gyro", "auto", "speed", "smoothing"];
+const PHOTO_MATERIAL_KEYS = ["opacity", "color", "emissiveIntensity"];
 
 // Allowed keys per section (unknown keys → warnings with suggestions).
 const BASE_OBJECT_KEYS = ["id", "kind", "name", "visible", "castShadow", "receiveShadow", "behaviours", "children", "tags", "body", "href", "userData", "attach", "position", "rotation", "scale"];
@@ -75,6 +80,7 @@ const OBJECT_KEYS: Record<(typeof OBJECT_KINDS)[number], string[]> = {
   particles: ["preset", ...PARTICLE_PARAMS.map((x) => x.name)],
   instances: ["geometry", "material", "layout", "colors"],
   svg: ["src", "size", "fit", "depth", "bevel", "keepColors", "strokes", "curveSegments", "layerGap", "material"],
+  photo: ["src", "depth", "mode", "width", "height", "strength", "focus", "segments", "layers", "edgeCut", "motion", "material"],
 };
 const SCENE_KEYS = ["version", "id", "title", "description", "target", "camera", "environment", "lights", "objects", "timeline", "interactions", "postfx", "physics", "scripts", "ui", "audio", "data", "ariaLabel", "seed"];
 const TARGET_KEYS = ["kind", "aspect", "budgetKb", "height", "transparent", "lazy", "pauseOffscreen", "maxDpr", "reducedMotion", "posterTime", "antialias", "shadows", "toneMapping", "exposure", "quality"];
@@ -480,10 +486,15 @@ export function validateScene(scene: unknown): Issue[] {
   if (s.audio !== undefined) audio(v, s.audio);
 
   const envLit = isObj(s.environment) && (s.environment.rig !== undefined || (isObj(s.environment.background) && isObj(s.environment.background.sky) && (s.environment.background.sky.preset !== undefined || s.environment.background.sky.physical === true) && s.environment.lighting !== "none"));
-  if (lights.length === 0 && !envLit && isObj(s.environment) && (s.environment.lighting === "none" || s.environment.lighting === undefined) && objects.length > 0) {
+  if (lights.length === 0 && !envLit && isObj(s.environment) && (s.environment.lighting === "none" || s.environment.lighting === undefined) && needsLight(objects)) {
     v.warn("no-lights", "lights", "The scene has no lights and no environment lighting: lit materials (standard, physical, toon…) will render black.", 'Add lights (e.g. { "type": "hemisphere", "intensity": 1 } and a directional key light) or set environment.lighting to "studio".');
   }
   return v.issues;
+}
+
+// Photos are unlit and groups draw nothing: a scene of 3D photos needs no lights.
+function needsLight(objects: unknown[]): boolean {
+  return objects.some((o) => isObj(o) && ((o.kind !== "photo" && o.kind !== "group") || (Array.isArray(o.children) && needsLight(o.children))));
 }
 
 function target(v: V, t: unknown) {
@@ -947,11 +958,59 @@ function object(v: V, o: unknown, fallback: string) {
       v.number(o.layerGap, `${p}.layerGap`, { min: 0 });
       material(v, o.material, `${p}.material`);
       break;
+    case "photo":
+      photo(v, o, p);
+      break;
   }
 
   if (o.children !== undefined) {
     if (!Array.isArray(o.children)) v.error("type", `${p}.children`, "children must be an array of objects.");
     else o.children.forEach((c, i) => object(v, c, `${p}.children[${i}]`));
+  }
+}
+
+// A 3D photo: an image + an optional depth map (white = near, alpha 0 = cut edge).
+function photo(v: V, o: Obj, p: string) {
+  if (v.required(o, "src", p, 'an image path ("assets/textures/photo.jpg") or "library:<id>" (.jpg / .png / .webp)')) v.assetPath(o.src, `${p}.src`, PHOTO_EXT, "an image (.jpg / .png / .webp)");
+  v.assetPath(o.depth, `${p}.depth`, PHOTO_EXT, "a depth map image (grayscale PNG, white = near)");
+  v.enumOf(o.mode, PHOTO_MODES, `${p}.mode`);
+  v.number(o.width, `${p}.width`, { min: 0, exclusiveMin: true });
+  v.number(o.height, `${p}.height`, { min: 0, exclusiveMin: true });
+  for (const k of ["strength", "focus", "edgeCut"]) v.number(o[k], `${p}.${k}`, { min: 0, max: 1 });
+  v.number(o.segments, `${p}.segments`, { integer: true, min: 8, max: 1024 });
+  v.number(o.layers, `${p}.layers`, { integer: true, min: 2, max: 16 });
+  const mode = typeof o.mode === "string" ? o.mode : "parallax";
+  if (o.segments !== undefined && mode !== "mesh") v.info("ignored", `${p}.segments`, `segments only applies to mode "mesh" (this photo is "${mode}").`, 'Set mode: "mesh", or remove segments.');
+  if (o.layers !== undefined && mode !== "layers") v.info("ignored", `${p}.layers`, `layers only applies to mode "layers" (this photo is "${mode}").`, 'Set mode: "layers", or remove layers.');
+  if (o.depth === undefined && typeof o.src === "string" && (PHOTO_MODES as readonly string[]).includes(mode)) {
+    v.warn("photo-flat", p, `Photo "${String(o.id)}" has no depth map: it renders flat (mode "${mode}" needs one).`, `Run \`agent3d assets depth ${o.src}\` (writes a depth PNG next to it), then set ${p}.depth to its path.`);
+  }
+  if (o.motion !== undefined) {
+    const m = o.motion;
+    if (!isObj(m)) v.error("type", `${p}.motion`, "motion must be an object.", 'Example: { "pointer": 1, "scroll": 0, "auto": "sway", "speed": 1 }.');
+    else {
+      v.unknownKeys(m, PHOTO_MOTION_KEYS, `${p}.motion`, "photo motion");
+      v.number(m.pointer, `${p}.motion.pointer`, { min: 0, max: 1 });
+      v.number(m.scroll, `${p}.motion.scroll`, { min: 0, max: 1 });
+      v.boolean(m.gyro, `${p}.motion.gyro`);
+      v.enumOf(m.auto, PHOTO_AUTO_MOTIONS, `${p}.motion.auto`);
+      v.number(m.speed, `${p}.motion.speed`, { min: 0 });
+      v.number(m.smoothing, `${p}.motion.smoothing`, { min: 0, max: 1 });
+    }
+  }
+  if (o.material !== undefined) {
+    const m = o.material;
+    if (!isObj(m)) v.error("type", `${p}.material`, "material must be an object.", 'A photo material only takes { "opacity", "color", "emissiveIntensity" }, e.g. { "opacity": 0.9 }.');
+    else {
+      for (const k of Object.keys(m)) {
+        if (PHOTO_MATERIAL_KEYS.includes(k)) continue;
+        const s = closest(k, PHOTO_MATERIAL_KEYS);
+        v.warn("unknown-field", `${p}.material.${k}`, `"${k}" is not supported on a photo material (ignored by the runtime).`, `${s ? `Did you mean "${s}"? ` : ""}A photo is unlit: only ${listOptions(PHOTO_MATERIAL_KEYS)} apply.`);
+      }
+      v.number(m.opacity, `${p}.material.opacity`, { min: 0, max: 1 });
+      v.color(m.color, `${p}.material.color`);
+      v.number(m.emissiveIntensity, `${p}.material.emissiveIntensity`, { min: 0 });
+    }
   }
 }
 

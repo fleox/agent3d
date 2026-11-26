@@ -3,6 +3,7 @@
 import type { AssetEntry } from "../core/types";
 import { downloadAsset, importAssetZip, listAssets, listLibrary, parseResolution, searchAssetsDetailed, addAsset, type AssetHit } from "../ops/assets";
 import { modelFileBounds } from "../ops/gltf";
+import { checkDepthRequest, estimateDepth } from "../ops/depth";
 import { optimizeAssets, optimizedExportSources, type ImageCodec, type TextureFormat } from "../ops/optimize";
 import { OpsError } from "../ops/context";
 import { buildExport, prefixFiles, type ExportFormat } from "../ops/export";
@@ -135,6 +136,30 @@ export const ASSET_TOOLS: AiTool[] = [
       const opts = { paths, all: input.all === true, maxSize: num(input, "maxSize"), quality: num(input, "quality"), format: optStr(input, "format") as TextureFormat | undefined, compress: input.compress !== false, simplify: num(input, "simplify"), simplifyError: num(input, "simplifyError"), dryRun: input.dryRun === true, library: ctx.host?.library?.index };
       const r = ctx.host?.withImageCodec ? await ctx.host.withImageCodec((codec) => optimizeAssets(ctx.fs, opts, codec)) : await optimizeAssets(ctx.fs, opts);
       return { ...r, hint: r.dryRun ? "Nothing written: show the user the savings, then call again without dryRun." : `Run check again to see the new budget.${ctx.host?.withImageCodec ? "" : " Textures were skipped (this host has no headless Chrome): use the CLI `agent3d assets optimize` for them."}` };
+    },
+  },
+  {
+    name: "image_depth",
+    description:
+      'Estimate a depth map for a photo (the "3D photo" effect: a photo object with `depth`). Runs Depth Anything V2 Small locally (CLI / MCP host: headless Chrome, ~1-3 s per image; the 27 MB Apache-2.0 model is downloaded once into the user cache, later runs work offline). Writes a grey PNG (white = near, transparent where depth jumps) at the photo size (max 2048 px) under assets/depth/, registered in assets/manifest.json with the photo\'s licence. Returns { path, width, height, ms, model, suggestion: { kind: "photo", src, depth } } — then add or update the photo object with `depth: path`. Without a host that can run it, paint a depth map by hand instead.',
+    inputSchema: {
+      type: "object",
+      properties: {
+        image: { type: "string", description: 'The photo: project path ("assets/textures/photo.jpg") or "library:<id>" (.jpg / .png / .webp).' },
+        out: { type: "string", description: 'Project path of the depth PNG (default "assets/depth/<image name>-depth.png").' },
+        size: { type: "integer", minimum: 140, maximum: 1036, description: "Model input long side in pixels (default 518; larger = finer edges, slower; rounded to a multiple of 14)." },
+        maxSize: { type: "integer", minimum: 16, maximum: 8192, description: "Longest side of the written depth map (default: the photo size, capped at 2048)." },
+      },
+      required: ["image"],
+    },
+    mutating: true,
+    async handler(ctx, input) {
+      const req = { image: str(input, "image").replace(/^\.\//, ""), out: optStr(input, "out"), size: num(input, "size"), maxSize: num(input, "maxSize"), library: ctx.host?.library, deflate: ctx.host?.deflate };
+      await checkDepthRequest(ctx.fs, req);
+      if (!ctx.host?.withDepthEstimator)
+        return { status: "refused", reason: "This host cannot run the depth model (it needs the CLI / MCP host with headless Chrome).", hint: "Run `agent3d assets depth <image>` from the CLI, or provide a depth map by hand (grey PNG, white = near, same aspect as the photo) and set it as the photo object's `depth`." };
+      const r = await ctx.host.withDepthEstimator((estimator) => estimateDepth(ctx.fs, req, estimator));
+      return { ...r, hint: `Set it on the photo object: object_update { id, set: { depth: "${r.path}" } }, or object_add with ${JSON.stringify(r.suggestion)}. Then render_preview to check the parallax.` };
     },
   },
   {

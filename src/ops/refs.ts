@@ -1,5 +1,5 @@
-// Asset references inside a scene (models, svg files, textures, HDRIs,
-// audio): collected by `check` (missing files, budget, licences) and
+// Asset references inside a scene (models, svg files, textures, photos and
+// their depth maps, HDRIs, audio): collected by `check` (missing files, budget, licences) and
 // rewritten by `export` (library ids → copied relative paths).
 
 import type { AssetEntry, ObjectDef, SceneDoc } from "../core/types";
@@ -49,6 +49,17 @@ export function visitAssetRefs(scene: SceneDoc, visit: Visitor): void {
     if (o.kind === "svg" && typeof o.src === "string" && !o.src.trim().startsWith("<")) {
       const r = visit(o.src, `${at}.src`, "svg");
       if (typeof r === "string") o.src = r;
+    }
+    if (o.kind === "photo") {
+      // The image and its depth map (white = near, alpha 0 = cut edge).
+      if (typeof o.src === "string") {
+        const r = visit(o.src, `${at}.src`, "texture");
+        if (typeof r === "string") o.src = r;
+      }
+      if (typeof o.depth === "string") {
+        const r = visit(o.depth, `${at}.depth`, "texture");
+        if (typeof r === "string") o.depth = r;
+      }
     }
     if (o.kind === "text") {
       // Text fonts are library assets too (default "sans-bold"): a catalog id

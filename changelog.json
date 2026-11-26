@@ -1,6 +1,21 @@
 {
   "versions": [
     {
+      "version": "0.3.0",
+      "date": "2026-11-26",
+      "breaking": false,
+      "changes": [
+        "3D photos: a new `photo` object turns an image + depth map into a 3D effect — `parallax` (relief mapping, the 3D-photo look), `mesh` (displaced grid with torn edges cut away, for larger moves) or `layers` (pop-up slices) — driven by the pointer, the phone's gyroscope, scroll or a looping drift; deterministic for renders and videos. `strength` defaults to 0.5 (parallax holds up to ~0.9).",
+        "`agent3d assets depth <image>` (and the `image_depth` AI tool) estimates the depth map locally with Depth Anything V2 Small (Apache-2.0) in your headless Chrome, in about a second; the 27 MB model is downloaded once into ~/.agent3d/models. Exports ship the photo and its depth PNG only.",
+        "Studio: a \"3D photo\" tab in the Add panel, a photo inspector and a \"Generate depth map\" button.",
+        "New template `hero-photo-3d` (blue-hour street with a letter-by-letter headline); skills, recipe and docs cover the photo workflow.",
+        "`check`: photo rules (depth aspect, heavy photo, lossy depth map); scenes made only of photos no longer ask for lights."
+      ],
+      "actions": [
+        "Update the skills (`/plugin marketplace update agent3d`)."
+      ]
+    },
+    {
       "version": "0.2.3",
       "date": "2026-11-26",
       "breaking": false,

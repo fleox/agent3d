@@ -1,0 +1,8 @@
+{
+  "name": "hero-photo-3d",
+  "title": "3D photo hero",
+  "createdAt": "2026-11-26T00:00:00.000Z",
+  "updatedAt": "2026-11-26T00:00:00.000Z",
+  "template": "hero-photo-3d",
+  "agent3d": "0.2.3"
+}

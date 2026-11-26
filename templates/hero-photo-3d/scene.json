@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "id": "hero-photo-3d",
+  "title": "3D photo hero",
+  "ariaLabel": "Old Town: a blue-hour street of painted houses and lit arcades in Innsbruck, gently moving in 3D, with the headline Old Town, after-dark walking tours",
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "posterTime": 2.5,
+    "reducedMotion": "static",
+    "toneMapping": "none"
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 35,
+    "position": [
+      0,
+      0,
+      10
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ]
+  },
+  "environment": {
+    "background": "#0b1020"
+  },
+  "lights": [
+    {
+      "id": "fill",
+      "type": "hemisphere",
+      "intensity": 1
+    }
+  ],
+  "objects": [
+    {
+      "id": "photo",
+      "kind": "photo",
+      "src": "assets/textures/street.jpg",
+      "depth": "assets/depth/street-depth.png",
+      "mode": "parallax",
+      "width": 11.9,
+      "strength": 0.8,
+      "focus": 0.45,
+      "motion": {
+        "pointer": 1,
+        "gyro": true,
+        "auto": "sway",
+        "speed": 1.2,
+        "smoothing": 0.9
+      }
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "{data.title|OLD TOWN}",
+      "font": "serif-bold",
+      "size": 0.56,
+      "depth": 0,
+      "letterSpacing": 0.06,
+      "align": "center",
+      "position": [
+        -0.35,
+        2.05,
+        0.5
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#ffffff"
+      },
+      "reveal": {
+        "effect": "rise",
+        "stagger": 0.04,
+        "duration": 1,
+        "delay": 0.3,
+        "ease": "outCubic"
+      }
+    },
+    {
+      "id": "subtitle",
+      "kind": "text",
+      "text": "{data.subtitle|AFTER-DARK WALKING TOURS}",
+      "font": "sans-bold",
+      "size": 0.088,
+      "depth": 0,
+      "letterSpacing": 0.1,
+      "align": "center",
+      "position": [
+        -0.35,
+        1.69,
+        0.5
+      ],
+      "material": {
+        "type": "basic",
+        "color": "#e8eef8"
+      },
+      "behaviours": [
+        {
+          "type": "appear",
+          "effect": "fade",
+          "duration": 1,
+          "delay": 1.1
+        }
+      ]
+    }
+  ],
+  "postfx": [
+    {
+      "type": "vignette",
+      "darkness": 0.55
+    }
+  ],
+  "description": "A blue-hour photo of a European old-town street turned into a 3D photo (image + estimated depth map) that moves with the pointer, the phone gyroscope and a gentle automatic sway, under a serif headline.",
+  "data": {
+    "title": "OLD TOWN",
+    "subtitle": "AFTER-DARK WALKING TOURS"
+  }
+}

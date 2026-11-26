@@ -425,6 +425,33 @@ export interface SvgObjectDef extends BaseObjectDef {
   material?: MaterialDef;
 }
 
+// A 2D image given a 3D effect from a depth map (a "3D photo"). The depth map
+// is a grayscale image, white = near, black = far (the convention of
+// `agent3d assets depth`, which estimates it with Depth Anything V2 Small);
+// its alpha channel, when present, marks depth discontinuities (0 = cut edge).
+export interface PhotoObjectDef extends BaseObjectDef {
+  kind: "photo";
+  src: string; // image: project path or "library:<id>" (.jpg / .png / .webp)
+  depth?: string; // depth map path (same aspect as src). Without it the photo is flat.
+  // parallax: flat quad, shader parallax (relief mapping) — the "3D photo" look for
+  //   small motions (default). mesh: displaced grid, survives larger camera moves.
+  // layers: the photo cut into depth slices, a pop-up book look.
+  mode?: "parallax" | "mesh" | "layers";
+  width?: number; // world width in units (default 4); height follows the image aspect
+  height?: number; // world height (overrides the aspect when both are set)
+  strength?: number; // depth effect amount 0..1 (default 0.5; 0.6–0.9 for a bold parallax hero)
+  focus?: number; // depth (0 far .. 1 near) that stays still while the view moves (default 0.5)
+  segments?: number; // mesh: grid cells on the long side (default 256)
+  layers?: number; // layers: number of slices (default 6)
+  edgeCut?: number; // mesh / layers: hide stretched edges where depth jumps more than this (0..1, default 0.08; 0 = off)
+  // What moves the view (combined): pointer (0..1 amount, default 1), scroll
+  // (0..1 amount, default 0), gyro on phones (default true when pointer > 0),
+  // auto: a looping drift for headless renders / videos and touch screens
+  // ("sway" default, "orbit", "zoom", "none") at `speed` cycles per 10 s.
+  motion?: { pointer?: number; scroll?: number; gyro?: boolean; auto?: "none" | "sway" | "orbit" | "zoom"; speed?: number; smoothing?: number };
+  material?: Pick<MaterialDef, "opacity" | "color" | "emissiveIntensity">; // tint / opacity / self-lit amount (photos are unlit by default)
+}
+
 export type ObjectKind = ObjectDef["kind"];
 export type ObjectDef =
   | MeshObjectDef
@@ -434,7 +461,8 @@ export type ObjectDef =
   | GeneratorObjectDef
   | ParticlesObjectDef
   | InstancesObjectDef
-  | SvgObjectDef;
+  | SvgObjectDef
+  | PhotoObjectDef;
 
 // ─── Geometry ────────────────────────────────────────────────────────────
 

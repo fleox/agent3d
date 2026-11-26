@@ -239,6 +239,13 @@ describe("summary & diff", () => {
     expect(sum.counts.lights).toBe(3);
     expect(sum.background).toContain("gradient");
   });
+  it("describes photos (src · mode · depth)", async () => {
+    const s = await getScene(await project());
+    s.objects.push({ id: "pic", kind: "photo", src: "assets/textures/x.jpg", depth: "assets/textures/x.depth.png" }, { id: "flat", kind: "photo", src: "assets/textures/y.jpg", mode: "layers" });
+    const sum = summarizeScene(s);
+    expect(sum.objects.find((o) => o.id === "pic")).toMatchObject({ kind: "photo", detail: "assets/textures/x.jpg · parallax · depth ✓" });
+    expect(sum.objects.find((o) => o.id === "flat")!.detail).toBe("assets/textures/y.jpg · layers · depth ✗ (flat)");
+  });
   it("diff of identical scenes is empty", async () => {
     const s = await getScene(await project());
     expect(diffScenes(s, JSON.parse(JSON.stringify(s))).empty).toBe(true);

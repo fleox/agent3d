@@ -1,3 +1,5 @@
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { defineConfig } from "vite";
 
 // Builds the `agent3d` CLI (agent/bin.ts) into ONE self-contained Node
@@ -26,8 +28,29 @@ const escapeLineSeparators = {
   },
 };
 
+// `assets depth` runs Depth Anything V2 with onnxruntime-web in headless
+// Chrome: ship its WASM build next to the CLI (dist/agent/ort/, served by
+// agent/render/depth.ts; resolved by ortDir() in agent/paths.ts).
+const ORT_FILES = ["ort.wasm.bundle.min.mjs", "ort-wasm-simd-threaded.wasm"];
+const copyOrt = {
+  name: "agent3d-copy-ort",
+  apply: "build" as const,
+  writeBundle(options: { dir?: string }) {
+    const src = resolve("node_modules/onnxruntime-web/dist");
+    const out = join(options.dir ?? "dist/agent", "ort");
+    if (!ORT_FILES.every((f) => existsSync(join(src, f)))) throw new Error(`onnxruntime-web is missing in ${src}: run npm install.`);
+    mkdirSync(out, { recursive: true });
+    for (const f of ORT_FILES) copyFileSync(join(src, f), join(out, f));
+    const version = (JSON.parse(readFileSync(resolve("node_modules/onnxruntime-web/package.json"), "utf8")) as { version: string }).version;
+    writeFileSync(
+      join(out, "LICENSE.txt"),
+      `onnxruntime-web ${version} (https://github.com/microsoft/onnxruntime), MIT License\n\nCopyright (c) Microsoft Corporation\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n`,
+    );
+  },
+};
+
 export default defineConfig({
-  plugins: [escapeLineSeparators],
+  plugins: [escapeLineSeparators, copyOrt],
   // public/ belongs to the Studio build — keep it out of dist/agent/.
   publicDir: false,
   define: {

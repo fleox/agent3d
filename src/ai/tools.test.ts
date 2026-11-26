@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../core/fs";
 import { createProject } from "../ops/project";
 import { writeZipStored } from "../ops/zip";
+import { encodePng } from "../ops/pngEncode";
+import type { DepthEstimator } from "../ops/depth";
 import type { JsonSchema } from "./types";
 import { AI_TOOLS, callAiTool, findAiTool, listAiTools } from "./tools";
 import type { RenderResult, ToolContext, ToolHost } from "./types";
 
 const EXPECTED = [
   "project_info", "scene_get", "scene_summary", "scene_apply", "scene_patch", "scene_validate", "object_add", "object_update", "object_remove", "object_list",
-  "timeline_set", "interactions_set", "catalog_get", "templates_list", "project_create", "check", "assets_list", "assets_search", "assets_add", "assets_optimize", "library_list", "export",
+  "timeline_set", "interactions_set", "catalog_get", "templates_list", "project_create", "check", "assets_list", "assets_search", "assets_add", "assets_optimize", "image_depth", "library_list", "export",
 ];
 
 // Structural JSON-schema sanity: known keywords, valid types, required ⊆ properties.
@@ -188,5 +190,19 @@ describe("AI tool catalog", () => {
     await expect(callAiTool(c, "export", { format: "gif", out: "dist/a.webp" })).rejects.toMatchObject({ code: "invalid" });
     await expect(callAiTool(c, "export", { format: "gif", quality: "max" })).rejects.toMatchObject({ code: "invalid" });
     await expect(callAiTool(await ctx({ runtimeFiles: host.runtimeFiles }), "export", { og: true })).rejects.toMatchObject({ code: "invalid" });
+  });
+  it("image_depth: refused without an estimator, writes the depth PNG with one", async () => {
+    const c = await ctx();
+    await c.fs.writeBytes("assets/textures/photo.png", await encodePng(new Uint8Array(30 * 20 * 4).fill(90), 30, 20));
+    await expect(callAiTool(c, "image_depth", { image: "assets/textures/nope.png" })).rejects.toMatchObject({ code: "notFound" });
+    const refused = (await callAiTool(c, "image_depth", { image: "assets/textures/photo.png" })) as { status: string; hint: string };
+    expect(refused.status).toBe("refused");
+    expect(refused.hint).toMatch(/by hand/);
+    const estimator: DepthEstimator = async (i) => ({ depth: new Float32Array(i.width * i.height).map((_, k) => k % i.width), width: i.width, height: i.height, srcWidth: 30, srcHeight: 20 });
+    const host: ToolHost = { withDepthEstimator: (fn) => fn(estimator) };
+    const r = (await callAiTool({ ...c, host }, "image_depth", { image: "assets/textures/photo.png", size: 140 })) as { path: string; width: number; input: { width: number } };
+    expect(r).toMatchObject({ path: "assets/depth/photo-depth.png", width: 30, input: { width: 140 } });
+    expect(await c.fs.exists(r.path)).toBe(true);
+    expect(findAiTool("image_depth").mutating).toBe(true);
   });
 });

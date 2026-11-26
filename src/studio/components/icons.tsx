@@ -1,4 +1,4 @@
-import { Box, Folder, Lightbulb, Mountain, Package, PenTool, Sparkles, Sun, Type, LayoutGrid, Lamp, SunDim, CloudSun, Square, type LucideIcon } from "lucide-react";
+import { Box, Folder, Lightbulb, Mountain, Package, PenTool, Sparkles, Sun, Type, LayoutGrid, Lamp, SunDim, CloudSun, Square, Image, type LucideIcon } from "lucide-react";
 
 export const KIND_ICONS: Record<string, LucideIcon> = {
   mesh: Box,
@@ -9,6 +9,7 @@ export const KIND_ICONS: Record<string, LucideIcon> = {
   particles: Sparkles,
   instances: LayoutGrid,
   svg: PenTool,
+  photo: Image,
 };
 
 export const LIGHT_ICONS: Record<string, LucideIcon> = {

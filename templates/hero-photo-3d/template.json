@@ -1,0 +1,8 @@
+{
+  "id": "hero-photo-3d",
+  "title": "3D photo hero",
+  "description": "A photo brought to life: a blue-hour old-town street (CC0) turned into a 3D photo with its estimated depth map, moving in depth with the pointer, the phone's gyroscope and a gentle automatic sway, under a white serif headline and subtitle (data-bound). Swap the photo and run `assets depth` to make it yours.",
+  "kind": "hero",
+  "tags": ["hero", "photo", "3d-photo", "depth-map", "parallax", "image", "travel", "city", "street", "night", "serif", "pointer", "gyro", "data-bindings"],
+  "aspect": "16:9"
+}

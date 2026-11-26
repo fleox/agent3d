@@ -63,6 +63,19 @@ A file is only rewritten when it gets smaller; manifest sizes are refreshed. Wit
 - *Draco* (`KHR_draco_mesh_compression`): the decoder is a ~280 KB wasm + worker; meshopt gives similar sizes with a 27 KB decoder. Draco models fail to load with a hint: re-export without Draco (Blender: uncheck "Compression"), or convert with `gltfpack -i in.glb -o out.glb -cc`, then `assets optimize`.
 - *KTX2 / Basis Universal*: no MIT / Apache encoder runs offline in Node without native binaries, and the transcoder adds ~580 KB (wasm + JS) to the runtime. KTX2 mainly saves GPU memory; for download size, smart-sized WebP already gets most of the gain. Revisit if a pure-wasm encoder ships on npm.
 
+## Depth maps (3D photos)
+
+A photo object (`kind: "photo"`) becomes a "3D photo" with a `depth` map: a grey PNG, white = near, black = far, same aspect as the photo. `assets depth` estimates one at authoring time:
+
+```bash
+npx -y @fleox/agent3d@0.2.3 assets depth assets/textures/photo.jpg --project my-scene --json
+```
+
+- **Model.** [Depth Anything V2 Small](https://huggingface.co/onnx-community/depth-anything-v2-small) (ONNX, quantized, 27 MB, Apache-2.0, pinned revision), run locally by onnxruntime-web (WASM, up to 4 threads) in the same headless Chrome as the renders — about 1-1.5 s per photo at the default input size, plus ~2 s to start Chrome. `--size` sets the model input long side (default 518, up to 1036 for finer edges, ≈ 4× slower).
+- **One-time download.** The first run downloads the model once (no account, no token) into `~/.agent3d/models/depth-anything-v2-small/<revision>/` (`AGENT3D_MODELS` overrides the folder), checks its size and SHA-256 and writes `NOTICE.txt` / `LICENSE.txt` next to it. Later runs work offline. Offline before the first download: the error says where to put the file by hand (or paint a depth map yourself). The model is never shipped: exports only carry the PNG.
+- **Output.** `assets/depth/<photo name>-depth.png` (`--out` to change), at the photo size capped at 2048 px (`--max-size`), grey + alpha: the model's relative depth normalised with robust percentiles (1 % → black, 99 % → white), smoothed edge-aware, foreground dilated by one pixel so silhouettes keep their colour, and **alpha 0 on depth discontinuities** (where neighbouring depths differ by more than 8 %), so the runtime can hide stretched edges. Registered in `assets/manifest.json` with source `depth-anything-v2-small` and the photo's licence (`derived` when the photo is not in the manifest), the attribution naming the model.
+- **Tool.** `image_depth { image, out?, size?, maxSize? }` returns `{ path, width, height, ms, model, suggestion }`; hosts without headless Chrome (the Studio's in-browser mode) refuse it with a hint.
+
 ## Free online sources
 
 Searched live, downloaded once into the project with their licence (`src/ops/sources/`):

@@ -118,7 +118,7 @@ export const sceneCommand: Command = {
 
 // ─── object ─────────────────────────────────────────────────────────────
 
-const OBJECT_KINDS = ["mesh", "text", "model", "group", "generator", "particles", "instances", "svg"];
+const OBJECT_KINDS = ["mesh", "text", "model", "group", "generator", "particles", "instances", "svg", "photo"];
 
 // --json-def + shortcuts (--id, --kind, --geometry, --generator, --preset, --text, --src) + --set a.b=v.
 function objectDef(options: Options, base: Record<string, unknown> = {}): Record<string, unknown> {
@@ -150,7 +150,7 @@ function objectDef(options: Options, base: Record<string, unknown> = {}): Record
   const src = strOpt(options, "src");
   if (src) {
     def.src = src;
-    def.kind ??= src.endsWith(".svg") || src.trim().startsWith("<svg") ? "svg" : "model";
+    def.kind ??= src.endsWith(".svg") || src.trim().startsWith("<svg") ? "svg" : /\.(jpe?g|png|webp)$/i.test(src) ? "photo" : "model";
   }
   const sets = setPairs(options);
   const merge = (a: Record<string, unknown>, b: Record<string, unknown>): Record<string, unknown> => {
@@ -170,7 +170,7 @@ const OBJECT_OPTIONS = [
   { name: "generator", type: "string" as const, description: "add: generator id (implies kind generator) — `agent3d catalog generators`." },
   { name: "preset", type: "string" as const, description: "add: particle preset (implies kind particles) — `agent3d catalog particlePresets`." },
   { name: "text", type: "string" as const, description: "add: the text (implies kind text)." },
-  { name: "src", type: "string" as const, description: "add: model / svg source (project path or library:<id>)." },
+  { name: "src", type: "string" as const, description: "add: model / svg / photo source (project path or library:<id>; an image makes a photo)." },
   { name: "parent", type: "string" as const, description: "add / move: parent object id." },
   { name: "root", type: "boolean" as const, description: "move: to the top level." },
   { name: "index", type: "string" as const, description: "add / move: position among the siblings." },

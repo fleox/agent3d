@@ -4,7 +4,7 @@
 import type { ParamSpec } from "../../core/catalog";
 import { FONTS, PARTICLE_PRESETS } from "../../core/catalog";
 import { QUALITY_TIERS } from "../../core/postfx";
-import { BODY_SHAPES, BODY_TYPES, COLLIDER_SHAPES, JOINT_TYPES, MATERIAL_TYPES, SKY_PRESETS, TONE_MAPPINGS } from "../../core/validate";
+import { BODY_SHAPES, BODY_TYPES, COLLIDER_SHAPES, JOINT_TYPES, MATERIAL_TYPES, PHOTO_AUTO_MOTIONS, PHOTO_MODES, SKY_PRESETS, TONE_MAPPINGS } from "../../core/validate";
 
 const n = (name: string, def?: number, min?: number, max?: number, description = ""): ParamSpec => ({ name, type: "number", description, default: def, min, max });
 const i = (name: string, def?: number, min?: number, max?: number, description = ""): ParamSpec => ({ name, type: "integer", description, default: def, min, max });
@@ -67,6 +67,27 @@ export const SVG_SPECS: ParamSpec[] = [
   i("curveSegments", 12, 1, 64, "Points per curve."),
   n("layerGap", undefined, 0, 0.5, "Z step between successive paths (default depth × 0.02)."),
 ];
+
+// 3D photo (kind "photo"); src / depth have their own image pickers.
+export const PHOTO_MODE_SPEC: ParamSpec = e("mode", PHOTO_MODES, "parallax", "parallax: flat quad with shader relief (small motions). mesh: displaced grid (larger camera moves). layers: depth slices, a pop-up book look.");
+export const PHOTO_SPECS: ParamSpec[] = [
+  n("width", 4, 0, undefined, "World width in units (height follows the image aspect)."),
+  n("height", undefined, 0, undefined, "World height (overrides the aspect when both are set)."),
+  n("strength", 0.5, 0, 1, "Depth effect amount."),
+  n("focus", 0.5, 0, 1, "Depth that stays still while the view moves (0 far, 1 near)."),
+  i("segments", 256, 8, 1024, "Grid cells on the long side."),
+  i("layers", 6, 2, 16, "Number of depth slices."),
+  n("edgeCut", 0.08, 0, 1, "Hide stretched edges where depth jumps more than this (0 = off)."),
+];
+export const PHOTO_MOTION_SPECS: ParamSpec[] = [
+  n("pointer", 1, 0, 1, "How much the pointer moves the view."),
+  n("scroll", 0, 0, 1, "How much page scroll moves the view."),
+  b("gyro", true, "Tilt on phones (when pointer > 0)."),
+  e("auto", PHOTO_AUTO_MOTIONS, "sway", "Looping drift for renders, videos and touch screens."),
+  n("speed", 1, 0, undefined, "Auto drift cycles per 10 s."),
+  n("smoothing", undefined, 0, 1, "Easing of the view towards the pointer."),
+];
+export const PHOTO_MATERIAL_SPECS: ParamSpec[] = [c("color", "#ffffff", "Tint."), n("opacity", 1, 0, 1), n("emissiveIntensity", undefined, 0, undefined, "Self-lit amount (photos are unlit by default).")];
 
 export const MATERIAL_MAIN: ParamSpec[] = [
   c("color", "#ffffff"),

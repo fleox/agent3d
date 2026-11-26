@@ -48,6 +48,8 @@ No errors, no warnings (or warnings the user accepted). Keep the `licences` list
 | `video` | `export --format video --project my-banner` | `dist/video.webm` (VP9), or MP4 (H.264) when `--out` ends in `.mp4`; `--duration`, `--fps`, `--size`, `--quality` | Social posts, presentations, places that can't run WebGL |
 | `gif` | `export --format gif --project my-banner` | `dist/animation.gif` (looping, 640 px wide, 15 fps by default) | Email, chat, READMEs |
 
+Every asset the scene uses is copied into the export (never hotlinked): a 3D photo ships its photo and its depth PNG (`<name>/assets/textures/…`, `<name>/assets/depth/…`), never the depth model. `CREDITS.txt` lists the depth map with the photo's licence and author.
+
 Default outputs land in `<project>/dist/`. A relative `--out` is resolved from the **project folder** (like every output path of `render` and `export`): `--project my-banner --out dist/promo.mp4` writes `my-banner/dist/promo.mp4`; absolute paths are kept.
 
 ```bash

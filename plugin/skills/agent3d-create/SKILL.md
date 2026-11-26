@@ -1,6 +1,6 @@
 ---
 name: agent3d-create
-description: Build a 3D element for a web page from a brief with Agent3D - an animated banner, a hero, a mascot or character, a low-poly landscape, a product showcase, a logo in 3D, a mini game - by writing a JSON scene, rendering it headless and LOOKING at the screenshots until it looks professional, then exporting a self-contained embed (Web Component + static files, or one HTML file). Use when the user asks for something 3D, animated or interactive for their website ("an animated banner for my bakery", "a low-poly island hero", "a 3D version of my logo", "a mini game where...").
+description: Build a 3D element for a web page from a brief with Agent3D - an animated banner, a hero, a mascot or character, a low-poly landscape, a product showcase, a logo in 3D, a 3D photo (a user's photo given depth that moves with the pointer), a mini game - by writing a JSON scene, rendering it headless and LOOKING at the screenshots until it looks professional, then exporting a self-contained embed (Web Component + static files, or one HTML file). Use when the user asks for something 3D, animated or interactive for their website ("an animated banner for my bakery", "a low-poly island hero", "a 3D version of my logo", "make this photo 3D / bring this picture to life", "a mini game where...").
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
@@ -92,6 +92,41 @@ First run on a machine: `npx -y @fleox/agent3d@0.2.3 doctor --json` checks Node,
    npx -y @fleox/agent3d@0.2.3 export --project bakery-banner --json
    ```
    `data.snippet` is what goes in the page; `data.out` holds `agent3d-runtime/` (shared by every scene of the site), `<name>/` (scene, assets, poster, `CREDITS.txt`), `index.html` (a demo page), `snippet.html`, `head.html`, `EMBED.md` and `frameworks/` (React / Vue / Svelte wrappers). A second export into the same folder needs `--yes`. Give the user: the snippet, the folder to upload, the total size, the credits, and offer `serve` for a live look (`npx -y @fleox/agent3d@0.2.3 serve --project bakery-banner --open`). Other formats (zip, single HTML file, poster image, MP4 / WebM video, GIF) and site integration: skill `agent3d-publish`.
+
+## Bring a photo to life (3D photo)
+
+When the user gives a photo or an image and wants it in 3D, with parallax, "moving with the mouse" or "brought to life", don't model the scene: turn the picture itself into a **3D photo**, a `photo` object with a depth map. Start from the `hero-photo-3d` template (or the "3D photo hero" recipe in [references/recipes.md](references/recipes.md)).
+
+1. **Copy the image into the project** with its licence (ask who took it and under which licence; skill `agent3d-assets`):
+   ```bash
+   npx -y @fleox/agent3d@0.2.3 new my-hero --template hero-photo-3d --title "Old Town Tours" --json
+   npx -y @fleox/agent3d@0.2.3 assets add ./photo.jpg --license CC0-1.0 --author "Jane Doe" --project my-hero --json
+   ```
+2. **Estimate its depth map** (local, ~1-3 s; the first run downloads the 27 MB model once, then it works offline):
+   ```bash
+   npx -y @fleox/agent3d@0.2.3 assets depth assets/textures/photo.jpg --project my-hero --json
+   ```
+   It writes `assets/depth/photo-depth.png` (white = near) and returns `data.suggestion` (`{ "kind": "photo", "src", "depth" }`). Open the PNG with the Read tool: the subject should be lighter than the background.
+3. **Point the photo object at it** (or add one with `object add --json-def`):
+   ```json
+   [{ "op": "updateObject", "id": "photo", "set": { "src": "assets/textures/photo.jpg", "depth": "assets/depth/photo-depth.png", "strength": 0.3, "focus": 0.5 } }]
+   ```
+   Cover the frame: with the camera at fov 35 and distance 10, a 16:9 frame is about 11.2 × 6.3 units, so a 3:2 photo needs `width` ≈ 11.9 (a 4:3 photo ≈ 11.2; a portrait photo needs `height` ≈ 6.6 and leaves side bars, so prefer a portrait `target.aspect` or a card). Keep the camera still: the photo's shader moves the view.
+4. **Choose the mode**: `parallax` (default, 2 triangles) for hero banners and small motions; `mesh` (a displaced grid) when the view moves more, e.g. `motion.auto: "orbit"`; `layers` (depth slices) for a pop-up-book look. `motion`: `pointer` (0..1), `gyro` (phones), `auto` (`sway` default, `orbit`, `zoom`, `none`: plays in renders, videos and on touch screens), `speed`, `scroll`.
+5. **Render and look**, then move the pointer to see the depth:
+   ```bash
+   npx -y @fleox/agent3d@0.2.3 render --project my-hero --count 4 --sheet --json
+   npx -y @fleox/agent3d@0.2.3 render --project my-hero --frames 0.5,1,1.5,2 --sheet --input '[{"t": 0.1, "pointer": [-1, 0]}, {"t": 0.9, "pointer": [1, 0]}, {"t": 1.4, "pointer": [0, 1]}, {"t": 1.9, "pointer": [0, -1]}]' --json
+   ```
+   Near things should slide against far things between frames, without smeared or doubled edges around the subject.
+
+Tips:
+
+- `strength`: 0.5 by default; parallax holds a bold 0.7-0.9 (hero banners), mesh ~0.7 with the photo slightly wider than the frame (its border shows otherwise), layers ~0.6 (halos around subjects above that). Lower it first when silhouettes smear, and check with `render --input` pointer moves to the corners.
+- `focus` = the subject's depth (0 far … 1 near, read it from the depth map: a mid-grey subject ≈ 0.5): the subject stays put and the rest moves around it, which reads as depth instead of wobble.
+- Headlines: put them over a calm area of the photo (sky, wall, blurred background), use `"material": { "type": "basic", "color": "#ffffff" }` and `target.toneMapping: "none"` so white stays white (photos themselves are never tone mapped), and check the contrast in the render. A kerned 3D title (`depth` > 0, lit material) also works over a darker photo.
+- `check` reports `photo-depth-aspect` (regenerate the depth map after cropping the photo), `photo-heavy` (over 1.5 MB: `assets optimize`), `photo-depth-lossy` (keep the depth map a PNG), and the covering photo as a `clipped` info (expected).
+- Exports copy the photo and its depth map like any asset; the model never ships.
 
 ## Other front doors: MCP and the Studio
 

@@ -8,6 +8,7 @@ import { clone, getAt, hasAt } from "../../core/jsonPath";
 import type { BehaviourDef, ObjectDef, SceneDoc } from "../../core/types";
 import type { PatchOp } from "../../ops/scene";
 import { allObjectIds, findObject, walkObjects } from "../../ops/tree";
+import { newPhotoObject, photoIdBase } from "./photo";
 
 export const objPath = (id: string, field: string): string => `objects#${id}${field ? `.${field}` : ""}`;
 
@@ -49,6 +50,7 @@ export type NewObjectSpec =
   | { kind: "generator"; generator: string }
   | { kind: "particles"; preset: string }
   | { kind: "model"; src: string; name?: string }
+  | { kind: "photo"; src: string }
   | { kind: "group" };
 
 // A ready-to-add ObjectDef with a unique id, placed at `position`.
@@ -78,6 +80,8 @@ export function newObject(scene: SceneDoc, spec: NewObjectSpec, position: [numbe
       const base = (spec.name ?? spec.src.split(/[/:]/).pop() ?? "model").replace(/\.(glb|gltf)$/i, "");
       return { id: uniqueId(base, taken), kind: "model", src: spec.src, fit: 1.5, position };
     }
+    case "photo":
+      return newPhotoObject(uniqueId(photoIdBase(spec.src), taken), spec.src, position);
     case "group":
       return { id: uniqueId("group", taken), kind: "group", position, children: [] };
   }

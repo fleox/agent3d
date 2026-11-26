@@ -61,7 +61,7 @@ export class RemoteBackend implements Backend {
   }
 
   // Every export format goes through the `export` tool (media formats render with the CLI host's Chrome).
-  readonly capabilities: Capabilities = { render: true, exportFormats: ["embed", "zip", "single-html", "poster", "video", "gif"] };
+  readonly capabilities: Capabilities = { render: true, depth: true, exportFormats: ["embed", "zip", "single-html", "poster", "video", "gif"] };
 
   hasProject(): boolean {
     return !!this.info.project?.exists;

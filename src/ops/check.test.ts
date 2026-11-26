@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../core/fs";
 import type { InspectResult } from "../runtime/api";
-import { evalCost, estimateTriangles, frameTriangles, geometryTriangles, textCurveSegments, textTriangles } from "./budget";
+import { evalCost, estimateTriangles, frameTriangles, geometryTriangles, photoTriangles, textCurveSegments, textTriangles } from "./budget";
 import { gltfInfo, modelInfo } from "./gltf";
 
 function makeGlb(json: unknown): Uint8Array {
@@ -156,6 +156,60 @@ describe("budget", () => {
     expect(modelInfo("a.glb", makeGlb(json))!.triangles).toBe(138);
     expect(modelInfo("a.gltf", new TextEncoder().encode(JSON.stringify(json)))!.triangles).toBe(138);
     expect(modelInfo("a.glb", new Uint8Array(4))).toBeNull();
+  });
+});
+
+// Minimal PNG header (IHDR size) padded to `bytes`.
+function pngOf(w: number, h: number, bytes = 64): Uint8Array {
+  const b = new Uint8Array(Math.max(33, bytes));
+  b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  new DataView(b.buffer).setUint32(16, w);
+  new DataView(b.buffer).setUint32(20, h);
+  b[25] = 6;
+  return b;
+}
+// Minimal JPEG (SOF0 frame size) padded to `bytes`.
+function jpgOf(w: number, h: number, bytes = 64): Uint8Array {
+  const b = new Uint8Array(Math.max(24, bytes));
+  b.set([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0, 0, 0xff, 0xc0, 0x00, 0x11, 8, h >> 8, h & 255, w >> 8, w & 255, 3]);
+  return b;
+}
+
+describe("3D photos", () => {
+  it("costs photos by mode", () => {
+    expect(photoTriangles({ depth: "d.png" })).toBe(2);
+    expect(photoTriangles({ depth: "d.png", mode: "layers" })).toBe(12);
+    expect(photoTriangles({ depth: "d.png", mode: "layers", layers: 10 })).toBe(20);
+    expect(photoTriangles({ depth: "d.png", mode: "mesh" })).toBe(256 * 256 * 2 * 1.25); // grid + half-resolution backing
+    expect(photoTriangles({ depth: "d.png", mode: "mesh", segments: 100, width: 4, height: 2 })).toBe(100 * 50 * 2 * 1.25);
+    expect(photoTriangles({ mode: "mesh", segments: 512 })).toBe(2); // no depth: a flat quad
+    const est = estimateTriangles({ objects: [{ id: "p", kind: "photo", src: "a.jpg", depth: "d.png", mode: "mesh", segments: 64 }] });
+    expect(est.byObject).toEqual([{ id: "p", triangles: 64 * 64 * 2 * 1.25 }]);
+  });
+
+  it("reports a missing depth map, an aspect mismatch, a lossy depth map and a heavy photo", async () => {
+    const fs = await project();
+    await addAsset(fs, { path: "assets/textures/street.jpg", bytes: jpgOf(1600, 900, 1.6 * 1024 * 1024), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/depth/street-depth.png", bytes: pngOf(1024, 1024), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/textures/ok.jpg", bytes: jpgOf(1600, 900), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/textures/ok.depth.png", bytes: pngOf(800, 450), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/textures/ok.depth.jpg", bytes: jpgOf(800, 450), source: "local", license: "CC0-1.0" });
+    const scene = await getScene(fs);
+    scene.objects.push(
+      { id: "street", kind: "photo", src: "assets/textures/street.jpg", depth: "assets/depth/street-depth.png" },
+      { id: "ok", kind: "photo", src: "assets/textures/ok.jpg", depth: "assets/textures/ok.depth.png", position: [0, 0, -1] },
+      { id: "lossy", kind: "photo", src: "assets/textures/ok.jpg", depth: "assets/textures/ok.depth.jpg", position: [0, 0, -2] },
+      { id: "ghost", kind: "photo", src: "assets/textures/ok.jpg", depth: "assets/textures/ghost.depth.png", position: [0, 0, -3] },
+    );
+    await fs.writeText("scene.json", JSON.stringify(scene));
+    const r = await checkProject(fs);
+    const at = (code: string) => r.issues.filter((i) => i.code === code).map((i) => i.path);
+    expect(at("missing-asset")).toEqual(["objects#ghost.depth"]);
+    expect(at("photo-depth-aspect")).toEqual(["objects#street.depth"]);
+    expect(at("photo-heavy")).toEqual(["objects#street.src"]);
+    expect(r.issues.find((i) => i.code === "photo-heavy")!.hint).toContain("agent3d assets optimize assets/textures/street.jpg");
+    expect(at("photo-depth-lossy")).toEqual(["objects#lossy.depth"]);
+    expect(r.issues.find((i) => i.code === "photo-depth-aspect")!.severity).toBe("warning");
   });
 });
 

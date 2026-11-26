@@ -21,7 +21,8 @@ import type { MaterialDef, ObjectDef, SceneDoc, TargetKind, Vec3 } from "../core
 import { DEFAULT_ASPECT } from "../core/validate";
 import { glbJson, modelFileBounds } from "./gltf";
 
-export type TextureRole = "color" | "normal" | "data" | "background" | "lighting";
+// "depth": a 3D photo depth map (smooth data, sized smaller, kept lossless).
+export type TextureRole = "color" | "normal" | "data" | "background" | "lighting" | "depth";
 
 export const TEXTURE_TIERS = [256, 512, 1024, 2048] as const;
 const BACKGROUND_TIERS = [512, 1024, 2048, 4096];
@@ -34,7 +35,13 @@ const REF_CSS_WIDTH: Record<TargetKind, number> = { banner: 1440, hero: 1440, fu
 const MIN_COLOR_TIER: Record<TargetKind, number> = { banner: 256, hero: 512, fullscreen: 512, inline: 256, card: 256, square: 256, game: 256 };
 // Largest tier for object textures (backgrounds excepted).
 const MAX_TIER: Record<TargetKind, number> = { banner: 2048, hero: 2048, fullscreen: 2048, inline: 2048, card: 1024, square: 2048, game: 1024 };
-const ROLE_FACTOR: Record<TextureRole, number> = { color: 1, normal: 0.75, data: 0.5, background: 1, lighting: 1 };
+const ROLE_FACTOR: Record<TextureRole, number> = { color: 1, normal: 0.75, data: 0.5, background: 1, lighting: 1, depth: 0.5 };
+// 3D photos are the subject of the page and the view drifts / zooms over them:
+// never below 1024 px for the picture; depth maps are smooth (512..1024 px).
+const PHOTO_MIN_TIER = 1024;
+const PHOTO_ZOOM_MARGIN = 1.2;
+const DEPTH_MIN_TIER = 512;
+const DEPTH_MAX_TIER = 1024;
 const MODEL_ATLAS_FACTOR = 1.5;
 const MARGIN = 1.15; // texel per pixel safety margin
 
@@ -198,6 +205,20 @@ async function objectSize(fs: ProjectFs, o: ObjectDef, ctx: SizingContext): Prom
       }
       return 1;
     }
+    case "photo": {
+      const w = Number(o.width) > 0 ? Number(o.width) : undefined;
+      const h = Number(o.height) > 0 ? Number(o.height) : undefined;
+      if (w && h) return Math.max(w, h);
+      // One side given (width defaults to 4): the other follows the image aspect.
+      let aspect: number | undefined;
+      if (typeof o.src === "string" && !isLibraryRef(o.src) && (await fs.exists(o.src).catch(() => false))) {
+        const hd = imageHeader(await fs.readBytes(o.src));
+        if (hd && hd.width > 0 && hd.height > 0) aspect = hd.width / hd.height;
+      }
+      if (h) return aspect ? Math.max(h, h * aspect) : h;
+      const width = w ?? 4;
+      return aspect ? Math.max(width, width / aspect) : width;
+    }
     default:
       return 1;
   }
@@ -250,6 +271,17 @@ export async function planTextureSizes(fs: ProjectFs, scene: SceneDoc, ctx: Sizi
       modelRoles.set(o.src, roles);
       // The file-level decision is the colour one (reported in plans).
       addUse(files, o.src, { at: `objects#${o.id}.src`, role: "color", pixels: round(projected * MODEL_ATLAS_FACTOR * MARGIN), why: `model "${o.id}", ${dist} ≈ ${round(projected)} px on a ${where} canvas` }, TEXTURE_TIERS, MIN_COLOR_TIER[vp.kind], max);
+    }
+
+    if (o.kind === "photo") {
+      if (typeof o.src === "string" && (ctx.includeLibrary || !isLibraryRef(o.src))) {
+        const pixels = projected * MARGIN * PHOTO_ZOOM_MARGIN;
+        addUse(files, o.src, { at: `objects#${o.id}.src`, role: "color", pixels: round(pixels), why: `photo "${o.id}", ${dist} ≈ ${round(projected)} px on a ${where} canvas (≥ ${PHOTO_MIN_TIER} px: the view drifts over it)` }, TEXTURE_TIERS, Math.min(PHOTO_MIN_TIER, max), max);
+      }
+      if (typeof o.depth === "string" && (ctx.includeLibrary || !isLibraryRef(o.depth))) {
+        const pixels = projected * ROLE_FACTOR.depth * MARGIN;
+        addUse(files, o.depth, { at: `objects#${o.id}.depth`, role: "depth", pixels: round(pixels), why: `depth map of photo "${o.id}" (smooth data, kept lossless) ≈ ${round(pixels)} px` }, TEXTURE_TIERS, DEPTH_MIN_TIER, Math.min(DEPTH_MAX_TIER, max));
+      }
     }
 
     const mat = (o as { material?: MaterialDef }).material;

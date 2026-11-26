@@ -159,9 +159,30 @@ export function objectTriangles(o: ObjectDef, models?: ModelTriangles): number {
       return (o.count ?? 200) * 2; // sprites: two triangles each (worst case)
     case "svg":
       return 2000;
+    case "photo":
+      return photoTriangles(o);
     default:
       return 0; // groups
   }
+}
+
+// A 3D photo: parallax = one quad; layers = one quad per slice; mesh = a
+// displaced grid, `segments` cells on the long side (the short side follows the
+// aspect when width and height are both set, else a square — the upper bound).
+// Without a depth map the runtime draws a flat quad.
+export function photoTriangles(o: { mode?: unknown; depth?: unknown; segments?: unknown; layers?: unknown; width?: unknown; height?: unknown }): number {
+  if (typeof o.depth !== "string" || !o.depth) return 2;
+  const mode = o.mode ?? "parallax";
+  if (mode === "layers") return 2 * (typeof o.layers === "number" && o.layers > 0 ? Math.round(o.layers) : 6);
+  if (mode === "mesh") {
+    const seg = typeof o.segments === "number" && o.segments > 0 ? Math.round(o.segments) : 256;
+    const w = Number(o.width);
+    const h = Number(o.height);
+    const aspect = w > 0 && h > 0 ? Math.min(w, h) / Math.max(w, h) : 1;
+    // The grid plus its half-resolution backing mesh (fills cut edges): ×1.25.
+    return Math.round(seg * Math.max(1, Math.round(seg * aspect)) * 2 * 1.25);
+  }
+  return 2;
 }
 
 export interface TriangleEstimate {

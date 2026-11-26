@@ -40,6 +40,9 @@ export interface Capabilities {
   exportFormats: ExportFormatId[];
   // Why some formats are unavailable (shown in the export dialog).
   exportHint?: string;
+  // Depth maps for 3D photos (the image_depth tool needs the CLI host's
+  // depth estimator, i.e. headless Chrome). False / absent in the browser.
+  depth?: boolean;
 }
 
 export interface MountConfig {

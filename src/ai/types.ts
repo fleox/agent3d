@@ -9,6 +9,7 @@ import type { FetchLike } from "../ops/sources";
 import type { TemplateIndex } from "../ops/templates";
 import type { InflateRaw } from "../ops/zip";
 import type { ImageCodec } from "../ops/optimize";
+import type { DepthEstimator } from "../ops/depth";
 import type { FrameStats, InspectResult } from "../runtime/api";
 
 export type JsonSchema = {
@@ -119,6 +120,12 @@ export interface ToolHost {
   // Runs `fn` with an image decoder / resizer / encoder (CLI / MCP: headless
   // Chrome). Enables assets_optimize and assets_add { maxSize }.
   withImageCodec?<T>(fn: (codec: ImageCodec) => Promise<T>): Promise<T>;
+  // Runs `fn` with a monocular depth estimator (CLI / MCP: Depth Anything V2
+  // Small in headless Chrome; downloads the model once into the user cache).
+  // Enables image_depth.
+  withDepthEstimator?<T>(fn: (estimator: DepthEstimator) => Promise<T>): Promise<T>;
+  // Zlib deflate for generated PNGs (default: CompressionStream).
+  deflate?(data: Uint8Array): Uint8Array | Promise<Uint8Array>;
   // Reads a file from the user's disk (CLI / MCP) — used by assets_add { file }.
   readLocalFile?(path: string): Promise<Uint8Array>;
 }

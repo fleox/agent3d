@@ -14,7 +14,7 @@ import { GENERATORS } from "../core/catalog";
 import { DRAW_CALL_LIMIT, estimateTriangles, frameTriangles, TRIANGLE_AIM, TRIANGLE_LIMIT, type FrameTriangleEstimate } from "./budget";
 import { expandPostFx } from "../core/postfx";
 import { modelInfo } from "./gltf";
-import { optimizeSuggestions } from "./optimizeSizing";
+import { imageHeader, optimizeSuggestions } from "./optimizeSizing";
 import { KB, readJsonOr } from "./context";
 import { ASSET_MANIFEST_FILE, readSceneFile, SCENE_FILE } from "./project";
 import { collectAssetRefs, gltfDependencies } from "./refs";
@@ -148,6 +148,9 @@ export async function checkProject(fs: ProjectFs, opts: CheckOptions = {}): Prom
   for (const l of licences) {
     issues.push({ severity: "info", code: "attribution", path: l.path, message: `${l.path} is ${l.license}: it requires attribution.`, hint: `Show this credit near the embed (the export's index.html lists it): ${l.attribution}` });
   }
+
+  // ── 3D photos ──
+  issues.push(...(await photoIssues(fs, scene)));
 
   // ── Scripts ──
   let scriptBytes = 0;
@@ -342,6 +345,41 @@ function passHint(f: FrameTriangleEstimate): string {
   return parts.length ? ` Passes: ${parts.join("; ")}.` : "";
 }
 
+export const PHOTO_HEAVY_BYTES = 1.5 * 1024 * 1024;
+
+// 3D photos: the depth map must match the image (same aspect, else the relief
+// slides off the picture), and a photo heavier than ~1.5 MB is a slow embed.
+// Missing files are reported with the other asset refs.
+async function photoIssues(fs: ProjectFs, scene: SceneDoc): Promise<Issue[]> {
+  const out: Issue[] = [];
+  const photos: { id: string; src?: unknown; depth?: unknown }[] = [];
+  walkObjects(scene.objects, (o) => void (o.kind === "photo" && photos.push(o)));
+  const header = async (path: unknown) => {
+    if (typeof path !== "string" || !path || isLibraryRef(path) || !(await fs.exists(path))) return null;
+    const bytes = await fs.readBytes(path);
+    return { bytes: bytes.byteLength, h: imageHeader(bytes) };
+  };
+  for (const o of photos) {
+    const at = `objects#${o.id}`;
+    const src = await header(o.src).catch(() => null);
+    if (src && src.bytes > PHOTO_HEAVY_BYTES) {
+      out.push({ severity: "warning", code: "photo-heavy", path: `${at}.src`, message: `Photo "${String(o.src)}" weighs ${KB(src.bytes)} KB${src.h ? ` (${src.h.width}x${src.h.height})` : ""}: slow to load on phones.`, hint: `Run \`agent3d assets optimize ${String(o.src)}\` (sized from how big the photo shows on screen, WebP; plan first, then --yes).` });
+    }
+    const depth = await header(o.depth).catch(() => null);
+    if (src?.h && depth?.h && src.h.height > 0 && depth.h.height > 0) {
+      const a = src.h.width / src.h.height;
+      const b = depth.h.width / depth.h.height;
+      if (Math.abs(a - b) / a > 0.02) {
+        out.push({ severity: "warning", code: "photo-depth-aspect", path: `${at}.depth`, message: `Depth map "${String(o.depth)}" is ${depth.h.width}x${depth.h.height} but the photo is ${src.h.width}x${src.h.height}: different aspect ratios, the relief will not line up with the picture.`, hint: `Regenerate it from this image: \`agent3d assets depth ${String(o.src)}\` (or crop both the same way).` });
+      }
+    }
+    if (depth?.h && depth.h.mimeType === "image/jpeg") {
+      out.push({ severity: "info", code: "photo-depth-lossy", path: `${at}.depth`, message: `Depth map "${String(o.depth)}" is a JPEG: lossy compression adds steps and noise to the relief and drops the alpha cut-edge mask.`, hint: `Use a PNG depth map (\`agent3d assets depth ${String(o.src)}\` writes one).` });
+    }
+  }
+  return out;
+}
+
 // Image files the scene's materials / environment use (what "textures" should count).
 function textureFiles(scene: SceneDoc): string[] {
   return [...new Set(collectAssetRefs(scene).filter((r) => r.kind === "texture" || r.kind === "hdri").map((r) => r.path))];
@@ -378,6 +416,7 @@ export function drawCallCauses(scene: SceneDoc, shadowLights = 0, prepass = fals
           why.push(`"${o.id}" per-letter text (splitLetters / reveal), ${glyphs} glyphs${layers > 1 ? " × outline" : ""}`);
         } else calls += layers;
       } else if (d.kind === "mesh" || d.kind === "instances" || d.kind === "particles" || d.kind === "svg") calls += 1;
+      else if (d.kind === "photo") calls += d.mode === "layers" && d.depth ? (typeof d.layers === "number" ? d.layers : 6) : 1;
       else if (d.kind === "model" || d.kind === "generator") {
         calls += d.kind === "model" ? 4 : 2;
         const key = d.kind === "model" ? `model:${String(d.src)}` : `generator:${String(d.generator)}:${JSON.stringify(d.params ?? {})}`;
@@ -415,14 +454,15 @@ export function framingIssues(scene: SceneDoc, inspect: InspectResult): Issue[] 
   // in scripts) come and go by design.
   const declared = new Set<string>();
   // Scattered content (generators with an `area`: trees, rocks, grass,
-  // flowers, clouds…; particle systems) spreads past the frame edges by
-  // design: never "clipped".
+  // flowers, clouds…; particle systems) and 3D photos (a full-bleed photo
+  // overscans the frame so its parallax never shows an edge) spread past the
+  // frame edges by design: never "clipped".
   const spread = new Set<string>();
   const scatter = new Set(GENERATORS.filter((g) => g.params.some((p) => p.name === "area")).map((g) => g.id));
   walkObjects(scene.objects, (o) => {
     declared.add(o.id);
     const def = o as { kind?: string; generator?: string };
-    if (def.kind === "particles" || (def.kind === "generator" && def.generator && scatter.has(def.generator))) spread.add(o.id);
+    if (def.kind === "particles" || def.kind === "photo" || (def.kind === "generator" && def.generator && scatter.has(def.generator))) spread.add(o.id);
   });
   // In a scroll-driven story, objects the timeline moves / scales / reveals
   // (or everything, when the camera moves) can be out of view at the checked

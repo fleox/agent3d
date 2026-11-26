@@ -1,6 +1,6 @@
 ---
 name: agent3d-assets
-description: "Find and add 3D assets to an Agent3D project - the built-in CC0 library shipped offline (models, PBR textures, HDRIs, fonts), procedural generators that cost zero bytes, free account-less CC0 sources (Poly Haven, ambientCG, Khronos samples searched and downloaded once into the project; Kenney and Quaternius packs imported from a zip the user downloads), the user's own files, licences and attribution, size budgets, and making textures and models lighter (assets optimize: per-usage sizes, WebP, meshopt, simplify). Use when a scene needs a model, a texture, an HDRI, a logo, a sound or music, or when the user asks where assets come from or how they are licensed."
+description: "Find and add 3D assets to an Agent3D project - the built-in CC0 library shipped offline (models, PBR textures, HDRIs, fonts), procedural generators that cost zero bytes, free account-less CC0 sources (Poly Haven, ambientCG, Khronos samples searched and downloaded once into the project; Kenney and Quaternius packs imported from a zip the user downloads), the user's own files, depth maps for 3D photos (assets depth, a local model downloaded once), licences and attribution, size budgets, and making textures and models lighter (assets optimize: per-usage sizes, WebP, meshopt, simplify). Use when a scene needs a model, a texture, an HDRI, a logo, a sound or music, or when the user asks where assets come from or how they are licensed."
 version: 0.2.3
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
@@ -109,6 +109,21 @@ SVG logos and icons:
 ```
 
 Each path keeps its SVG colour (`keepColors`: default `true` without a `material`, `false` with one; `true` + a material = that finish with the SVG colours). Strokes (`stroke-width`, joins, caps) become solid outlines, so line-icon sets work (`currentColor` takes the material colour; `"strokes": false` ignores strokes). `size` is the width (`fit: "height"` or `"max"` sizes the other or the larger side), `layerGap` separates stacked paths. `<text>` is not supported: ask for the logo with text converted to outlines. Check it with `render --isolate logo`.
+
+## Depth maps for 3D photos
+
+When the user gives a photo and wants it to move in 3D (a "3D photo", parallax photo, "bring this picture to life"), the photo needs a **depth map**: a grey PNG, white = near, black = far, the same aspect as the photo. Estimate it locally:
+
+```bash
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets add ./street.jpg --license CC0-1.0 --author "Jane Doe" --project my-hero --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets depth assets/textures/street.jpg --project my-hero --json
+```
+
+- **Output.** `data.path` = `assets/depth/<photo name>-depth.png` (`--out` to change), at the photo size capped at 2048 px (`--max-size`), transparent on depth jumps (the runtime hides stretched edges there). `data.suggestion` is a ready `{ "kind": "photo", "src", "depth" }` object; `data.ms` the time taken (about 1-1.5 s per photo plus ~2 s to start Chrome). `--size` is the model input long side (default 518; up to 1036 for finer edges, about 4× slower).
+- **Model.** Depth Anything V2 Small (27 MB, Apache-2.0), run in headless Chrome like `render` (WebAssembly, no GPU, no account). The **first run downloads it once** into `~/.agent3d/models/` (the `AGENT3D_MODELS` environment variable moves that folder); every later run works **offline**. Offline before the first download: the error hint gives the model URL and the folder to put it in, or paint a depth map by hand (grey PNG, white = near) and set it as `depth`. The model never goes into exports: only the PNG does.
+- **Licence.** The depth map is registered in `assets/manifest.json` with the **photo's** licence and author (add the photo with `assets add --license … --author …` first; a photo missing from the manifest gives `derived`) and an attribution line naming the model. Ask the user who took the photo and under which licence before using it.
+- Use it on a `photo` object (`src` = the photo, `depth` = `data.path`); skill `agent3d-create` covers the modes, motion and framing. Keep depth maps as PNG: `check` warns on a JPEG depth map (`photo-depth-lossy`), and `assets optimize` only resizes PNG depth maps losslessly.
+- MCP: `image_depth { "image", "out", "size", "maxSize" }` returns the same fields; hosts without headless Chrome refuse it with a hint.
 
 ## Listing and removing
 

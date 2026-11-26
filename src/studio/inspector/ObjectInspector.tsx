@@ -20,6 +20,7 @@ import { TextureField } from "../components/TextureField";
 import { MATERIAL_TEXTURE_SLOTS } from "../../core/validate";
 import type { BodyDef, ColliderDef, TextObjectDef, TextureRef } from "../../core/types";
 import { fieldLabel, pretty } from "../lib/labels";
+import { PhotoSection } from "./PhotoSection";
 
 const SAMPLE_REQUIRED: Record<string, Record<string, unknown>> = {
   lathe: { points: [[0, 0], [0.4, 0], [0.5, 0.3], [0.3, 0.8], [0.35, 1.2], [0, 1.2]] },
@@ -172,6 +173,8 @@ function KindSection({ object: o }: { object: ObjectDef }) {
           <ParamForm specs={SVG_SPECS.map((sp) => (sp.name === "keepColors" ? { ...sp, default: !o.material } : sp))} base={base} values={values} />
         </Section>
       );
+    case "photo":
+      return <PhotoSection object={o} />;
     default:
       return null;
   }

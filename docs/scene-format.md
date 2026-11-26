@@ -19,7 +19,7 @@ This page documents every field once, in the order a scene is usually built. Cat
 6. [Objects](#objects) — common fields, kinds, [geometry](#geometry), [instances](#instances)
 7. [Materials and textures](#materials-and-textures)
 8. [Text and logos](#text-and-logos) — fonts, layout, outline, letters, reveal, SVG
-9. [Models](#models) — glTF files, library models, animation clips, morph targets
+9. [Models](#models) — glTF files, library models, animation clips, morph targets · [Photo (3D photo)](#photo-3d-photo) — an image + depth map
 10. [Generators and particles](#generators-and-particles)
 11. [Behaviours](#behaviours)
 12. [Timeline](#timeline) — tracks, eases, relative values, stagger, markers, segments, scroll scrubbing
@@ -275,7 +275,7 @@ Common fields (every kind):
 | Field | Meaning |
 |---|---|
 | `id` | Unique id (see [Conventions](#conventions)) |
-| `kind` | `mesh`, `text`, `svg`, `model`, `group`, `generator`, `particles`, `instances` |
+| `kind` | `mesh`, `text`, `svg`, `model`, `photo`, `group`, `generator`, `particles`, `instances` |
 | `name` | Display name (Studio outliner) |
 | `position`, `rotation`, `scale` | Transform; `rotation` in degrees (XYZ order); `scale` a number or `[x, y, z]` |
 | `visible`, `castShadow`, `receiveShadow` | |
@@ -293,6 +293,7 @@ Common fields (every kind):
 | `text` | `text`, `font`, `size`, `depth`, `bevel`, `align`, `letterSpacing`, `lineHeight`, `kerning`, `maxWidth`, `curveSegments`, `outline`, `splitLetters`, `reveal`, `material` | [Text and logos](#text-and-logos) |
 | `svg` | `src`, `size`, `fit`, `depth`, `bevel`, `keepColors`, `strokes`, `curveSegments`, `layerGap`, `material` | [Text and logos](#svg-logos-and-icons) |
 | `model` | `src`, `fit`, `center`, `animation`, `morph`, `material` | [Models](#models) |
+| `photo` | `src`, `depth`, `mode`, `width`, `height`, `strength`, `focus`, `segments`, `layers`, `edgeCut`, `motion`, `material` | [Photo (3D photo)](#photo-3d-photo) |
 | `group` | only `children` | |
 | `generator` | `generator`, `params`, `seed`, `material` | [Generators](#generators-and-particles) |
 | `particles` | `preset` + overrides | [Particles](#particles) |
@@ -419,6 +420,40 @@ Paths, `rect`, `circle`, `ellipse`, `polygon`, `polyline`, `line`, `use`, nested
 Interactions switch clips with `playClip`, scripts with `obj.playAnimation(clip)`. Check a new model's orientation and size with `agent3d render --isolate <id>`. Library models are CC0 except a few CC-BY-4.0 ones (`models/products/sneaker.glb`, `iridescent-lamp.glb`, `velvet-sofa.glb`, the animated fox) whose credit `check` reports and exports write to `CREDITS.txt` — see [assets.md](assets.md).
 
 Compressed models: `.glb` files with `EXT_meshopt_compression` (made by `assets optimize`) and `EXT_texture_webp` load as is; Draco-compressed models are not supported.
+
+## Photo (3D photo)
+
+A 2D image given depth by a **depth map**: the picture moves in 3D with the pointer, the scroll, the phone's gyroscope or an automatic drift — the "3D photo" / parallax-photo effect for heroes and banners.
+
+```json
+{ "id": "street", "kind": "photo", "src": "assets/textures/street.jpg", "depth": "assets/depth/street-depth.png",
+  "mode": "parallax", "width": 6, "strength": 0.35, "focus": 0.5,
+  "motion": { "pointer": 1, "scroll": 0.2, "auto": "sway", "speed": 1 } }
+```
+
+| Field | Default | Meaning |
+|---|---|---|
+| `src` | (required) | The image: `.jpg` / `.jpeg` / `.png` / `.webp` project path or `library:<id>` |
+| `depth` | | The depth map (same rules as `src`, same aspect ratio as the image). Without it the photo is flat (`validate` warns) |
+| `mode` | `parallax` | `parallax`: one flat quad with shader parallax (relief mapping) — the 3D-photo look for small motions. `mesh`: a displaced grid that survives larger camera moves. `layers`: the photo cut into depth slices, a pop-up-book look |
+| `width`, `height` | 4, from the image aspect | World size in units. With only `width`, the height follows the image; both set override the aspect |
+| `strength` | 0.5 | Depth effect amount, 0..1 (parallax holds up to ~0.9; mesh ~0.7 with the photo a bit wider than the frame; layers ~0.6) |
+| `focus` | 0.5 | The depth (0 = far … 1 = near) that stays still while the view moves |
+| `segments` | 256 | `mesh` only: grid cells on the long side, 8..1024 (integer) |
+| `layers` | 6 | `layers` only: number of slices, 2..16 (integer) |
+| `edgeCut` | 0.08 | `mesh` / `layers`: hide stretched edges where the depth jumps more than this (0..1; 0 = off) |
+| `motion` | | What moves the view (combined): `pointer` (0..1, default 1), `scroll` (0..1, default 0), `gyro` (phones, default true when `pointer` > 0), `auto` (`sway` default, `orbit`, `zoom`, `none`: a looping drift used in headless renders, videos and on touch screens), `speed` (cycles per 10 s), `smoothing` (0..1) |
+| `material` | | Only `opacity`, `color` (tint) and `emissiveIntensity` (photos are unlit); other material fields are ignored with a warning |
+
+**Depth-map convention.** A grayscale image, **white = near, black = far**, the same aspect ratio as the photo. Its alpha channel, when present, marks depth discontinuities: **alpha 0 = cut edge** (the runtime hides the stretched triangles there in `mesh` / `layers`). Keep it a **PNG**: lossy JPEG / WebP compression adds steps to the relief and drops the alpha mask (`check` reports a JPEG depth map; `assets optimize` only resizes PNG depth maps, losslessly, ~512–1024 px — they are smooth data — and never converts them to a lossy format).
+
+**Workflow.**
+
+1. Add the photo: `agent3d assets add photo.jpg` (or a `library:` image).
+2. Estimate its depth map, locally (no account, no network once the model is downloaded): `agent3d assets depth assets/textures/photo.jpg` — it writes `assets/depth/photo-depth.png` and registers it in `assets/manifest.json` with the photo's licence ([assets.md](assets.md#depth-maps-3d-photos)).
+3. Add the object: `{ "kind": "photo", "src": "…/photo.jpg", "depth": "assets/depth/photo-depth.png" }` (`object_add` / `agent3d object add`).
+4. `agent3d render --count 4 --sheet` (the `auto` drift shows the effect in stills), tune `strength` / `focus` / `mode`.
+5. `agent3d check`: `missing-asset` (photo or depth file), `photo-depth-aspect` (the depth map's aspect differs from the photo's by more than 2 %: regenerate it), `photo-heavy` (photo over 1.5 MB: `agent3d assets optimize <photo>`, which keeps a photo at ≥ 1024 px), `photo-depth-lossy` (JPEG depth map). Triangles: `parallax` 2, `layers` 2 × layers, `mesh` segments × segments × aspect × 2.
 
 ## Generators and particles
 

@@ -1355,3 +1355,68 @@ The built-in procedural character waving on a pedestal, eyes following the point
 - `mattePastel` lightens its colour a lot: pick a saturated `color` for it.
 - Animations: idle, walk, run, wave, jump, dance; styles: humanoid, robot, blob, cat, bird (`catalog generators character`).
 - A rigged library model instead: `{ "kind": "model", "src": "library:models/characters/robot.glb", "fit": 2, "animation": { "clip": "Wave", "loop": true } }` (the model's description lists its clips; an unknown clip makes `render` report an `asset-load` issue listing the real ones).
+
+## 3D photo hero (16:9): a photo that moves in depth
+
+One photograph plus its estimated depth map: the street opens up in depth as the pointer (or the phone's gyroscope, or a slow automatic sway) moves the view; a white serif headline rises into the sky between the roofs. Built from a 3:2 blue-hour street photo (the `hero-photo-3d` template ships it): add the photo with `assets add`, run `assets depth assets/textures/photo.jpg`, then apply the scene.
+
+```json
+{
+  "version": 1,
+  "id": "photo-hero",
+  "title": "3D photo hero",
+  "ariaLabel": "Old Town: a blue-hour street of painted houses and lit arcades, gently moving in 3D, with the headline Old Town, after-dark walking tours",
+  "target": {"kind": "hero", "aspect": "16:9", "posterTime": 2.5, "reducedMotion": "static", "toneMapping": "none"},
+  "camera": {"type": "perspective", "fov": 35, "position": [0, 0, 10], "target": [0, 0, 0]},
+  "environment": {"background": "#0b1020"},
+  "lights": [{"id": "fill", "type": "hemisphere", "intensity": 1}],
+  "objects": [
+    {
+      "id": "photo",
+      "kind": "photo",
+      "src": "assets/textures/photo.jpg",
+      "depth": "assets/depth/photo-depth.png",
+      "mode": "parallax",
+      "width": 11.9,
+      "strength": 0.8,
+      "focus": 0.45,
+      "motion": {"pointer": 1, "gyro": true, "auto": "sway", "speed": 1.2, "smoothing": 0.9}
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "{data.title|OLD TOWN}",
+      "font": "serif-bold",
+      "size": 0.56,
+      "depth": 0,
+      "letterSpacing": 0.06,
+      "align": "center",
+      "position": [-0.35, 2.05, 0.5],
+      "material": {"type": "basic", "color": "#ffffff"},
+      "reveal": {"effect": "rise", "stagger": 0.04, "duration": 1, "delay": 0.3, "ease": "outCubic"}
+    },
+    {
+      "id": "subtitle",
+      "kind": "text",
+      "text": "{data.subtitle|AFTER-DARK WALKING TOURS}",
+      "font": "sans-bold",
+      "size": 0.088,
+      "depth": 0,
+      "letterSpacing": 0.1,
+      "align": "center",
+      "position": [-0.35, 1.69, 0.5],
+      "material": {"type": "basic", "color": "#e8eef8"},
+      "behaviours": [{"type": "appear", "effect": "fade", "duration": 1, "delay": 1.1}]
+    }
+  ],
+  "postfx": [{"type": "vignette", "darkness": 0.55}],
+  "data": {"title": "OLD TOWN", "subtitle": "AFTER-DARK WALKING TOURS"}
+}
+```
+
+- **Cover the frame.** The camera stays still (the photo's shader does the motion). At fov 35 and distance 10 a 16:9 frame is about 11.2 × 6.3 units: `width: 11.9` covers it with a 3:2 photo (top and bottom cropped). A narrower photo leaves background bars; `check` reports the covering photo as a `clipped` info, which is expected here.
+- **Depth.** `strength` 0.8 gives the bold parallax of this hero (parallax mode holds up to ~0.9; mesh ~0.7, layers ~0.6); `focus` is the depth (0 far … 1 near) that stays still: put it on the subject (0.45 here: the middle of the street) so the subject stays put while the near walls and the far sky move in opposite directions.
+- **Text on photos.** Photos are unlit and never tone mapped; `target.toneMapping: "none"` keeps a `basic` white title pure white instead of ACES grey. Put the headline over a calm area (sky, a wall, a soft background) and check its contrast in the render; a light `vignette` frames without darkening the subject.
+- **Motion.** `auto: "sway"` plays in headless renders, videos and on touch screens, and fades out while the pointer drives the view; `gyro: true` follows the phone's tilt. Reduced motion: no drift, half the pointer amount, and the `static` still at `posterTime`.
+- **Modes.** `parallax` (default, 2 triangles) for heroes and banners with small motions; `mesh` (a displaced grid, `segments`) survives larger moves such as `auto: "orbit"`; `layers` cuts the photo into depth slices for a pop-up-book look.
+- Tested: `render --count 4 --sheet` (the sway shows the effect across frames), then `render --frames 0.5,1,1.5,2 --sheet --input '[{"t": 0.1, "pointer": [-1, 0]}, {"t": 0.9, "pointer": [1, 0]}, {"t": 1.4, "pointer": [0, 1]}, {"t": 1.9, "pointer": [0, -1]}]'`: the near walls slide against the far street between frames. `check --render` passes (photo 552 KB + depth map 185 KB + two fonts ≈ 1 MB of the 1.5 MB hero budget).

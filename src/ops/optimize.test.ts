@@ -242,6 +242,35 @@ describe("assets optimize: formats, plan, dry run", () => {
     expect(manifest.assets[0].bytes).toBe(fakeImage(512, 512).byteLength);
   });
 
+  it("sizes 3D photos generously and keeps depth maps lossless PNG", async () => {
+    const fs = new MemoryFs();
+    await createProject(fs, { name: "t", target: { kind: "hero" } });
+    await addAsset(fs, { path: "assets/textures/pic.jpg", bytes: fakeImage(4096, 2048), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/textures/pic.depth.png", bytes: fakeImage(4096, 2048), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/textures/far.jpg", bytes: fakeImage(2048, 2048), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/textures/far.depth.jpg", bytes: fakeImage(2048, 2048), source: "local", license: "CC0-1.0" });
+    await patchScene(fs, [
+      { op: "addObject", object: { id: "pic", kind: "photo", src: "assets/textures/pic.jpg", depth: "assets/textures/pic.depth.png", width: 4 } as never },
+      // Far away: a small material map would get 256 px; a photo never goes below 1024.
+      { op: "addObject", object: { id: "far", kind: "photo", src: "assets/textures/far.jpg", depth: "assets/textures/far.depth.jpg", width: 1, position: [0, 0, -60] } as never },
+    ]);
+    const plan = await planOptimize(fs, { all: true });
+    const by = (p: string) => plan.entries.find((x) => x.path === p);
+    expect(by("assets/textures/far.jpg")!.maxSize).toBe(1024);
+    expect(by("assets/textures/pic.jpg")!.maxSize).toBeGreaterThanOrEqual(1024);
+    expect(by("assets/textures/pic.depth.png")).toMatchObject({ format: "png" });
+    expect(by("assets/textures/pic.depth.png")!.maxSize).toBeLessThanOrEqual(1024);
+    expect(by("assets/textures/far.depth.jpg")).toBeUndefined();
+    expect(plan.skipped.find((x) => x.path === "assets/textures/far.depth.jpg")!.reason).toMatch(/lossless/);
+    const r = await optimizeAssets(fs, { all: true }, fakeCodec);
+    const depth = r.files.find((f) => f.path === "assets/textures/pic.depth.png")!;
+    expect(depth.newPath).toBeUndefined();
+    expect(depth.images[0]).toMatchObject({ role: "depth", to: expect.stringContaining("image/png") });
+    expect(r.renamed).toEqual(expect.arrayContaining([{ from: "assets/textures/pic.jpg", to: "assets/textures/pic.webp" }]));
+    expect(r.renamed!.some((x) => x.from.includes("depth"))).toBe(false);
+    expect(await fs.exists("assets/textures/far.depth.jpg")).toBe(true);
+  });
+
   it("keeps the format when a script names the file", async () => {
     const fs = await project();
     await fs.writeText("scripts/game.js", 'export default (api) => { api.data.tex = "assets/textures/wood.jpg"; };');

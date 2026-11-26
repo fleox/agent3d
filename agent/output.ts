@@ -67,6 +67,7 @@ const TOOL_COMMANDS: Record<string, string> = {
   assets_search: "agent3d assets search",
   assets_add: "agent3d assets add",
   assets_optimize: "agent3d assets optimize",
+  image_depth: "agent3d assets depth",
   library_list: "agent3d assets library",
   render_preview: "agent3d render",
 };

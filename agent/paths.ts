@@ -64,3 +64,12 @@ export function readVersionInfo(): VersionInfo {
 }
 
 export const PACKAGE_NAME = pkg.name;
+
+// onnxruntime-web files for `assets depth` (authoring-time depth maps):
+// dist/agent/ort/ (copied by vite.agent.config.ts), else node_modules in a
+// clone / under vitest. Null when neither exists.
+export const ORT_FILES = ["ort.wasm.bundle.min.mjs", "ort-wasm-simd-threaded.wasm"] as const;
+export function ortDir(): string | null {
+  const candidates = [join(distRoot(), "agent", "ort"), join(packageRoot(), "node_modules", "onnxruntime-web", "dist")];
+  return candidates.find((d) => ORT_FILES.every((f) => existsSync(join(d, f)))) ?? null;
+}

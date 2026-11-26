@@ -76,6 +76,7 @@ Exactly the AI tool catalog of `src/ai/tools.ts` (`agent3d tools list` prints th
 | `assets_search` | | Free CC0 / CC-BY sources (Poly Haven, ambientCG, Khronos, Kenney, Quaternius) — network |
 | `assets_add` | yes | Download a search hit (`resolution`; below 1k or `maxSize` downscales; models return `bounds`), or import a local file / Kenney / Quaternius zip |
 | `assets_optimize` | yes | Lighter textures and models: smart per-usage texture sizes, WebP re-encoding (scene references rewritten), meshopt `.glb` geometry, optional `simplify`; `dryRun: true` reports the savings first. Textures need a host with headless Chrome; geometry does not |
+| `image_depth` | yes | Depth map for a 3D photo (`image`, `out?`, `size?`, `maxSize?`): Depth Anything V2 Small run locally in headless Chrome (model downloaded once, 27 MB, Apache-2.0) → grey PNG under `assets/depth/` (white = near, alpha 0 on depth jumps); returns `{ path, … }`. CLI / MCP host only |
 | `library_list` | | The built-in offline library (models with sizes, triangles and clip names, textures, HDRIs) as `library:<id>` refs |
 | `export` | yes | `embed` (default), `zip` or `single-html` into `dist/<format>/` (`baseUrl`, `cacheBust`, `integrity`, `extras`, `optimize`, `og`); `poster` (still), `video` (WebM / MP4 `codec`), `gif` and `animated-webp` into `dist/` or `renders/` when the host can render (`quality` draft…ultra, `transparent`, `fps`, `duration`, `size`) |
 | `render_preview` | | Headless render: frames + contact sheet, stats, inspect, game `state` (CLI / MCP host only — needs Chrome) |

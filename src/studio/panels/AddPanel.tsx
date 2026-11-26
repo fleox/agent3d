@@ -7,7 +7,7 @@ import clsx from "clsx";
 import {
   Box, Building, Circle, CircleDot, Cloud, CloudRain, CloudSun, Cone, Cylinder, Diamond, Donut, Flame, Gem, Globe, Grid3x3, Heart, Hexagon, Infinity as InfinityIcon,
   Lamp, Library, Lightbulb, Mountain, PartyPopper, PersonStanding, Pill, Route, Search, Shapes, Snowflake, Sparkle, Sparkles, Spline, Square, SquareRoundCorner, Star, Sun, SunDim,
-  Trees, TreePine, Triangle, Type, Wind, Wine, Droplets, Activity, Castle, type LucideIcon,
+  Trees, TreePine, Triangle, Type, Wind, Wine, Droplets, Activity, Castle, Image, Plus, type LucideIcon,
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { FONTS, GENERATORS, GEOMETRIES, PARTICLE_PRESETS } from "../../core/catalog";
@@ -19,6 +19,8 @@ import { findObject } from "../../ops/tree";
 import { useEditor, useSnapshot, useUi } from "../state/context";
 import { pretty } from "../lib/labels";
 import { setDragPayload, type DropPayload } from "../lib/dnd";
+import { imageOptions, selectedImage } from "../lib/photo";
+import { useProjectImages } from "../components/ImageAssetField";
 
 const GEO_ICONS: Record<string, LucideIcon> = {
   box: Box, roundedBox: SquareRoundCorner, sphere: Circle, cylinder: Cylinder, cone: Cone, capsule: Pill, torus: Donut, torusKnot: InfinityIcon,
@@ -44,6 +46,7 @@ const TABS: { id: string; icon: LucideIcon; label: MessageKey }[] = [
   { id: "generators", icon: Mountain, label: "add.generators" },
   { id: "particles", icon: Sparkles, label: "add.particles" },
   { id: "library", icon: Library, label: "add.library" },
+  { id: "photo", icon: Image, label: "add.photo" },
   { id: "lights", icon: Lightbulb, label: "add.lights" },
 ];
 
@@ -68,6 +71,11 @@ export function AddPanel() {
     const id = uniqueId(def.type, takenIds(scene));
     edit([{ op: "set", path: `lights[${(scene.lights ?? []).length}]`, value: { id, ...def } }], { select: null });
   };
+
+  const images = useProjectImages(tab === "photo");
+  const [photoPath, setPhotoPath] = useState("");
+  const selImage = selectedImage(snap.selection ? findObject(scene.objects, snap.selection)?.object : null);
+  const photoImages = useMemo(() => imageOptions(images.assets, undefined, undefined, { library: false }), [images.assets]);
 
   const models = useMemo(() => library.assets.filter((a) => a.kind === "model"), [library]);
   const tags = useMemo(() => {
@@ -150,6 +158,42 @@ export function AddPanel() {
             ))}
             {!filtered.length && <div className="px-3 py-3 text-xs text-fg-faint">{models.length ? t("add.noMatch") : t("add.noLibrary")}</div>}
           </div>
+        </div>
+      );
+      break;
+    case "photo":
+      body = (
+        <div className="space-y-1 py-1.5">
+          <div className="px-2.5 pb-1 text-2xs leading-snug text-fg-faint">{t("add.photoHint")}</div>
+          {selImage && (
+            <button type="button" title={selImage} onClick={() => add({ kind: "photo", src: selImage })} className="flex w-full items-center gap-2 px-2.5 py-1 text-left hover:bg-ink-2">
+              <Image size={12} className="shrink-0 text-accent" />
+              <span className="min-w-0 flex-1 truncate text-sm">{t("add.photoSelected")}</span>
+              <span className="shrink-0 truncate text-2xs text-fg-faint">{selImage.split("/").pop()}</span>
+            </button>
+          )}
+          {photoImages.map((a) => (
+            <button key={a.value} type="button" title={a.value} draggable onDragStart={(e) => setDragPayload(e, { object: { kind: "photo", src: a.value } })} onClick={() => add({ kind: "photo", src: a.value })} className="flex w-full items-center gap-2 px-2.5 py-1 text-left hover:bg-ink-2">
+              <Image size={12} className="shrink-0 text-fg-faint" />
+              <span className="min-w-0 flex-1 truncate text-sm">{a.label}</span>
+            </button>
+          ))}
+          {images.assets && !photoImages.length && <div className="px-3 py-2 text-xs text-fg-faint">{t("add.photoNone")}</div>}
+          <form
+            className="flex gap-1 px-2.5 pt-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const src = photoPath.trim();
+              if (!src) return;
+              add({ kind: "photo", src });
+              setPhotoPath("");
+            }}
+          >
+            <input value={photoPath} onChange={(e) => setPhotoPath(e.target.value)} className="field h-7 font-mono" aria-label={t("photo.typePath")} placeholder={t("photo.pathPlaceholder")} />
+            <button type="submit" disabled={!photoPath.trim()} title={t("add.photoAdd")} aria-label={t("add.photoAdd")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-ink-3 text-fg hover:bg-ink-4 disabled:opacity-40">
+              <Plus size={13} />
+            </button>
+          </form>
         </div>
       );
       break;

@@ -32,13 +32,21 @@ An unknown id fails with `invalid` and the hint lists how to find ids (`object l
 ]
 ```
 
-Object kinds: `mesh` (geometry + material), `text`, `model` (`src` = `assets/…` or `library:<id>`, `fit`, `animation`), `group`, `generator` (`generator` + `params` + `seed`), `particles` (`preset` + overrides), `instances` (one geometry many times: `layout` grid / scatter / circle / list), `svg` (inline markup or a project path, extruded). Common fields: `position`, `rotation` (degrees), `scale` (number or [x, y, z]), `visible`, `castShadow`, `receiveShadow`, `behaviours`, `children`, `tags`, `body` (physics), `href` (click opens a URL, pointer cursor), `userData`, `attach: "camera"` (top-level objects: rides with the camera; `position` / `rotation` are then in camera space, x right, y up, -z forward — `[0, -1.2, -6]` = 6 units in front of the lens — for captions and chapter labels that stay on screen during shots and scroll stories).
+Object kinds: `mesh` (geometry + material), `text`, `model` (`src` = `assets/…` or `library:<id>`, `fit`, `animation`), `group`, `generator` (`generator` + `params` + `seed`), `particles` (`preset` + overrides), `instances` (one geometry many times: `layout` grid / scatter / circle / list), `svg` (inline markup or a project path, extruded), `photo` (a 3D photo: `src` image + `depth` map, `mode` parallax / mesh / layers, `width`, `strength`, `focus`, `motion` — see below). Common fields: `position`, `rotation` (degrees), `scale` (number or [x, y, z]), `visible`, `castShadow`, `receiveShadow`, `behaviours`, `children`, `tags`, `body` (physics), `href` (click opens a URL, pointer cursor), `userData`, `attach: "camera"` (top-level objects: rides with the camera; `position` / `rotation` are then in camera space, x right, y up, -z forward — `[0, -1.2, -6]` = 6 units in front of the lens — for captions and chapter labels that stay on screen during shots and scroll stories).
 
 Duplicating a prop: `object get <id>`, change its `id` and `position`, `addObject`. Many copies: one `instances` object instead (cheaper):
 
 ```json
 { "op": "addObject", "object": { "id": "coins", "kind": "instances", "geometry": { "type": "cylinder", "radiusTop": 0.3, "radiusBottom": 0.3, "height": 0.08 }, "material": { "preset": "gold" }, "layout": { "type": "circle", "count": 12, "radius": 4 } } }
 ```
+
+A 3D photo (the depth map comes from `assets depth <image>`, skill `agent3d-assets`; workflow and tips: skill `agent3d-create`, "Bring a photo to life"):
+
+```json
+{ "op": "addObject", "object": { "id": "photo", "kind": "photo", "src": "assets/textures/photo.jpg", "depth": "assets/depth/photo-depth.png", "mode": "parallax", "width": 11.9, "strength": 0.3, "focus": 0.5, "motion": { "pointer": 1, "gyro": true, "auto": "sway", "speed": 1 } } }
+```
+
+Fields: `mode` (`parallax` default, `mesh`, `layers`), `width` / `height` (world units; the height follows the image aspect), `strength` (0..1, default 0.5), `focus` (the depth that stays still, 0 far … 1 near), `segments` (mesh), `layers` (layers), `edgeCut` (mesh / layers: hide stretched edges, default 0.08), `motion` (`pointer`, `scroll`, `gyro`, `auto`: `sway` / `orbit` / `zoom` / `none`, `speed`, `smoothing`), `material` (only `opacity`, `color` tint, `emissiveIntensity`). Photos are unlit and not tone mapped. Without `depth` the photo is flat (`validate` warns).
 
 ## Text and letters
 

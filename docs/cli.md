@@ -61,7 +61,7 @@ Generated from the CLI's own command list (`help --json`); `npm test` fails when
 | [`serve`](#serve) | Live preview of the project on 127.0.0.1 (scene at its aspect ratio, play / pause, time scrubber): scene.json edits update the open page instantly, asset / script edits reload it. Runs until stopped (Ctrl+C). |
 | [`studio`](#studio) | Open the Studio (visual editor: viewport, outliner, inspector, timeline, catalog, templates, assistant) on this computer, editing the project folder through a local API. Runs until stopped (Ctrl+C). |
 | [`export`](#export) | Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Reports pageKb / pageKbGzip (what a visitor downloads for this scene: runtime entry + the chunks it loads + scene, assets, scripts, poster) and folderKb (every file written). Overwriting a non-empty --out needs --yes. |
-| [`assets`](#assets) | Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (smart-size + WebP textures, meshopt .glb geometry), remove, and browse the built-in library. |
+| [`assets`](#assets) | Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (smart-size + WebP textures, meshopt .glb geometry), depth (estimate a depth map for a 3D photo), remove, and browse the built-in library. |
 | [`tools`](#tools) | The AI tool catalog (src/ai/tools.ts + render_preview) — exactly what the MCP server and the Studio assistant expose: list the tools with their JSON schemas, or call one with a JSON input. |
 | [`mcp`](#mcp) | Run the MCP server on stdio (JSON-RPC 2.0, protocol 2025-06-18 / 2025-03-26 / 2024-11-05): tools = the AI catalog + render_preview (returns the contact sheet as an image), resources = scene, summary, catalog. For Claude Desktop / Claude Code / Cursor. |
 | [`doctor`](#doctor) | Check the setup: Node version, installed Chrome (+ version), the runtime / Studio builds, library and templates, and a headless WebGL test render of a 1-object scene (in a temp folder). A failed required check makes the command fail (exit 1, error code doctor-failed, one hint per failed check, every check in error.details.checks). |
@@ -162,12 +162,12 @@ agent3d object <add|update|remove|list|get|move> [<id>] [--project <dir>]
 | `--json-def <value>` | The object (add) or the properties to change (update) as JSON, @file or - (stdin). |
 | `--set <value>` (repeatable) | key=value (dotted keys, JSON values), repeated: --set position=[0,1,0] --set material.color="#ff3366". |
 | `--id <value>` | add: the new object's id ([a-zA-Z][a-zA-Z0-9_-]*). |
-| `--kind <value>` | add: mesh, text, model, group, generator, particles, instances, svg. |
+| `--kind <value>` | add: mesh, text, model, group, generator, particles, instances, svg, photo. |
 | `--geometry <value>` | add: geometry type (implies kind mesh) — `agent3d catalog geometries`. |
 | `--generator <value>` | add: generator id (implies kind generator) — `agent3d catalog generators`. |
 | `--preset <value>` | add: particle preset (implies kind particles) — `agent3d catalog particlePresets`. |
 | `--text <value>` | add: the text (implies kind text). |
-| `--src <value>` | add: model / svg source (project path or library:<id>). |
+| `--src <value>` | add: model / svg / photo source (project path or library:<id>; an image makes a photo). |
 | `--parent <value>` | add / move: parent object id. |
 | `--root` | move: to the top level. |
 | `--index <value>` | add / move: position among the siblings. |
@@ -343,10 +343,10 @@ _Writes to the project._
 
 ### assets
 
-Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (smart-size + WebP textures, meshopt .glb geometry), remove, and browse the built-in library.
+Project assets (assets/ + manifest with licences): list, search free CC0 sources (Poly Haven, ambientCG, Kenney, Quaternius, Khronos), add (local file or a search hit — downloaded once into the project), optimize (smart-size + WebP textures, meshopt .glb geometry), depth (estimate a depth map for a 3D photo), remove, and browse the built-in library.
 
 ```
-agent3d assets <list|search|add|optimize|remove|library> [--project <dir>]
+agent3d assets <list|search|add|optimize|depth|remove|library> [--project <dir>]
 ```
 
 | Action | Usage | What it does |
@@ -355,6 +355,7 @@ agent3d assets <list|search|add|optimize|remove|library> [--project <dir>]
 | `search` | `agent3d assets search <query> [--kind model\|texture\|hdri] [--source polyhaven\|ambientcg\|kenney\|quaternius\|khronos]` | Search free, account-less CC0 sources (network). Hits can be added with `assets add --hit '<json>'`. |
 | `add` | `agent3d assets add <file> [--kind <k>] [--path assets/…] [--license CC0-1.0] [--author <name>] \| assets add <pack.zip> --source kenney\|quaternius\|local --license CC0-1.0 [--filter <word>]… [--name <pack>] \| assets add --hit <json\|@file> [--resolution 1k\|512] [--max-size <px>]` | Copy a local file into assets/, import a Kenney / Quaternius pack zip (only .glb/.gltf + textures, --filter keeps models whose path contains a word), or download a search hit (licence recorded in assets/manifest.json). Models return `bounds` (size w × h × d in model units + up-axis guess). --resolution below 1k (e.g. 512) downloads 1k and downscales (headless Chrome). |
 | `optimize` | `agent3d assets optimize [<path>…] [--all] [--max-size <px>] [--format auto\|webp\|jpeg\|png\|keep] [--quality 80] [--compress meshopt\|none] [--simplify <ratio>] [--simplify-error 0.01] [--dry-run] [--yes]` | Make textures and models lighter. Textures (.jpg / .png / .webp files and the images inside .glb models) get the size the scene needs — computed per texture from the target, the object's size on screen, the camera distance and the texture role (reported with the reason; --max-size forces one size) — and are re-encoded as WebP by default (standalone files are renamed and scene references rewritten; models use EXT_texture_webp). .glb geometry is welded, reordered and meshopt-compressed (EXT_meshopt_compression, decoded by the runtime), optionally simplified (--simplify 0.5). Files only change when they get smaller. Lossy: prints the plan (sizes + reasons, no Chrome needed) unless --yes; --dry-run encodes everything and reports the real savings without writing. Textures need headless Chrome (geometry does not). **Plan + `--yes`.** |
+| `depth` | `agent3d assets depth <image> [--out assets/depth/<name>-depth.png] [--size 518] [--max-size 2048]` | Estimate a depth map for a photo of the project (or "library:<id>") with Depth Anything V2 Small, run locally in headless Chrome (onnxruntime-web, WASM). Writes a grey PNG (white = near, transparent on depth jumps) at the photo size (capped by --max-size, default 2048) to use as a photo object's `depth`, registered in assets/manifest.json with the photo's licence. The model (27 MB, Apache-2.0) is downloaded once into ~/.agent3d/models (AGENT3D_MODELS overrides); later runs work offline. --size is the model input long side (default 518, up to 1036 for finer edges, slower). |
 | `remove` | `agent3d assets remove <path> [--yes]` | Delete an asset and its manifest entry (plan + needsConfirmation unless --yes). **Plan + `--yes`.** |
 | `library` | `agent3d assets library [--query <text>] [--kind <k>] [--limit 50] [--offset 0] [--all]` | Built-in CC0 assets shipped with Agent3D — reference them as "library:<id>" (no download). Shows animation clips and triangles of models; 50 results per page (`more: true` → next page with --offset, or --all). |
 
@@ -371,13 +372,15 @@ agent3d assets <list|search|add|optimize|remove|library> [--project <dir>]
 | `--all` | library: every match, no limit. optimize: every texture and .glb under assets/. |
 | `--hit <value>` | add: a hit from `assets search` (JSON, @file or -). |
 | `--resolution <value>` | add --hit: texture / HDRI resolution (1k, 2k…; default 1k). Lower values (512, 256) download 1k and downscale to that size. |
-| `--max-size <value>` | optimize / add --hit: longest texture side in pixels, for every texture (optimize default: a smart size per texture from the scene; never upscales). |
+| `--max-size <value>` | optimize / add --hit: longest texture side in pixels, for every texture (optimize default: a smart size per texture from the scene; never upscales). depth: longest side of the depth map (default 2048). |
 | `--quality <value>` | optimize / add --hit: JPEG / WebP quality 1-100 (default 80; normal maps use at least 90). |
 | `--format <value>` | optimize: texture output format — auto (default, WebP), webp, jpeg (images with alpha keep their format), png or keep. |
 | `--compress <value>` | optimize: .glb geometry compression — meshopt (default) or none. |
 | `--simplify <value>` | optimize: keep this fraction of each .glb mesh's triangles (e.g. 0.5), within --simplify-error. |
 | `--simplify-error <value>` | optimize --simplify: max deviation as a fraction of the mesh size (default 0.01). |
 | `--dry-run` | optimize: encode everything and report the savings, write nothing. |
+| `--out <value>` | depth: project path of the depth PNG (default assets/depth/<image name>-depth.png). |
+| `--size <value>` | depth: model input long side in pixels (default 518; 140-1036, rounded to a multiple of 14). |
 | `--path <value>` | add: destination path in the project (default assets/<kind>/<file name>). |
 | `--license <value>` | add: the file's licence (SPDX id, e.g. CC0-1.0, CC-BY-4.0). |
 | `--author <value>` | add: author / attribution name. |

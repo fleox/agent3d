@@ -1,0 +1,25 @@
+{
+  "assets": [
+    {
+      "path": "assets/depth/street-depth.png",
+      "kind": "texture",
+      "bytes": 185654,
+      "source": "depth-anything-v2-small",
+      "sourceUrl": "https://huggingface.co/onnx-community/depth-anything-v2-small",
+      "license": "CC0-1.0",
+      "author": "Wilfredo Rafael Rodriguez Hernandez (Wilfredor)",
+      "attribution": "Depth map of assets/textures/street.jpg estimated with Depth Anything V2 Small (Apache-2.0). Image: \"street.jpg\" by Wilfredo Rafael Rodriguez Hernandez (Wilfredor) (https://commons.wikimedia.org/wiki/File:Herzog-Friedrich-Stra%C3%9Fe_in_Innsbruck%27s_Historic_Old_Town,_Austria.jpg), licensed under CC0-1.0.",
+      "addedAt": "2026-11-26T00:00:00.000Z"
+    },
+    {
+      "path": "assets/textures/street.jpg",
+      "kind": "texture",
+      "bytes": 552060,
+      "source": "local",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Herzog-Friedrich-Stra%C3%9Fe_in_Innsbruck%27s_Historic_Old_Town,_Austria.jpg",
+      "license": "CC0-1.0",
+      "author": "Wilfredo Rafael Rodriguez Hernandez (Wilfredor)",
+      "addedAt": "2026-11-26T00:00:00.000Z"
+    }
+  ]
+}

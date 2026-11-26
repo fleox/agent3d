@@ -37,6 +37,7 @@ export const CHUNK_FEATURES: Record<string, { feature: string; needed: Need }> =
   text: { feature: "3D text", needed: (s) => hasKind(s, ["text"]) },
   svg: { feature: "SVG objects", needed: (s) => hasKind(s, ["svg"]) },
   model: { feature: "glTF models", needed: (s) => hasKind(s, ["model"]) },
+  photo: { feature: "3D photos", needed: (s) => hasKind(s, ["photo"]) },
   game: { feature: "scripts / HUD / physics / audio", needed: (s) => needsGameChunk(s) },
   audio: { feature: "audio", needed: (s) => !!s.audio },
   physicsHost: { feature: "physics", needed: (s) => !!s.physics || hasBody(s) },

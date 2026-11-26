@@ -67,7 +67,7 @@ export interface OptimizeOptions {
 
 export interface OptimizedImage {
   name: string;
-  role?: ImageRole | "background" | "lighting";
+  role?: ImageRole | "background" | "lighting" | "depth";
   from: string; // "2048x2048 image/png 3100 KB"
   to: string;
   replaced: boolean;
@@ -188,6 +188,13 @@ function decisionFor(plan: SizingPlan, path: string, forced: number | undefined)
   return plan.files.get(path) ?? { maxSize: FALLBACK_MAX_SIZE, reason: `not placed in scene.json (scripts / unused) → ${FALLBACK_MAX_SIZE} px`, uses: [] };
 }
 
+// A 3D photo depth map (objects#…depth): smooth data whose steps show as relief
+// artefacts, so it is only resized as a lossless PNG and never re-encoded lossy.
+function isDepthMap(plan: SizingPlan, path: string): boolean {
+  return !!plan.files.get(path)?.uses.some((u) => u.role === "depth");
+}
+const DEPTH_KEPT = "Depth map of a 3D photo: only PNG depth maps are resized (losslessly); re-encoding a lossy one adds relief artefacts. Regenerate it as PNG with `agent3d assets depth <photo>`.";
+
 function roleDecision(plan: SizingPlan, path: string, role: ImageRole, forced: number | undefined): SizeDecision {
   if (forced) return { maxSize: forced, reason: `--max-size ${forced}`, uses: [] };
   return plan.modelRoles.get(path)?.[role] ?? { maxSize: FALLBACK_MAX_SIZE, reason: `model not placed in scene.json → ${FALLBACK_MAX_SIZE} px`, uses: [] };
@@ -222,7 +229,11 @@ export async function planOptimize(fs: ProjectFs, opts: OptimizeOptions): Promis
     } else {
       const d = decisionFor(sizing, path, opts.maxSize);
       const h = imageHeader(bytes);
-      entries.push({ path, kb, kind: "texture", maxSize: d.maxSize, reason: d.reason, ...(h ? { width: h.width, height: h.height } : {}), resize: h ? Math.max(h.width, h.height) > d.maxSize : true, format: format === "auto" ? "webp" : format });
+      if (isDepthMap(sizing, path) && ext(path) !== "png") {
+        skipped.push({ path, reason: DEPTH_KEPT });
+        continue;
+      }
+      entries.push({ path, kb, kind: "texture", maxSize: d.maxSize, reason: d.reason, ...(h ? { width: h.width, height: h.height } : {}), resize: h ? Math.max(h.width, h.height) > d.maxSize : true, format: isDepthMap(sizing, path) ? "png" : format === "auto" ? "webp" : format });
     }
   }
   return { viewport: sizing.viewport, entries, skipped, maxSize: opts.maxSize ?? "auto", quality: opts.quality ?? DEFAULT_QUALITY, format, compress };
@@ -275,11 +286,16 @@ export async function optimizeAssets(fs: ProjectFs, opts: OptimizeOptions, codec
       }
       const d = decisionFor(sizing, path, forced);
       const mime = IMAGE_EXT[ext(path)];
+      const depthMap = isDepthMap(sizing, path);
+      if (depthMap && mime !== "image/png") {
+        skipped.push({ path, reason: DEPTH_KEPT });
+        continue;
+      }
       const role = d.uses.some((u) => u.role === "color" || u.role === "background") ? "color" : d.uses.length && d.uses.every((u) => u.role === "data") ? "data" : d.uses.some((u) => u.role === "normal") ? "normal" : "color";
       // Format: a new extension means renaming the file + rewriting scene refs.
-      let fmt: TextureFormat = format;
-      let renameNote: string | undefined;
-      const wanted = format === "auto" || format === "webp" ? "image/webp" : format === "jpeg" ? "image/jpeg" : format === "png" ? "image/png" : mime;
+      let fmt: TextureFormat = depthMap ? "keep" : format;
+      let renameNote: string | undefined = depthMap && format !== "keep" && format !== "png" ? "Depth map: kept as lossless PNG." : undefined;
+      const wanted = depthMap ? mime : format === "auto" || format === "webp" ? "image/webp" : format === "jpeg" ? "image/jpeg" : format === "png" ? "image/png" : mime;
       if (wanted !== mime) {
         const to = path.slice(0, path.lastIndexOf(".") + 1) + EXT_FOR_MIME[wanted];
         const blocker = await renameBlocker(fs, scene, path, to);
@@ -290,7 +306,7 @@ export async function optimizeAssets(fs: ProjectFs, opts: OptimizeOptions, codec
       }
       const out = await codec({ bytes, mimeType: mime, maxSize: d.maxSize, quality: role === "normal" ? Math.max(quality, NORMAL_MIN_QUALITY) : quality, format: fmt });
       const ok = worthIt(out, bytes.byteLength);
-      const image: OptimizedImage = { name: "image", role: d.uses.some((u) => u.role === "background") ? "background" : d.uses.length && d.uses.every((u) => u.role === "lighting") ? "lighting" : role, from: describe(out.srcWidth, out.srcHeight, mime, bytes.byteLength), to: describe(out.width, out.height, out.mimeType, out.bytes.byteLength), replaced: ok, maxSize: d.maxSize };
+      const image: OptimizedImage = { name: "image", role: depthMap ? "depth" : d.uses.some((u) => u.role === "background") ? "background" : d.uses.length && d.uses.every((u) => u.role === "lighting") ? "lighting" : role, from: describe(out.srcWidth, out.srcHeight, mime, bytes.byteLength), to: describe(out.width, out.height, out.mimeType, out.bytes.byteLength), replaced: ok, maxSize: d.maxSize };
       let newPath: string | undefined;
       if (ok && out.mimeType !== mime) newPath = path.slice(0, path.lastIndexOf(".") + 1) + EXT_FOR_MIME[out.mimeType];
       if (ok && !opts.dryRun) {
@@ -431,7 +447,7 @@ export async function optimizedExportSources<L extends { index: LibraryIndex; re
           if (e === "glb") {
             const roleSizes = sizing.modelRoles.get(key);
             out = (await optimizeGlbFile(bytes, key, { sizing, quality, format: "auto", compress: true, roleSizes: roleSizes ? Object.fromEntries(Object.entries(roleSizes).map(([r, v]) => [r, v!.maxSize])) : undefined }, opts.codec)).bytes;
-          } else if (IMAGE_EXT[e] && opts.codec && d) {
+          } else if (IMAGE_EXT[e] && opts.codec && d && !(isDepthMap(sizing, key) && e !== "png")) {
             const role = d.uses.every((u) => u.role === "normal") ? "normal" : "color";
             const r = await opts.codec({ bytes, mimeType: IMAGE_EXT[e], maxSize: d.maxSize, quality: role === "normal" ? Math.max(quality, NORMAL_MIN_QUALITY) : quality, format: "keep" });
             if (r.mimeType === IMAGE_EXT[e] && worthIt(r, bytes.byteLength)) out = r.bytes;

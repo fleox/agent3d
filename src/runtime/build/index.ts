@@ -312,7 +312,7 @@ export class World {
     let animator: ModelAnimator | undefined;
     let particles: ParticleSystem | undefined;
     let textLetters: import("./text").TextLetter[] = [];
-    const shadowDefault = def.kind !== "particles" && def.kind !== "generator";
+    const shadowDefault = def.kind !== "particles" && def.kind !== "generator" && def.kind !== "photo";
     try {
       switch (def.kind) {
         case "mesh": {
@@ -333,6 +333,15 @@ export class World {
         case "svg": {
           const { buildSvg } = await import("./svg");
           object = await ctx.track(buildSvg(def, ctx));
+          break;
+        }
+        case "photo": {
+          // 3D photo (photo + depth map): lazy chunk "photo".
+          const { buildPhoto } = await import("./photo");
+          const res = await ctx.track(buildPhoto(def, ctx));
+          object = res.object;
+          built = { object: res.object, dispose: () => res.dispose() };
+          this.updaters.push((t, dt) => res.update(t, dt, { pointer: this.input.pointer, scroll: this.input.scroll, camera: this.camera ?? null, reduced: this.settleEntrances }));
           break;
         }
         case "model": {
@@ -384,7 +393,7 @@ export class World {
           object = new THREE.Group();
       }
     } catch (err) {
-      ctx.issue(def.kind === "model" || def.kind === "text" || def.kind === "svg" ? "asset-load" : "build-error", `${def.id}: ${(err as Error).message}`, `objects#${def.id}`);
+      ctx.issue(def.kind === "model" || def.kind === "text" || def.kind === "svg" || def.kind === "photo" ? "asset-load" : "build-error", `${def.id}: ${(err as Error).message}`, `objects#${def.id}`);
       object = new THREE.Group();
     }
     if (this.disposed) return null;

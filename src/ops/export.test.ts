@@ -5,6 +5,7 @@ import { addAsset } from "./assets";
 import { FILE_PROTOCOL_NOTE, buildExport } from "./export";
 import { createProject } from "./project";
 import { patchScene } from "./scene";
+import { CHUNK_FEATURES } from "./runtimeChunks";
 
 const enc = new TextEncoder();
 const runtime = {
@@ -199,6 +200,22 @@ describe("export: data-bound labels, absolute og:image, poster cache-bust, wrapp
       const src = r.files[f] as string;
       for (const p of ["loop", "autoplay", "interactive"]) expect(src).toContain(p);
     }
+  });
+});
+
+describe("3D photo export", () => {
+  it("copies the photo and its depth map, and loads the photo chunk only when used", async () => {
+    const fs = new MemoryFs();
+    await createProject(fs, { name: "Pic" });
+    await addAsset(fs, { path: "assets/textures/pic.jpg", bytes: new Uint8Array([0xff, 0xd8, 1, 2]), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/textures/pic.depth.png", bytes: new Uint8Array([0x89, 0x50, 1, 2]), source: "local", license: "CC0-1.0" });
+    const before = JSON.parse(await fs.readText("scene.json"));
+    expect(CHUNK_FEATURES.photo.needed(before, JSON.stringify(before))).toBe(false);
+    const r = await patchScene(fs, [{ op: "addObject", object: { id: "pic", kind: "photo", src: "assets/textures/pic.jpg", depth: "assets/textures/pic.depth.png" } }]);
+    expect(r.applied).toBe(true);
+    expect(CHUNK_FEATURES.photo.needed(r.scene, JSON.stringify(r.scene))).toBe(true);
+    const out = await buildExport(fs, { format: "embed", runtime, library, extras: false });
+    expect(Object.keys(out.files)).toEqual(expect.arrayContaining(["pic/assets/textures/pic.jpg", "pic/assets/textures/pic.depth.png"]));
   });
 });
 

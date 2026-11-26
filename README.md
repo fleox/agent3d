@@ -47,7 +47,7 @@
 <tr>
 <td width="33%" valign="top">
 <h3>🎬 Stunning by default</h3>
-<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 31 templates and validated recipes, with art direction built into the skills.</p>
+<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 32 templates and validated recipes, with art direction built into the skills.</p>
 </td>
 <td width="33%" valign="top">
 <h3>🤖 Agent-native</h3>
@@ -152,6 +152,11 @@ Step by step: [docs/getting-started.md](https://github.com/fleox/agent3d/blob/ma
   <br><sub>Headless renders of the built-in templates, straight from <code>agent3d render</code>. Nothing was downloaded: everything is procedural or from the built-in library.</sub>
 </p>
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-old-town.webp" width="900" alt="A 3D photo: a blue-hour old-town street whose buildings slide in depth as the pointer moves, under a white serif OLD TOWN headline">
+  <br><sub><b>3D photo</b>: one CC0 photo plus a depth map estimated locally in about a second (<code>agent3d assets depth</code>), moving in depth as the pointer sweeps across it. The <a href="https://github.com/fleox/agent3d/tree/main/templates/hero-photo-3d"><code>hero-photo-3d</code></a> template, rendered with <code>agent3d render --input</code>.</sub>
+</p>
+
 **Look**
 - **Lighting and lookdev**: 10 one-line light rigs (softbox, studio three-point, golden hour, neon, moonlight…), physical skies with a matching sun, 20 built-in HDRIs, height fog, contact shadows, rect panel lights and volumetric spots, mesh-gradient backgrounds
 - **Materials**: 38 presets from chrome, glass and car paint to velvet, diamond and soap bubble; physical parameters (clearcoat, sheen, iridescence, transmission, anisotropy, dispersion), 12 procedural textures (marble, wood, terrazzo, carbon…) at zero bytes, 17 shaders (aurora, liquid chrome, nebula, caustics…), cel shading that keeps brand colours true
@@ -166,6 +171,7 @@ Step by step: [docs/getting-started.md](https://github.com/fleox/agent3d/blob/ma
 - 22 procedural **generators**: terrain (mountains, basins, valleys, islands), trees, rocks, grass, flowers, water with mirror reflections, clouds, birds, cities, roads, floating islands, globes, galaxies, crystals, 3D bar charts, mazes… deterministic from a seed
 - A procedural **character** generator (humanoid, astronaut, robot, blob, cat, fox, bird, ghost) with animations such as wave, run, jump, dance and celebrate
 - A built-in **library** of 179 assets usable offline (`library:<id>`): 128 models (rigged characters with clips, products, props), PBR textures and HDRIs; optional search and download from free CC0 sources (Poly Haven, ambientCG, Khronos samples) and Kenney / Quaternius pack import, with licences recorded
+- **3D photos**: any photo plus a depth map estimated on your machine (`assets depth`: Depth Anything V2 Small, a 27 MB model downloaded once, then offline) moves in depth with the pointer, the phone's gyroscope, the scroll or a gentle automatic drift — shader parallax, a displaced mesh or pop-up layers
 - 3D text in 13 kerned **fonts** with wrapping, outlines and letter-by-letter reveals; extruded **SVG logos** that keep their colours; 17 particle presets; 12 synth sounds
 
 **Games**
@@ -236,12 +242,12 @@ Move / rotate / scale gizmos, an editor camera and the scene camera with framing
   <img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/templates-grid.jpg" width="900" alt="A grid of the 31 Agent3D templates: banners, heroes, landscapes, product cards, dioramas and games">
 </p>
 
-31 starter projects, each a complete scene that passes `check --render`: 8 banners, 12 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
+32 starter projects, each a complete scene that passes `check --render`: 8 banners, 13 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
 
 To see them all live in a browser, build the gallery from a clone (`npm install --legacy-peer-deps && npm run build:runtime && npm run build:agent`, then `node scripts/build-examples.mjs`) and serve `examples/site/` with any static server (for example `python3 -m http.server -d examples/site`): each card plays the real embed, with the brief the agent that built the template received.
 
 <details>
-<summary><b>All 31 templates</b></summary>
+<summary><b>All 32 templates</b></summary>
 
 | Preview | Template | Kind | What it is |
 |---|---|---|---|
@@ -257,6 +263,7 @@ To see them all live in a browser, build the gallery from a clone (`npm install 
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/character-showcase/preview.png" width="160" alt="Character showcase"> | [**Character showcase**](https://github.com/fleox/agent3d/tree/main/templates/character-showcase)<br>`character-showcase` | hero · 16:9 | Cartoon character line-up (16:9) for mascots, kids' products, games or team pages: five procedural characters on pastel pedestals — an astronaut cheering in the centre, a dancing robot, a waving fox, a dancing kid with headphones and a jumping cat — heads following the pointer, falling confetti and a 'Meet the crew' 3D title (from scene.data). |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-floating-island/preview.png" width="160" alt="Floating island hero"> | [**Floating island hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-floating-island)<br>`hero-floating-island` | hero · 16:9 | Dreamy 16:9 hero: a low-poly floating island with trees, flowers, a pond and a waterfall pouring into a sea of pastel clouds, two distant islets, flapping birds circling and magic glints, under a peach-to-blue sunset gradient — slow orbit, pointer parallax, soft dreamy look. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-perfume-luxury/preview.png" width="160" alt="Luxury perfume hero"> | [**Luxury perfume hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-perfume-luxury)<br>`hero-perfume-luxury` | hero · 16:9 | Dark luxury product hero: an amber glass perfume bottle (refractive lathe glass with liquid colour) and faceted gold cap on a black-and-gold marble pedestal, diamonds and a ruby catching the light, a slow push-in with a rack focus from a diamond to the bottle, and a gold serif name (data-bound). |
+| <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-photo-3d/preview.png" width="160" alt="3D photo hero"> | [**3D photo hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-photo-3d)<br>`hero-photo-3d` | hero · 16:9 | A photo brought to life: a blue-hour old-town street (CC0) turned into a 3D photo with its estimated depth map, moving in depth with the pointer, the phone's gyroscope and a gentle automatic sway, under a white serif headline and subtitle (data-bound). |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-product-turntable/preview.png" width="160" alt="Product turntable hero"> | [**Product turntable hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-product-turntable)<br>`hero-product-turntable` | hero · 16:9 | Studio product hero: a realistic PBR boombox slowly turning on a terrazzo pedestal with a gold rim, softbox light rig, studio HDRI reflections, soft contact shadow, product look and drag-to-orbit. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-saas-globe/preview.png" width="160" alt="SaaS globe hero"> | [**SaaS globe hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-saas-globe)<br>`hero-saas-globe` | hero · 16:9 | Dark premium SaaS / network hero: a dotted-continent globe with a blue atmosphere slowly turning on the right, glowing arcs with light pulses travelling between world cities, faint orbit ring and stars; the left half stays empty for your HTML headline. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-scroll-story/preview.png" width="160" alt="Scroll story hero"> | [**Scroll story hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-scroll-story)<br>`hero-scroll-story` | hero · 16:9 | Scroll-driven 3D story: as the page scrolls, the camera glides across three chapters — Design, Build, Launch — each with its own object and a bold 3D title that pops in letter by letter, with markers that emit page events. |
