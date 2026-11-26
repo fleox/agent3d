@@ -3,9 +3,9 @@
 Numbers that work with the Agent3D runtime (ACES tone mapping by default, physically based lights, units ≈ metres). Start from them, render, look, adjust. Exact parameters live in the catalog — never guess them:
 
 ```bash
-npx -y @fleox/agent3d@0.2.3 catalog lightRigs --json
-npx -y @fleox/agent3d@0.2.3 catalog postfx look --json
-npx -y @fleox/agent3d@0.2.3 catalog materialPresets --json
+npx -y @fleox/agent3d@0.3.0 catalog lightRigs --json
+npx -y @fleox/agent3d@0.3.0 catalog postfx look --json
+npx -y @fleox/agent3d@0.3.0 catalog materialPresets --json
 ```
 
 Complete, rendered scenes for each idea below: [recipes.md](recipes.md).

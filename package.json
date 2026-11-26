@@ -1,6 +1,6 @@
 {
   "name": "@fleox/agent3d",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "type": "module",
   "description": "The 3D studio your AI agent can run: describe a scene as JSON (banners, characters, landscapes, mini games), preview and screenshot it headless, and export a self-contained embed for any website. No server, no account.",
   "license": "SEE LICENSE IN LICENSE",

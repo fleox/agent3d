@@ -7,9 +7,9 @@ Scenes reference assets by **project path** (`assets/models/bottle.glb`) or by *
 `library/` ships in the npm package and works offline: about 130 glTF models (rigged characters with animation clips, animals, nature, buildings, city, food and bakery (croissant, baguette, bread loaf, donut, cupcake, cookie, pain au chocolat), photoreal products (sneaker, sofa, lamp, boombox…), props, platformer kit, vehicles, space…), 6 PBR texture sets (brick, concrete, fabric, grass ground, rusty metal, wood planks: colour, normal, roughness), 10 HDRIs (softbox, studio, warehouse, forest, city, beach, sky, sunset, night, night-city; `.hdr` for lighting, `.jpg` for backgrounds) and the 13 text fonts. `library/index.json` lists each item with its licence, author, tags, size and (models) bounding box and triangle count.
 
 ```bash
-npx -y @fleox/agent3d@0.2.3 assets library --query tree --json
-npx -y @fleox/agent3d@0.2.3 assets library --kind hdri --json
-npx -y @fleox/agent3d@0.2.3 assets library --kind model --all --json
+npx -y @fleox/agent3d@0.3.0 assets library --query tree --json
+npx -y @fleox/agent3d@0.3.0 assets library --kind hdri --json
+npx -y @fleox/agent3d@0.3.0 assets library --kind model --all --json
 ```
 
 Hits carry `ref`, `kind`, `kb`, `license`, `tags`, `description` and, for models, `triangles`, `animations` (clip names) and `size` (bounding box w × h × d, Y-up) — use it to pick `fit`. 50 results per page: `--limit`, `--offset` (when `more` is true) or `--all` (the `library_list` tool takes `limit` — 0 for all — and `offset`).
@@ -21,9 +21,9 @@ Everything is CC0 except the fonts (OFL-1.1) and four Khronos glTF samples under
 `assets/` + `assets/manifest.json` (`AssetEntry`: path, kind, bytes, source, sourceUrl, license, author, attribution, addedAt).
 
 ```bash
-npx -y @fleox/agent3d@0.2.3 assets add ./logo.svg --license proprietary --project my-banner --json
-npx -y @fleox/agent3d@0.2.3 assets list --project my-banner --json
-npx -y @fleox/agent3d@0.2.3 assets remove assets/svg/logo.svg --yes --project my-banner --json
+npx -y @fleox/agent3d@0.3.0 assets add ./logo.svg --license proprietary --project my-banner --json
+npx -y @fleox/agent3d@0.3.0 assets list --project my-banner --json
+npx -y @fleox/agent3d@0.3.0 assets remove assets/svg/logo.svg --yes --project my-banner --json
 ```
 
 `--license` is required for local files. Files go to `assets/models|textures|hdri|audio|fonts|svg|other/` by kind unless `--path` is given. `assets list` reports `exists`, `usedBy` and the size on disk for each entry (read-only: `stale` lists entries whose recorded size differs from the file). Models (`assets add <file>.glb` or a downloaded hit) return `bounds` — `size` (w × h × d, node transforms applied), `center`, `min`, `max` and an `upAxis` guess (`"y"`, or `"z?"` for models that may have been exported Z-up) — and `agent3d render --isolate <objectId>` shows one object alone, auto-framed, to check its orientation.
@@ -31,10 +31,10 @@ npx -y @fleox/agent3d@0.2.3 assets remove assets/svg/logo.svg --yes --project my
 ### Optimising textures and models
 
 ```bash
-npx -y @fleox/agent3d@0.2.3 assets optimize --all --project my-hero --json            # plan: size per file + why
-npx -y @fleox/agent3d@0.2.3 assets optimize --all --dry-run --project my-hero --json  # real savings, nothing written
-npx -y @fleox/agent3d@0.2.3 assets optimize --all --yes --project my-hero --json
-npx -y @fleox/agent3d@0.2.3 assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
+npx -y @fleox/agent3d@0.3.0 assets optimize --all --project my-hero --json            # plan: size per file + why
+npx -y @fleox/agent3d@0.3.0 assets optimize --all --dry-run --project my-hero --json  # real savings, nothing written
+npx -y @fleox/agent3d@0.3.0 assets optimize --all --yes --project my-hero --json
+npx -y @fleox/agent3d@0.3.0 assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
 ```
 
 `assets optimize [<path>…] [--all] [--max-size <px>] [--format auto|webp|jpeg|png|keep] [--quality 80] [--compress meshopt|none] [--simplify <ratio>] [--simplify-error 0.01] [--dry-run] [--yes]` (`src/ops/optimize.ts`, MCP `assets_optimize`):
@@ -68,7 +68,7 @@ A file is only rewritten when it gets smaller; manifest sizes are refreshed. Wit
 A photo object (`kind: "photo"`) becomes a "3D photo" with a `depth` map: a grey PNG, white = near, black = far, same aspect as the photo. `assets depth` estimates one at authoring time:
 
 ```bash
-npx -y @fleox/agent3d@0.2.3 assets depth assets/textures/photo.jpg --project my-scene --json
+npx -y @fleox/agent3d@0.3.0 assets depth assets/textures/photo.jpg --project my-scene --json
 ```
 
 - **Model.** [Depth Anything V2 Small](https://huggingface.co/onnx-community/depth-anything-v2-small) (ONNX, quantized, 27 MB, Apache-2.0, pinned revision), run locally by onnxruntime-web (WASM, up to 4 threads) in the same headless Chrome as the renders — about 1-1.5 s per photo at the default input size, plus ~2 s to start Chrome. `--size` sets the model input long side (default 518, up to 1036 for finer edges, ≈ 4× slower).
@@ -89,9 +89,9 @@ Searched live, downloaded once into the project with their licence (`src/ops/sou
 | Quaternius | model packs | CC0 | manual zip, then import |
 
 ```bash
-npx -y @fleox/agent3d@0.2.3 assets search "wood planks" --kind texture --project my-scene --json
-npx -y @fleox/agent3d@0.2.3 assets add --hit @hit.json --resolution 1k --project my-scene --json
-npx -y @fleox/agent3d@0.2.3 assets add /path/kenney_pack.zip --source kenney --license CC0-1.0 --filter tree --project my-scene --json
+npx -y @fleox/agent3d@0.3.0 assets search "wood planks" --kind texture --project my-scene --json
+npx -y @fleox/agent3d@0.3.0 assets add --hit @hit.json --resolution 1k --project my-scene --json
+npx -y @fleox/agent3d@0.3.0 assets add /path/kenney_pack.zip --source kenney --license CC0-1.0 --filter tree --project my-scene --json
 ```
 
 Pack zips (Kenney, Quaternius): `assets add <file.zip> --source kenney|quaternius|local --license CC0-1.0 [--filter <word>]… [--name <pack>]` extracts only `.glb` / `.gltf` + textures into `assets/models/<name>/`. Texture downloads return a `suggestion.material` using the set (map, normalMap, roughnessMap). Per-source failures are reported in `errors` without failing the search. Tests never touch the network (sources take an injected `fetch`).
