@@ -1,6 +1,6 @@
 # Patch ops cookbook
 
-Apply with `npx -y @fleox/agent3d@0.3.1 scene patch --project <dir> --file ops.json --json` (add `--dry-run` to preview, `--yes` when the plan removes something or replaces a whole collection such as `lights`, `postfx`, `objects`, `timeline.tracks` or `ui.elements`: `plan.replaces` lists them). Ops run in order on a copy; the result is validated; on any error nothing is written and the error names the failing op (`details.opIndex`).
+Apply with `npx -y @fleox/agent3d@0.4.0 scene patch --project <dir> --file ops.json --json` (add `--dry-run` to preview, `--yes` when the plan removes something or replaces a whole collection such as `lights`, `postfx`, `objects`, `timeline.tracks` or `ui.elements`: `plan.replaces` lists them). Ops run in order on a copy; the result is validated; on any error nothing is written and the error names the failing op (`details.opIndex`).
 
 ## Paths
 
@@ -244,7 +244,7 @@ These play the segments of the markers block above (a segment must exist before 
 - Segments named in `play` / `toggle` must exist in `timeline.segments` (validation says so). Targets get a pointer cursor.
 - Without patches (MCP or the CLI tool runner): `interactions_set` appends with `add` or replaces with `interactions`:
   ```bash
-  npx -y @fleox/agent3d@0.3.1 tools call interactions_set --input '{"add": [{"on": "click", "target": "blob", "do": [{"toggle": "hover-in"}]}], "dryRun": true}' --project my-hero --json
+  npx -y @fleox/agent3d@0.4.0 tools call interactions_set --input '{"add": [{"on": "click", "target": "blob", "do": [{"toggle": "hover-in"}]}], "dryRun": true}' --project my-hero --json
   ```
 - Check hover states headless: `render --input '[{"t": 1.9, "pointer": [0, -0.3]}]' --frames 2,3`.
 

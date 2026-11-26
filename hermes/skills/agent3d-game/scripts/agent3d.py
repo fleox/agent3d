@@ -37,7 +37,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 # Pinned to the release these skills were written for (kept in step by the
 # repository's build script).
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 PACKAGE = "@fleox/agent3d"
 MIN_NODE = (22, 0)
 

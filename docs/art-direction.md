@@ -39,4 +39,4 @@ Everything that stands on something gets **contact shadows** (soft, no shadow-ca
 - `target.quality: "medium"` for games and busy fullscreen scenes; `auto` already steps down on phones and when the frame rate drops.
 - A 4:1 banner is about 95 px tall on a phone: keep titles big, or export a taller version for mobile.
 
-Exact parameters for every rig, look, material, shader and generator: `npx -y @fleox/agent3d@0.3.1 catalog <section> [id] --json` or [catalog.md](catalog.md).
+Exact parameters for every rig, look, material, shader and generator: `npx -y @fleox/agent3d@0.4.0 catalog <section> [id] --json` or [catalog.md](catalog.md).
