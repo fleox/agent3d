@@ -20,7 +20,7 @@
 //
 // Runtime choice (`runtimeChoice`, default "auto"): a scene that is a single
 // 3D photo (src/ops/liteRuntime.ts) ships the photo-only lite runtime
-// (agent3d-photo.js, ~14 KB gzipped, no Three.js) instead of
+// (agent3d-photo.js, ~19 KB gzipped, no Three.js) instead of
 // agent3d-runtime.js + three.js (~210 KB gzipped) when the runtime files hold
 // it; "full" always uses the full runtime. ExportResult.runtime says which.
 

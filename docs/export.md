@@ -72,7 +72,7 @@ Snippet:
 
 ## Photo-only lite runtime
 
-A scene that is just a 3D photo — the common "3D photo hero" — does not need three.js. `dist/runtime/agent3d-photo.js` (built from `src/runtime/lite/` by `vite build --config vite.runtime.config.ts --mode photo`, part of `npm run build:runtime`) is one ES module of about 14 KB gzipped (12.5 KB brotli) instead of about 210 KB for `agent3d-runtime.js` + three.js. `export` (embed, zip, single-html) ships it instead of the full runtime when the scene is eligible (`liteRuntimeEligibility` in `src/ops/liteRuntime.ts`) and `--runtime` is `auto` (default):
+A scene that is just a 3D photo — the common "3D photo hero" — does not need three.js. `dist/runtime/agent3d-photo.js` (built from `src/runtime/lite/` by `vite build --config vite.runtime.config.ts --mode photo`, part of `npm run build:runtime`) is one ES module of about 19 KB gzipped instead of about 210 KB for `agent3d-runtime.js` + three.js. `export` (embed, zip, single-html) ships it instead of the full runtime when the scene is eligible (`liteRuntimeEligibility` in `src/ops/liteRuntime.ts`) and `--runtime` is `auto` (default):
 
 - exactly one object, a `photo` in `parallax` mode (or without `depth`: a flat photo), visible, not rotated, positive scale, no children, behaviours, `href`, `body` or `attach`, `material.color` (if any) a `#hex` colour;
 - a `perspective` camera without `controls` (or `"none"`), `autoRotate`, `shots`, `shake`, `lookAt`, `follow`;
@@ -213,4 +213,4 @@ A preset sets the size, 30 fps, the bitrate (10 Mbit/s at 1080p, 8 for square: H
 
 ## Runtime size
 
-`dist/runtime` is built by `vite.runtime.config.ts` with full minification and the catalog's prose stripped (validation and docs keep it). What a page downloads before the first frame is the entry plus its static imports (three.js, catalog, materials, utilities): about 220 KB gzipped (about 14 KB for a single-3D-photo scene, which gets the [photo-only lite runtime](#photo-only-lite-runtime)); everything else (loaders, post effects, generators, physics / HUD / audio, shader materials) is a lazy chunk loaded only by scenes that use it.
+`dist/runtime` is built by `vite.runtime.config.ts` with full minification and the catalog's prose stripped (validation and docs keep it). What a page downloads before the first frame is the entry plus its static imports (three.js, catalog, materials, utilities): about 220 KB gzipped (about 19 KB for a single-3D-photo scene, which gets the [photo-only lite runtime](#photo-only-lite-runtime)); everything else (loaders, post effects, generators, physics / HUD / audio, shader materials) is a lazy chunk loaded only by scenes that use it.

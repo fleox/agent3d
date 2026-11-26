@@ -47,7 +47,7 @@
 <tr>
 <td width="33%" valign="top">
 <h3>🎬 Stunning by default</h3>
-<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 33 templates and validated recipes, with art direction built into the skills.</p>
+<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 34 templates and validated recipes, with art direction built into the skills.</p>
 </td>
 <td width="33%" valign="top">
 <h3>🤖 Agent-native</h3>
@@ -171,7 +171,7 @@ Step by step: [docs/getting-started.md](https://github.com/fleox/agent3d/blob/ma
 - 22 procedural **generators**: terrain (mountains, basins, valleys, islands), trees, rocks, grass, flowers, water with mirror reflections, clouds, birds, cities, roads, floating islands, globes, galaxies, crystals, 3D bar charts, mazes… deterministic from a seed
 - A procedural **character** generator (humanoid, astronaut, robot, blob, cat, fox, bird, ghost) with animations such as wave, run, jump, dance and celebrate
 - A built-in **library** of 179 assets usable offline (`library:<id>`): 128 models (rigged characters with clips, products, props), PBR textures and HDRIs; optional search and download from free CC0 sources (Poly Haven, ambientCG, Khronos samples) and Kenney / Quaternius pack import, with licences recorded
-- **3D photos**: any photo plus a depth map estimated on your machine (`assets depth`: Depth Anything V2 Small, a 27 MB model downloaded once, then offline) moves in depth with the pointer, the phone's gyroscope, the scroll or a gentle automatic drift — shader parallax, a displaced mesh or pop-up layers; a photo-only hero exports with a 14 KB player instead of three.js
+- **3D photos**: any photo plus a depth map estimated on your machine (`assets depth`: Depth Anything V2 Small, a 27 MB model downloaded once, then offline) moves in depth with the pointer, the phone's gyroscope, the scroll or a gentle automatic drift — shader parallax, a displaced mesh or pop-up layers. 3D text, models and particles can live *inside* the photo, hidden by its foreground (`occlude`); depth-driven effects (fog, a light that follows the pointer, a depth-by-depth reveal, rack focus, out-of-frame pop-out); a background plate rebuilt behind the foreground for bigger camera moves (`assets plate`); cinematic moves (dolly, pan, rise, vertigo) and one-command social videos (`render --video --preset vertical`); scroll stories that dive into photos. A photo-only hero exports with a ~19 KB player instead of three.js
 - 3D text in 13 kerned **fonts** with wrapping, outlines and letter-by-letter reveals; extruded **SVG logos** that keep their colours; 17 particle presets; 12 synth sounds
 
 **Games**
@@ -242,12 +242,12 @@ Move / rotate / scale gizmos, an editor camera and the scene camera with framing
   <img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/templates-grid.jpg" width="900" alt="A grid of the 31 Agent3D templates: banners, heroes, landscapes, product cards, dioramas and games">
 </p>
 
-33 starter projects, each a complete scene that passes `check --render`: 8 banners, 14 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
+34 starter projects, each a complete scene that passes `check --render`: 8 banners, 15 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
 
 To see them all live in a browser, build the gallery from a clone (`npm install --legacy-peer-deps && npm run build:runtime && npm run build:agent`, then `node scripts/build-examples.mjs`) and serve `examples/site/` with any static server (for example `python3 -m http.server -d examples/site`): each card plays the real embed, with the brief the agent that built the template received.
 
 <details>
-<summary><b>All 33 templates</b></summary>
+<summary><b>All 34 templates</b></summary>
 
 | Preview | Template | Kind | What it is |
 |---|---|---|---|

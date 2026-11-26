@@ -1,6 +1,21 @@
 {
   "versions": [
     {
+      "version": "0.5.0",
+      "date": "2026-11-26",
+      "breaking": false,
+      "changes": [
+        "3D inside the photo: `\"occlude\": true` makes a depth photo write the true depth of its pixels, so 3D text, models and particles placed between its depth planes are hidden by its foreground (a title passing behind the nearest building, snow falling in front of and behind it); its motion moves the real camera so they slide exactly with the photo. `scene summary` gives each depth photo a `depthRange`, `check` suggests `occlude` (`photo-occlude`). New template `photo-title-inside`.",
+        "Depth-driven photo effects (`effects` on a photo, every mode, kept by the photo-only player): `fog` (haze in the distance, drifting wisps), `light` (a light that rakes the relief and follows the pointer), `reveal` (the photo appears depth slice by depth slice), `blur` (depth of field with an automatic rack focus) and `frame` (the photo in a frame, the near subject stepping out of it). Every parameter animates from the timeline (`<id>.effects.<effect>.<param>`).",
+        "Background plates: `agent3d assets plate <image>` (or `assets depth --plate`, AI tool `image_plate`) rebuilds what hides behind the foreground (depth-aware fill, about 0.3 s, no new model); set the photo's `plate` + `plateDepth` and bigger camera moves no longer smear or stretch edges (parallax, mesh and layers).",
+        "Cinematic photo moves: `motion.auto` `dolly`, `pan`, `rise` and `vertigo` (dolly zoom), seamless loops or one-way (`loop: false`, `duration`), and `motion.progress` to drive a move from the timeline; photos crossfade with `material.opacity` tracks. New template `photo-scroll-story`: scrolling the page dives down a street and dissolves into a lake.",
+        "Social videos in one command: `agent3d render --video reel.mp4 --preset vertical|square|landscape|story` (and `export --format video --preset`, the export tool's `preset`): 1080×1920 / 1080×1080 / 1920×1080, 30 fps, one seamless loop of the photo move, the framing tightened so the photo covers the frame (`notes` say what was cropped).",
+        "Scroll-driven scenes pinned with `position: sticky` now progress while pinned: the scroll is measured on the pin section (this also fixes the layout recommended by `hero-scroll-story`).",
+        "The photo-only player (`agent3d-photo.js`) supports the effects, plates and moves; it is now about 19 KB gzipped."
+      ],
+      "actions": []
+    },
+    {
       "version": "0.4.0",
       "date": "2026-11-26",
       "breaking": false,

@@ -328,7 +328,7 @@ agent3d export [--format embed|zip|single-html|poster|video|gif] [--preset verti
 | `--no-extras` | embed / zip: skip EMBED.md and frameworks/ (React / Vue / Svelte wrappers). |
 | `--no-poster` | embed / zip / single-html: don't render a poster nor og-image (no Chrome needed). |
 | `--prune-runtime` | embed / zip: copy only the runtime chunks this scene loads (smaller folder). Only for a runtime folder used by this scene alone — other scenes sharing it may need the left-out chunks; kept whole when a chunk's feature is unknown. |
-| `--runtime <value>` | embed / zip / single-html: auto (default) ships the photo-only lite runtime (agent3d-photo.js, ~14 KB gzipped, no three.js) when the scene is a single 3D photo with a fixed camera and a plain background; full always ships agent3d-runtime.js. The result's runtime / runtimeReasons say which and why. |
+| `--runtime <value>` | embed / zip / single-html: auto (default) ships the photo-only lite runtime (agent3d-photo.js, ~19 KB gzipped, no three.js) when the scene is a single 3D photo with a fixed camera and a plain background; full always ships agent3d-runtime.js. The result's runtime / runtimeReasons say which and why. |
 | `--no-og` | embed / zip: don't render the 1200×630 og-image.png social preview. |
 | `--optimize` | embed / zip / single-html: export optimised copies of the assets (project and library) — textures at the size the scene needs (format kept), .glb geometry meshopt-compressed with WebP textures. The project is not modified. Textures need Chrome. |
 | `--image <value>` | poster: webp (default), png or jpeg. |

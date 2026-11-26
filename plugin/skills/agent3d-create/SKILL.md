@@ -154,7 +154,7 @@ Tips:
 - **Web weight**: before exporting, run `npx -y @fleox/agent3d@0.4.0 assets optimize --all --yes --project my-hero --json`: the photo becomes WebP at the size the hero needs (about 40 % lighter; the scene path is rewritten) and the depth map stays a lossless PNG (already ≤ 1024 px from `assets depth`: the model works at 518 px). A photo-only hero then weighs about 0.4 MB of images plus the runtime.
 - Exports copy the photo, its depth map and its plate like any asset; the model never ships.
 
-**Depth effects** (`"effects"` on the photo object, every mode, kept by the 14 KB photo player; `{}` = defaults; full table in docs/scene-format.md "Photo effects"):
+**Depth effects** (`"effects"` on the photo object, every mode, kept by the 19 KB photo player; `{}` = defaults; full table in docs/scene-format.md "Photo effects"):
 
 - Fog (distance haze, drifting wisps): `"fog": { "color": "#c9d6ea", "amount": 0.55 }`. Match the colour to the sky; `start` (default 0.7) = the depth where the haze begins, lower it to keep more of the scene clear.
 - Light (a flashlight / sunbeam raking the relief, follows the pointer, a slow auto path in renders): `"light": { "color": "#ffe2b0", "ambient": 0.55, "height": 0.45 }`. Lower `ambient` = darker surroundings and a stronger pool; lower `height` = more raking. Check it with `render --input` pointer moves.
