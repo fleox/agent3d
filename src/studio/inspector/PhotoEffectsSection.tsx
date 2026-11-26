@@ -3,7 +3,7 @@
 // adds it here), and its params when it is on. Effects that need a depth map
 // say so on a flat photo.
 
-import type { PhotoEffectId } from "../../core/photoEffects";
+import type { PhotoEffectId, PhotoFxParam } from "../../core/photoEffects";
 import { PHOTO_EFFECTS, PHOTO_EFFECT_IDS } from "../../core/photoEffects";
 import type { PhotoObjectDef } from "../../core/types";
 import { Section, Toggle } from "../components/ui/controls";
@@ -11,6 +11,15 @@ import { useI18n } from "../i18n";
 import { objPath } from "../lib/patches";
 import { ParamForm, useBinder } from "./fields";
 import { PHOTO_EFFECT_SPECS } from "./specs";
+
+// A vec2 param written as one number (frame.inset: 0.1) is shown as [n, n].
+function shownValues(id: PhotoEffectId, values: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (!values) return values;
+  const params = PHOTO_EFFECTS[id].params as Record<string, PhotoFxParam>;
+  const out = { ...values };
+  for (const [k, p] of Object.entries(params)) if (p.type === "vec2" && typeof out[k] === "number") out[k] = [out[k], out[k]];
+  return out;
+}
 
 export function PhotoEffectsSection({ object: o }: { object: PhotoObjectDef }) {
   const { t } = useI18n();
@@ -36,7 +45,7 @@ export function PhotoEffectsSection({ object: o }: { object: PhotoObjectDef }) {
               <Toggle checked={on} onChange={(v) => toggle(id, v)} ariaLabel={label} />
             </div>
             {on && !o.depth && PHOTO_EFFECTS[id].needsDepth && <div className="px-3 pb-1 text-2xs leading-snug text-fg-faint">{t("photo.effectNeedsDepth")}</div>}
-            {on && <ParamForm specs={PHOTO_EFFECT_SPECS[id]} base={objPath(o.id, `effects.${id}`)} values={effects[id]} />}
+            {on && <ParamForm specs={PHOTO_EFFECT_SPECS[id]} base={objPath(o.id, `effects.${id}`)} values={shownValues(id, effects[id])} />}
           </div>
         );
       })}

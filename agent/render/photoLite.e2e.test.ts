@@ -93,6 +93,9 @@ describe.skipIf(!browser || !runtimeOk)("photo-only lite runtime vs full runtime
       { id: "plate", ops: [{ op: "merge", path: "objects#photo", value: { strength: 1, plate: "assets/depth/street-plate.png", plateDepth: "assets/depth/street-plate-depth.png" } }], plate: true },
       // A cinematic move (push + dolly zoom through the UV inset: photoCore parallaxView).
       { id: "vertigo", ops: [{ op: "set", path: "objects#photo.motion.auto", value: "vertigo" }] },
+      // rack focus mid-rack (depth-aware gather blur) and the out-of-frame pop-out (alpha over the background)
+      { id: "blur", ops: [{ op: "set", path: "objects#photo.effects", value: { blur: { focus: 0.8, to: 0.1, duration: 4, amount: 0.8 } } }] },
+      { id: "frame", ops: [{ op: "set", path: "objects#photo.effects", value: { frame: { inset: 0.15, threshold: 0.55, color: "#f4efe6" } } }] },
     ];
     const exports: { id: string; lite: string; full: string; liteResult: ExportResult; fullResult: ExportResult }[] = [];
     for (const v of variants) {

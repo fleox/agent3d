@@ -17,6 +17,8 @@ export interface PhotoFxParam {
   options?: readonly string[];
   // false: not animatable from the timeline (enums)
   animatable?: boolean;
+  // vec2 only: a single number is also accepted (both coordinates)
+  scalar?: boolean;
 }
 
 export interface PhotoFxSpec {
@@ -66,6 +68,34 @@ export const PHOTO_EFFECTS = {
       softness: num(0.15, 0, 1),
       duration: num(undefined, 0),
       delay: num(0, 0),
+    },
+  },
+  // Rack focus / depth of field: depths away from `focus` (beyond `range`)
+  // blur up to `amount` (% of the photo width). Flat photo: an even blur.
+  // `to` + `duration`: the focus racks focus → to → focus (ping-pong loop).
+  blur: {
+    needsDepth: false,
+    params: {
+      focus: num(undefined, 0, 1),
+      amount: num(0.6, 0, 5),
+      range: num(0.1, 0, 1),
+      to: num(undefined, 0, 1),
+      duration: num(undefined, 0),
+      delay: num(0, 0),
+    },
+  },
+  // "Out of frame": the photo inside an inset frame (border), the near
+  // subject (depth >= threshold) drawn outside it; the rest is transparent.
+  frame: {
+    needsDepth: false,
+    alpha: true,
+    params: {
+      inset: { type: "vec2", default: [0.12, 0.12], min: 0, max: 0.45, scalar: true },
+      threshold: num(0.6, 0, 1),
+      softness: num(0.04, 0, 1),
+      border: num(0.015, 0, 0.2),
+      color: { type: "color", default: "#ffffff" },
+      shadow: num(0.35, 0, 1),
     },
   },
 } satisfies Record<string, PhotoFxSpec>;

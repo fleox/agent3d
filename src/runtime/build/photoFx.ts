@@ -1,12 +1,16 @@
 // Depth-driven effects of 3D photos (PhotoObjectDef.effects: fog, light,
-// reveal). Three.js-free: shared by ./photo.ts (full runtime, every mode) and
+// reveal, blur, frame). Three.js-free: shared by ./photo.ts (full runtime, every mode) and
 // the photo-only lite player (../lite/player.ts), like ./photoCore.ts.
 //
-// Each effect = uniforms + a GLSL block run by `photoFx(c, uv, d)` after the
-// photo texel is found: `c` the texel, `uv` the final sampled UV (parallax:
-// the relief-mapping hit, `pxUv`), `d` its depth (0 far .. 1 near, from the
-// depth map at `uv`), plus the photo-space position q (-1..1 on y, ± aspect
-// on x) and the player time `uFxTime` (deterministic: the player clock).
+// Each effect = uniforms + a GLSL block run by `photoFx(c, uv, d, s)` after
+// the photo texel is found: `c` the texel, `uv` the final sampled UV
+// (parallax: the relief-mapping hit, `pxUv`), `d` its depth (0 far .. 1 near,
+// from the depth map at `uv`), `s` the UV on the photo's quad / surface (what
+// stays put while the view moves: the frame is drawn there), plus the
+// photo-space position q (-1..1 on y, ± aspect on x) and the player time
+// `uFxTime` (deterministic: the player clock). The blur re-samples uMap /
+// uDepth (shared sampler names) around `uv`. Block order: blur (replaces the
+// colour), light, fog, reveal, frame (composes the frame over transparency).
 // Without effects nothing is added: `glsl` and `call()` are "" and the photo
 // shaders are unchanged.
 //
@@ -14,7 +18,7 @@
 // (timeline tracks "<id>.effects.<effect>.<param>") go through set() and reach
 // the uniforms on the next uniforms() read.
 
-import { PHOTO_EFFECTS, PHOTO_EFFECT_IDS, type PhotoEffectId } from "../../core/photoEffects";
+import { PHOTO_EFFECTS, PHOTO_EFFECT_IDS, type PhotoEffectId, type PhotoFxSpec } from "../../core/photoEffects";
 import type { PhotoEffectsDef } from "../../core/types";
 import { clamp, num } from "../num";
 import { smoothToward } from "./photoCore";
@@ -30,11 +34,15 @@ export interface PhotoFxOptions {
   live?: boolean; // smooth the pointer (live players); deterministic = as is
   smoothing?: number; // pointer smoothing (photo motion.smoothing)
   speed?: number; // auto light path: cycles per 10 s (photo motion.speed)
+  focus?: number; // the photo's focus (default of blur.focus; 0.5)
+  quality?: "low" | "medium" | "high" | "ultra"; // blur taps (low 8, medium 12, else 16)
+  parallax?: boolean; // parallax mode: PARALLAX_GLSL's uniforms are declared (blur centring)
+  inset?: [number, number]; // parallax UV inset (texture UV = 0.5 + (quad UV - 0.5) × inset; default 1)
 }
 
 // Effect params with their defaults, colours as linear RGB. Effects that need
 // a depth map are dropped on a flat photo (validate reports it).
-export function resolvePhotoEffects(def: PhotoEffectsDef | undefined, opts: Pick<PhotoFxOptions, "depth" | "color">): PhotoFxState {
+export function resolvePhotoEffects(def: PhotoEffectsDef | undefined, opts: Pick<PhotoFxOptions, "depth" | "color" | "focus">): PhotoFxState {
   const out: PhotoFxState = {};
   for (const id of PHOTO_EFFECT_IDS) {
     const src = (def as Record<string, Record<string, unknown> | undefined> | undefined)?.[id];
@@ -45,10 +53,11 @@ export function resolvePhotoEffects(def: PhotoEffectsDef | undefined, opts: Pick
       const v = src[k] ?? p.default;
       if (v === undefined) continue;
       if (p.type === "color") vals[k] = opts.color(typeof v === "string" ? v : String(p.default));
-      else if (p.type === "vec2") vals[k] = Array.isArray(v) ? [num(v[0], 0), num(v[1], 0)] : [...(p.default as number[])];
+      else if (p.type === "vec2") vals[k] = Array.isArray(v) ? [num(v[0], 0), num(v[1], 0)] : typeof v === "number" ? [v, v] : [...(p.default as number[])];
       else if (p.type === "enum") vals[k] = typeof v === "string" && p.options?.includes(v) ? v : (p.default as string);
       else vals[k] = num(v, num(p.default, 0));
     }
+    if (id === "blur") vals.focus ??= clamp(num(opts.focus, 0.5), 0, 1);
     out[id] = vals;
   }
   return out;
@@ -155,11 +164,129 @@ const REVEAL_BLOCK = /* glsl */ `
   c.a *= 1.0 - smoothstep(uReveal.x - uReveal.z, uReveal.x + uReveal.z, uReveal.y > 0.5 ? 1.0 - d : d);
 `;
 
+// uBlur = focus, range, max radius (UV x), 1 / falloff. Circle of confusion
+// 0..1 from the distance to the focus beyond the sharp range.
+const BLUR_UNIFORMS = /* glsl */ `
+uniform vec4 uBlur;
+float fxCoc(float z) { return clamp((abs(z - uBlur.x) - uBlur.y) * uBlur.w, 0.0, 1.0); }
+`;
+// Lens-like gather blur: N taps on a Vogel (golden-angle) disc, sampled from
+// a mip level matching the tap spacing (smooth, no box / ring look), bright
+// taps weigh more (bokeh). Scatter-as-gather: a tap counts when its own blur
+// reaches this pixel; a tap farther than the centre spreads no further than
+// the centre's blur (a blurred background never haloes over a sharp
+// subject), a nearer one may (a blurred foreground bleeds over a sharp
+// background). The gather radius is at least ~1/3 of the max for that bleed.
+// Depth-edge texels (depth-map alpha 0: their depth is a blend of both
+// sides) never count as taps, and a centre on one belongs to the nearer side
+// (the nearest depth 2 texels around).
+// Parallax mode: the taps are centred where the centre's depth sits without
+// occlusion (parallaxTexel's formula, ./photoCore.ts): equal to the hit UV,
+// except in disocclusion strips, whose UV jumps past the depth edge — there
+// a gather around the jump would draw a thin line of the far side's colour.
+const BLUR_PARALLAX_CENTRE = /* glsl */ `
+    vec2 gc = 0.5 + (s - 0.5) * uInset * (1.0 - 0.06 * uZoom) + (d - uFocus) * (uView - (s - 0.5) * 2.0 * uZoom) * uMaxOffset;
+`;
+const BLUR_EDGE = /* glsl */ `
+    if (textureLod(uDepth, uv, 0.0).a < 0.5) {
+      vec2 de = 2.0 / vec2(textureSize(uDepth, 0));
+      dc = max(max(textureLod(uDepth, uv + vec2(de.x, 0.0), 0.0).r, textureLod(uDepth, uv - vec2(de.x, 0.0), 0.0).r), max(textureLod(uDepth, uv + vec2(0.0, de.y), 0.0).r, textureLod(uDepth, uv - vec2(0.0, de.y), 0.0).r));
+    }
+`;
+const blurBlock = (depth: boolean, taps: number, parallax: boolean) => /* glsl */ `
+  {
+    ${parallax ? BLUR_PARALLAX_CENTRE : "vec2 gc = uv;"}
+    float dc = d;
+    ${depth ? BLUR_EDGE : ""}
+    float cc = fxCoc(dc);
+    vec2 R = vec2(uBlur.z, uBlur.z * uFxAspect);
+    float rs = max(cc, 0.35);
+    float lod = log2(max(rs * uBlur.z * float(textureSize(uMap, 0).x) * ${(0.6 * (3.14159265 / taps) ** 0.5).toFixed(3)}, 1.0));
+    vec3 acc = mix(c.rgb, textureLod(uMap, gc, lod * cc).rgb, cc);
+    float ws = 1.0;
+    for (int i = 0; i < ${taps}; i++) {
+      float fi = float(i) + 0.5;
+      float r = sqrt(fi / ${taps}.0) * rs;
+      vec2 p = gc + vec2(cos(fi * 2.39996), sin(fi * 2.39996)) * r * R;
+      vec2 dt = ${depth ? "textureLod(uDepth, p, 0.0).ra" : "vec2(d, 1.0)"};
+      float ct = fxCoc(dt.x);
+      float w = clamp(((dt.x < dc - 0.03 ? min(ct, cc) : ct) - r) * 20.0 + 0.5, 0.0, 1.0) * step(0.5, dt.y);
+      vec3 sc = textureLod(uMap, p, lod).rgb;
+      w *= 1.0 + 3.0 * max(dot(sc, vec3(0.2126, 0.7152, 0.0722)) - 0.7, 0.0);
+      acc += sc * w;
+      ws += w;
+    }
+    c.rgb = acc / ws;
+  }
+`;
+
+// uFrame = inner half size (photo space, x incl. aspect), border width,
+// softness; uFrameB = threshold, shadow, parallax UV inset (x, y). Layers,
+// back to front: drop shadow
+// (frame + popped subject) on the page, border, picture, the popped subject
+// (depth >= threshold) over everything. Outside the frame: transparent.
+const FRAME_UNIFORMS = /* glsl */ `
+uniform vec4 uFrame;
+uniform vec4 uFrameB;
+uniform vec3 uFrameColor;
+float fxBox(vec2 p, vec2 h) { vec2 e = abs(p) - h; return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0); }
+// popped content fades out near the photo's own edges (no hard photo cut on the page)
+float fxEdge(vec2 p, float w) { return smoothstep(0.0, w, -fxBox(p, vec2(uFxAspect, 1.0))); }
+`;
+// the popped subject's shadow on the page: its depth one shadow offset back,
+// 8 taps on a small Vogel disc (a soft penumbra), read at the photo's rest
+// position (the quad UV, continuous: the parallax UV jumps at depth edges)
+const FRAME_SUBJECT_SHADOW = /* glsl */ `
+    float ks = 0.0;
+    // per-pixel rotation (interleaved gradient noise): grain, not banded copies
+    float jr = 6.2832 * fract(52.9829 * fract(dot(gl_FragCoord.xy, vec2(0.06711, 0.00584))));
+    for (int i = 0; i < 8; i++) {
+      float fi = float(i) + 0.5;
+      vec2 o = so + 0.04 * sqrt(fi / 8.0) * vec2(cos(fi * 2.39996 + jr), sin(fi * 2.39996 + jr));
+      ks += fxEdge(qs - o, 0.25) * smoothstep(uFrameB.x - uFrame.w, uFrameB.x + uFrame.w, textureLod(uDepth, 0.5 + (s - 0.5 - o / vec2(2.0 * uFxAspect, 2.0)) * uFrameB.zw, 0.0).r);
+    }
+    sh = max(sh, 0.1 * ks);
+`;
+// the pop-out mask eroded by 3 depth texels: depth maps are softer than the
+// photo, so a depth edge spills a little onto the background colour (a pale
+// halo around the popped subject without it)
+const FRAME_ERODE = /* glsl */ `
+    vec2 et = 3.0 / vec2(textureSize(uDepth, 0));
+    dp = min(dp, min(min(textureLod(uDepth, uv + vec2(et.x, 0.0), 0.0).r, textureLod(uDepth, uv - vec2(et.x, 0.0), 0.0).r), min(textureLod(uDepth, uv + vec2(0.0, et.y), 0.0).r, textureLod(uDepth, uv - vec2(0.0, et.y), 0.0).r)));
+`;
+const frameBlock = (depth: boolean) => /* glsl */ `
+  {
+    vec2 qs = (s * 2.0 - 1.0) * vec2(uFxAspect, 1.0);
+    float aa = max(length(fwidth(qs)), 1e-5);
+    float din = fxBox(qs, uFrame.xy);
+    float inner = clamp(0.5 - din / aa, 0.0, 1.0);
+    float outer = clamp(0.5 - (din - uFrame.z) / aa, 0.0, 1.0);
+    float dp = d;
+    ${depth ? FRAME_ERODE : ""}
+    float pop = smoothstep(uFrameB.x - uFrame.w, uFrameB.x + uFrame.w, dp) * fxEdge(qs, 0.08);
+    vec2 so = vec2(0.03, -0.045);
+    float sh = 1.0 - smoothstep(-0.03, 0.1, fxBox(qs - so, uFrame.xy + uFrame.z));
+    ${depth ? FRAME_SUBJECT_SHADOW : ""}
+    vec4 o = mix(vec4(0.0, 0.0, 0.0, uFrameB.y * sh * fxEdge(qs, 0.25)), vec4(uFrameColor, 1.0), outer);
+    // composed premultiplied (coverage cross-fades), back to straight alpha
+    vec4 cp = vec4(c.rgb * c.a, c.a);
+    o = mix(mix(o, cp, inner), cp, pop);
+    c = vec4(o.rgb / max(o.a, 1e-4), o.a);
+  }
+`;
+
+// Blur taps per quality tier.
+export const blurTaps = (quality: PhotoFxOptions["quality"]): number => (quality === "low" ? 8 : quality === "medium" ? 12 : 16);
+
 // GLSL for the active effects ("" when none). Needs PHOTO_COMMON_GLSL (and
 // uDepth when opts.depth) declared before it.
-export function photoFxGlsl(state: PhotoFxState, depth: boolean): string {
+export function photoFxGlsl(state: PhotoFxState, depth: boolean, quality?: PhotoFxOptions["quality"], parallax = false): string {
   if (!hasEffects(state)) return "";
   let head = FX_HEAD, body = "";
+  if (state.blur) {
+    head += BLUR_UNIFORMS;
+    body += blurBlock(depth, blurTaps(quality), parallax && depth);
+  }
   if (state.light) {
     head += LIGHT_UNIFORMS + (depth ? LIGHT_DEPTH_FN : "");
     body += lightBlock(depth);
@@ -172,14 +299,21 @@ export function photoFxGlsl(state: PhotoFxState, depth: boolean): string {
     head += REVEAL_UNIFORMS;
     body += REVEAL_BLOCK;
   }
-  return `${head}vec4 photoFx(vec4 c, vec2 uv, float d) {
+  if (state.frame) {
+    head += FRAME_UNIFORMS;
+    body += frameBlock(depth);
+  }
+  return `${head}vec4 photoFx(vec4 c, vec2 uv, float d, vec2 s) {
   vec2 q = (uv * 2.0 - 1.0) * vec2(uFxAspect, 1.0);
 ${body}  return c;
 }
 `;
 }
 
-export const hasEffects = (state: PhotoFxState): boolean => !!(state.fog || state.light || state.reveal);
+export const hasEffects = (state: PhotoFxState): boolean => PHOTO_EFFECT_IDS.some((id) => state[id]);
+
+// Depth distance (beyond the sharp range) at which the blur is full.
+export const BLUR_FALLOFF = 0.3;
 
 // ─── Live state ─────────────────────────────────────────────────────────
 
@@ -193,8 +327,9 @@ export interface PhotoFx {
   glsl: string; // "" without effects
   alpha: boolean; // changes the alpha (draw blended)
   depthMips: boolean; // samples lower depth mip levels (the depth texture needs mipmaps)
-  // GLSL statement applying the effects to `c` ("" without effects).
-  call(uv: string, depth: string): string;
+  // GLSL statement applying the effects to `c` ("" without effects); `quad`:
+  // the UV on the photo's surface (default `uv`).
+  call(uv: string, depth: string, quad?: string): string;
   frame(t: number, dt: number, input: PhotoFxInput): void;
   // Uniform values for the last frame (name → 1..4 floats).
   uniforms(): Record<string, number[]>;
@@ -213,6 +348,14 @@ export function autoLightPath(pos: number[], speed: number, t: number): [number,
 export function revealThreshold(progress: number, softness: number): number {
   const s = Math.max(softness, 1e-3);
   return -s + clamp(progress, 0, 1) * (1 + 2 * s);
+}
+
+// Blur focus at t: with `to` + `duration`, a smooth ping-pong focus → to →
+// focus (`duration` s per leg) from t = delay; else (or reduced motion) focus.
+export function blurFocus(focus: number, to: number | undefined, duration: number | undefined, delay: number, t: number, reduced = false): number {
+  if (typeof to !== "number" || typeof duration !== "number" || duration <= 0 || reduced) return focus;
+  const k = Math.max(0, t - delay) / duration;
+  return focus + (to - focus) * (0.5 - 0.5 * Math.cos(Math.PI * k));
 }
 
 export function createPhotoFx(def: PhotoEffectsDef | undefined, opts: PhotoFxOptions): PhotoFx {
@@ -269,14 +412,26 @@ export function createPhotoFx(def: PhotoEffectsDef | undefined, opts: PhotoFxOpt
       const soft = Math.max(1e-3, R.softness as number);
       u.uReveal = [revealThreshold(p, soft), R.from === "near" ? 1 : 0, soft];
     }
+    const B = state.blur;
+    if (B) {
+      const range = clamp(B.range as number, 0, 1);
+      u.uBlur = [blurFocus(B.focus as number, B.to as number | undefined, B.duration as number | undefined, B.delay as number, t, reduced), range, Math.max(0, B.amount as number) / 100, 1 / BLUR_FALLOFF];
+    }
+    const Fr = state.frame;
+    if (Fr) {
+      const ins = Fr.inset as number[], a = opts.aspect;
+      u.uFrame = [Math.max(0, 1 - 2 * clamp(ins[0], 0, 0.5)) * a, Math.max(0, 1 - 2 * clamp(ins[1], 0, 0.5)), Math.max(0, Fr.border as number) * 2 * a, Math.max(1e-3, Fr.softness as number)];
+      u.uFrameB = [Fr.threshold as number, clamp(Fr.shadow as number, 0, 1), ...(opts.inset ?? [1, 1])];
+      u.uFrameColor = (Fr.color as number[]).slice(0, 3);
+    }
     return u;
   };
   return {
     state,
-    glsl: photoFxGlsl(state, opts.depth),
-    alpha: !!state.reveal,
+    glsl: photoFxGlsl(state, opts.depth, opts.quality, opts.parallax),
+    alpha: PHOTO_EFFECT_IDS.some((id) => state[id] && (PHOTO_EFFECTS[id] as PhotoFxSpec).alpha),
     depthMips: !!state.light && opts.depth,
-    call: (uv, depth) => (on ? `c = photoFx(c, ${uv}, ${opts.depth ? depth : "0.5"});` : ""),
+    call: (uv, depth, quad = uv) => (on ? `c = photoFx(c, ${uv}, ${opts.depth ? depth : "0.5"}, ${quad});` : ""),
     frame,
     uniforms,
     get(effect, param) {
@@ -292,6 +447,7 @@ export function createPhotoFx(def: PhotoEffectsDef | undefined, opts: PhotoFxOpt
       if (!s || !(name in s) && !(name in (PHOTO_EFFECTS[effect as PhotoEffectId]?.params ?? {}))) return false;
       const cur = s[name];
       if (axis && Array.isArray(cur) && typeof value === "number") cur[axis === "y" ? 1 : 0] = value;
+      else if (Array.isArray(cur) && typeof value === "number") s[name] = cur.map(() => value);
       else if (Array.isArray(value)) s[name] = value.slice(0, Array.isArray(cur) ? cur.length : value.length);
       else if (typeof value === "number" && Number.isFinite(value)) s[name] = value;
       else return false;

@@ -8,7 +8,7 @@
 // texture setup (sRGB map with mipmaps + 4× anisotropy, linear depth, mirrored
 // wrap) and output (sRGB, no tone mapping, normal blending over the
 // background colour), and the same depth-driven effects (../build/photoFx.ts:
-// fog, light, reveal). Same player rules as ../player.ts: lazy start, pause
+// fog, light, reveal, blur, frame). Same player rules as ../player.ts: lazy start, pause
 // off-screen / hidden tab, reduced motion, DPR cap per quality tier (and the
 // "auto" DPR step-down), deterministic seek, simulated pointer / scroll input.
 
@@ -79,7 +79,7 @@ export const photoFragment = (flat: boolean, steps: number, fx?: PhotoFx): strin
   PHOTO_COMMON_GLSL +
   (flat ? FLAT_TEXEL : PARALLAX_GLSL.replace("__STEPS__", String(steps)) + PARALLAX_TEXEL) +
   (fx?.glsl ?? "") +
-  fragMain(fx?.call(flat ? "uv" : "pxUv", flat ? "textureLod(uDepth, pxUv, 0.0).r" : "photoHitDepth") ?? "");
+  fragMain(fx?.call(flat ? "uv" : "pxUv", flat ? "textureLod(uDepth, pxUv, 0.0).r" : "photoHitDepth", "uv") ?? "");
 
 const UNIFORMS = ["uMap", "uDepth", "uPlate", "uPlateDepth", "uPlateOn", "uTint", "uOpacity", "uIntensity", "uView", "uZoom", "uMaxOffset", "uInset", "uFocus", "uWallSlope", "uO", "uF", "uR", "uU", "uClip", "uBg", "uBlend"] as const;
 
@@ -360,7 +360,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     const strength = clamp(num(def.strength, PHOTO_DEFAULTS.strength), 0, 1);
     const ps = photoSize(def, map.naturalWidth || map.width || 1, map.naturalHeight || map.height || 1);
     const mset = motionSettings(def.motion);
-    fx = createPhotoFx(def.effects, { depth: !flat, color: (c) => hexColor(c, [1, 1, 1]).map(toLinear) as Vec3, aspect: ps.width / ps.height, live: !deterministic, smoothing: mset.smoothing, speed: mset.speed });
+    fx = createPhotoFx(def.effects, { depth: !flat, color: (c) => hexColor(c, [1, 1, 1]).map(toLinear) as Vec3, aspect: ps.width / ps.height, live: !deterministic, smoothing: mset.smoothing, speed: mset.speed, focus: def.focus, quality: tier, parallax: !flat, inset: flat ? undefined : parallaxParams(strength, ps.width, ps.height).inset });
     const program = g.createProgram()!;
     const attach = (type: number, src: string) => {
       const sh = g.createShader(type)!;

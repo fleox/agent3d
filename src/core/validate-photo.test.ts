@@ -135,6 +135,24 @@ describe("photo effects", () => {
     expect(info).not.toContain("objects#p.effects.light"); // light works on a flat photo (flat normals)
   });
 
+  it("blur and frame: params, scalar inset, rack and flat notes", () => {
+    const good = { blur: { focus: 0.8, amount: 1, range: 0.05, to: 0.1, duration: 3, delay: 1 }, frame: { inset: [0.1, 0.2], threshold: 0.7, softness: 0.05, border: 0.02, color: "#111111", shadow: 0.5 } };
+    expect(issues({ ...ok, effects: good })).toEqual([]);
+    expect(issues({ ...ok, effects: { blur: {}, frame: { inset: 0.15 } } })).toEqual([]);
+    const bad = issues({ ...ok, effects: { blur: { amount: -1, focus: 2, foucs: 1 }, frame: { inset: 0.6, threshold: "near", color: 3 } } });
+    const at = (p: string) => bad.find((i) => i.path === `objects#p.effects${p}`);
+    for (const p of [".blur.amount", ".blur.focus", ".frame.inset", ".frame.threshold", ".frame.color"]) expect(at(p)?.severity, p).toBe("error");
+    expect(at(".blur.foucs")!.hint).toContain('"focus"');
+    expect(errorPaths({ ...ok, effects: { frame: { inset: [0.1, 0.9] } } })).toContain("objects#p.effects.frame.inset");
+    // a rack needs both `to` and `duration`
+    expect(issues({ ...ok, effects: { blur: { to: 0.2 } } }).find((i) => i.path === "objects#p.effects.blur.to")?.severity).toBe("info");
+    expect(issues({ ...ok, effects: { blur: { duration: 2 } } }).find((i) => i.path === "objects#p.effects.blur.duration")?.severity).toBe("info");
+    // flat photo: both work (even blur, plain frame), with a note
+    const flat = issues({ src: "assets/a.jpg", effects: { blur: {}, frame: {} } });
+    expect(flat.filter((i) => i.severity === "error")).toEqual([]);
+    expect(flat.map((i) => i.path)).toEqual(expect.arrayContaining(["objects#p.effects.blur", "objects#p.effects.frame"]));
+  });
+
   it("validates effect timeline tracks", () => {
     const s = scene([{ id: "p", kind: "photo", ...ok, effects: { light: {}, reveal: {} } }, { id: "m", kind: "mesh", geometry: { type: "box" } }]);
     const track = (target: string, keys: unknown[]) => validateScene({ ...s, timeline: { duration: 4, tracks: [{ target, keys }] } } as SceneDoc).filter((i) => i.path.startsWith("timeline") && i.severity === "error");
@@ -147,5 +165,11 @@ describe("photo effects", () => {
     expect(track("p.effects.light.follow", [[0, 1]])[0].message).toContain("not animatable");
     expect(track("p.effects.ligth.intensity", [[0, 1]])[0].hint).toContain('"light"');
     expect(track("m.effects.light.intensity", [[0, 1]])[0].message).toContain("not a 3D photo");
+    const s2 = scene([{ id: "p", kind: "photo", ...ok, effects: { blur: {}, frame: {} } }]);
+    const track2 = (target: string, keys: unknown[]) => validateScene({ ...s2, timeline: { duration: 4, tracks: [{ target, keys }] } } as SceneDoc).filter((i) => i.path.startsWith("timeline") && i.severity === "error");
+    expect(track2("p.effects.blur.focus", [[0, 0.9], [3, 0.1]])).toEqual([]);
+    expect(track2("p.effects.frame.inset", [[0, [0, 0]], [2, [0.12, 0.12]]])).toEqual([]);
+    expect(track2("p.effects.frame.inset.y", [[0, 0.3]])).toEqual([]);
+    expect(track2("p.effects.frame.color", [[0, "#000000"]])).toEqual([]);
   });
 });
