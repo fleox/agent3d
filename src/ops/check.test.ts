@@ -200,11 +200,13 @@ describe("3D photos", () => {
       { id: "ok", kind: "photo", src: "assets/textures/ok.jpg", depth: "assets/textures/ok.depth.png", position: [0, 0, -1] },
       { id: "lossy", kind: "photo", src: "assets/textures/ok.jpg", depth: "assets/textures/ok.depth.jpg", position: [0, 0, -2] },
       { id: "ghost", kind: "photo", src: "assets/textures/ok.jpg", depth: "assets/textures/ghost.depth.png", position: [0, 0, -3] },
+      { id: "plated", kind: "photo", src: "assets/textures/ok.jpg", depth: "assets/textures/ok.depth.png", plate: "assets/depth/ok-plate.webp", plateDepth: "assets/depth/street-depth.png", position: [0, 0, -4] },
     );
     await fs.writeText("scene.json", JSON.stringify(scene));
     const r = await checkProject(fs);
     const at = (code: string) => r.issues.filter((i) => i.code === code).map((i) => i.path);
-    expect(at("missing-asset")).toEqual(["objects#ghost.depth"]);
+    expect(at("missing-asset")).toEqual(["objects#ghost.depth", "objects#plated.plate"]);
+    expect(at("photo-plate-aspect")).toEqual(["objects#plated.plateDepth"]);
     expect(at("photo-depth-aspect")).toEqual(["objects#street.depth"]);
     expect(at("photo-heavy")).toEqual(["objects#street.src"]);
     expect(r.issues.find((i) => i.code === "photo-heavy")!.hint).toContain("agent3d assets optimize assets/textures/street.jpg");

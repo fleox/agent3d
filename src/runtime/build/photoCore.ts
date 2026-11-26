@@ -218,8 +218,15 @@ vec4 shade(vec4 c, float a) {
 // first texel (from near to far) whose depth reaches the ray. `__STEPS__` is
 // replaced by parallaxSteps(). parallaxTexel(vUv) returns the photo texel (not
 // shaded); callers discard when c.a * uOpacity < 0.004, then shade(c, 1.0).
+// Background plate (uPlateOn = 1; uPlate / uPlateDepth = the photo's `plate`
+// + `plateDepth`): a ray that hits the wall of a depth edge continues behind
+// it against the plate depth and shows the plate there (what the foreground
+// uncovers) instead of probing for a nearby background texel.
 export const PARALLAX_GLSL = /* glsl */ `
 uniform sampler2D uDepth;
+uniform sampler2D uPlate;
+uniform sampler2D uPlateDepth;
+uniform float uPlateOn;
 uniform vec2 uView;
 uniform float uZoom;
 uniform vec2 uMaxOffset;
@@ -233,6 +240,7 @@ vec4 parallaxTexel(vec2 vUv) {
   vec2 v = uView - (vUv - 0.5) * 2.0 * uZoom;
   vec2 dir = v * uMaxOffset;
   vec2 uv = base;
+  bool onPlate = false;
   if (dot(dir, dir) > 1e-10) {
     float stepH = 1.0 / float(STEPS);
     float h = 1.0;
@@ -264,7 +272,25 @@ vec4 parallaxTexel(vec2 vUv) {
     float g = length(grad);
     vec2 toNear = grad / max(g, 1e-6);
     float dNear = textureLod(uDepth, uv + toNear * texel * 3.0, 0.0).r;
-    if (hit && (g > uWallSlope || dh.a < 0.5) && dNear > lo + 0.04) {
+    if (hit && (g > uWallSlope || dh.a < 0.5) && dNear > lo + 0.04 && uPlateOn > 0.5) {
+      // continue the march below the wall against the plate (background) depth
+      float ph = lo, pprev = lo;
+      bool phit = false;
+      for (int i = 0; i <= STEPS; i++) {
+        ph = lo - float(i) * stepH;
+        if (textureLod(uPlateDepth, base + (ph - uFocus) * dir, 0.0).r >= ph) { phit = true; break; }
+        pprev = ph;
+      }
+      float plo = max(ph, 0.0), phi = pprev;
+      if (phit) {
+        for (int j = 0; j < 5; j++) {
+          float mid = 0.5 * (plo + phi);
+          if (textureLod(uPlateDepth, base + (mid - uFocus) * dir, 0.0).r >= mid) plo = mid; else phi = mid;
+        }
+      }
+      uv = base + (plo - uFocus) * dir;
+      onPlate = true;
+    } else if (hit && (g > uWallSlope || dh.a < 0.5) && dNear > lo + 0.04) {
       vec2 away = -toNear;
       vec2 probe = uv;
       for (int k = 1; k <= 6; k++) {
@@ -275,7 +301,8 @@ vec4 parallaxTexel(vec2 vUv) {
       uv = probe + away * texel * 2.0;
     }
   }
-  return textureGrad(uMap, uv, dFdx(base), dFdy(base));
+  vec2 gx = dFdx(base), gy = dFdy(base);
+  return onPlate ? textureGrad(uPlate, uv, gx, gy) : textureGrad(uMap, uv, gx, gy);
 }
 `;
 

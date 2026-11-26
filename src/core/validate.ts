@@ -80,7 +80,7 @@ const OBJECT_KEYS: Record<(typeof OBJECT_KINDS)[number], string[]> = {
   particles: ["preset", ...PARTICLE_PARAMS.map((x) => x.name)],
   instances: ["geometry", "material", "layout", "colors"],
   svg: ["src", "size", "fit", "depth", "bevel", "keepColors", "strokes", "curveSegments", "layerGap", "material"],
-  photo: ["src", "depth", "mode", "width", "height", "strength", "focus", "segments", "layers", "edgeCut", "motion", "material"],
+  photo: ["src", "depth", "plate", "plateDepth", "mode", "width", "height", "strength", "focus", "segments", "layers", "edgeCut", "motion", "material"],
 };
 const SCENE_KEYS = ["version", "id", "title", "description", "target", "camera", "environment", "lights", "objects", "timeline", "interactions", "postfx", "physics", "scripts", "ui", "audio", "data", "ariaLabel", "seed"];
 const TARGET_KEYS = ["kind", "aspect", "budgetKb", "height", "transparent", "lazy", "pauseOffscreen", "maxDpr", "reducedMotion", "posterTime", "antialias", "shadows", "toneMapping", "exposure", "quality"];
@@ -973,6 +973,15 @@ function object(v: V, o: unknown, fallback: string) {
 function photo(v: V, o: Obj, p: string) {
   if (v.required(o, "src", p, 'an image path ("assets/textures/photo.jpg") or "library:<id>" (.jpg / .png / .webp)')) v.assetPath(o.src, `${p}.src`, PHOTO_EXT, "an image (.jpg / .png / .webp)");
   v.assetPath(o.depth, `${p}.depth`, PHOTO_EXT, "a depth map image (grayscale PNG, white = near)");
+  v.assetPath(o.plate, `${p}.plate`, PHOTO_EXT, "a background plate image (.webp / .png / .jpg)");
+  v.assetPath(o.plateDepth, `${p}.plateDepth`, PHOTO_EXT, "the plate depth map (grayscale PNG, white = near)");
+  if ((o.plate === undefined) !== (o.plateDepth === undefined)) {
+    const has = o.plate !== undefined ? "plate" : "plateDepth";
+    const miss = has === "plate" ? "plateDepth" : "plate";
+    v.warn("photo-plate", `${p}.${miss}`, `Photo "${String(o.id)}" has ${has} but no ${miss}: the plate is ignored (it needs both).`, `Set both from \`agent3d assets plate ${typeof o.src === "string" ? o.src : "<image>"}\` (it returns { plate, plateDepth }).`);
+  } else if (o.plate !== undefined && o.depth === undefined) {
+    v.info("ignored", `${p}.plate`, `plate only applies to a photo with a depth map (this one is flat).`, "Set depth too, or remove plate / plateDepth.");
+  }
   v.enumOf(o.mode, PHOTO_MODES, `${p}.mode`);
   v.number(o.width, `${p}.width`, { min: 0, exclusiveMin: true });
   v.number(o.height, `${p}.height`, { min: 0, exclusiveMin: true });

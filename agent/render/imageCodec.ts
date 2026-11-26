@@ -1,4 +1,5 @@
 import type { ImageCodec, ImageCodecInput, ImageCodecOutput } from "../../src/ops/optimize";
+import type { PixelCodec } from "../../src/ops/plate";
 import { CliError } from "../output";
 import { launchBrowser, requireBrowser, type LaunchedBrowser } from "./browser";
 import { CdpClient, type CdpSession } from "./cdp";
@@ -36,8 +37,30 @@ const PAGE_FN = `async function (b64, mime, maxSize, quality, format, allowJpeg)
   return { b64: btoa(out), mimeType: blob.type, width: w, height: h, srcWidth: bmp.width, srcHeight: bmp.height, hasAlpha };
 }`;
 
+// Straight RGBA pixels (≤ maxSize on the long side) for the plate op
+// (src/ops/plate.ts). Canvas pixels are premultiplied: colours under alpha 0
+// are lost, which is fine for photos (depth PNGs use the pure decoder).
+const DECODE_FN = `async function (b64, mime, maxSize) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const bmp = await createImageBitmap(new Blob([bytes], { type: mime }), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+  const s = Math.min(1, maxSize / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * s)), h = Math.max(1, Math.round(bmp.height * s));
+  const canvas = new OffscreenCanvas(w, h);
+  const g = canvas.getContext("2d", { willReadFrequently: true });
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = "high";
+  g.drawImage(bmp, 0, 0, w, h);
+  const buf = new Uint8Array(g.getImageData(0, 0, w, h).data.buffer);
+  let out = "";
+  for (let i = 0; i < buf.length; i += 0x8000) out += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  return { b64: btoa(out), width: w, height: h };
+}`;
+
 export interface ChromeImageCodec {
   codec: ImageCodec;
+  decode: PixelCodec["decode"];
   close(): Promise<void>;
 }
 
@@ -82,7 +105,28 @@ export async function openImageCodec(opts: { log?: (m: string) => void } = {}): 
     const v = r.result.value;
     return { bytes: new Uint8Array(Buffer.from(v.b64, "base64")), mimeType: v.mimeType, width: v.width, height: v.height, srcWidth: v.srcWidth, srcHeight: v.srcHeight, hasAlpha: v.hasAlpha };
   };
-  return { codec, close };
+  const decode: PixelCodec["decode"] = async (input) => {
+    const r = await page.send<{ result: { value?: { b64: string; width: number; height: number } }; exceptionDetails?: { exception?: { description?: string }; text?: string } }>(
+      "Runtime.callFunctionOn",
+      { functionDeclaration: DECODE_FN, objectId: windowId, arguments: [{ value: Buffer.from(input.bytes).toString("base64") }, { value: input.mimeType }, { value: input.maxSize }], awaitPromise: true, returnByValue: true },
+      120_000,
+    );
+    if (r.exceptionDetails || !r.result.value)
+      throw new CliError("image-decode", `Could not decode this ${input.mimeType} image: ${(r.exceptionDetails?.exception?.description ?? r.exceptionDetails?.text ?? "no result").split("\n")[0]}`, "The file may be corrupt or in an unsupported format (use .jpg, .png or .webp).");
+    const v = r.result.value;
+    return { data: new Uint8Array(Buffer.from(v.b64, "base64")), width: v.width, height: v.height };
+  };
+  return { codec, decode, close };
+}
+
+// Runs `fn` with a pixel decoder + the codec (plates), always closing the browser.
+export async function withPixelCodec<T>(fn: (codec: PixelCodec) => Promise<T>, opts: { log?: (m: string) => void } = {}): Promise<T> {
+  const c = await openImageCodec(opts);
+  try {
+    return await fn({ decode: c.decode, codec: c.codec });
+  } finally {
+    await c.close();
+  }
 }
 
 // Runs `fn` with a codec, always closing the browser.

@@ -10,6 +10,7 @@ import type { TemplateIndex } from "../ops/templates";
 import type { InflateRaw } from "../ops/zip";
 import type { ImageCodec } from "../ops/optimize";
 import type { DepthEstimator } from "../ops/depth";
+import type { PixelCodec } from "../ops/plate";
 import type { FrameStats, InspectResult } from "../runtime/api";
 
 export type JsonSchema = {
@@ -124,6 +125,9 @@ export interface ToolHost {
   // Small in headless Chrome; downloads the model once into the user cache).
   // Enables image_depth.
   withDepthEstimator?<T>(fn: (estimator: DepthEstimator) => Promise<T>): Promise<T>;
+  // Runs `fn` with a pixel decoder (+ the WebP codec) — CLI / MCP: headless
+  // Chrome. Enables image_plate and image_depth { plate: true }.
+  withPixelCodec?<T>(fn: (codec: PixelCodec) => Promise<T>): Promise<T>;
   // Zlib deflate for generated PNGs (default: CompressionStream).
   deflate?(data: Uint8Array): Uint8Array | Promise<Uint8Array>;
   // Reads a file from the user's disk (CLI / MCP) — used by assets_add { file }.

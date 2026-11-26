@@ -73,7 +73,7 @@ void main() {
 export const photoFragment = (flat: boolean, steps: number): string =>
   FRAG_HEAD + PHOTO_COMMON_GLSL + (flat ? FLAT_TEXEL : PARALLAX_GLSL.replace("__STEPS__", String(steps)) + PARALLAX_TEXEL) + FRAG_MAIN;
 
-const UNIFORMS = ["uMap", "uDepth", "uTint", "uOpacity", "uIntensity", "uView", "uZoom", "uMaxOffset", "uInset", "uFocus", "uWallSlope", "uO", "uF", "uR", "uU", "uClip", "uBg", "uBlend"] as const;
+const UNIFORMS = ["uMap", "uDepth", "uPlate", "uPlateDepth", "uPlateOn", "uTint", "uOpacity", "uIntensity", "uView", "uZoom", "uMaxOffset", "uInset", "uFocus", "uWallSlope", "uO", "uF", "uR", "uU", "uClip", "uBg", "uBlend"] as const;
 
 type Vec3 = [number, number, number];
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -126,7 +126,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-type Images = { map: HTMLImageElement | null; depth: HTMLImageElement | null };
+type Images = { map: HTMLImageElement | null; depth: HTMLImageElement | null; plate: (HTMLImageElement | null)[] };
 
 // Closure-style on purpose: local names minify, class members do not (size).
 export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, options: MountOptions = {}): Player {
@@ -313,8 +313,9 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
         return null;
       });
     };
-    const [map, depth] = await Promise.all([load(def.src, "", ""), def.depth ? load(def.depth, "depth map: ", ".depth") : null]);
-    return { map, depth };
+    const plated = def.depth && def.plate && def.plateDepth;
+    const [map, depth, ...plate] = await Promise.all([load(def.src, "", ""), def.depth ? load(def.depth, "depth map: ", ".depth") : null, plated ? load(def.plate!, "plate: ", "") : null, plated ? load(def.plateDepth!, "plate depth: ", "") : null]);
+    return { map, depth, plate };
   };
 
   const teardown = () => {
@@ -332,7 +333,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     configure(g);
     motion?.dispose();
     const def = photo();
-    const { map, depth } = images;
+    const { map, depth, plate } = images;
     const flat = !depth;
     motion = createPhotoMotion(motionSettings(def.motion), { live: !deterministic, flat });
     if (!map) return; // the object failed to load: background only (like the full runtime)
@@ -378,10 +379,19 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     };
     texture(0, map, true);
     if (depth) texture(1, depth, false);
+    // background plate (photoCore PARALLAX_GLSL): colour like the map, depth like the depth map
+    const plateOn = !!(depth && plate[0] && plate[1]);
+    if (plateOn) {
+      texture(2, plate[0]!, true);
+      texture(3, plate[1]!, false);
+    }
     g.useProgram(program);
     const L = loc;
     g.uniform1i(L.uMap!, 0);
     g.uniform1i(L.uDepth!, 1);
+    g.uniform1i(L.uPlate!, plateOn ? 2 : 0);
+    g.uniform1i(L.uPlateDepth!, plateOn ? 3 : 1);
+    g.uniform1f(L.uPlateOn!, plateOn ? 1 : 0);
     const m = def.material ?? {};
     const tint = hexColor(m.color, [1, 1, 1]).map(toLinear);
     g.uniform3f(L.uTint!, tint[0], tint[1], tint[2]);

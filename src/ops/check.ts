@@ -352,7 +352,7 @@ export const PHOTO_HEAVY_BYTES = 1.5 * 1024 * 1024;
 // Missing files are reported with the other asset refs.
 async function photoIssues(fs: ProjectFs, scene: SceneDoc): Promise<Issue[]> {
   const out: Issue[] = [];
-  const photos: { id: string; src?: unknown; depth?: unknown }[] = [];
+  const photos: { id: string; src?: unknown; depth?: unknown; plate?: unknown; plateDepth?: unknown }[] = [];
   walkObjects(scene.objects, (o) => void (o.kind === "photo" && photos.push(o)));
   const header = async (path: unknown) => {
     if (typeof path !== "string" || !path || isLibraryRef(path) || !(await fs.exists(path))) return null;
@@ -372,6 +372,11 @@ async function photoIssues(fs: ProjectFs, scene: SceneDoc): Promise<Issue[]> {
       if (Math.abs(a - b) / a > 0.02) {
         out.push({ severity: "warning", code: "photo-depth-aspect", path: `${at}.depth`, message: `Depth map "${String(o.depth)}" is ${depth.h.width}x${depth.h.height} but the photo is ${src.h.width}x${src.h.height}: different aspect ratios, the relief will not line up with the picture.`, hint: `Regenerate it from this image: \`agent3d assets depth ${String(o.src)}\` (or crop both the same way).` });
       }
+    }
+    for (const k of ["plate", "plateDepth"] as const) {
+      const f = await header(o[k]).catch(() => null);
+      if (src?.h && f?.h && src.h.height > 0 && f.h.height > 0 && Math.abs(src.h.width / src.h.height - f.h.width / f.h.height) / (src.h.width / src.h.height) > 0.02)
+        out.push({ severity: "warning", code: "photo-plate-aspect", path: `${at}.${k}`, message: `${k === "plate" ? "Plate" : "Plate depth"} "${String(o[k])}" is ${f.h.width}x${f.h.height} but the photo is ${src.h.width}x${src.h.height}: the plate will not line up with the picture.`, hint: `Rebuild it from this image: \`agent3d assets plate ${String(o.src)}\`.` });
     }
     if (depth?.h && depth.h.mimeType === "image/jpeg") {
       out.push({ severity: "info", code: "photo-depth-lossy", path: `${at}.depth`, message: `Depth map "${String(o.depth)}" is a JPEG: lossy compression adds steps and noise to the relief and drops the alpha cut-edge mask.`, hint: `Use a PNG depth map (\`agent3d assets depth ${String(o.src)}\` writes one).` });

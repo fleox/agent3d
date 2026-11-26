@@ -211,11 +211,13 @@ describe("3D photo export", () => {
     await addAsset(fs, { path: "assets/textures/pic.depth.png", bytes: new Uint8Array([0x89, 0x50, 1, 2]), source: "local", license: "CC0-1.0" });
     const before = JSON.parse(await fs.readText("scene.json"));
     expect(CHUNK_FEATURES.photo.needed(before, JSON.stringify(before))).toBe(false);
-    const r = await patchScene(fs, [{ op: "addObject", object: { id: "pic", kind: "photo", src: "assets/textures/pic.jpg", depth: "assets/textures/pic.depth.png" } }]);
+    await addAsset(fs, { path: "assets/depth/pic-plate.webp", bytes: new Uint8Array([0x52, 0x49, 1, 2]), source: "agent3d-plate", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/depth/pic-plate-depth.png", bytes: new Uint8Array([0x89, 0x50, 1, 3]), source: "agent3d-plate", license: "CC0-1.0" });
+    const r = await patchScene(fs, [{ op: "addObject", object: { id: "pic", kind: "photo", src: "assets/textures/pic.jpg", depth: "assets/textures/pic.depth.png", plate: "assets/depth/pic-plate.webp", plateDepth: "assets/depth/pic-plate-depth.png" } }]);
     expect(r.applied).toBe(true);
     expect(CHUNK_FEATURES.photo.needed(r.scene, JSON.stringify(r.scene))).toBe(true);
     const out = await buildExport(fs, { format: "embed", runtime, library, extras: false });
-    expect(Object.keys(out.files)).toEqual(expect.arrayContaining(["pic/assets/textures/pic.jpg", "pic/assets/textures/pic.depth.png"]));
+    expect(Object.keys(out.files)).toEqual(expect.arrayContaining(["pic/assets/textures/pic.jpg", "pic/assets/textures/pic.depth.png", "pic/assets/depth/pic-plate.webp", "pic/assets/depth/pic-plate-depth.png"]));
   });
 });
 

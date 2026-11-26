@@ -55,6 +55,17 @@ describe("photo objects", () => {
     expect(issues({ src: "assets/a.jpg", depth: "assets/d.png", segments: 64 }).find((i) => i.path === "objects#p.segments")?.severity).toBe("info");
   });
 
+  it("validates the background plate: image paths, both or neither, needs a depth map", () => {
+    const ok = { src: "assets/a.jpg", depth: "assets/d.png", plate: "assets/depth/a-plate.webp", plateDepth: "assets/depth/a-plate-depth.png" };
+    expect(issues(ok)).toEqual([]);
+    expect(errorPaths({ ...ok, plate: "assets/a.glb" })).toContain("objects#p.plate");
+    expect(errorPaths({ ...ok, plateDepth: 3 })).toContain("objects#p.plateDepth");
+    const half = issues({ src: "assets/a.jpg", depth: "assets/d.png", plate: "assets/p.webp" }).find((i) => i.code === "photo-plate");
+    expect(half).toMatchObject({ severity: "warning", path: "objects#p.plateDepth" });
+    expect(half!.hint).toContain("agent3d assets plate assets/a.jpg");
+    expect(issues({ src: "assets/a.jpg", plate: "assets/p.webp", plateDepth: "assets/p.png" }).find((i) => i.path === "objects#p.plate")?.severity).toBe("info");
+  });
+
   it("does not ask for lights in a scene of photos only (photos are unlit)", () => {
     const base = { ...defaultScene({ id: "s" }), lights: [], environment: { background: "#000000" } } as SceneDoc;
     const photoOnly = { ...base, objects: [{ id: "g", kind: "group", children: [{ id: "p", kind: "photo", src: "assets/a.jpg", depth: "assets/d.png" }] }] } as unknown as SceneDoc;

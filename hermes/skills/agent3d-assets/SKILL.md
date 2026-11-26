@@ -123,7 +123,22 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets depth assets/textures/stre
 - **Model.** Depth Anything V2 Small (27 MB, Apache-2.0), run in headless Chrome like `render` (WebAssembly, no GPU, no account). The **first run downloads it once** into `~/.agent3d/models/` (the `AGENT3D_MODELS` environment variable moves that folder); every later run works **offline**. Offline before the first download: the error hint gives the model URL and the folder to put it in, or paint a depth map by hand (grey PNG, white = near) and set it as `depth`. The model never goes into exports: only the PNG does.
 - **Licence.** The depth map is registered in `assets/manifest.json` with the **photo's** licence and author (add the photo with `assets add --license … --author …` first; a photo missing from the manifest gives `derived`) and an attribution line naming the model. Ask the user who took the photo and under which licence before using it.
 - Use it on a `photo` object (`src` = the photo, `depth` = `data.path`); skill `agent3d-create` covers the modes, motion and framing. Keep depth maps as PNG: `check` warns on a JPEG depth map (`photo-depth-lossy`), and `assets optimize` only resizes PNG depth maps losslessly.
-- MCP: `image_depth { "image", "out", "size", "maxSize" }` returns the same fields; hosts without headless Chrome refuse it with a hint.
+- MCP: `image_depth { "image", "out", "size", "maxSize", "plate" }` returns the same fields; hosts without headless Chrome refuse it with a hint.
+
+### Background plate (bigger moves)
+
+When the photo will move a lot (`strength` 0.7-1, `mode: "mesh"`, people, poles or signs in front of the background), also build its **background plate**: the photo with the foreground removed next to its depth edges and filled with the background from the far side, plus the plate depth. The runtime shows it where moving foreground uncovers the background, so silhouettes stop smearing, doubling or dragging halos.
+
+```bash
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets plate assets/textures/street.jpg --project my-hero --json
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets depth assets/textures/street.jpg --plate --project my-hero --json
+```
+
+- The first command reuses the existing depth map (`--depth`, else the photo object's `depth`, else `assets/depth/<name>-depth.png`); the second estimates the depth map and builds the plate in one go.
+- **Output.** `data.path` = `assets/depth/<name>-plate.webp`, `data.depthPath` = `assets/depth/<name>-plate-depth.png`, `data.suggestion` = `{ "plate", "plateDepth" }` to set on the photo object (both are needed). `data.holePercent` is the share of the photo rebuilt; `--strength` (default 1) or `--width` (pixels for a full depth jump) sizes the removed band. About 0.3 s plus Chrome start-up (Chrome only decodes the photo); same licence as the photo.
+- Open the plate with your vision / image tool: near-edge foreground should be replaced by plausible background (sky continued behind rooftops, ground behind people). Small subjects can vanish entirely from the plate: that is expected, it is only shown where they uncover it.
+- Cost: about 100-160 KB more for a 1024 px photo. Skip it for gentle moves (strength ≤ 0.5) or photos whose edges are mostly against a plain sky.
+- MCP: `image_plate { "image", "depth", "strength", "width", "maxSize", "format" }`, or `image_depth { "image", "plate": true }`.
 
 ## Listing and removing
 

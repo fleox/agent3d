@@ -433,6 +433,13 @@ export interface PhotoObjectDef extends BaseObjectDef {
   kind: "photo";
   src: string; // image: project path or "library:<id>" (.jpg / .png / .webp)
   depth?: string; // depth map path (same aspect as src). Without it the photo is flat.
+  // Background plate (`agent3d assets plate`): the photo with the foreground
+  // removed next to its depth edges and filled with background, + its depth
+  // (grey PNG, the background depth continued). Shown where moving foreground
+  // uncovers what is behind it (all modes) — bigger moves without smears.
+  // Both are needed (one alone is ignored); same aspect as src.
+  plate?: string;
+  plateDepth?: string;
   // parallax: flat quad, shader parallax (relief mapping) — the "3D photo" look for
   //   small motions (default). mesh: displaced grid, survives larger camera moves.
   // layers: the photo cut into depth slices, a pop-up book look.

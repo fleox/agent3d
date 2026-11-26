@@ -4,6 +4,7 @@ import type { AssetEntry } from "../core/types";
 import { downloadAsset, importAssetZip, listAssets, listLibrary, parseResolution, searchAssetsDetailed, addAsset, type AssetHit } from "../ops/assets";
 import { modelFileBounds } from "../ops/gltf";
 import { checkDepthRequest, estimateDepth } from "../ops/depth";
+import { checkPlateRequest, generatePlate, type PlateRequest } from "../ops/plate";
 import { optimizeAssets, optimizedExportSources, type ImageCodec, type TextureFormat } from "../ops/optimize";
 import { OpsError } from "../ops/context";
 import { buildExport, prefixFiles, type ExportFormat } from "../ops/export";
@@ -141,7 +142,7 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "image_depth",
     description:
-      'Estimate a depth map for a photo (the "3D photo" effect: a photo object with `depth`). Runs Depth Anything V2 Small locally (CLI / MCP host: headless Chrome, ~1-3 s per image; the 27 MB Apache-2.0 model is downloaded once into the user cache, later runs work offline). Writes a grey PNG (white = near, transparent where depth jumps) at the photo size (max 1024 px) under assets/depth/, registered in assets/manifest.json with the photo\'s licence. Returns { path, width, height, ms, model, suggestion: { kind: "photo", src, depth } } — then add or update the photo object with `depth: path`. Without a host that can run it, paint a depth map by hand instead.',
+      'Estimate a depth map for a photo (the "3D photo" effect: a photo object with `depth`). Runs Depth Anything V2 Small locally (CLI / MCP host: headless Chrome, ~1-3 s per image; the 27 MB Apache-2.0 model is downloaded once into the user cache, later runs work offline). Writes a grey PNG (white = near, transparent where depth jumps) at the photo size (max 1024 px) under assets/depth/, registered in assets/manifest.json with the photo\'s licence. Returns { path, width, height, ms, model, suggestion: { kind: "photo", src, depth } } — then add or update the photo object with `depth: path`. `plate: true` also builds the background plate (see image_plate) and returns it as `plate` (suggestion gains plate + plateDepth): use it for bold moves (strength ≥ 0.7, mode mesh / layers). Without a host that can run it, paint a depth map by hand instead.',
     inputSchema: {
       type: "object",
       properties: {
@@ -149,6 +150,7 @@ export const ASSET_TOOLS: AiTool[] = [
         out: { type: "string", description: 'Project path of the depth PNG (default "assets/depth/<image name>-depth.png").' },
         size: { type: "integer", minimum: 140, maximum: 1036, description: "Model input long side in pixels (default 518; larger = finer edges, slower; rounded to a multiple of 14)." },
         maxSize: { type: "integer", minimum: 16, maximum: 8192, description: "Longest side of the written depth map (default: the photo size, capped at 1024)." },
+        plate: { type: "boolean", description: "Also build the background plate + its depth (image_plate with the new depth map). Default false." },
       },
       required: ["image"],
     },
@@ -159,7 +161,43 @@ export const ASSET_TOOLS: AiTool[] = [
       if (!ctx.host?.withDepthEstimator)
         return { status: "refused", reason: "This host cannot run the depth model (it needs the CLI / MCP host with headless Chrome).", hint: "Run `agent3d assets depth <image>` from the CLI, or provide a depth map by hand (grey PNG, white = near, same aspect as the photo) and set it as the photo object's `depth`." };
       const r = await ctx.host.withDepthEstimator((estimator) => estimateDepth(ctx.fs, req, estimator));
+      if (input.plate === true) {
+        if (!ctx.host.withPixelCodec) return { ...r, plate: { status: "refused", reason: "This host cannot decode images for the plate." }, hint: `Set it on the photo object: object_update { id, set: { depth: "${r.path}" } }.` };
+        const plate = await ctx.host.withPixelCodec((codec) => generatePlate(ctx.fs, { image: req.image, depth: r.path, library: ctx.host?.library, deflate: ctx.host?.deflate, inflate: ctx.host?.inflate }, codec));
+        const suggestion = { ...r.suggestion, ...plate.suggestion };
+        return { ...r, plate, suggestion, hint: `Set them on the photo object: object_update { id, set: ${JSON.stringify({ depth: r.path, ...plate.suggestion })} }, or object_add with ${JSON.stringify(suggestion)}. Then render_preview with pointer input at the extremes to check the edges.` };
+      }
       return { ...r, hint: `Set it on the photo object: object_update { id, set: { depth: "${r.path}" } }, or object_add with ${JSON.stringify(r.suggestion)}. Then render_preview to check the parallax.` };
+    },
+  },
+  {
+    name: "image_plate",
+    description:
+      'Build the background plate of a 3D photo: the photo with the foreground removed next to its depth edges and filled with the background behind it (from the far side only), plus the plate depth (the background depth continued). Set them on the photo object as `plate` + `plateDepth`: when the view moves, the runtime shows the plate where the foreground uncovers the background (parallax, mesh backing, layers) instead of smearing / stretching edge pixels — so bigger moves (strength 0.7-1, mode mesh) stay clean. Needs the photo\'s depth map (image_depth first, or image_depth { plate: true } for both at once); found from `depth`, else the photo object showing `image`, else assets/depth/<name>-depth.png. Writes assets/depth/<name>-plate.webp (WebP, PNG without a WebP encoder) and assets/depth/<name>-plate-depth.png, registered with the photo\'s licence; pure TS, ≈ 0.5 s (CLI / MCP host: headless Chrome decodes the photo). Returns { path, depthPath, holeWidth, holePercent, ms, suggestion: { plate, plateDepth } }.',
+    inputSchema: {
+      type: "object",
+      properties: {
+        image: { type: "string", description: 'The photo: project path ("assets/textures/photo.jpg") or "library:<id>".' },
+        depth: { type: "string", description: "Its depth map PNG (default: the photo object's depth, else assets/depth/<name>-depth.png)." },
+        out: { type: "string", description: 'Project path of the plate (default "assets/depth/<name>-plate.webp").' },
+        outDepth: { type: "string", description: 'Project path of the plate depth PNG (default "assets/depth/<name>-plate-depth.png").' },
+        maxSize: { type: "integer", minimum: 64, maximum: 4096, description: "Longest side of the plate (default: the photo size, capped at 1024)." },
+        strength: { type: "number", minimum: 0.05, maximum: 1, description: "Strongest photo strength the plate must cover (default 1): sets how far from each edge the foreground is removed." },
+        width: { type: "integer", minimum: 2, maximum: 512, description: "Hole width in plate pixels for a full near-to-far jump (overrides strength; default ≈ 10 % of the short side at strength 1)." },
+        format: { type: "string", enum: ["webp", "png"], description: "Plate image format (default webp)." },
+      },
+      required: ["image"],
+    },
+    mutating: true,
+    async handler(ctx, input) {
+      const fmt = optStr(input, "format");
+      const req: PlateRequest = { image: str(input, "image").replace(/^\.\//, ""), depth: optStr(input, "depth"), out: optStr(input, "out"), outDepth: optStr(input, "outDepth"), maxSize: num(input, "maxSize"), strength: num(input, "strength"), width: num(input, "width"), format: fmt === "png" || fmt === "webp" ? fmt : undefined, library: ctx.host?.library, deflate: ctx.host?.deflate, inflate: ctx.host?.inflate };
+      if (fmt !== undefined && req.format === undefined) throw new OpsError("invalid", `format must be "webp" or "png" (got "${fmt}").`);
+      await checkPlateRequest(ctx.fs, req);
+      if (!ctx.host?.withPixelCodec)
+        return { status: "refused", reason: "This host cannot decode images (the plate needs the CLI / MCP host with headless Chrome).", hint: "Run `agent3d assets plate <image>` from the CLI." };
+      const r = await ctx.host.withPixelCodec((codec) => generatePlate(ctx.fs, req, codec));
+      return { ...r, hint: `Set them on the photo object: object_update { id, set: ${JSON.stringify(r.suggestion)} }. Then render_preview with pointer input at the extremes (e.g. input [{ t: 0.5, pointer: [-1, 0.7] }, { t: 1.5, pointer: [1, -0.7] }]) to check the edges.` };
     },
   },
   {

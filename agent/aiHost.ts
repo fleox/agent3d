@@ -83,6 +83,10 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
       const { withDepthEstimator } = await import("./render/depth");
       return withDepthEstimator(fn, { log: (m) => void process.stderr.write(`${m}\n`) });
     },
+    async withPixelCodec(fn) {
+      const { withPixelCodec } = await import("./render/imageCodec");
+      return withPixelCodec(fn, { log: (m) => void process.stderr.write(`${m}\n`) });
+    },
     deflate: (data) => new Uint8Array(deflateSync(data)),
     readLocalFile: async (path) => new Uint8Array(readFileSync(resolve(path))),
   };

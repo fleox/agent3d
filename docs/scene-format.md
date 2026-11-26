@@ -435,6 +435,7 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 |---|---|---|
 | `src` | (required) | The image: `.jpg` / `.jpeg` / `.png` / `.webp` project path or `library:<id>` |
 | `depth` | | The depth map (same rules as `src`, same aspect ratio as the image). Without it the photo is flat (`validate` warns) |
+| `plate`, `plateDepth` | | The background plate and its depth (`agent3d assets plate`, [assets.md](assets.md#background-plates-bigger-moves)): the photo with the foreground removed at depth edges, filled with background, and the background depth continued. Shown where moving foreground uncovers the background (all modes, also the lite player) — bigger moves without smears or stretched halos. Both are needed (one alone is ignored, `validate` warns); same aspect as the image (`check`: `photo-plate-aspect`) |
 | `mode` | `parallax` | `parallax`: one flat quad with shader parallax (relief mapping) — the 3D-photo look for small motions. `mesh`: a displaced grid that survives larger camera moves. `layers`: the photo cut into depth slices, a pop-up-book look |
 | `width`, `height` | 4, from the image aspect | World size in units. With only `width`, the height follows the image; both set override the aspect |
 | `strength` | 0.5 | Depth effect amount, 0..1 (parallax holds up to ~0.9; mesh ~0.7 with the photo a bit wider than the frame; layers ~0.6) |
@@ -453,7 +454,8 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 2. Estimate its depth map, locally (no account, no network once the model is downloaded): `agent3d assets depth assets/textures/photo.jpg` — it writes `assets/depth/photo-depth.png` and registers it in `assets/manifest.json` with the photo's licence ([assets.md](assets.md#depth-maps-3d-photos)).
 3. Add the object: `{ "kind": "photo", "src": "…/photo.jpg", "depth": "assets/depth/photo-depth.png" }` (`object_add` / `agent3d object add`).
 4. `agent3d render --count 4 --sheet` (the `auto` drift shows the effect in stills), tune `strength` / `focus` / `mode`.
-5. `agent3d check`: `missing-asset` (photo or depth file), `photo-depth-aspect` (the depth map's aspect differs from the photo's by more than 2 %: regenerate it), `photo-heavy` (photo over 1.5 MB: `agent3d assets optimize <photo>`, which keeps a photo at ≥ 1024 px), `photo-depth-lossy` (JPEG depth map). Triangles: `parallax` 2, `layers` 2 × layers, `mesh` segments × segments × aspect × 2.
+5. Bigger moves (strength ≥ 0.7, `mesh`, people or thin objects in front): `agent3d assets plate assets/textures/photo.jpg` (or `assets depth … --plate`) and set `plate` + `plateDepth` from its `suggestion`.
+6. `agent3d check`: `missing-asset` (photo, depth or plate file), `photo-depth-aspect` (the depth map's aspect differs from the photo's by more than 2 %: regenerate it), `photo-heavy` (photo over 1.5 MB: `agent3d assets optimize <photo>`, which keeps a photo at ≥ 1024 px), `photo-depth-lossy` (JPEG depth map). Triangles: `parallax` 2, `layers` 2 × layers, `mesh` segments × segments × aspect × 2.
 
 ## Generators and particles
 

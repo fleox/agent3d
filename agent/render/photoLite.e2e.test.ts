@@ -1,7 +1,11 @@
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { deflateSync, inflateRawSync } from "node:zlib";
 import { buildExport, type ExportResult } from "../../src/ops/export";
+import { buildPlate } from "../../src/ops/plate";
+import { decodePng as decodeRgba } from "../../src/ops/pngDecode";
+import { encodePng } from "../../src/ops/pngEncode";
 import { createProject } from "../../src/ops/project";
 import { patchScene, type PatchOp } from "../../src/ops/scene";
 import { libraryProvider, readRuntimeFiles } from "../host";
@@ -79,9 +83,12 @@ describe.skipIf(!browser || !runtimeOk)("photo-only lite runtime vs full runtime
     const keep = !!process.env.A3D_E2E_KEEP;
     // Two eligible variants of the photo hero template: the photo filling the
     // frame (as authored), and pulled back so the edges and the background show.
-    const variants: { id: string; ops: PatchOp[] }[] = [
+    // A third one has a background plate (src/ops/plate.ts from the template's
+    // depth map, with a synthetic colour image so plate texels are easy to tell).
+    const variants: { id: string; ops: PatchOp[]; plate?: boolean }[] = [
       { id: "fill", ops: [] },
       { id: "framed", ops: [{ op: "set", path: "camera.position", value: [0.6, -0.3, 16] }, { op: "set", path: "camera.target", value: [0.2, 0, 0] }] },
+      { id: "plate", ops: [{ op: "merge", path: "objects#photo", value: { strength: 1, plate: "assets/depth/street-plate.png", plateDepth: "assets/depth/street-plate-depth.png" } }], plate: true },
     ];
     const exports: { id: string; lite: string; full: string; liteResult: ExportResult; fullResult: ExportResult }[] = [];
     for (const v of variants) {
@@ -89,6 +96,16 @@ describe.skipIf(!browser || !runtimeOk)("photo-only lite runtime vs full runtime
       mkdirSync(projectDir, { recursive: true });
       const fs = new NodeFs(projectDir);
       await createProject(fs, { name: "photo", template: "hero-photo-3d", templateFiles: readTemplate("hero-photo-3d") });
+      if (v.plate) {
+        const inflate = (d: Uint8Array) => new Uint8Array(inflateRawSync(d));
+        const deflate = (d: Uint8Array) => new Uint8Array(deflateSync(d));
+        const depth = await decodeRgba(await fs.readBytes("assets/depth/street-depth.png"), { inflate });
+        const colour = new Uint8Array(depth.data.length);
+        for (let i = 0; i < depth.width * depth.height; i++) colour.set([255, (i % depth.width) % 256, 40, 255], i * 4);
+        const plate = buildPlate({ data: colour, width: depth.width, height: depth.height }, depth);
+        await fs.writeBytes("assets/depth/street-plate.png", await encodePng(plate.color.data, depth.width, depth.height, { deflate }));
+        await fs.writeBytes("assets/depth/street-plate-depth.png", await encodePng(plate.depth.data, depth.width, depth.height, { deflate }));
+      }
       const r = await patchScene(fs, [{ op: "removeObject", id: "title" }, { op: "removeObject", id: "subtitle" }, { op: "remove", path: "postfx" }, { op: "remove", path: "data" }, ...v.ops]);
       expect(r.issues.filter((i) => i.severity === "error")).toEqual([]);
       expect(r.applied).toBe(true);
@@ -179,6 +196,9 @@ describe.skipIf(!browser || !runtimeOk)("photo-only lite runtime vs full runtime
       // The states differ from each other (the motion really moved the view).
       const d = compare(shots.get("fill/drift/lite")!, shots.get("fill/pointer/lite")!);
       expect(d.mean).toBeGreaterThan(1);
+      // The plate shows where the view uncovers the background (both runtimes, compared above).
+      const pl = compare(shots.get("plate/zoom-pointer/lite")!, shots.get("fill/zoom-pointer/lite")!);
+      expect(pl.bad).toBeGreaterThan(0.002);
     } finally {
       client.close();
       await b.close();
