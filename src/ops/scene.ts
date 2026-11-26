@@ -12,6 +12,7 @@ import { validateScene } from "../core/validate";
 import { closest } from "../core/suggest";
 import { OpsError, hasErrors } from "./context";
 import { readSceneFile, saveScene, SCENE_FILE } from "./project";
+import { photoPlacement } from "./photoPlacement";
 import { allObjectIds, findObject, isDescendant, objectDetail, walkObjects } from "./tree";
 
 export async function getScene(fs: ProjectFs): Promise<SceneDoc> {
@@ -27,6 +28,10 @@ export interface SummaryObject {
   position?: [number, number, number];
   behaviours?: string[];
   hidden?: true;
+  // Photos with a depth map: world z of their farthest (depth 0) and nearest
+  // (depth 1) pixels — place 3D objects between them to be hidden by the
+  // nearer parts (`occlude: true`). Mapping: src/core/photoDepth.ts.
+  depthRange?: [number, number];
   children?: SummaryObject[];
 }
 
@@ -62,20 +67,24 @@ function backgroundText(bg: unknown): string {
 export function summarizeScene(scene: SceneDoc): SceneSummary {
   let objects = 0;
   let behaviours = 0;
-  const node = (o: ObjectDef): SummaryObject => {
+  const node = (o: ObjectDef, base: [number, number, number]): SummaryObject => {
     objects++;
     behaviours += o.behaviours?.length ?? 0;
+    const pos = Array.isArray(o.position) ? o.position : [0, 0, 0];
+    const world: [number, number, number] = [base[0] + (Number(pos[0]) || 0), base[1] + (Number(pos[1]) || 0), base[2] + (Number(pos[2]) || 0)];
+    const placed = o.kind === "photo" ? photoPlacement(scene, o, world) : null;
     return {
       id: o.id,
       kind: o.kind,
-      detail: objectDetail(o),
+      detail: objectDetail(o) + (placed ? ` · z ${placed.zFar} (far) … ${placed.zNear} (near)${placed.occlude ? " · occlude" : ""}` : ""),
       ...(o.position ? { position: o.position } : {}),
       ...(o.behaviours?.length ? { behaviours: o.behaviours.map((b) => b.type) } : {}),
       ...(o.visible === false ? { hidden: true as const } : {}),
-      ...(o.children?.length ? { children: o.children.map(node) } : {}),
+      ...(placed ? { depthRange: [placed.zFar, placed.zNear] as [number, number] } : {}),
+      ...(o.children?.length ? { children: o.children.map((c) => node(c, world)) } : {}),
     };
   };
-  const tree = (scene.objects ?? []).filter((o) => o && typeof o === "object").map(node);
+  const tree = (scene.objects ?? []).filter((o) => o && typeof o === "object").map((o) => node(o, [0, 0, 0]));
   const lighting = scene.environment?.lighting;
   return {
     id: scene.id,

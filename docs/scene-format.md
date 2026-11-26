@@ -293,7 +293,7 @@ Common fields (every kind):
 | `text` | `text`, `font`, `size`, `depth`, `bevel`, `align`, `letterSpacing`, `lineHeight`, `kerning`, `maxWidth`, `curveSegments`, `outline`, `splitLetters`, `reveal`, `material` | [Text and logos](#text-and-logos) |
 | `svg` | `src`, `size`, `fit`, `depth`, `bevel`, `keepColors`, `strokes`, `curveSegments`, `layerGap`, `material` | [Text and logos](#svg-logos-and-icons) |
 | `model` | `src`, `fit`, `center`, `animation`, `morph`, `material` | [Models](#models) |
-| `photo` | `src`, `depth`, `mode`, `width`, `height`, `strength`, `focus`, `segments`, `layers`, `edgeCut`, `motion`, `material`, `effects` | [Photo (3D photo)](#photo-3d-photo) |
+| `photo` | `src`, `depth`, `mode`, `width`, `height`, `strength`, `focus`, `segments`, `layers`, `edgeCut`, `occlude`, `motion`, `material`, `effects` | [Photo (3D photo)](#photo-3d-photo) |
 | `group` | only `children` | |
 | `generator` | `generator`, `params`, `seed`, `material` | [Generators](#generators-and-particles) |
 | `particles` | `preset` + overrides | [Particles](#particles) |
@@ -442,6 +442,7 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 | `segments` | 256 | `mesh` only: grid cells on the long side, 8..1024 (integer) |
 | `layers` | 6 | `layers` only: number of slices, 2..16 (integer) |
 | `edgeCut` | 0.08 | `mesh` / `layers`: hide stretched edges where the depth jumps more than this (0..1; 0 = off) |
+| `occlude` | false | 3D inside the photo: the photo writes the true depth of its pixels, so 3D objects placed between its depth planes are hidden by its nearer parts, and its motion moves the real camera so they slide with the photo (below). A no-op without other objects; ignored on a flat photo |
 | `motion` | | What moves the view (combined): `pointer` (0..1, default 1), `scroll` (0..1, default 0), `gyro` (phones, default true when `pointer` > 0), `auto` (`sway` default, `orbit`, `zoom`, `none`: a looping drift used in headless renders, videos and on touch screens), `speed` (cycles per 10 s), `smoothing` (0..1) |
 | `material` | | Only `opacity`, `color` (tint) and `emissiveIntensity` (photos are unlit); other material fields are ignored with a warning |
 | `effects` | | Depth-driven effects: `fog`, `light`, `reveal` ([below](#photo-effects)) |
@@ -494,7 +495,29 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 2. Estimate its depth map, locally (no account, no network once the model is downloaded): `agent3d assets depth assets/textures/photo.jpg` — it writes `assets/depth/photo-depth.png` and registers it in `assets/manifest.json` with the photo's licence ([assets.md](assets.md#depth-maps-3d-photos)).
 3. Add the object: `{ "kind": "photo", "src": "…/photo.jpg", "depth": "assets/depth/photo-depth.png" }` (`object_add` / `agent3d object add`).
 4. `agent3d render --count 4 --sheet` (the `auto` drift shows the effect in stills), tune `strength` / `focus` / `mode`.
-5. `agent3d check`: `missing-asset` (photo or depth file), `photo-depth-aspect` (the depth map's aspect differs from the photo's by more than 2 %: regenerate it), `photo-heavy` (photo over 1.5 MB: `agent3d assets optimize <photo>`, which keeps a photo at ≥ 1024 px), `photo-depth-lossy` (JPEG depth map). Triangles: `parallax` 2, `layers` 2 × layers, `mesh` segments × segments × aspect × 2.
+5. `agent3d check`: `missing-asset` (photo or depth file), `photo-occlude` / `photo-depth-range` (3D objects inside the photo's depth, below), `photo-depth-aspect` (the depth map's aspect differs from the photo's by more than 2 %: regenerate it), `photo-heavy` (photo over 1.5 MB: `agent3d assets optimize <photo>`, which keeps a photo at ≥ 1024 px), `photo-depth-lossy` (JPEG depth map). Triangles: `parallax` 2, `layers` 2 × layers, `mesh` segments × segments × aspect × 2.
+
+### 3D inside the photo
+
+With `"occlude": true` a depth photo is a real 3D backdrop: text, meshes, models and particles can live **between** its depth planes and be hidden by its foreground — a title passing behind the nearest building, snow falling in front of and behind a subject, a 3D logo standing on a table in the picture. The `photo-title-inside` template is a worked example.
+
+```json
+{ "id": "photo", "kind": "photo", "src": "assets/textures/street.webp", "depth": "assets/depth/street-depth.png",
+  "width": 11.9, "strength": 0.8, "focus": 0.45, "occlude": true },
+{ "id": "title", "kind": "text", "text": "OLD TOWN", "size": 0.92, "position": [-0.2, 1.55, 0.12] }
+```
+
+**Where the photo's pixels are.** A pixel of depth-map value `d` (0 far … 1 near) sits at the photo's local z:
+
+- `range = strength × width × 0.25` (world units), centred on `focus` (the focus depth is at z = 0, the photo's own position);
+- `mesh`: `z = (d − focus) × range`;
+- `parallax` / `layers`: `z = D·u / (1 + u)` with `u = (d − focus) × range / D`, D = the distance from the camera to the photo plane — the same as the mesh formula while z is small next to D (this exact form is what makes the motion coherent, below).
+
+You rarely compute it: `scene_summary` (`agent3d scene summary`) gives every depth photo a `depthRange: [zFar, zNear]` (world z of its depth-0 and depth-1 pixels, from the scene's camera), and with `occlude` on, `check` reports the range (`photo-depth-range`). An object at world z is hidden wherever the photo is nearer than z: to put a title "behind the foreground", pick the depth of the subject that should cover it (sample the depth map, or read it off a render), place the title a little farther (smaller z) than that subject and nearer than what should stay behind it. Then render with the pointer at the corners (`render --input '[{"t":0.5,"pointer":[-1,0.7]},{"t":1.5,"pointer":[1,-0.7]}]' --sheet`) and adjust x / y / z until the right part is covered. Particles whose `area` spans the whole depth range fall both in front of and behind the subject. Without `occlude`, `check` reports objects placed inside a depth photo's range (`photo-occlude`, info): they always draw over it.
+
+**Motion.** With `occlude`, the photo's view offset (pointer, gyroscope, scroll, `auto` drift) also moves the real camera parallel to the photo plane, with an off-axis projection that keeps the photo itself still on screen: the photo pixels shift exactly as before, and a 3D object at the z of depth `d` slides exactly like the photo pixels of depth `d` — it stays glued to the facade it sits behind. The `zoom` drift becomes a dolly (approximate unless the photo is centred on the camera). `mesh` mode: the camera move replaces the grid tilt. Only the first occluding photo drives the camera; it is not moved under `camera.controls: "orbit"`. Exact when the camera looks straight at the photo (the usual hero set-up: camera on +z, photo unrotated); an orthographic camera gets the occlusion but no camera move.
+
+**Rendering.** An occluding photo is drawn in the opaque pass (alpha-tested: a PNG / WebP with transparency keeps its cut-out at alpha 0.5), so transparent objects (particles, fading text) depth-test against it. A single photo with `occlude` and nothing else still exports with the lite photo runtime.
 
 ## Generators and particles
 

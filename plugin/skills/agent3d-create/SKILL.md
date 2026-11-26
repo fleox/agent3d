@@ -136,6 +136,20 @@ Tips:
 - Reveal (the photo appears slice by slice, far first): `"reveal": { "duration": 2.5, "delay": 0.3 }` (an intro), `"from": "near"` for the subject first; set `target.posterTime` after the reveal ends so the poster is not empty.
 - Animate them from the timeline: `{ "target": "photo.effects.light.position", "keys": [[0, [-0.9, 0.5]], [4, [0.9, 0.5]]], "ease": "inOutSine" }` (with `"follow": "none"`), `photo.effects.fog.amount`, `photo.effects.reveal.progress`.
 
+### Title behind the subject (3D inside the photo)
+
+When the user wants the 3D content *inside* the picture (a title passing behind the nearest building, snow falling in front of and behind a person, a 3D logo standing on a table in the photo), set `"occlude": true` on the photo. It then writes the true depth of its pixels, so objects placed between its depth planes are hidden by its nearer parts, and its pointer / gyro / auto motion moves the real camera so they slide exactly with the photo. Start from the `photo-title-inside` template (`new my-hero --template photo-title-inside`).
+
+1. Turn it on: `[{ "op": "set", "path": "objects#photo.occlude", "value": true }]`.
+2. Read where the photo's depths are: `npx -y @fleox/agent3d@0.4.0 scene summary --project my-hero --json` → the photo's `depthRange: [zFar, zNear]` (world z of its depth-0 and depth-1 pixels; the `focus` depth is at the photo's own z). A depth-map value d sits at about `z = (d - focus) × strength × width × 0.25` (exact formula in `docs/scene-format.md`, "3D inside the photo").
+3. Place the title: z a little smaller (farther) than the depth of the subject that should cover it, larger than what should stay behind it; x / y so the subject overlaps part of the letters. E.g. a street at `strength` 0.8, `focus` 0.45, `width` 11.9: the sky is at z ≈ -1.2, the nearest facade at z ≈ 1.15, a title at z ≈ 0.12 (depth ≈ 0.5) is covered where the facade is nearer.
+4. Particles: give them an `area` whose z spans the whole range (e.g. `"area": [12, 8, 4]` centred at z ≈ 0.4) so they fall in front of and behind the subject.
+5. Render with the pointer at the corners and look: the subject must cover the letters at the same place in every frame (no sliding of the title over the facade):
+   ```bash
+   npx -y @fleox/agent3d@0.4.0 render --project my-hero --frames 0.5,1.5,2.5,3.5 --sheet --input '[{"t":0.5,"pointer":[-1,0.7]},{"t":1.5,"pointer":[1,-0.7]},{"t":2.5,"pointer":[1,1]},{"t":3.5,"pointer":[-1,-1]}]' --json
+   ```
+   Too much hidden → move the title nearer (larger z) or away from the subject; nothing hidden → farther (smaller z) or overlapping the subject. Keep the camera looking straight at the photo (the default set-up). Without `occlude`, `check` reports objects inside a photo's depth range (`photo-occlude`): leave it off for a headline meant to float over the picture.
+
 ## Other front doors: MCP and the Studio
 
 Everything above also works without the shell:

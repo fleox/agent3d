@@ -201,6 +201,7 @@ export const en = {
     segments: "Segments",
     layers: "Layers",
     edgeCut: "Edge cut",
+    occlude: "3D inside the photo",
     pointer: "Pointer",
     scroll: "Scroll",
     gyro: "Gyroscope",

@@ -32,12 +32,39 @@
 //
 // Effects (def.effects: fog / light / reveal, ./photoFx.ts) run in every mode
 // on the sampled texel; their uniforms are shared by all the photo's materials.
+//
+// 3D inside the photo (`occlude: true`, opt-in): the photo writes the true
+// depth of each pixel to the depth buffer, so text / meshes / models /
+// particles placed between its depth planes are hidden by its foreground.
+// Depth value d → photo local z: src/core/photoDepth.ts (parallax / layers:
+// z = D·u/(1+u), u = (d − focus)·range/D, D = camera → photo plane distance;
+// mesh: z = (d − focus)·range; range = strength·width·0.25). The fragment
+// takes the point at that z on the camera ray through it and writes its
+// projected depth (gl_FragDepth, PHOTO_OCCLUDE blocks in the main()s).
+// Coherent motion: with occlude, the view offset is ALSO a real camera move
+// (applyCamera(), run by the World right after the camera rig). The camera
+// slides parallel to the photo plane by c = offset · k · D / range (k = the
+// on-plane shift of the parallax shader per unit of (d − focus)) and the
+// projection gets the matching off-axis shear, so the focus plane — the quad
+// itself — stays pixel-still while a 3D point at height z slides by
+// c·z/(D − z): exactly the shift the shader gives the photo pixels of the
+// depth that maps to z (hence the u/(1+u) mapping). The photo pixels keep
+// their UV parallax untouched (same look as without occlude); 3D objects at
+// a photo depth move with the pixels of that depth, never swim. The zoom
+// drift becomes a dolly + projection scale (approximate: exact for a photo
+// centred on the camera axis). Mesh mode: the camera move replaces the grid
+// tilt (real geometry, no extra mapping); layers: the slices sit at z = 0 and
+// their fragments write their band's depth. Only the first occluding photo
+// drives the camera; an orbit-controlled camera is never moved (OrbitControls
+// owns its pose). Exact when the camera looks straight at the photo; an
+// orthographic camera only gets the depth (no camera move).
 
 import * as THREE from "three";
 import type { PhotoObjectDef } from "../../core/types";
 import { loadTexture } from "../assets";
 import { DEG, clamp, num } from "../util";
 import type { RuntimeContext } from "./context";
+import { photoDepthRange } from "../../core/photoDepth";
 import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, photoSize } from "./photoCore";
 import { createPhotoFx, type FxValue, type PhotoFx } from "./photoFx";
 
@@ -70,7 +97,36 @@ export function meshSegments(segments: number, width: number, height: number): [
 
 // Mesh: depth displacement range (world units).
 export function meshRange(strength: number, width: number): number {
-  return clamp(strength, 0, 1) * width * 0.25;
+  return photoDepthRange(strength, width);
+}
+
+// Occlude: the camera move (photo local units) for a view offset, and the
+// projection scale that keeps the focus plane still. D = camera → photo
+// plane distance. parallax / layers: k = on-plane shift per unit of
+// (d − focus) at full offset (maxOffset / inset × size), c = offset · k · D /
+// range, and the zoom drift is a dolly δ (radial depth expansion) with the
+// image magnification 1 / (1 − 0.06·zoom) as a projection scale. mesh: the
+// orbit the grid tilt used to give (± strength · 8°) and a plain dolly.
+export interface PhotoCameraMove {
+  x: number;
+  y: number;
+  dolly: number; // towards the photo (local units)
+  magnify: number; // projection xy scale on top of keeping the focus plane fixed (1 = none); NaN = real dolly (mesh)
+}
+export function photoCameraMove(mode: "parallax" | "layers" | "mesh", off: { x: number; y: number; zoom: number }, p: { strength: number; width: number; height: number; distance: number }): PhotoCameraMove {
+  const D = p.distance;
+  const range = meshRange(p.strength, p.width);
+  if (!(D > 0) || range <= 0) return { x: 0, y: 0, dolly: 0, magnify: 1 };
+  if (mode === "mesh") {
+    const r = D * Math.tan(clamp(p.strength, 0, 1) * 8 * DEG);
+    return { x: off.x * r, y: off.y * r, dolly: off.zoom * range * 0.5, magnify: NaN };
+  }
+  const pp = parallaxParams(p.strength, p.width, p.height);
+  const kx = (pp.maxOffset[0] / pp.inset[0]) * p.width;
+  const ky = (pp.maxOffset[1] / pp.inset[1]) * p.height;
+  const mx = 0.5 * (pp.maxOffset[0] / pp.inset[0] + pp.maxOffset[1] / pp.inset[1]);
+  const alpha = (2 * off.zoom * mx * D) / range;
+  return { x: (off.x * kx * D) / range, y: (off.y * ky * D) / range, dolly: (alpha * D) / (1 + alpha), magnify: 1 / (1 - 0.06 * off.zoom) };
 }
 
 // Mesh: does a triangle collapse? (mirror of the vertex shader test.)
@@ -110,10 +166,42 @@ const COMMON_FRAG = PHOTO_COMMON_GLSL;
 
 const QUAD_VERT = /* glsl */ `
 varying vec2 vUv;
+#ifdef PHOTO_OCCLUDE
+varying vec3 vLocal;
+varying vec3 vRay;
+#endif
 void main() {
   vUv = uv;
+  #ifdef PHOTO_OCCLUDE
+  // camera ray through this vertex, in the object's space
+  mat4 inv = inverse(modelViewMatrix);
+  vLocal = position;
+  vRay = isOrthographic ? (inv * vec4(0.0, 0.0, -1.0, 0.0)).xyz : position - (inv * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  #endif
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
+`;
+
+// Occlude: write the true depth of the pixel (depth-map value d): the point
+// at local z = photoDepthToZ(d) (src/core/photoDepth.ts) on the camera ray
+// through this fragment of the quad, projected. Needs uFocus declared before.
+const OCCLUDE_FRAG = /* glsl */ `
+#ifdef PHOTO_OCCLUDE
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform float uZRange;
+uniform float uZDist;
+varying vec3 vLocal;
+varying vec3 vRay;
+void photoDepthOut(float d) {
+  float lin = (d - uFocus) * uZRange;
+  float z = lin * uZDist / (uZDist + lin);
+  float rz = abs(vRay.z) > 1e-6 ? vRay.z : 1e-6;
+  vec3 p = vLocal + vRay * ((z - vLocal.z) / rz);
+  vec4 clip = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  gl_FragDepth = clamp(0.5 + 0.5 * clip.z / clip.w, 0.0, 1.0);
+}
+#endif
 `;
 
 // Parallax (relief mapping, ./photoCore.ts PARALLAX_GLSL) on a quad.
@@ -121,11 +209,16 @@ const parallaxFrag = (fx: PhotoFx) => /* glsl */ `
 ${COMMON_FRAG}
 ${PARALLAX_GLSL}
 ${fx.glsl}
+${OCCLUDE_FRAG}
 varying vec2 vUv;
 void main() {
   vec4 c = parallaxTexel(vUv);
   ${fx.call("pxUv", "textureLod(uDepth, pxUv, 0.0).r")}
   if (c.a * uOpacity < 0.004) discard;
+  #ifdef PHOTO_OCCLUDE
+  if (c.a < 0.5) discard;
+  photoDepthOut(photoHitDepth);
+  #endif
   gl_FragColor = shade(c, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -288,6 +381,7 @@ uniform float uLo;
 uniform float uHi;
 uniform float uFeather;
 uniform float uBackground;
+${OCCLUDE_FRAG}
 varying vec2 vUv;
 void main() {
   // the zoom drift also pushes in slightly (stays inside the inset margin)
@@ -333,6 +427,10 @@ void main() {
   ${fx.call("cuv", "textureLod(uDepth, cuv, 0.0).r")}
   gl_FragColor = shade(c, a);
   if (gl_FragColor.a < 0.004) discard;
+  #ifdef PHOTO_OCCLUDE
+  // the depth this layer's surface moves with
+  photoDepthOut(uBackground > 0.5 ? textureLod(uDepth, cuv, 0.0).r : clamp(textureLod(uDepth, cuv, 0.0).r, uLo, uHi));
+  #endif
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
@@ -372,6 +470,9 @@ export interface BuiltPhoto {
   object: THREE.Object3D;
   update(t: number, dt: number, input: PhotoFrameInput): void;
   effects: PhotoEffectsControl;
+  // Occlude only: run after the camera rig each frame. `drive` = this photo's
+  // view offset moves the camera (the World picks the first occluding photo).
+  applyCamera?(camera: THREE.Camera, drive: boolean): void;
   dispose(): void;
 }
 
@@ -461,9 +562,14 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
   const strength = clamp(num(def.strength, PHOTO_DEFAULTS.strength), 0, 1);
   const focus = clamp(num(def.focus, PHOTO_DEFAULTS.focus), 0, 1);
   const opacity = clamp(num(def.material?.opacity, 1), 0, 1);
-  const transparent = opacity < 1 || /\.(png|webp)$/i.test(def.src);
   const motion = motionSettings(def.motion);
   const mode = depth ? def.mode ?? "parallax" : "flat";
+  // Occlude (3D inside the photo): true depth + coherent camera motion. A
+  // flat photo is just a quad (its own depth is already right).
+  const occlude = def.occlude === true && mode !== "flat";
+  // Occluding photos are drawn in the opaque pass (alpha-tested) so the
+  // depth they write is there before the 3D content behind them.
+  const transparent = opacity < 1 || (!occlude && /\.(png|webp)$/i.test(def.src));
   const fx = createPhotoFx(def.effects, {
     depth: !!depth,
     color: (c) => ctx.color(c).toArray() as [number, number, number],
@@ -492,6 +598,17 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
   const views: { uniforms: Record<string, THREE.IUniform> }[] = [];
   const layerMeshes: { mesh: THREE.Mesh; band: LayerBand }[] = [];
   let meshUniforms: Record<string, THREE.IUniform> | null = null;
+
+  // Occlude: depth output uniforms (uZDist updated per frame by applyCamera).
+  const occludeUniforms: { uZRange: THREE.IUniform; uZDist: THREE.IUniform }[] = [];
+  const occludeMaterial = (mat: THREE.ShaderMaterial, uniforms: Record<string, THREE.IUniform>) => {
+    const u = { uZRange: { value: meshRange(strength, width) }, uZDist: { value: 1e6 } };
+    Object.assign(uniforms, u);
+    mat.uniforms = uniforms;
+    occludeUniforms.push(u);
+    mat.defines = { ...mat.defines, PHOTO_OCCLUDE: "" };
+    mat.depthWrite = true;
+  };
 
   const quad = () => {
     const g = new THREE.PlaneGeometry(width, height);
@@ -526,6 +643,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       ...fxUniforms,
     };
     const mat = shaderMaterial(QUAD_VERT, parallaxFrag(fx).replace("__STEPS__", String(parallaxSteps(ctx.quality, strength))), uniforms, blended);
+    if (occlude) occludeMaterial(mat, uniforms);
     materials.push(mat);
     views.push(mat);
     holder.add(new THREE.Mesh(quad(), mat));
@@ -549,6 +667,8 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     };
     meshUniforms = uniforms;
     const mat = shaderMaterial(MESH_VERT, meshFrag(fx), uniforms, opacity < 1 || fx.alpha);
+    // The displaced grid is real geometry: its depth is already the true one.
+    if (occlude) mat.depthWrite = true;
     mat.side = THREE.DoubleSide;
     materials.push(mat);
     const main = new THREE.Mesh(geo, mat);
@@ -562,6 +682,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       geometries.push(bgeo);
       const reach = new THREE.Vector2(6 / sx, 6 / sy);
       const bmat = shaderMaterial(BACKING_VERT, backingFrag(fx), { ...uniforms, uReach: { value: reach } }, opacity < 1 || fx.alpha);
+      if (occlude) bmat.depthWrite = true;
       bmat.side = THREE.DoubleSide;
       materials.push(bmat);
       const back = new THREE.Mesh(bgeo, bmat);
@@ -592,11 +713,16 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
         ...fxUniforms,
       };
       const mat = shaderMaterial(QUAD_VERT, layerFrag(fx), uniforms, band.background ? blended : true);
+      if (occlude) occludeMaterial(mat, uniforms);
       materials.push(mat);
       views.push(mat);
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.z = band.z;
-      mesh.renderOrder = i;
+      // Occlude: the slices sit on the photo plane (the camera move gives
+      // the parallax of the 3D content; each fragment writes its own depth).
+      mesh.position.z = occlude ? 0 : band.z;
+      // Occlude: the slices (transparent, writing depth) draw before the
+      // scene's other transparent objects, which then depth-test against them.
+      mesh.renderOrder = occlude ? i - 1000 : i;
       mesh.userData.a3dPhotoLayer = i;
       holder.add(mesh);
       layerMeshes.push({ mesh, band });
@@ -604,6 +730,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
   }
 
   // ── Motion state (live smoothing + gyro: ./photoCore.ts) ──
+  let lastOff = { x: 0, y: 0, zoom: 0 };
   const photoMotion = createPhotoMotion(motion, { live: !ctx.deterministic, flat: mode === "flat" });
   const camLocal = new THREE.Vector3();
   let camCaptured = false;
@@ -616,6 +743,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     }
     if (mode === "flat") return;
     const off = photoMotion.offset(t, dt, input);
+    lastOff = off;
     for (const v of views) {
       (v.uniforms.uView.value as THREE.Vector2).set(off.x, off.y);
       v.uniforms.uZoom.value = off.zoom;
@@ -630,14 +758,16 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       root.worldToLocal(camLocal);
       camCaptured = true;
     }
-    if (mode === "mesh") {
+    if (mode === "mesh" && occlude) {
+      // the camera moves instead (applyCamera)
+    } else if (mode === "mesh") {
       holder.rotation.set(off.y * maxTilt, -off.x * maxTilt, 0);
       holder.position.z = off.zoom * meshRange(strength, width) * 0.5;
-      if (meshUniforms) {
-        (meshUniforms.uCam.value as THREE.Vector3).copy(camLocal);
-        meshUniforms.uPerspective.value = persp && camLocal.z > 0 ? 1 : 0;
-      }
-    } else if (mode === "layers" && camCaptured) {
+    }
+    if (mode === "mesh" && meshUniforms) {
+      (meshUniforms.uCam.value as THREE.Vector3).copy(camLocal);
+      meshUniforms.uPerspective.value = persp && camLocal.z > 0 ? 1 : 0;
+    } else if (mode === "layers" && camCaptured && !occlude) {
       // Scale-compensate each layer for its z so the stack lines up at rest.
       const D = camLocal.z;
       for (const { mesh, band } of layerMeshes) {
@@ -653,6 +783,51 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     }
   };
 
+  // ── Occlude: the view offset as a real camera move (see the header) ──
+  const camRoot = new THREE.Vector3();
+  const tmpV = new THREE.Vector3();
+  const tmpM3 = new THREE.Matrix3();
+  const shear = new THREE.Matrix4();
+  const applyCamera = (camera: THREE.Camera, drive: boolean) => {
+    const persp = !!(camera as THREE.PerspectiveCamera).isPerspectiveCamera;
+    root.updateWorldMatrix(true, false);
+    camera.updateMatrixWorld();
+    camRoot.setFromMatrixPosition(camera.matrixWorld);
+    root.worldToLocal(camRoot);
+    // Camera → photo plane distance (local units): the depth mapping's D.
+    const D = persp && camRoot.z > 1e-3 ? camRoot.z : 0;
+    const zDist = D > 0 ? D : 1e6;
+    for (const m of occludeUniforms) m.uZDist.value = zDist;
+    holder.scale.set(1, 1, 1);
+    if (!drive || !D) return;
+    const cam = camera as THREE.PerspectiveCamera;
+    // Undo the previous frame's shear (the rig only rebuilds the projection when the fov changes).
+    cam.updateProjectionMatrix();
+    const move = photoCameraMove(mode === "mesh" ? "mesh" : mode === "layers" ? "layers" : "parallax", lastOff, { strength, width, height, distance: D });
+    if (!move.x && !move.y && !move.dolly && move.magnify === 1) return;
+    // Local move → world → camera space.
+    tmpM3.setFromMatrix4(root.matrixWorld);
+    const world = tmpV.set(move.x, move.y, -move.dolly).applyMatrix3(tmpM3);
+    // Photo plane distance along the camera axis (camera space, rest pose).
+    const origin = new THREE.Vector3().setFromMatrixPosition(root.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+    const Dc = -origin.z;
+    const tc = world.clone().applyMatrix3(tmpM3.setFromMatrix4(camera.matrixWorldInverse));
+    camera.position.add(world);
+    camera.updateMatrixWorld();
+    if (!(Dc > 1e-3)) return;
+    const D2 = Dc + tc.z; // after the dolly
+    if (!(D2 > 1e-3)) return;
+    // Off-axis shear keeping the photo (focus) plane still: S(q).xy = a·(q.xy − t.xy·q.z / D2).
+    const keep = Number.isNaN(move.magnify) ? Dc / D2 : move.magnify;
+    const a = (keep * D2) / Dc;
+    shear.set(a, 0, (-a * tc.x) / D2, 0, 0, a, (-a * tc.y) / D2, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    cam.projectionMatrix.multiply(shear);
+    cam.projectionMatrixInverse.copy(cam.projectionMatrix).invert();
+    // The image magnification of the zoom drift is now in the projection: shrink
+    // the photo back (exact when the photo is centred on the camera axis).
+    if (!Number.isNaN(move.magnify) && move.magnify !== 1) holder.scale.set(1 / move.magnify, 1 / move.magnify, 1);
+  };
+
   return {
     object: root,
     update,
@@ -662,6 +837,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
         if (fx.set(effect, param, value)) pushFx();
       },
     },
+    ...(occlude ? { applyCamera } : {}),
     dispose() {
       photoMotion.dispose();
       for (const m of materials) m.dispose();

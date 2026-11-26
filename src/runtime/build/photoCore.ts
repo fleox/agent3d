@@ -229,6 +229,9 @@ uniform float uFocus;
 uniform float uWallSlope;
 const int STEPS = __STEPS__;
 vec2 pxUv;
+// Depth-map value of the texel parallaxTexel() returned (read by occluding
+// photos to write their true depth, ./photo.ts PHOTO_OCCLUDE).
+float photoHitDepth = 0.0;
 vec4 parallaxTexel(vec2 vUv) {
   // the zoom drift also pushes in slightly (stays inside the inset margin)
   vec2 base = 0.5 + (vUv - 0.5) * uInset * (1.0 - 0.06 * uZoom);
@@ -278,6 +281,7 @@ vec4 parallaxTexel(vec2 vUv) {
     }
   }
   pxUv = uv;
+  photoHitDepth = textureLod(uDepth, uv, 0.0).r;
   return textureGrad(uMap, uv, dFdx(base), dFdy(base));
 }
 `;

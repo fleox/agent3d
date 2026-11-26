@@ -91,6 +91,9 @@ export class World {
   // Reduced motion "static": entrance behaviours (`appear`) show their final state.
   settleEntrances = false;
   private updaters: ((t: number, dt: number) => void)[] = [];
+  // Occluding 3D photos (`occlude: true`): run after the camera rig; the first
+  // one turns its view offset into a camera move (./photo.ts header).
+  private photoCameras: ((camera: THREE.Camera, drive: boolean) => void)[] = [];
   private cameraRest0 = { position: new THREE.Vector3(), target: new THREE.Vector3(), fov: 45, zoom: 10, focus: undefined as number | undefined };
   // Motion: property overrides from interactions, camera shots, post effect params.
   motionHost!: TimelineHost;
@@ -348,6 +351,7 @@ export class World {
           built = { object: res.object, dispose: () => res.dispose() };
           photoFx = res.effects;
           this.updaters.push((t, dt) => res.update(t, dt, { pointer: this.input.pointer, scroll: this.input.scroll, camera: this.camera ?? null, reduced: this.settleEntrances }));
+          if (res.applyCamera) this.photoCameras.push(res.applyCamera);
           break;
         }
         case "model": {
@@ -598,6 +602,7 @@ export class World {
     // 5. Camera.
     const lookAtId = this.def.camera?.lookAt;
     this.rig.update(t, dt, { pointer: input.pointer, scroll: input.scroll, followTarget, lookAt: lookAtId ? this.objectPosition(lookAtId) : null });
+    this.photoCameras.forEach((apply, i) => apply(this.camera, i === 0 && !this.rig.orbit));
     // 6. Camera-facing behaviours (billboard, lookAt) read this frame's camera pose.
     this.camera.updateMatrixWorld();
     for (const e of this.entries.values()) for (const r of e.runners) if (r.late) r.step(t, dt);

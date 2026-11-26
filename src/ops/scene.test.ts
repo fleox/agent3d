@@ -243,7 +243,10 @@ describe("summary & diff", () => {
     const s = await getScene(await project());
     s.objects.push({ id: "pic", kind: "photo", src: "assets/textures/x.jpg", depth: "assets/textures/x.depth.png" }, { id: "flat", kind: "photo", src: "assets/textures/y.jpg", mode: "layers" });
     const sum = summarizeScene(s);
-    expect(sum.objects.find((o) => o.id === "pic")).toMatchObject({ kind: "photo", detail: "assets/textures/x.jpg · parallax · depth ✓" });
+    const pic = sum.objects.find((o) => o.id === "pic")!;
+    expect(pic).toMatchObject({ kind: "photo" });
+    expect(pic.detail).toMatch(/^assets\/textures\/x\.jpg · parallax · depth ✓ · z -[\d.]+ \(far\) … [\d.]+ \(near\)$/);
+    expect(pic.depthRange).toHaveLength(2);
     expect(sum.objects.find((o) => o.id === "flat")!.detail).toBe("assets/textures/y.jpg · layers · depth ✗ (flat)");
   });
   it("diff of identical scenes is empty", async () => {

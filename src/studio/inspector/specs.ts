@@ -79,6 +79,7 @@ export const PHOTO_SPECS: ParamSpec[] = [
   i("segments", 256, 8, 1024, "Grid cells on the long side."),
   i("layers", 6, 2, 16, "Number of depth slices."),
   n("edgeCut", 0.08, 0, 1, "Hide stretched edges where depth jumps more than this (0 = off)."),
+  b("occlude", false, "3D inside the photo: its pixels hide the 3D objects placed behind them, and its motion moves the camera so they slide with it."),
 ];
 export const PHOTO_MOTION_SPECS: ParamSpec[] = [
   n("pointer", 1, 0, 1, "How much the pointer moves the view."),

@@ -1,0 +1,8 @@
+{
+  "id": "photo-title-inside",
+  "title": "3D title inside a photo",
+  "description": "3D inside a 3D photo: a big 3D title placed between the far houses and the nearest building of a blue-hour old-town street (CC0), so the facade hides part of the letters, with snow falling both in front of and behind the buildings. The photo writes its depth (`occlude: true`) and its pointer / gyro / sway motion moves the real camera, so the title slides exactly with the street around it. Data-bound title and subtitle.",
+  "kind": "hero",
+  "tags": ["hero", "photo", "3d-photo", "depth-map", "occlusion", "occlude", "parallax", "3d-text", "title", "snow", "particles", "travel", "city", "street", "night", "pointer", "gyro", "data-bindings"],
+  "aspect": "16:9"
+}
