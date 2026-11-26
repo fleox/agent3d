@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "photo-title-inside",
+  "title": "3D title inside a photo",
+  "ariaLabel": "Old Town: a big 3D title floating inside a blue-hour street of Innsbruck, between the far houses and the nearest building, while snow falls in front of and behind the facades",
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "posterTime": 2.5,
+    "reducedMotion": "static",
+    "toneMapping": "none"
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 35,
+    "position": [0, 0, 10],
+    "target": [0, 0, 0]
+  },
+  "environment": {
+    "background": "#0b1020"
+  },
+  "lights": [
+    { "id": "fill", "type": "hemisphere", "intensity": 1.1, "color": "#dfe8ff", "groundColor": "#3a2a20" },
+    { "id": "key", "type": "directional", "intensity": 1.6, "position": [-4, 5, 8], "color": "#ffe2bf" }
+  ],
+  "objects": [
+    {
+      "id": "photo",
+      "kind": "photo",
+      "src": "assets/textures/street.webp",
+      "depth": "assets/depth/street-depth.png",
+      "mode": "parallax",
+      "occlude": true,
+      "width": 11.9,
+      "strength": 0.8,
+      "focus": 0.45,
+      "motion": { "pointer": 1, "gyro": true, "auto": "sway", "speed": 1.2, "smoothing": 0.9 }
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "text": "{data.title|OLD TOWN}",
+      "font": "serif-bold",
+      "size": 0.92,
+      "depth": 0.14,
+      "letterSpacing": 0.04,
+      "align": "center",
+      "position": [-0.2, 1.55, 0.12],
+      "material": { "type": "standard", "color": "#ffffff", "roughness": 0.45, "emissive": "#ffffff", "emissiveIntensity": 0.35 },
+      "reveal": { "effect": "rise", "stagger": 0.04, "duration": 0.8, "delay": 0, "ease": "outCubic" }
+    },
+    {
+      "id": "subtitle",
+      "kind": "text",
+      "text": "{data.subtitle|AFTER-DARK WALKING TOURS}",
+      "font": "sans-bold",
+      "size": 0.12,
+      "depth": 0,
+      "letterSpacing": 0.12,
+      "align": "center",
+      "position": [0, 0.72, 0.3],
+      "material": { "type": "basic", "color": "#e8eef8" },
+      "behaviours": [{ "type": "appear", "effect": "fade", "duration": 1, "delay": 1.1 }]
+    },
+    {
+      "id": "snow",
+      "kind": "particles",
+      "preset": "snow",
+      "count": 700,
+      "area": [12, 8, 4],
+      "position": [0, 0, 0.4],
+      "size": 0.05,
+      "speed": 0.35,
+      "opacity": 0.85
+    }
+  ],
+  "postfx": [{ "type": "vignette", "darkness": 0.55 }],
+  "description": "A blue-hour photo of a European old-town street turned into a 3D photo that writes its depth (occlude), with a big 3D title placed inside it, between the far houses and the nearest building, and snow falling in front of and behind the facades; the view moves with the pointer, the gyroscope and a gentle sway.",
+  "data": { "title": "OLD TOWN", "subtitle": "AFTER-DARK WALKING TOURS" }
+}

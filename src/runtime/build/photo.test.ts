@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { autoDrift, buildMeshGeometry, layerBands, meshRange, meshSegments, motionSettings, parallaxParams, parallaxSteps, photoSize, smoothToward, tiltToOffset, triangleCut, viewOffset, type MotionFrame } from "./photo";
+import { photoDepthToZ } from "../../core/photoDepth";
+import { autoDrift, buildMeshGeometry, layerBands, meshRange, meshSegments, motionSettings, parallaxParams, parallaxSteps, photoCameraMove, photoSize, smoothToward, tiltToOffset, triangleCut, viewOffset, type MotionFrame } from "./photo";
 
 const frame = (over: Partial<MotionFrame> = {}): MotionFrame => ({ t: 0, pointer: { x: 0, y: 0, weight: 0 }, gyro: null, scroll: 0, reduced: false, ...over });
 
@@ -145,5 +146,29 @@ describe("parallaxSteps", () => {
     expect(parallaxSteps("ultra", 1)).toBe(48);
     expect(parallaxSteps("high", 0)).toBe(16);
     expect(parallaxSteps("low", 0)).toBe(8);
+  });
+});
+
+describe("occlude camera move", () => {
+  it("a 3D point at the photo depth z slides on the photo plane exactly like the parallax pixels of that depth", () => {
+    const strength = 0.8, width = 11.9, height = 6.69, focus = 0.45, D = 10;
+    const pp = parallaxParams(strength, width, height);
+    const off = { x: 0.7, y: -0.4, zoom: 0 };
+    const move = photoCameraMove("parallax", off, { strength, width, height, distance: D });
+    for (const d of [0, 0.3, 0.45, 0.8, 1]) {
+      const z = photoDepthToZ(d, { strength, width, focus, cameraDistance: D });
+      // shader: screen shift (plane units) of the texel at depth d
+      const px = -(d - focus) * off.x * (pp.maxOffset[0] / pp.inset[0]) * width;
+      const py = -(d - focus) * off.y * (pp.maxOffset[1] / pp.inset[1]) * height;
+      // camera translation c parallel to the plane: the point's plane hit moves by -c * z / (D - z)
+      expect((-move.x * z) / (D - z)).toBeCloseTo(px, 6);
+      expect((-move.y * z) / (D - z)).toBeCloseTo(py, 6);
+    }
+  });
+  it("no offset, no move; mesh mode orbits ± strength · 8°", () => {
+    expect(photoCameraMove("parallax", { x: 0, y: 0, zoom: 0 }, { strength: 0.5, width: 4, height: 3, distance: 8 })).toEqual({ x: 0, y: 0, dolly: 0, magnify: 1 });
+    const m = photoCameraMove("mesh", { x: 1, y: 0, zoom: 0 }, { strength: 0.5, width: 4, height: 3, distance: 8 });
+    expect(m.x).toBeCloseTo(8 * Math.tan(4 * (Math.PI / 180)));
+    expect(Number.isNaN(m.magnify)).toBe(true);
   });
 });

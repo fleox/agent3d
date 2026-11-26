@@ -26,6 +26,13 @@ describe("photo objects", () => {
     expect(issues({ src: "library:photos/x.webp", depth: "library:photos/x-depth.png", mode: "layers", layers: 8 }).filter((i) => i.severity !== "info")).toEqual([]);
   });
 
+  it("validates occlude (boolean; ignored on a flat photo)", () => {
+    expect(issues({ src: "assets/a.jpg", depth: "assets/d.png", occlude: true }).filter((i) => i.severity !== "info")).toEqual([]);
+    expect(errorPaths({ src: "assets/a.jpg", depth: "assets/d.png", occlude: "yes" })).toContain("objects#p.occlude");
+    const flat = issues({ src: "assets/a.jpg", occlude: true }).find((i) => i.path === "objects#p.occlude");
+    expect(flat?.severity).toBe("info");
+  });
+
   it("requires src and checks image extensions", () => {
     expect(errorPaths({ depth: "assets/d.png" })).toContain("objects#p.src");
     expect(issues({}).find((i) => i.code === "required")?.hint).toMatch(/\.jpg/);

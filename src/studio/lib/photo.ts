@@ -22,7 +22,8 @@ const ONLY: Record<string, PhotoMode[]> = { segments: ["mesh"], layers: ["layers
 export function photoSpecs(o: PhotoObjectDef): ParamSpec[] {
   const mode = photoMode(o);
   const values = o as unknown as Record<string, unknown>;
-  return PHOTO_SPECS.filter((sp) => !ONLY[sp.name] || ONLY[sp.name].includes(mode) || values[sp.name] !== undefined);
+  // occlude needs a depth map
+  return PHOTO_SPECS.filter((sp) => (sp.name === "occlude" ? !!o.depth : !ONLY[sp.name] || ONLY[sp.name].includes(mode)) || values[sp.name] !== undefined);
 }
 
 // Options of the image pickers: project images (assets_list result), then

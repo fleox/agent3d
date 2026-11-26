@@ -21,6 +21,7 @@ import { collectAssetRefs, gltfDependencies } from "./refs";
 import { postfxReport, type GpuReport } from "./postfxCheck";
 import { lintScript } from "./scriptLint";
 import { walkObjects } from "./tree";
+import { photoDepthIssues } from "./photoPlacement";
 
 export interface CheckOptions {
   runtimeStats?: FrameStats;
@@ -377,6 +378,7 @@ async function photoIssues(fs: ProjectFs, scene: SceneDoc): Promise<Issue[]> {
       out.push({ severity: "info", code: "photo-depth-lossy", path: `${at}.depth`, message: `Depth map "${String(o.depth)}" is a JPEG: lossy compression adds steps and noise to the relief and drops the alpha cut-edge mask.`, hint: `Use a PNG depth map (\`agent3d assets depth ${String(o.src)}\` writes one).` });
     }
   }
+  out.push(...photoDepthIssues(scene));
   return out;
 }
 

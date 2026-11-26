@@ -191,6 +191,7 @@ export const fr: Messages = {
     segments: "Segments",
     layers: "Couches",
     edgeCut: "Coupe des bords",
+    occlude: "3D dans la photo",
     pointer: "Pointeur",
     scroll: "Défilement",
     gyro: "Gyroscope",

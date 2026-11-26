@@ -32,6 +32,8 @@ describe("liteRuntimeEligibility", () => {
     expect(reasons((s) => Object.assign(s.target, { transparent: true, quality: "low", maxDpr: 1.5, reducedMotion: "slow", lazy: false }))).toEqual([]);
     expect(reasons((s) => Object.assign(s.objects[0], { position: [0.2, -0.1, 0.5], scale: 1.2, rotation: [0, 0, 0], material: { color: "#fff", opacity: 0.9 } }))).toEqual([]);
     expect(reasons((s) => Object.assign(s.environment, { lighting: "studio", fog: { density: 0.02 } }))).toEqual([]);
+    // occlude is a no-op without other objects
+    expect(reasons((s) => Object.assign(s.objects[0], { occlude: true }))).toEqual([]);
   });
 
   it("sends everything else to the full runtime, with the reasons", () => {

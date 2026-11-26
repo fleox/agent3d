@@ -80,7 +80,7 @@ const OBJECT_KEYS: Record<(typeof OBJECT_KINDS)[number], string[]> = {
   particles: ["preset", ...PARTICLE_PARAMS.map((x) => x.name)],
   instances: ["geometry", "material", "layout", "colors"],
   svg: ["src", "size", "fit", "depth", "bevel", "keepColors", "strokes", "curveSegments", "layerGap", "material"],
-  photo: ["src", "depth", "mode", "width", "height", "strength", "focus", "segments", "layers", "edgeCut", "motion", "material"],
+  photo: ["src", "depth", "mode", "width", "height", "strength", "focus", "segments", "layers", "edgeCut", "occlude", "motion", "material"],
 };
 const SCENE_KEYS = ["version", "id", "title", "description", "target", "camera", "environment", "lights", "objects", "timeline", "interactions", "postfx", "physics", "scripts", "ui", "audio", "data", "ariaLabel", "seed"];
 const TARGET_KEYS = ["kind", "aspect", "budgetKb", "height", "transparent", "lazy", "pauseOffscreen", "maxDpr", "reducedMotion", "posterTime", "antialias", "shadows", "toneMapping", "exposure", "quality"];
@@ -980,6 +980,8 @@ function photo(v: V, o: Obj, p: string) {
   v.number(o.segments, `${p}.segments`, { integer: true, min: 8, max: 1024 });
   v.number(o.layers, `${p}.layers`, { integer: true, min: 2, max: 16 });
   const mode = typeof o.mode === "string" ? o.mode : "parallax";
+  v.boolean(o.occlude, `${p}.occlude`);
+  if (o.occlude === true && o.depth === undefined) v.info("ignored", `${p}.occlude`, `occlude needs a depth map: photo "${String(o.id)}" is flat (it already hides what is behind its plane).`, `Set ${p}.depth (\`agent3d assets depth ${String(o.src ?? "<image>")}\`), or remove occlude.`);
   if (o.segments !== undefined && mode !== "mesh") v.info("ignored", `${p}.segments`, `segments only applies to mode "mesh" (this photo is "${mode}").`, 'Set mode: "mesh", or remove segments.');
   if (o.layers !== undefined && mode !== "layers") v.info("ignored", `${p}.layers`, `layers only applies to mode "layers" (this photo is "${mode}").`, 'Set mode: "layers", or remove layers.');
   if (o.depth === undefined && typeof o.src === "string" && (PHOTO_MODES as readonly string[]).includes(mode)) {

@@ -47,7 +47,7 @@
 <tr>
 <td width="33%" valign="top">
 <h3>🎬 Stunning by default</h3>
-<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 32 templates and validated recipes, with art direction built into the skills.</p>
+<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 33 templates and validated recipes, with art direction built into the skills.</p>
 </td>
 <td width="33%" valign="top">
 <h3>🤖 Agent-native</h3>
@@ -242,12 +242,12 @@ Move / rotate / scale gizmos, an editor camera and the scene camera with framing
   <img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/templates-grid.jpg" width="900" alt="A grid of the 31 Agent3D templates: banners, heroes, landscapes, product cards, dioramas and games">
 </p>
 
-32 starter projects, each a complete scene that passes `check --render`: 8 banners, 13 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
+33 starter projects, each a complete scene that passes `check --render`: 8 banners, 14 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
 
 To see them all live in a browser, build the gallery from a clone (`npm install --legacy-peer-deps && npm run build:runtime && npm run build:agent`, then `node scripts/build-examples.mjs`) and serve `examples/site/` with any static server (for example `python3 -m http.server -d examples/site`): each card plays the real embed, with the brief the agent that built the template received.
 
 <details>
-<summary><b>All 32 templates</b></summary>
+<summary><b>All 33 templates</b></summary>
 
 | Preview | Template | Kind | What it is |
 |---|---|---|---|
@@ -264,6 +264,7 @@ To see them all live in a browser, build the gallery from a clone (`npm install 
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-floating-island/preview.png" width="160" alt="Floating island hero"> | [**Floating island hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-floating-island)<br>`hero-floating-island` | hero · 16:9 | Dreamy 16:9 hero: a low-poly floating island with trees, flowers, a pond and a waterfall pouring into a sea of pastel clouds, two distant islets, flapping birds circling and magic glints, under a peach-to-blue sunset gradient — slow orbit, pointer parallax, soft dreamy look. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-perfume-luxury/preview.png" width="160" alt="Luxury perfume hero"> | [**Luxury perfume hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-perfume-luxury)<br>`hero-perfume-luxury` | hero · 16:9 | Dark luxury product hero: an amber glass perfume bottle (refractive lathe glass with liquid colour) and faceted gold cap on a black-and-gold marble pedestal, diamonds and a ruby catching the light, a slow push-in with a rack focus from a diamond to the bottle, and a gold serif name (data-bound). |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-photo-3d/preview.png" width="160" alt="3D photo hero"> | [**3D photo hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-photo-3d)<br>`hero-photo-3d` | hero · 16:9 | A photo brought to life: a blue-hour old-town street (CC0) turned into a 3D photo with its estimated depth map, moving in depth with the pointer, the phone's gyroscope and a gentle automatic sway, under a white serif headline and subtitle (data-bound). |
+| <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/photo-title-inside/preview.png" width="160" alt="3D title inside a photo"> | [**3D title inside a photo**](https://github.com/fleox/agent3d/tree/main/templates/photo-title-inside)<br>`photo-title-inside` | hero · 16:9 | 3D inside a 3D photo: a big 3D title placed between the far houses and the nearest building of a blue-hour old-town street (CC0), so the facade hides part of the letters, with snow falling in front of and behind the buildings; the photo writes its depth (`occlude: true`) and its motion moves the real camera, so the title slides exactly with the street. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-product-turntable/preview.png" width="160" alt="Product turntable hero"> | [**Product turntable hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-product-turntable)<br>`hero-product-turntable` | hero · 16:9 | Studio product hero: a realistic PBR boombox slowly turning on a terrazzo pedestal with a gold rim, softbox light rig, studio HDRI reflections, soft contact shadow, product look and drag-to-orbit. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-saas-globe/preview.png" width="160" alt="SaaS globe hero"> | [**SaaS globe hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-saas-globe)<br>`hero-saas-globe` | hero · 16:9 | Dark premium SaaS / network hero: a dotted-continent globe with a blue atmosphere slowly turning on the right, glowing arcs with light pulses travelling between world cities, faint orbit ring and stars; the left half stays empty for your HTML headline. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/hero-scroll-story/preview.png" width="160" alt="Scroll story hero"> | [**Scroll story hero**](https://github.com/fleox/agent3d/tree/main/templates/hero-scroll-story)<br>`hero-scroll-story` | hero · 16:9 | Scroll-driven 3D story: as the page scrolls, the camera glides across three chapters — Design, Build, Launch — each with its own object and a bold 3D title that pops in letter by letter, with markers that emit page events. |

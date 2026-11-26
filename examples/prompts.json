@@ -35,7 +35,8 @@
       "card-hover-3d": "UPGRADE: card-hover-3d.",
       "hero-product-turntable": "UPGRADE: hero-product-turntable.",
       "hero-scroll-story": "UPGRADE: hero-scroll-story.",
-      "hero-photo-3d": "hero-photo-3d — a 3D-photo hero from one CC0 photograph: copy it into assets, estimate its depth map with `agent3d assets depth`, a photo object (parallax mode) that moves in depth with the pointer, the phone gyroscope and a gentle auto sway, a headline / text space or a kerned 3D title placed over a calm area of the picture, ariaLabel, reduced motion. Try several CC0 photos and keep the most striking result."
+      "hero-photo-3d": "hero-photo-3d — a 3D-photo hero from one CC0 photograph: copy it into assets, estimate its depth map with `agent3d assets depth`, a photo object (parallax mode) that moves in depth with the pointer, the phone gyroscope and a gentle auto sway, a headline / text space or a kerned 3D title placed over a calm area of the picture, ariaLabel, reduced motion. Try several CC0 photos and keep the most striking result.",
+      "photo-title-inside": "photo-title-inside — 3D inside a 3D photo: reuse the hero-photo-3d street photo and depth map, set `occlude: true` on the photo, place a big 3D title between the far houses and the nearest building so the facade hides part of the letters, add a gentle snow (or dust) particle preset falling in front of and behind the foreground; render with the pointer at the four corners and check the title never slides over the facade it sits behind."
     }
   },
   "briefs": {

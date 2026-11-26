@@ -1,0 +1,8 @@
+{
+  "name": "photo-title-inside",
+  "title": "3D title inside a photo",
+  "createdAt": "2026-11-26T00:00:00.000Z",
+  "updatedAt": "2026-11-26T00:00:00.000Z",
+  "template": "photo-title-inside",
+  "agent3d": "0.4.0"
+}

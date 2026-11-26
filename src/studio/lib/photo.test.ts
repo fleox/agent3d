@@ -17,6 +17,9 @@ describe("photo inspector specs", () => {
     expect(names(photo({ mode: "mesh" }))).toEqual(["width", "height", "strength", "focus", "segments", "edgeCut"]);
     expect(names(photo({ mode: "layers" }))).toEqual(["width", "height", "strength", "focus", "layers", "edgeCut"]);
   });
+  it("shows occlude on depth photos", () => {
+    expect(names(photo({ depth: "assets/d.png" }))).toEqual(["width", "height", "strength", "focus", "occlude"]);
+  });
   it("keeps a field the mode ignores visible while it is set (so it can be reset)", () => {
     expect(names(photo({ mode: "parallax", segments: 64 }))).toContain("segments");
   });

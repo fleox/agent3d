@@ -444,6 +444,15 @@ export interface PhotoObjectDef extends BaseObjectDef {
   segments?: number; // mesh: grid cells on the long side (default 256)
   layers?: number; // layers: number of slices (default 6)
   edgeCut?: number; // mesh / layers: hide stretched edges where depth jumps more than this (0..1, default 0.08; 0 = off)
+  // 3D inside the photo (default false): the photo writes the true depth of its
+  // pixels, so 3D objects placed between its depth planes are hidden by its
+  // foreground, and the view offset becomes a real camera move so they slide
+  // exactly like the photo pixels at their depth. Photo depth d (0 far .. 1
+  // near) sits at local z = (d - focus) * strength * width * 0.25 (mesh; the
+  // parallax / layers mapping is perspective-corrected, see
+  // src/core/photoDepth.ts; scene_summary reports the world z range). No-op
+  // without other objects.
+  occlude?: boolean;
   // What moves the view (combined): pointer (0..1 amount, default 1), scroll
   // (0..1 amount, default 0), gyro on phones (default true when pointer > 0),
   // auto: a looping drift for headless renders / videos and touch screens
