@@ -141,14 +141,14 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "image_depth",
     description:
-      'Estimate a depth map for a photo (the "3D photo" effect: a photo object with `depth`). Runs Depth Anything V2 Small locally (CLI / MCP host: headless Chrome, ~1-3 s per image; the 27 MB Apache-2.0 model is downloaded once into the user cache, later runs work offline). Writes a grey PNG (white = near, transparent where depth jumps) at the photo size (max 2048 px) under assets/depth/, registered in assets/manifest.json with the photo\'s licence. Returns { path, width, height, ms, model, suggestion: { kind: "photo", src, depth } } — then add or update the photo object with `depth: path`. Without a host that can run it, paint a depth map by hand instead.',
+      'Estimate a depth map for a photo (the "3D photo" effect: a photo object with `depth`). Runs Depth Anything V2 Small locally (CLI / MCP host: headless Chrome, ~1-3 s per image; the 27 MB Apache-2.0 model is downloaded once into the user cache, later runs work offline). Writes a grey PNG (white = near, transparent where depth jumps) at the photo size (max 1024 px) under assets/depth/, registered in assets/manifest.json with the photo\'s licence. Returns { path, width, height, ms, model, suggestion: { kind: "photo", src, depth } } — then add or update the photo object with `depth: path`. Without a host that can run it, paint a depth map by hand instead.',
     inputSchema: {
       type: "object",
       properties: {
         image: { type: "string", description: 'The photo: project path ("assets/textures/photo.jpg") or "library:<id>" (.jpg / .png / .webp).' },
         out: { type: "string", description: 'Project path of the depth PNG (default "assets/depth/<image name>-depth.png").' },
         size: { type: "integer", minimum: 140, maximum: 1036, description: "Model input long side in pixels (default 518; larger = finer edges, slower; rounded to a multiple of 14)." },
-        maxSize: { type: "integer", minimum: 16, maximum: 8192, description: "Longest side of the written depth map (default: the photo size, capped at 2048)." },
+        maxSize: { type: "integer", minimum: 16, maximum: 8192, description: "Longest side of the written depth map (default: the photo size, capped at 1024)." },
       },
       required: ["image"],
     },

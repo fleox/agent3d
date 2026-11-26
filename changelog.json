@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "0.3.1",
+      "date": "2026-11-26",
+      "breaking": false,
+      "changes": [
+        "3D photos load faster: `assets depth` writes the depth map at 1024 px by default (the model works at 518 px; the template's map went from 185 KB to 80 KB at the same look), and the `hero-photo-3d` template ships its photo as WebP (552 KB → 330 KB). Skills recommend `assets optimize --all` before exporting a photo hero.",
+        "Parallax photos spend fewer shader steps on weak devices (quality tiers) and with gentle depth.",
+        "Exports: heroes and full-screen scenes give their poster `fetchpriority=\"high\"` (it is usually the page's largest image)."
+      ],
+      "actions": []
+    },
+    {
       "version": "0.3.0",
       "date": "2026-11-26",
       "breaking": false,

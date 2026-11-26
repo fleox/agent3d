@@ -238,7 +238,7 @@ uniform vec2 uInset;
 uniform float uFocus;
 uniform float uWallSlope;
 varying vec2 vUv;
-const int STEPS = 32;
+const int STEPS = __STEPS__;
 void main() {
   // the zoom drift also pushes in slightly (stays inside the inset margin)
   vec2 base = 0.5 + (vUv - 0.5) * uInset * (1.0 - 0.06 * uZoom);
@@ -568,6 +568,15 @@ export function buildMeshGeometry(width: number, height: number, sx: number, sy:
   return g;
 }
 
+// Relief-mapping march steps: the per-pixel cost of parallax mode. Weak
+// devices (lower quality tiers) and gentle depth (low strength: smaller
+// offsets, fewer layers to cross) get fewer steps; the binary refine after the
+// march keeps edges clean either way.
+export function parallaxSteps(quality: "low" | "medium" | "high" | "ultra" | undefined, strength: number): number {
+  const base = quality === "low" ? 12 : quality === "medium" ? 20 : quality === "ultra" ? 48 : 32;
+  return Math.max(8, Math.round(base * (0.5 + 0.5 * Math.min(1, Math.max(0, strength) / 0.6))));
+}
+
 export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Promise<BuiltPhoto> {
   const [map, depth] = await Promise.all([
     loadTexture(ctx.resolveAsset(def.src)),
@@ -636,7 +645,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       // depth change per texel above which a hit is a depth-edge wall
       uWallSlope: { value: 0.02 },
     };
-    const mat = shaderMaterial(QUAD_VERT, PARALLAX_FRAG, uniforms, transparent);
+    const mat = shaderMaterial(QUAD_VERT, PARALLAX_FRAG.replace("__STEPS__", String(parallaxSteps(ctx.quality, strength))), uniforms, transparent);
     materials.push(mat);
     views.push(mat);
     holder.add(new THREE.Mesh(quad(), mat));

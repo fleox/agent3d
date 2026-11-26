@@ -225,10 +225,13 @@ function resolveRel(dir: string, rel: string): string {
 }
 
 // The poster as markup inside the element (slot="poster"): visible before the
-// runtime loads, without JavaScript / WebGL, and when printing.
-export function posterMarkup(p: { src: string; avif?: string; alt: string; size?: { width: number; height: number } }): string {
+// runtime loads, without JavaScript / WebGL, and when printing. `priority`
+// (heroes / full-screen scenes, usually above the fold): the poster is the
+// page's largest image, so the browser fetches it first (LCP).
+export function posterMarkup(p: { src: string; avif?: string; alt: string; size?: { width: number; height: number }; priority?: boolean }): string {
   const dims = p.size ? ` width="${Math.round(p.size.width)}" height="${Math.round(p.size.height)}"` : "";
-  const img = (slot: boolean) => `<img${slot ? ' slot="poster"' : ""} src="${escapeHtml(p.src)}" alt="${escapeHtml(p.alt)}"${dims} decoding="async" style="display:block;width:100%;height:auto">`;
+  const prio = p.priority ? ' fetchpriority="high"' : "";
+  const img = (slot: boolean) => `<img${slot ? ' slot="poster"' : ""} src="${escapeHtml(p.src)}" alt="${escapeHtml(p.alt)}"${dims}${prio} decoding="async" style="display:block;width:100%;height:auto">`;
   if (!p.avif) return img(true);
   return `<picture slot="poster"><source type="image/avif" srcset="${escapeHtml(p.avif)}">${img(false)}</picture>`;
 }
@@ -423,7 +426,7 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     const aspectAttr = scene.target?.height ? "" : ` aspect="${aspect.width}:${aspect.height}"`;
     // --cache-bust versions the poster too (its name never changes).
     const posterQ = opts.cacheBust && opts.poster ? `?v=${await shortHash([opts.poster, ...(opts.posterAvif ? [opts.posterAvif] : [])])}` : "";
-    const posterImg = posterRel ? posterMarkup({ src: url(posterRel) + posterQ, avif: opts.posterAvif ? url(`${name}/poster.avif`) + posterQ : undefined, alt: label, size: opts.posterSize }) : "";
+    const posterImg = posterRel ? posterMarkup({ src: url(posterRel) + posterQ, avif: opts.posterAvif ? url(`${name}/poster.avif`) + posterQ : undefined, alt: label, size: opts.posterSize, priority: kind === "hero" || kind === "fullscreen" }) : "";
     snippet = [
       ...preloads,
       `<script type="module" src="${url(`${runtimeDirName}/${runtimeEntry}`)}"${integrity ? ` integrity="${integrity}"` : ""}></script>`,

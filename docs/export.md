@@ -58,7 +58,7 @@ Snippet:
 ```
 
 - The `modulepreload` fetches three.js (the big static dependency) in parallel with the entry instead of after it.
-- The `<img slot="poster">` is real markup: it shows (at the right aspect ratio, no layout shift) before the runtime has loaded, without JavaScript, without WebGL, from `file://` and when printing; the element fades it out after the first frame.
+- The `<img slot="poster">` is real markup: it shows (at the right aspect ratio, no layout shift) before the runtime has loaded, without JavaScript, without WebGL, from `file://` and when printing; the element fades it out after the first frame. Heroes and full-screen scenes get `fetchpriority="high"` on it: above the fold, the poster is usually the page's largest image (LCP).
 - `aspect` reserves the scene's aspect ratio before `scene.json` is fetched.
 - Paths are relative to the page unless `--base-url` is given. Paths inside the scene resolve against the `scene.json` URL, and `library:` assets against `<scene dir>/assets/library/` (override with the `library-base` attribute).
 - Several scenes share one runtime folder. Re-upload it (and re-copy snippets: the integrity hash changes) after updating Agent3D.

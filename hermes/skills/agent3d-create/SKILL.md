@@ -124,7 +124,7 @@ When the user gives a photo or an image and wants it in 3D, with parallax, "movi
    It writes `assets/depth/photo-depth.png` (white = near) and returns `data.suggestion` (`{ "kind": "photo", "src", "depth" }`). Open the PNG with your vision / image tool: the subject should be lighter than the background.
 3. **Point the photo object at it** (or add one with `object add --json-def`):
    ```json
-   [{ "op": "updateObject", "id": "photo", "set": { "src": "assets/textures/photo.jpg", "depth": "assets/depth/photo-depth.png", "strength": 0.3, "focus": 0.5 } }]
+   [{ "op": "updateObject", "id": "photo", "set": { "src": "assets/textures/photo.jpg", "depth": "assets/depth/photo-depth.png", "strength": 0.5, "focus": 0.5 } }]
    ```
    Cover the frame: with the camera at fov 35 and distance 10, a 16:9 frame is about 11.2 × 6.3 units, so a 3:2 photo needs `width` ≈ 11.9 (a 4:3 photo ≈ 11.2; a portrait photo needs `height` ≈ 6.6 and leaves side bars, so prefer a portrait `target.aspect` or a card). Keep the camera still: the photo's shader moves the view.
 4. **Choose the mode**: `parallax` (default, 2 triangles) for hero banners and small motions; `mesh` (a displaced grid) when the view moves more, e.g. `motion.auto: "orbit"`; `layers` (depth slices) for a pop-up-book look. `motion`: `pointer` (0..1), `gyro` (phones), `auto` (`sway` default, `orbit`, `zoom`, `none`: plays in renders, videos and on touch screens), `speed`, `scroll`.
@@ -140,7 +140,8 @@ Tips:
 - `strength`: 0.5 by default; parallax holds a bold 0.7-0.9 (hero banners), mesh ~0.7 with the photo slightly wider than the frame (its border shows otherwise), layers ~0.6 (halos around subjects above that). Lower it first when silhouettes smear, and check with `render --input` pointer moves to the corners.
 - `focus` = the subject's depth (0 far … 1 near, read it from the depth map: a mid-grey subject ≈ 0.5): the subject stays put and the rest moves around it, which reads as depth instead of wobble.
 - Headlines: put them over a calm area of the photo (sky, wall, blurred background), use `"material": { "type": "basic", "color": "#ffffff" }` and `target.toneMapping: "none"` so white stays white (photos themselves are never tone mapped), and check the contrast in the render. A kerned 3D title (`depth` > 0, lit material) also works over a darker photo.
-- `check` reports `photo-depth-aspect` (regenerate the depth map after cropping the photo), `photo-heavy` (over 1.5 MB: `assets optimize`), `photo-depth-lossy` (keep the depth map a PNG), and the covering photo as a `clipped` info (expected).
+- `check` reports `photo-depth-aspect` (regenerate the depth map after cropping the photo), `photo-heavy` (over 1.5 MB: `assets optimize`) and `photo-depth-lossy` (keep the depth map a PNG). A covering photo is never reported as `clipped`.
+- **Web weight**: before exporting, run `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py assets optimize --all --yes --project my-hero --json`: the photo becomes WebP at the size the hero needs (about 40 % lighter; the scene path is rewritten) and the depth map stays a lossless PNG (already ≤ 1024 px from `assets depth`: the model works at 518 px). A photo-only hero then weighs about 0.4 MB of images plus the runtime.
 - Exports copy the photo and its depth map like any asset; the model never ships.
 
 ## Other front doors: MCP and the Studio

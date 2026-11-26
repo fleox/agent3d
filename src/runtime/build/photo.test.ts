@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoDrift, buildMeshGeometry, layerBands, meshRange, meshSegments, motionSettings, parallaxParams, photoSize, smoothToward, tiltToOffset, triangleCut, viewOffset, type MotionFrame } from "./photo";
+import { autoDrift, buildMeshGeometry, layerBands, meshRange, meshSegments, motionSettings, parallaxParams, parallaxSteps, photoSize, smoothToward, tiltToOffset, triangleCut, viewOffset, type MotionFrame } from "./photo";
 
 const frame = (over: Partial<MotionFrame> = {}): MotionFrame => ({ t: 0, pointer: { x: 0, y: 0, weight: 0 }, gyro: null, scroll: 0, reduced: false, ...over });
 
@@ -133,5 +133,17 @@ describe("photo parallax / mesh / layers math", () => {
     }
     expect(layerBands(1, 0.5, 0.3, 4)).toHaveLength(2);
     expect(layerBands(99, 0.5, 0.3, 4)).toHaveLength(16);
+  });
+});
+
+describe("parallaxSteps", () => {
+  it("spends fewer march steps on weak devices and gentle depth", () => {
+    expect(parallaxSteps(undefined, 1)).toBe(32);
+    expect(parallaxSteps("high", 0.6)).toBe(32);
+    expect(parallaxSteps("low", 1)).toBe(12);
+    expect(parallaxSteps("medium", 1)).toBe(20);
+    expect(parallaxSteps("ultra", 1)).toBe(48);
+    expect(parallaxSteps("high", 0)).toBe(16);
+    expect(parallaxSteps("low", 0)).toBe(8);
   });
 });

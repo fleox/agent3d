@@ -352,7 +352,7 @@ export interface EstimateDepthOptions {
   image: string; // project path or "library:<id>" (.png / .jpg / .webp)
   out?: string; // project path of the PNG (default assets/depth/<name>-depth.png)
   size?: number; // model input long side (default 518)
-  maxSize?: number; // longest side of the written map (default: the image size, capped at 2048)
+  maxSize?: number; // longest side of the written map (default: the image size, capped at 1024 — the model sees 518 px, a bigger map only adds bytes)
   smooth?: number;
   dilate?: number;
   edgeThreshold?: number;
@@ -374,7 +374,7 @@ export interface EstimateDepthResult {
   suggestion: { kind: "photo"; src: string; depth: string };
 }
 
-export const DEPTH_MAX_OUTPUT = 2048;
+export const DEPTH_MAX_OUTPUT = 1024;
 
 function depthOutPath(image: string): string {
   const base = image.replace(/^library:/, "").split("/").pop()!.replace(/\.[^.]+$/, "");

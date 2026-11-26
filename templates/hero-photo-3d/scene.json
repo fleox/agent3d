@@ -38,7 +38,7 @@
     {
       "id": "photo",
       "kind": "photo",
-      "src": "assets/textures/street.jpg",
+      "src": "assets/textures/street.webp",
       "depth": "assets/depth/street-depth.png",
       "mode": "parallax",
       "width": 11.9,

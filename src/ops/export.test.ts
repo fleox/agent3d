@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../core/fs";
 import type { LibraryProvider } from "../core/library";
 import { addAsset } from "./assets";
-import { FILE_PROTOCOL_NOTE, buildExport } from "./export";
+import { FILE_PROTOCOL_NOTE, buildExport, posterMarkup } from "./export";
 import { createProject } from "./project";
 import { patchScene } from "./scene";
 import { CHUNK_FEATURES } from "./runtimeChunks";
@@ -267,5 +267,12 @@ describe("export page weight (pageKb) and runtime chunks", () => {
     expect(r.page).toMatchObject({ pruned: false, unknownChunks: ["chunks/mystery-FFFFFFFF.js"] });
     expect(r.issues.some((i) => i.code === "prune-runtime")).toBe(true);
     expect(Object.keys(r.files)).toContain("agent3d-runtime/chunks/postfx-BBBBBBBB.js");
+  });
+});
+
+describe("posterMarkup", () => {
+  it("fetches a hero's poster first (LCP) and leaves other posters at normal priority", () => {
+    expect(posterMarkup({ src: "p.webp", alt: "A", priority: true })).toContain('fetchpriority="high"');
+    expect(posterMarkup({ src: "p.webp", alt: "A" })).not.toContain("fetchpriority");
   });
 });
