@@ -383,7 +383,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);
     g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     g.pixelStorei(g.UNPACK_COLORSPACE_CONVERSION_WEBGL, g.NONE);
-    const texture = (unit: number, img: HTMLImageElement, srgb: boolean) => {
+    const texture = (unit: number, img: HTMLImageElement, srgb: boolean, mips = srgb) => {
       const tex = g.createTexture()!;
       textures.push(tex);
       g.activeTexture(g.TEXTURE0 + unit);
@@ -392,15 +392,15 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.MIRRORED_REPEAT);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.MIRRORED_REPEAT);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
-      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, srgb ? g.LINEAR_MIPMAP_LINEAR : g.LINEAR);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, mips ? g.LINEAR_MIPMAP_LINEAR : g.LINEAR);
+      if (mips) g.generateMipmap(g.TEXTURE_2D);
       if (srgb) {
-        g.generateMipmap(g.TEXTURE_2D);
         const an = g.getExtension("EXT_texture_filter_anisotropic");
         if (an) g.texParameterf(g.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, g.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
       }
     };
     texture(0, map, true);
-    if (depth) texture(1, depth, false);
+    if (depth) texture(1, depth, false, fx.depthMips); // the light's normals read lower depth mips
     // background plate (photoCore PARALLAX_GLSL): colour like the map, depth like the depth map
     const plateOn = !!(depth && plate[0] && plate[1]);
     if (plateOn) {
