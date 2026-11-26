@@ -1,7 +1,7 @@
 ---
 name: agent3d-edit
 description: "Change an existing Agent3D project - summarise the scene, then patch objects, materials and textures, lights and light rigs, sky / fog / background, camera and camera shots, post effects and looks, timeline keyframes (easing, stagger, letters, segments, scroll), behaviours and hover / click interactions, rebrand it (swap the text, colours, logo), re-time animations, fix framing on phones, and re-render to check every change visually. Use when the user wants to modify a 3D banner, hero, character, landscape, product scene or game that already exists as an Agent3D project folder (scene.json), or a template."
-version: 0.5.1
+version: 0.5.2
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
 platforms: [macos, linux, windows]

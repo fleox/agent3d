@@ -18,7 +18,7 @@ Embed 3D scenes made with [Agent3D](https://github.com/fleox/agent3d) (animated 
 
 ## Use
 
-1. Make a scene with Agent3D and export it: `npx -y @fleox/agent3d@0.5.1 export --project my-banner --json` → `my-banner/dist/embed/`.
+1. Make a scene with Agent3D and export it: `npx -y @fleox/agent3d@0.5.2 export --project my-banner --json` → `my-banner/dist/embed/`.
 2. **Settings → Agent3D scenes** → pick that `embed` folder. Every file except the demo page is uploaded to `agent3d/` (the runtime once, then one folder per scene).
 3. In a post or page, insert **Agent3D scene**, choose the scene in the Block tab, write the accessible label, publish.
 

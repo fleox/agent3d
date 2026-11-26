@@ -7,7 +7,7 @@ All examples assume the embed export was uploaded to `/agent3d/` at the root of 
 /agent3d/spring-banner/scene.json             (+ assets/, scripts/, poster.webp, og-image.png, CREDITS.txt)
 ```
 
-Export straight into that layout with `npx -y @fleox/agent3d@0.5.1 export --project spring-banner --out ./public/agent3d --base-url /agent3d/ --json` (the `<name>` folder defaults to the project name; `--name` changes it; `--base-url` writes root-absolute URLs in the snippet, the wrappers and EMBED.md). Paste the `snippet` of the result: the examples below shorten the integrity hashes and the poster markup.
+Export straight into that layout with `npx -y @fleox/agent3d@0.5.2 export --project spring-banner --out ./public/agent3d --base-url /agent3d/ --json` (the `<name>` folder defaults to the project name; `--name` changes it; `--base-url` writes root-absolute URLs in the snippet, the wrappers and EMBED.md). Paste the `snippet` of the result: the examples below shorten the integrity hashes and the poster markup.
 
 ## Plain HTML
 

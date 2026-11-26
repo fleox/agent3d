@@ -3,8 +3,8 @@
 `agent3d` is the command-line front door of the Agent3D engine: the same operations as the Studio, the MCP server and the AI tools (`src/ops/`), plus headless renders and exports. It is one bundled file (`dist/agent/agent3d.mjs`, no runtime dependency) published as the npm package `@fleox/agent3d`.
 
 ```bash
-npx -y @fleox/agent3d@0.5.1 help
-npx -y @fleox/agent3d@0.5.1 help scene --json
+npx -y @fleox/agent3d@0.5.2 help
+npx -y @fleox/agent3d@0.5.2 help scene --json
 ```
 
 Requirements: Node.js 22+; Google Chrome, Chromium, Edge or Brave for `render`, `check --render`, posters and videos (`agent3d doctor` checks both).
@@ -31,12 +31,12 @@ Requirements: Node.js 22+; Google Chrome, Chromium, Edge or Brave for `render`, 
 ## A typical session
 
 ```bash
-npx -y @fleox/agent3d@0.5.1 new bakery --target banner --title "Golden Crust Bakery" --json
-npx -y @fleox/agent3d@0.5.1 catalog behaviours --json
-npx -y @fleox/agent3d@0.5.1 scene patch --project bakery --file ops.json --json
-npx -y @fleox/agent3d@0.5.1 render --project bakery --sheet --json      # look at data.sheet
-npx -y @fleox/agent3d@0.5.1 check --project bakery --render --json
-npx -y @fleox/agent3d@0.5.1 export --project bakery --json              # data.snippet, data.out
+npx -y @fleox/agent3d@0.5.2 new bakery --target banner --title "Golden Crust Bakery" --json
+npx -y @fleox/agent3d@0.5.2 catalog behaviours --json
+npx -y @fleox/agent3d@0.5.2 scene patch --project bakery --file ops.json --json
+npx -y @fleox/agent3d@0.5.2 render --project bakery --sheet --json      # look at data.sheet
+npx -y @fleox/agent3d@0.5.2 check --project bakery --render --json
+npx -y @fleox/agent3d@0.5.2 export --project bakery --json              # data.snippet, data.out
 ```
 
 ## Command reference

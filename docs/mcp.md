@@ -3,7 +3,7 @@
 `agent3d mcp` turns a project folder into a [Model Context Protocol](https://modelcontextprotocol.io) server on stdio, so Claude Code, Claude Desktop, Hermes, Cursor or any MCP client can create, edit, check, preview and export 3D scenes.
 
 ```bash
-npx -y @fleox/agent3d@0.5.1 mcp --project /path/to/my-banner [--read-only]
+npx -y @fleox/agent3d@0.5.2 mcp --project /path/to/my-banner [--read-only]
 ```
 
 - `--project` is the folder the tools work on (it may be empty: the `project_create` tool creates the project there).
@@ -15,7 +15,7 @@ npx -y @fleox/agent3d@0.5.1 mcp --project /path/to/my-banner [--read-only]
 **Claude Code**
 
 ```bash
-claude mcp add agent3d -- npx -y @fleox/agent3d@0.5.1 mcp --project /path/to/my-banner
+claude mcp add agent3d -- npx -y @fleox/agent3d@0.5.2 mcp --project /path/to/my-banner
 ```
 
 Add `--scope project` to share it with the repository (`.mcp.json`). The skills (`/plugin marketplace add fleox/agent3d`, then `/plugin install agent3d@agent3d`) work with or without the MCP server: they drive the CLI.
@@ -27,7 +27,7 @@ Add `--scope project` to share it with the repository (`.mcp.json`). The skills 
   "mcpServers": {
     "agent3d": {
       "command": "npx",
-      "args": ["-y", "@fleox/agent3d@0.5.1", "mcp", "--project", "/Users/me/agent3d/my-banner"]
+      "args": ["-y", "@fleox/agent3d@0.5.2", "mcp", "--project", "/Users/me/agent3d/my-banner"]
     }
   }
 }
@@ -41,7 +41,7 @@ Desktop apps may not see your shell's `PATH`: use the absolute path of `npx` (`w
 mcp_servers:
   agent3d:
     command: npx
-    args: ["-y", "@fleox/agent3d@0.5.1", "mcp", "--project", "/home/me/agent3d/my-banner"]
+    args: ["-y", "@fleox/agent3d@0.5.2", "mcp", "--project", "/home/me/agent3d/my-banner"]
 ```
 
 Or use the Hermes skills in [`hermes/`](../hermes) (Python wrapper of the CLI, no MCP needed).
