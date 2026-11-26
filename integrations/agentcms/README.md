@@ -38,7 +38,7 @@ Already uploaded the export some other way (git, bucket)? Paste its `scene.json`
 
 The poster is real markup (visible before the runtime loads, indexable) and the aspect ratio is reserved up front, so the page does not jump when the scene starts. Uploaded scenes get their aspect from `target.aspect` in their `scene.json`; for a pasted URL, set it in the block's **Aspect ratio** field. Exports made with `--cache-bust` (`agent3d-runtime-<hash>/`) are detected too; `EMBED.md`, `head.html` and the `frameworks/` wrappers stay local.
 
-Several blocks on a page share the runtime (browsers run a module URL once). Content-Security-Policy, if the site sets one: `script-src 'self'`, `connect-src 'self'`, `img-src 'self' blob:` (+ `style-src 'unsafe-inline'` for scenes with a HUD, and `script-src 'wasm-unsafe-eval'` only for scenes exported with meshopt-compressed models, `export --optimize`).
+Uploaded 3D photos (a single photo in parallax mode, nothing else in the scene) get the 14 KB photo player `agent3d-photo.js` instead of the full runtime when the export ships it (Agent3D 0.4.0+); other scenes keep `agent3d-runtime.js`, and a page mixing both works. Several blocks on a page share the runtime (browsers run a module URL once). Content-Security-Policy, if the site sets one: `script-src 'self'`, `connect-src 'self'`, `img-src 'self' blob:` (+ `style-src 'unsafe-inline'` for scenes with a HUD, and `script-src 'wasm-unsafe-eval'` only for scenes exported with meshopt-compressed models, `export --optimize`).
 
 ## Develop
 

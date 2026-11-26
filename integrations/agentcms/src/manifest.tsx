@@ -13,7 +13,7 @@ import { SETTINGS_SCHEMA, SettingsPage } from "./settings";
 const manifest: PluginManifest<PluginConfig> = {
   id: PLUGIN_ID,
   name: "Agent3D scene",
-  version: "1.1.0",
+  version: "1.2.0",
   description: "Embed 3D scenes made with Agent3D (banners, heroes, characters, product showcases, mini games) in posts and pages.",
   author: "fleox",
   readme,

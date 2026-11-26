@@ -81,4 +81,15 @@ describe("agent3d-scene block rendering", () => {
     expect(shouldUpload("frameworks/vue/Agent3DScene.vue")).toBe(false);
     expect(shouldUpload("hero/og-image.png")).toBe(true);
   });
+
+  it("gives photo-only scenes the 14 KB photo player when the export ships it", () => {
+    const paths = ["agent3d-runtime/agent3d-runtime.js", "agent3d-runtime/agent3d-photo.js", "lake/scene.json", "hero/scene.json"];
+    const found = scenesInExport(paths, "agent3d", {}, { lake: true, hero: false });
+    expect(found.find((s) => s.name === "lake")!.runtime).toBe("/agent3d/agent3d-runtime/agent3d-photo.js");
+    expect(found.find((s) => s.name === "hero")!.runtime).toBe("/agent3d/agent3d-runtime/agent3d-runtime.js");
+    // An older export without the photo player keeps the full runtime.
+    expect(scenesInExport(["agent3d-runtime/agent3d-runtime.js", "lake/scene.json"], "agent3d", {}, { lake: true })[0].runtime).toBe("/agent3d/agent3d-runtime/agent3d-runtime.js");
+    // A pruned photo-only export (only the photo player) still finds its runtime.
+    expect(scenesInExport(["agent3d-runtime/agent3d-photo.js", "lake/scene.json"], "agent3d", {}, { lake: true })[0].runtime).toBe("/agent3d/agent3d-runtime/agent3d-photo.js");
+  });
 });

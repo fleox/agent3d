@@ -157,10 +157,16 @@ const RUNTIME_DIR = /^agent3d-runtime(?:-[A-Za-z0-9]+)?$/;
 
 /** Scenes found in an uploaded export folder: "<name>/scene.json" files (relative paths inside the folder).
  *  The runtime folder is agent3d-runtime/ or, with `export --cache-bust`, agent3d-runtime-<hash>/.
- *  `aspects` maps a scene name to its target.aspect (read from its scene.json by the caller). */
-export function scenesInExport(paths: string[], folder: string, aspects: Record<string, string> = {}): UploadedScene[] {
+ *  `aspects` maps a scene name to its target.aspect and `lite` to whether the photo-only player can render it
+ *  (both read from its scene.json by the caller). */
+export function scenesInExport(paths: string[], folder: string, aspects: Record<string, string> = {}, lite: Record<string, boolean> = {}): UploadedScene[] {
   const base = `/${folder.replace(/^\/+|\/+$/g, "")}`;
-  const runtimeDir = paths.map((p) => /^([^/]+)\/agent3d-runtime\.js$/.exec(p)?.[1]).find((d) => !!d && RUNTIME_DIR.test(d));
+  // The runtime folder holds agent3d-runtime.js, the photo player agent3d-photo.js, or only the latter
+  // (`export --prune-runtime` of a photo-only scene).
+  const runtimeDir = paths.map((p) => /^([^/]+)\/agent3d-(?:runtime|photo)\.js$/.exec(p)?.[1]).find((d) => !!d && RUNTIME_DIR.test(d));
+  const hasFull = !!runtimeDir && paths.includes(`${runtimeDir}/agent3d-runtime.js`);
+  // A photo-only scene (lite[name], from liteRuntimeEligibility) gets the 14 KB photo player when the export has it.
+  const hasLite = !!runtimeDir && paths.includes(`${runtimeDir}/agent3d-photo.js`);
   return paths
     .map((p) => /^([^/]+)\/scene\.json$/.exec(p)?.[1])
     .filter((n): n is string => !!n && !RUNTIME_DIR.test(n))
@@ -169,7 +175,7 @@ export function scenesInExport(paths: string[], folder: string, aspects: Record<
         name,
         src: `${base}/${name}/scene.json`,
         poster: paths.includes(`${name}/poster.webp`) ? `${base}/${name}/poster.webp` : "",
-        runtime: runtimeDir ? `${base}/${runtimeDir}/agent3d-runtime.js` : "",
+        runtime: runtimeDir && (hasFull || lite[name]) ? `${base}/${runtimeDir}/${hasLite && (lite[name] || !hasFull) ? "agent3d-photo.js" : "agent3d-runtime.js"}` : "",
         label: "",
       };
       const aspect = safeAspect(aspects[name]);
