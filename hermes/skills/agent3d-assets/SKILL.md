@@ -1,7 +1,7 @@
 ---
 name: agent3d-assets
 description: "Find and add 3D assets to an Agent3D project - the built-in CC0 library shipped offline (models, PBR textures, HDRIs, fonts), procedural generators that cost zero bytes, free account-less CC0 sources (Poly Haven, ambientCG, Khronos samples searched and downloaded once into the project; Kenney and Quaternius packs imported from a zip the user downloads), the user's own files, depth maps for 3D photos (assets depth, a local model downloaded once), licences and attribution, size budgets, and making textures and models lighter (assets optimize: per-usage sizes, WebP, meshopt, simplify). Use when a scene needs a model, a texture, an HDRI, a logo, a sound or music, or when the user asks where assets come from or how they are licensed."
-version: 0.5.0
+version: 0.5.1
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
 platforms: [macos, linux, windows]

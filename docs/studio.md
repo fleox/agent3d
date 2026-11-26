@@ -3,7 +3,7 @@
 The Studio is Agent3D's visual editor: a React SPA (`src/studio/`, built to `dist/studio/`) with a live viewport (the same runtime as the exports, in editor mode), an outliner, an inspector, a timeline, a catalog / library browser, the templates gallery, the check panel, render and export dialogs, a JSON panel and an optional AI assistant.
 
 ```bash
-npx -y @fleox/agent3d@0.5.0 studio --project my-banner
+npx -y @fleox/agent3d@0.5.1 studio --project my-banner
 ```
 
 `agent3d studio` serves the Studio on `http://127.0.0.1:4320/` (next free port; `--port`, `--no-open`) with a local REST API over the project folder (contract: [studio-api.md](studio-api.md)). Edits go through the AI tool catalog (`/api/tools/call`), so validation is the same as in the CLI and MCP. Changes made by another program (an agent in a terminal, an editor) are pushed to the open Studio through Server-Sent Events and appear live: you can watch your agent work.
@@ -26,7 +26,7 @@ The viewport renders the scene with the website runtime and adds editor-only too
 ## Live preview without the editor
 
 ```bash
-npx -y @fleox/agent3d@0.5.0 serve --project my-banner --open
+npx -y @fleox/agent3d@0.5.1 serve --project my-banner --open
 ```
 
 `serve` shows the scene alone at its aspect ratio with play / pause and a time scrubber; `scene.json` edits update the page instantly, asset or script edits reload it.

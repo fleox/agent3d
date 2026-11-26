@@ -3,8 +3,8 @@
 A scene is one JSON document, `SceneDoc` in [`src/core/types.ts`](../src/core/types.ts). Every front door reads and writes it: the Studio, the CLI, the MCP server and the runtime that plays it on web pages. It is validated by `validateScene` (`src/core/validate.ts`) against the catalog (`src/core/catalog.ts`, documented in [catalog.md](catalog.md)): unknown ids, fields, parameters, types and ranges come back as issues with JSON paths and "did you mean" hints.
 
 ```bash
-npx -y @fleox/agent3d@0.5.0 scene validate --project my-scene --json
-npx -y @fleox/agent3d@0.5.0 scene validate --file candidate.json --json
+npx -y @fleox/agent3d@0.5.1 scene validate --project my-scene --json
+npx -y @fleox/agent3d@0.5.1 scene validate --file candidate.json --json
 ```
 
 This page documents every field once, in the order a scene is usually built. Catalog parameters (geometry sizes, behaviour speeds, generator options, post-effect settings…) are not repeated here: `agent3d catalog <section> [id]` and [catalog.md](catalog.md) list them with types, ranges and defaults.
