@@ -11,6 +11,7 @@ import { CdpClient, type CdpSession } from "./cdp";
 import { previewHtml } from "./preview";
 import { sendText, startLocalServer, type LocalServer } from "./server";
 import { muxWebm, webpToVp8 } from "./webm";
+import { SOCIAL_FPS, SOCIAL_PRESETS, coverScene, imageHeaderSize, socialDuration, type SocialPresetId } from "../../src/ops/social";
 
 // Headless render pipeline: local server → installed Chrome (headless,
 // SwiftShader WebGL) → CDP → preview page (deterministic player) → PNGs.
@@ -801,10 +802,10 @@ export async function renderPoster(opts: { projectDir: string; scene?: SceneDoc;
   }
 }
 
-export async function renderVideo(opts: { projectDir: string; scene?: SceneDoc; size?: string; width?: number; duration?: number; fps?: number; format?: "webm" | "mp4"; quality?: MediaQuality; timeoutMs?: number; log?: (m: string) => void }): Promise<{ bytes: Uint8Array; frames: number; fps: number; duration: number; size: Viewport; ms: number; codec: string }> {
+export async function renderVideo(opts: { projectDir: string; scene?: SceneDoc; size?: string; width?: number; duration?: number; fps?: number; format?: "webm" | "mp4"; quality?: MediaQuality; preset?: SocialPresetId; timeoutMs?: number; log?: (m: string) => void }): Promise<{ bytes: Uint8Array; frames: number; fps: number; duration: number; size: Viewport; ms: number; codec: string; preset?: SocialPresetId; notes?: string[] }> {
   const format = opts.format ?? "webm";
-  const r = await renderMedia({ projectDir: opts.projectDir, scene: opts.scene, out: `video.${format}`, format, size: opts.size, width: opts.width ?? 960, duration: opts.duration, fps: opts.fps, quality: opts.quality, write: false, timeoutMs: opts.timeoutMs, log: opts.log });
-  return { bytes: r.data, frames: r.frames, fps: r.fps, duration: r.duration, size: { ...r.size, deviceScaleFactor: 1 }, ms: r.ms, codec: r.codec };
+  const r = await renderMedia({ projectDir: opts.projectDir, scene: opts.scene, out: `video.${format}`, format, size: opts.size, width: opts.width ?? 960, duration: opts.duration, fps: opts.fps, quality: opts.quality, preset: opts.preset, write: false, timeoutMs: opts.timeoutMs, log: opts.log });
+  return { bytes: r.data, frames: r.frames, fps: r.fps, duration: r.duration, size: { ...r.size, deviceScaleFactor: 1 }, ms: r.ms, codec: r.codec, ...(r.preset ? { preset: r.preset, notes: r.notes } : {}) };
 }
 
 // ─── High-quality stills, video (MP4 / WebM), GIF, animated WebP ───────
@@ -877,8 +878,60 @@ export interface MediaOptions {
   reducedMotion?: boolean;
   // Force the scroll progress 0..1 for the whole capture.
   scroll?: number;
+  // Social preset: size, fps 30, one seamless loop of the photo motion (unless duration), bitrate, cover fit.
+  preset?: SocialPresetId;
+  // cover: render at the frame's aspect and tighten the camera until the photos fill it
+  // (default with a preset when the scene has a photo); contain: the runtime's own fit.
+  fit?: "cover" | "contain";
   timeoutMs?: number;
   log?: (msg: string) => void;
+}
+
+// Size / duration / bitrate / scene of a media render with a social preset or a cover fit.
+export function socialPlan(opts: Pick<MediaOptions, "preset" | "fit" | "size" | "width" | "projectDir" | "duration">, authored: SceneDoc = readScene(opts.projectDir), readImage: (src: string) => Uint8Array | null = (src) => readProjectImage(opts.projectDir, src)): { scene: SceneDoc; size?: string; duration?: number; start: number; bitrate?: number; preset?: SocialPresetId; fit?: "cover" | "contain"; notes: string[] } {
+  const preset = opts.preset ? SOCIAL_PRESETS[opts.preset] : undefined;
+  const size = opts.size ?? (preset ? `${preset.width}x${preset.height}` : undefined);
+  const notes: string[] = [];
+  const hasPhoto = (authored.objects ?? []).some((o) => o.kind === "photo");
+  const fit = opts.fit ?? (preset && hasPhoto ? "cover" : undefined);
+  let scene = authored;
+  if (fit === "cover") {
+    const v = viewportFor(authored, { size, width: opts.width ?? 1280 });
+    const sizes = new Map<string, { width: number; height: number } | null>();
+    const imageSize = (src: string) => {
+      if (!sizes.has(src)) {
+        const bytes = readImage(src);
+        sizes.set(src, bytes ? imageHeaderSize(bytes) : null);
+      }
+      return sizes.get(src)!;
+    };
+    const c = coverScene(authored, v.width / v.height, imageSize);
+    scene = c.scene;
+    notes.push(...c.notes);
+  } else if (preset && !hasPhoto) notes.push("No 3D photo: the runtime keeps its own fit (the scene's design width stays visible).");
+  let duration: number | undefined, start = 0;
+  if (preset && opts.duration === undefined) {
+    const d = socialDuration(authored, preset);
+    duration = d.duration;
+    start = d.start;
+    notes.push(`Duration ${d.duration} s: ${d.source}.`);
+  }
+  return { scene, size, duration, start, bitrate: preset?.bitrate, preset: preset?.id, fit, notes };
+}
+
+// Bytes of a scene image (project path or "library:<id>"); null when missing.
+function readProjectImage(projectDir: string, src: string): Uint8Array | null {
+  try {
+    if (src.startsWith("library:")) {
+      const index = JSON.parse(readFileSync(join(libraryDir(), "index.json"), "utf8")) as { assets: { id: string; path: string }[] };
+      const a = index.assets.find((x) => x.id === src.slice(8));
+      return a ? new Uint8Array(readFileSync(join(libraryDir(), a.path))) : null;
+    }
+    if (/^[a-z]+:/i.test(src)) return null;
+    return new Uint8Array(readFileSync(resolve(projectDir, src)));
+  } catch {
+    return null;
+  }
 }
 
 export interface MediaResult {
@@ -888,6 +941,10 @@ export interface MediaResult {
   frames: number;
   fps: number;
   duration: number;
+  start?: number;
+  preset?: SocialPresetId;
+  fit?: "cover" | "contain";
+  notes?: string[]; // preset / cover fit: what was adapted (crop, camera tightened, duration source)
   size: { width: number; height: number };
   supersampling: number;
   bytes: number;
@@ -904,14 +961,17 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
   const format = opts.format ?? mediaFormatFromPath(opts.out);
   if (!format) throw new CliError("usage", `Unknown video / animation format for "${opts.out}".`, "Use a .mp4, .webm, .gif or .webp file name (or --format).", 2);
   const animated = format === "gif" || format === "webp";
-  const source = opts.scene ?? readScene(opts.projectDir);
+  const authored = opts.scene ?? readScene(opts.projectDir);
+  // Social presets: frame size, one seamless loop, bitrate, cover fit (src/ops/social.ts).
+  const social = socialPlan(opts, authored);
+  const source = social.scene;
   const scene = sceneForRender(source, { transparent: opts.transparent && animated });
-  const fps = Math.max(1, Math.min(60, Math.round(opts.fps ?? (format === "gif" ? 15 : format === "webp" ? 20 : 30))));
-  const duration = opts.duration ?? (scene.timeline?.duration && scene.timeline.duration > 0 ? scene.timeline.duration : 5);
+  const fps = Math.max(1, Math.min(60, Math.round(opts.fps ?? (opts.preset ? SOCIAL_FPS : format === "gif" ? 15 : format === "webp" ? 20 : 30))));
+  const duration = opts.duration ?? social.duration ?? (scene.timeline?.duration && scene.timeline.duration > 0 ? scene.timeline.duration : 5);
   if (!(duration > 0) || duration > 300) throw new CliError("usage", "--duration must be between 0 and 300 seconds.", undefined, 2);
   const count = Math.max(1, Math.round(duration * fps));
   if (animated && count > 900) throw new CliError("usage", `${count} frames is too many for a ${format.toUpperCase()} (max 900).`, "Lower --fps or --duration, or render a video (.mp4 / .webm).", 2);
-  const base = viewportFor(scene, { size: opts.size, width: opts.width ?? (format === "gif" ? 640 : format === "webp" ? 800 : 1280), scale: opts.scale ?? 1 });
+  const base = viewportFor(scene, { size: social.size, width: opts.width ?? (format === "gif" ? 640 : format === "webp" ? 800 : 1280), scale: opts.scale ?? 1 });
   const out = { width: even(Math.round(base.width * base.deviceScaleFactor)), height: even(Math.round(base.height * base.deviceScaleFactor)) };
   const ss = clampSs(QUALITY_SS[opts.quality ?? "standard"], base);
   const viewport = { width: out.width / base.deviceScaleFactor, height: out.height / base.deviceScaleFactor, deviceScaleFactor: base.deviceScaleFactor * ss };
@@ -919,7 +979,7 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
   const transparentScene = !!scene.target?.transparent;
   const bg = parseBg(opts.bg);
   const bgFill = bg && bg !== "none" ? bg : !animated && transparentScene ? "#ffffff" : undefined;
-  const start = Math.max(0, opts.start ?? 0);
+  const start = Math.max(0, opts.start ?? (opts.duration === undefined ? social.start : 0));
   const inputs = [...segmentInputs(opts.segment, start), ...(opts.input ?? [])].map((e, i) => ({ e, i })).sort((a, b) => a.e.t - b.e.t || a.i - b.i).map((x) => x.e);
   checkInputsForScene(scene, inputs);
   if (opts.scroll !== undefined && !(opts.scroll >= 0 && opts.scroll <= 1)) throw new CliError("usage", "--scroll must be a progress between 0 and 1.", undefined, 2);
@@ -973,7 +1033,7 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
         codec = "vp8 (key frames)";
       } else {
         const pixels = out.width * out.height * fps;
-        const bitrate = Math.round(opts.bitrate ?? Math.min(40e6, Math.max(1e6, pixels * (opts.quality === "ultra" ? 0.16 : opts.quality === "high" ? 0.12 : 0.08))));
+        const bitrate = Math.round(opts.bitrate ?? social.bitrate ?? Math.min(40e6, Math.max(1e6, pixels * (opts.quality === "ultra" ? 0.16 : opts.quality === "high" ? 0.12 : 0.08))));
         await session.evaluate(`window.__agent3dVideoStart(${JSON.stringify({ codec: chosen, width: out.width, height: out.height, fps, bitrate, keyInterval: fps * 2, ss, bg: bgFill ?? (transparentScene ? "#000000" : undefined) })})`);
         type Chunk = { b64: string; key: boolean };
         const chunks: Chunk[] = [];
@@ -1002,7 +1062,7 @@ export async function renderMedia(opts: MediaOptions): Promise<MediaResult & { d
       writeFileSync(opts.out, data);
     }
     const state = inputs.length ? ((await session.info()).state ?? null) : undefined;
-    return { path: opts.out, format, codec, frames: count, fps, duration, size: out, supersampling: ss, bytes: data.byteLength, ms: Date.now() - t0, ...(inputs.length ? { inputs: inputs.length, state } : {}), ...(cursor.warnings.length ? { inputWarnings: cursor.warnings } : {}), data };
+    return { path: opts.out, format, codec, frames: count, fps, duration, ...(start ? { start } : {}), size: out, supersampling: ss, bytes: data.byteLength, ms: Date.now() - t0, ...(social.preset ? { preset: social.preset } : {}), ...(social.fit ? { fit: social.fit } : {}), ...(social.notes.length ? { notes: social.notes } : {}), ...(inputs.length ? { inputs: inputs.length, state } : {}), ...(cursor.warnings.length ? { inputWarnings: cursor.warnings } : {}), data };
   } finally {
     await session.close();
   }

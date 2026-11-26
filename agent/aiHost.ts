@@ -63,11 +63,11 @@ export function nodeHost(fs: NodeFs | null): ToolHost {
               return { bytes: r.og!, t: r.t, size: { width: 1200, height: 630 } };
             }
             if (opts.format === "gif" || opts.format === "webp") {
-              const r = await render.renderMedia({ projectDir: fs.root, out: `animation.${opts.format}`, format: opts.format, size: opts.size, duration: opts.duration, fps: opts.fps, quality: opts.quality, transparent: opts.transparent, write: false, log });
-              return { bytes: r.data, codec: r.codec, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height } };
+              const r = await render.renderMedia({ projectDir: fs.root, out: `animation.${opts.format}`, format: opts.format, size: opts.size, duration: opts.duration, fps: opts.fps, quality: opts.quality, transparent: opts.transparent, preset: opts.preset, write: false, log });
+              return { bytes: r.data, codec: r.codec, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height }, ...(r.notes ? { notes: r.notes } : {}) };
             }
-            const r = await render.renderVideo({ projectDir: fs.root, size: opts.size, duration: opts.duration, fps: opts.fps, format: opts.video, quality: opts.quality, log });
-            return { bytes: r.bytes, codec: r.codec, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height } };
+            const r = await render.renderVideo({ projectDir: fs.root, size: opts.size, duration: opts.duration, fps: opts.fps, format: opts.video, quality: opts.quality, preset: opts.preset, log });
+            return { bytes: r.bytes, codec: r.codec, frames: r.frames, fps: r.fps, duration: r.duration, size: { width: r.size.width, height: r.size.height }, ...(r.notes ? { notes: r.notes } : {}) };
           },
         }
       : {}),

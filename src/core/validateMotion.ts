@@ -91,6 +91,7 @@ export interface MotionIds {
   lights: Set<string>;
   tags?: Set<string>;
   models?: Set<string>;
+  photos?: Set<string>; // photo objects ("<id>.motion.progress" targets)
   parents?: Set<string>; // ids with children
   postfx?: Set<string>; // post effect types present in scene.postfx
   letters?: Set<string>; // text ids split into letters ("<id>/<n>" targets)
@@ -185,6 +186,11 @@ function singleKind(head: string, prop: string, ids: MotionIds, target: string):
     return { error: { message: `Invalid model track "${prop}".`, hint: 'Use "morph.<name>" (0..1) or "animation.<clip>.weight" | ".speed" | ".time".' } };
   }
   if (parts[0] === "effects") return photoEffectKind(base, parts.slice(1), ids);
+  if (parts[0] === "motion") {
+    if (ids.photos && !ids.photos.has(base)) return { error: { message: `"${prop}" needs a photo object; "${base}" is not one.`, hint: 'motion.progress (0..1) drives the auto move of a 3D photo (kind "photo").' } };
+    if (prop === "motion.progress") return { kind: "number" };
+    return { error: { message: `Photo motion property "${prop}" is not animatable.`, hint: `${didYouMean(prop, ["motion.progress"])}Use "motion.progress" (0..1 along the photo's motion.auto move).` } };
+  }
   return objectKind(prop, false);
 }
 
@@ -218,8 +224,8 @@ function objectKind(prop: string, multi: boolean): { kind?: ValueKind; error?: {
     if (parts.length === 2 && MATERIAL_TRACK_PROPS[parts[1]]) return { kind: MATERIAL_TRACK_PROPS[parts[1]] };
     if (parts.length === 3 && parts[1] === "uniforms") return { kind: "number" };
   }
-  if (multi && (parts[0] === "morph" || parts[0] === "animation")) return { kind: "number" };
-  const options = ["position", "position.x", "rotation", "rotation.y", "scale", "visible", ...Object.keys(MATERIAL_TRACK_PROPS).map((k) => `material.${k}`), "material.uniforms.<name>", "morph.<name>", "animation.<clip>.weight"];
+  if (multi && (parts[0] === "morph" || parts[0] === "animation" || prop === "motion.progress")) return { kind: "number" };
+  const options = ["position", "position.x", "rotation", "rotation.y", "scale", "visible", ...Object.keys(MATERIAL_TRACK_PROPS).map((k) => `material.${k}`), "material.uniforms.<name>", "morph.<name>", "animation.<clip>.weight", "motion.progress"];
   return { error: { message: `Property "${prop}" is not animatable.`, hint: `${didYouMean(prop, options)}Animatable: ${listOptions(options)}.` } };
 }
 
@@ -291,7 +297,7 @@ class C {
 // ─── Scene walk helpers ─────────────────────────────────────────────────
 
 function collect(scene: Obj, ids: MotionIds): MotionIds {
-  const tags = new Set<string>(), models = new Set<string>(), parents = new Set<string>();
+  const tags = new Set<string>(), models = new Set<string>(), parents = new Set<string>(), photos = new Set<string>();
   const photoEffects = new Map<string, Set<string>>();
   const walk = (list: unknown) => {
     if (!Array.isArray(list)) return;
@@ -300,6 +306,7 @@ function collect(scene: Obj, ids: MotionIds): MotionIds {
       if (Array.isArray(o.tags)) for (const t of o.tags) if (typeof t === "string") tags.add(t);
       if (o.kind === "model") models.add(o.id);
       if (o.kind === "photo") photoEffects.set(o.id, new Set(isObj(o.effects) ? Object.keys(o.effects) : []));
+      if (o.kind === "photo") photos.add(o.id);
       if ((Array.isArray(o.children) && o.children.length) || (o.kind === "text" && (o.splitLetters === true || isObj(o.reveal)))) parents.add(o.id);
       walk(o.children);
     }
@@ -308,7 +315,7 @@ function collect(scene: Obj, ids: MotionIds): MotionIds {
   const postfx = new Set<string>();
   // Look presets expanded: { type: "look", preset: "product" } brings bloom, ao, grading… (tracks may animate them).
   if (Array.isArray(scene.postfx)) for (const f of expandPostFx(scene.postfx.filter((x): x is PostFxDef => isObj(x) && typeof x.type === "string"))) postfx.add(f.type);
-  return { ...ids, tags, models, parents, postfx, photoEffects };
+  return { ...ids, tags, models, photos, parents, postfx, photoEffects };
 }
 
 // ─── Timeline ───────────────────────────────────────────────────────────

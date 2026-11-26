@@ -85,8 +85,10 @@ export const PHOTO_MOTION_SPECS: ParamSpec[] = [
   n("pointer", 1, 0, 1, "How much the pointer moves the view."),
   n("scroll", 0, 0, 1, "How much page scroll moves the view."),
   b("gyro", true, "Tilt on phones (when pointer > 0)."),
-  e("auto", PHOTO_AUTO_MOTIONS, "sway", "Looping drift for renders, videos and touch screens."),
+  e("auto", PHOTO_AUTO_MOTIONS, "sway", "Looping drift or cinematic camera move (dolly, pan, rise, vertigo) for renders, videos and touch screens."),
   n("speed", 1, 0, undefined, "Auto drift cycles per 10 s."),
+  b("loop", true, "Seamless loop (off: one move over `duration`, then held)."),
+  n("duration", undefined, 0.1, 600, "One-way move length in seconds (loop off)."),
   n("smoothing", undefined, 0, 1, "Easing of the view towards the pointer."),
 ];
 // Photo effects (src/core/photoEffects.ts): one form per effect, params and

@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "id": "photo-scroll-story",
+  "title": "Photo scroll story",
+  "description": "A scroll-driven hero made of two 3D photos: scrolling dives down an old-town street at blue hour (dolly), crossfades into a mountain lake, and ends on a dolly zoom where the mountain swells behind the jetties.",
+  "ariaLabel": "Scroll story: a blue-hour old-town street you dive into as you scroll, dissolving into a calm mountain lake with wooden jetties, under the headlines Old Town and Then, the lake",
+  "target": {
+    "kind": "hero",
+    "aspect": "16:9",
+    "posterTime": 0,
+    "reducedMotion": "static",
+    "toneMapping": "none"
+  },
+  "camera": {
+    "type": "perspective",
+    "fov": 35,
+    "position": [0, 0, 10],
+    "target": [0, 0, 0]
+  },
+  "environment": {
+    "background": "#0b1020"
+  },
+  "lights": [
+    { "id": "fill", "type": "hemisphere", "intensity": 1 }
+  ],
+  "objects": [
+    {
+      "id": "lake",
+      "kind": "photo",
+      "src": "assets/textures/lake.webp",
+      "depth": "assets/depth/lake-depth.png",
+      "mode": "parallax",
+      "width": 11.9,
+      "strength": 0.9,
+      "focus": 0.7,
+      "position": [0, 0, -0.05],
+      "motion": { "auto": "vertigo", "progress": 0, "pointer": 0.6, "gyro": true, "smoothing": 0.9 }
+    },
+    {
+      "id": "street",
+      "kind": "photo",
+      "src": "assets/textures/street.webp",
+      "depth": "assets/depth/street-depth.png",
+      "mode": "parallax",
+      "width": 11.9,
+      "strength": 0.8,
+      "focus": 0.45,
+      "motion": { "auto": "dolly", "progress": 0, "pointer": 0.6, "gyro": true, "smoothing": 0.9 }
+    },
+    {
+      "id": "title1",
+      "kind": "text",
+      "text": "{data.title|OLD TOWN}",
+      "font": "serif-bold",
+      "size": 0.56,
+      "depth": 0,
+      "letterSpacing": 0.06,
+      "align": "center",
+      "position": [0, 1.95, 0.5],
+      "material": { "type": "basic", "color": "#ffffff", "transparent": true }
+    },
+    {
+      "id": "sub1",
+      "kind": "text",
+      "text": "{data.subtitle|SCROLL TO WALK IN}",
+      "font": "sans-bold",
+      "size": 0.088,
+      "depth": 0,
+      "letterSpacing": 0.1,
+      "align": "center",
+      "position": [0, 1.6, 0.5],
+      "material": { "type": "basic", "color": "#e8eef8", "transparent": true }
+    },
+    {
+      "id": "title2",
+      "kind": "text",
+      "text": "{data.title2|THEN, THE LAKE}",
+      "font": "serif-bold",
+      "size": 0.5,
+      "depth": 0,
+      "letterSpacing": 0.06,
+      "align": "center",
+      "position": [0, 1.95, 0.5],
+      "material": { "type": "basic", "color": "#ffffff", "opacity": 0, "transparent": true }
+    }
+  ],
+  "timeline": {
+    "duration": 10,
+    "trigger": "scroll",
+    "loop": false,
+    "scroll": { "start": "top top", "end": "bottom top", "smoothing": 0.85 },
+    "tracks": [
+      { "target": "street.motion.progress", "keys": [[0, 0], [5.5, 1]], "ease": "inOutSine" },
+      { "target": "street.material.opacity", "keys": [[4.2, 1], [5.8, 0]], "ease": "inOutSine" },
+      { "target": "lake.motion.progress", "keys": [[5, 0], [10, 1]], "ease": "inOutSine" },
+      { "target": "title1.material.opacity", "keys": [[0, 1], [2, 1], [3.2, 0]] },
+      { "target": "sub1.material.opacity", "keys": [[0, 1], [1.5, 1], [2.6, 0]] },
+      { "target": "title1.position.y", "keys": [[0, 1.95], [3.2, 2.4]], "ease": "inSine" },
+      { "target": "title2.material.opacity", "keys": [[6, 0], [7.2, 1]] },
+      { "target": "title2.position.y", "keys": [[6, 1.6], [7.2, 1.95]], "ease": "outCubic" }
+    ],
+    "markers": { "street": 0, "lake": 6 }
+  },
+  "postfx": [
+    { "type": "vignette", "darkness": 0.55 }
+  ],
+  "data": {
+    "title": "OLD TOWN",
+    "subtitle": "SCROLL TO WALK IN",
+    "title2": "THEN, THE LAKE"
+  }
+}

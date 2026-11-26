@@ -8,7 +8,7 @@
 | `zip` | `agent3d export --format zip` | The same folder as one `<name>-embed.zip` (to upload or send) |
 | `single-html` | `agent3d export --format single-html` | One self-contained `.html` file |
 | `poster` | `agent3d export --format poster [--time 2] [--image png\|webp\|jpeg] [--scale 2] [--quality high] [--transparent]` | A still (`dist/poster.webp`), 2× pixel ratio by default |
-| `video` | `agent3d export --format video [--out dist/promo.mp4] [--duration 8] [--fps 30]` | MP4 (H.264) when `--out` ends in `.mp4`, else WebM (VP9) |
+| `video` | `agent3d export --format video [--out dist/promo.mp4] [--duration 8] [--fps 30] [--preset vertical\|square\|landscape\|story]` | MP4 (H.264) when `--out` ends in `.mp4` (or with `--preset`: `dist/video-<preset>.mp4`), else WebM (VP9) |
 | `gif` | `agent3d export --format gif [--duration 4] [--fps 15]` | A looping animated GIF (`dist/animation.gif`) |
 
 Common options: `--out <path>` (default `<project>/dist/<format>`, or the file for poster / video / gif), `--name <slug>` (scene folder / file name, default the project name), `--size WxH`, `--timeout <s>`, `--yes` (overwrite a non-empty output folder; without it the command prints a plan with the existing entries).
@@ -190,6 +190,25 @@ agent3d render --scroll 0.5                               # a scroll-driven scen
 - **`--transparent`**: forces a transparent canvas (alpha PNG / GIF / WebP stills of a scene that has a background). Opaque formats (MP4, WebM, JPEG) draw transparent scenes over `--bg` (white by default).
 - **`--scroll p`**: uses `Player.setScrollProgress` when the runtime has it, else renders the time the deterministic player maps to that progress.
 - Video bitrate defaults from size × fps × quality (`--bitrate <Mbit/s>` overrides). Videos capture the WebGL canvas only (not the HUD).
+
+### Social video presets
+
+```bash
+agent3d render --video reel.mp4 --preset vertical          # 1080×1920, one seamless loop of the photo move
+agent3d export --format video --preset square              # dist/video-square.mp4
+agent3d render --preset vertical --count 4 --sheet         # PNG frames of that framing first
+```
+
+| Preset | Size | For |
+|---|---|---|
+| `vertical` | 1080×1920 (9:16) | Reels, TikTok, Shorts, LinkedIn / Instagram vertical video |
+| `square` | 1080×1080 (1:1) | Instagram / LinkedIn / Facebook feed |
+| `landscape` | 1920×1080 (16:9) | YouTube, LinkedIn, X, websites |
+| `story` | 1080×1920 (9:16), at most 15 s | Instagram / Facebook stories |
+
+A preset sets the size, 30 fps, the bitrate (10 Mbit/s at 1080p, 8 for square: H.264 that LinkedIn / Instagram re-encode without visible loss) and the duration: **one seamless loop** of the first 3D photo's `motion.auto` (10 / `speed` seconds; a one-way move: its `duration`; `orbit` starts one cycle in, where its loop is steady), else the timeline duration, else 5 s. `--duration`, `--fps`, `--size`, `--bitrate` still override.
+
+**Cover fit** (default with a preset when the scene has a 3D photo; `--fit cover|contain`): the frame's aspect rarely matches the scene's. The render uses the frame's aspect as `target.aspect` (the runtime keeps the vertical field of view and crops the sides), then tightens the camera (`fov` / ortho `zoom`) until every top-level photo facing the camera fills the frame, with a margin for `mesh` tilts — the photo's edges never show. The result's `notes` say what happened ("The scene (16:9) is cropped to 9:16 …", "Camera tightened 1.12× …", "Duration 10 s: one loop of …"). Text and objects laid out for 16:9 can be cut in 9:16: look at the frames. `--fit contain` keeps the runtime's own fit (a narrower frame widens the view, so the background shows around the photo).
 - AVIF posters: Chrome cannot encode AVIF from a canvas yet, so exports ship WebP posters (`posterAvif` is accepted by `buildExport` when a host can provide one).
 
 ## Runtime size

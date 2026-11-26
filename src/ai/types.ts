@@ -88,6 +88,8 @@ export interface MediaOptions {
   size?: string;
   // video container / codec: "webm" (VP9, default) or "mp4" (H.264, needs Google Chrome).
   video?: "webm" | "mp4";
+  // video / gif / webp: social preset (src/ops/social.ts): size, 30 fps, one seamless loop, bitrate, cover fit.
+  preset?: "vertical" | "square" | "landscape" | "story";
   // Supersampling: draft / standard (1×, default), high (2×), ultra (3×).
   quality?: "draft" | "standard" | "high" | "ultra";
   // poster / gif / webp: transparent background.
@@ -102,6 +104,7 @@ export interface MediaResult {
   fps?: number;
   duration?: number;
   size: { width: number; height: number };
+  notes?: string[]; // social preset / cover fit: what was adapted
 }
 
 export interface ToolHost {

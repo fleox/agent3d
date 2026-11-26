@@ -39,7 +39,7 @@ describe("photo motion", () => {
   });
 
   it("settings defaults (gyro follows pointer)", () => {
-    expect(motionSettings(undefined)).toEqual({ pointer: 1, scroll: 0, gyro: true, auto: "sway", speed: 1, smoothing: 0.9 });
+    expect(motionSettings(undefined)).toEqual({ pointer: 1, scroll: 0, gyro: true, auto: "sway", speed: 1, smoothing: 0.9, loop: true, duration: 0, progress: null });
     expect(motionSettings({ pointer: 0 }).gyro).toBe(false);
     expect(motionSettings({ pointer: 3, smoothing: 2 })).toMatchObject({ pointer: 1, smoothing: 0.99 });
   });

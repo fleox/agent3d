@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { projectPath, renderFrames } from "./render";
+import { loopFrames, parseFit, presetOpt, projectPath, renderCommand, renderFrames } from "./render";
 import { timelineCommand } from "./scene";
 
 describe("render command helpers", () => {
@@ -27,5 +27,37 @@ describe("export --size help", async () => {
     const d = exportCommand.options?.find((o) => o.name === "size")?.description ?? "";
     expect(d).toContain("960 for a video");
     expect(d).toContain("640 for a gif");
+  });
+});
+
+describe("social video flags (--preset / --fit)", () => {
+  it("parses presets case-insensitively and suggests the closest one", () => {
+    expect(presetOpt(undefined)).toBeUndefined();
+    expect(presetOpt("vertical")).toBe("vertical");
+    expect(presetOpt("Square")).toBe("square");
+    expect(presetOpt("story")).toBe("story");
+    expect(() => presetOpt("verticle")).toThrow(/Unknown video preset/);
+    try {
+      presetOpt("verticle");
+    } catch (e) {
+      expect((e as { hint?: string }).hint).toContain('"vertical"');
+      expect((e as { exitCode?: number; code?: string }).code).toBe("usage");
+    }
+  });
+  it("parses --fit", () => {
+    expect(parseFit(undefined)).toBeUndefined();
+    expect(parseFit("cover")).toBe("cover");
+    expect(parseFit("contain")).toBe("contain");
+    expect(() => parseFit("fill")).toThrow(/--fit must be cover or contain/);
+  });
+  it("spreads preview frames over one loop", () => {
+    expect(loopFrames(0, 10, undefined)).toBe("0,2.5,5,7.5");
+    expect(loopFrames(5, 5, 2)).toBe("5,7.5");
+  });
+  it("documents the flags on render and export", async () => {
+    const { exportCommand } = await import("./render");
+    expect(renderCommand.usage).toContain("--preset vertical|square|landscape|story");
+    expect(renderCommand.options?.find((o) => o.name === "preset")?.description).toContain("1080x1920");
+    expect(exportCommand.options?.find((o) => o.name === "preset")?.description).toContain("video-<preset>.mp4");
   });
 });

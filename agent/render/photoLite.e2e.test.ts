@@ -91,6 +91,8 @@ describe.skipIf(!browser || !runtimeOk)("photo-only lite runtime vs full runtime
       // depth-driven effects (build/photoFx.ts, shared GLSL): fog wisps, auto light path, partial reveal
       { id: "effects", ops: [{ op: "set", path: "objects#photo.effects", value: { fog: { color: "#c9d6ea", amount: 0.5 }, light: { follow: "auto", ambient: 0.6, color: "#ffe2b0" }, reveal: { progress: 0.85 } } }] },
       { id: "plate", ops: [{ op: "merge", path: "objects#photo", value: { strength: 1, plate: "assets/depth/street-plate.png", plateDepth: "assets/depth/street-plate-depth.png" } }], plate: true },
+      // A cinematic move (push + dolly zoom through the UV inset: photoCore parallaxView).
+      { id: "vertigo", ops: [{ op: "set", path: "objects#photo.motion.auto", value: "vertigo" }] },
     ];
     const exports: { id: string; lite: string; full: string; liteResult: ExportResult; fullResult: ExportResult }[] = [];
     for (const v of variants) {

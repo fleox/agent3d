@@ -463,8 +463,25 @@ export interface PhotoObjectDef extends BaseObjectDef {
   // What moves the view (combined): pointer (0..1 amount, default 1), scroll
   // (0..1 amount, default 0), gyro on phones (default true when pointer > 0),
   // auto: a looping drift for headless renders / videos and touch screens
-  // ("sway" default, "orbit", "zoom", "none") at `speed` cycles per 10 s.
-  motion?: { pointer?: number; scroll?: number; gyro?: boolean; auto?: "none" | "sway" | "orbit" | "zoom"; speed?: number; smoothing?: number };
+  // ("sway" default, "orbit", "zoom", "none") at `speed` cycles per 10 s, or a
+  // cinematic camera move: "dolly" (push in toward the focus plane), "pan"
+  // (lateral truck left → right), "rise" (crane up), "vertigo" (dolly zoom:
+  // the focus plane keeps its size while the background stretches).
+  // loop (default true): seamless ping-pong loop of 10 / speed s; false: one
+  // move over `duration` seconds (default 10 / speed), then held.
+  // progress (0..1): the move's position instead of time — animate it with a
+  // timeline track "<id>.motion.progress" (scroll-driven timelines: scroll story).
+  motion?: {
+    pointer?: number;
+    scroll?: number;
+    gyro?: boolean;
+    auto?: "none" | "sway" | "orbit" | "zoom" | "dolly" | "pan" | "rise" | "vertigo";
+    speed?: number;
+    smoothing?: number;
+    loop?: boolean;
+    duration?: number;
+    progress?: number;
+  };
   material?: Pick<MaterialDef, "opacity" | "color" | "emissiveIntensity">; // tint / opacity / self-lit amount (photos are unlit by default)
   // Depth-driven effects, applied to the photo texel after the parallax (every
   // mode). Parameters: src/core/photoEffects.ts. Animatable from the timeline:

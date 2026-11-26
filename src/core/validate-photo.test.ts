@@ -50,6 +50,30 @@ describe("photo objects", () => {
     expect(errorPaths({ src: "assets/a.jpg", motion: "sway" })).toContain("objects#p.motion");
   });
 
+  it("accepts the cinematic moves and their loop / duration / progress, with did-you-mean on typos", () => {
+    const ok = { src: "assets/a.jpg", depth: "assets/d.png" };
+    for (const auto of ["dolly", "pan", "rise", "vertigo"]) expect(errorPaths({ ...ok, motion: { auto } })).toEqual([]);
+    expect(errorPaths({ ...ok, motion: { auto: "pan", loop: false, duration: 8, progress: 0.4 } })).toEqual([]);
+    const typo = issues({ ...ok, motion: { auto: "doly" } }).find((i) => i.path === "objects#p.motion.auto");
+    expect(typo?.severity).toBe("error");
+    expect(typo!.hint).toContain('"dolly"');
+    const bad = issues({ ...ok, motion: { auto: "rise", loop: "yes", duration: 0, progress: 1.5 } }).filter((i) => i.severity === "error").map((i) => i.path);
+    expect(bad).toEqual(expect.arrayContaining(["objects#p.motion.loop", "objects#p.motion.duration", "objects#p.motion.progress"]));
+    expect(issues({ ...ok, motion: { auto: "dolly", lopp: false } }).find((i) => i.path === "objects#p.motion.lopp")!.hint).toContain('"loop"');
+    // duration without loop: false, or move fields without a move: info only
+    expect(issues({ ...ok, motion: { auto: "dolly", duration: 6 } }).find((i) => i.path === "objects#p.motion.duration")?.severity).toBe("info");
+    expect(issues({ ...ok, motion: { auto: "none", loop: false } }).find((i) => i.path === "objects#p.motion")?.severity).toBe("info");
+  });
+
+  it("validates timeline tracks on motion.progress (photos only)", () => {
+    const scene = (target: string) => ({ ...defaultScene({ id: "s" }), objects: [{ id: "p", kind: "photo", src: "assets/a.jpg", depth: "assets/d.png", motion: { auto: "dolly" } }, { id: "m", kind: "mesh", geometry: { type: "box" } }], timeline: { duration: 4, trigger: "scroll", tracks: [{ target, keys: [[0, 0], [4, 1]] }] } }) as unknown as SceneDoc;
+    const errs = (t: string) => validateScene(scene(t)).filter((i) => i.severity === "error");
+    expect(errs("p.motion.progress")).toEqual([]);
+    expect(errs("p.material.opacity")).toEqual([]);
+    expect(errs("m.motion.progress").length).toBe(1);
+    expect(errs("p.motion.progres")[0].hint).toContain('"motion.progress"');
+  });
+
   it("warns on unknown fields, unsupported material keys and a missing depth map", () => {
     const w = issues({ src: "assets/a.jpg", depth: "assets/d.png", strenght: 0.3, motion: { autos: "sway" }, material: { roughness: 0.5, opacty: 1 } }).filter((i) => i.severity === "warning");
     expect(w.map((i) => i.path)).toEqual(expect.arrayContaining(["objects#p.strenght", "objects#p.motion.autos", "objects#p.material.roughness", "objects#p.material.opacty"]));

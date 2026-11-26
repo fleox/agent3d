@@ -283,6 +283,13 @@ export function bindProperty(id: string, path: string, host: TimelineHost, where
       if (!fx || !effect || !param) return bad(`"${id}.${path}": effect tracks need a 3D photo with that effect ("<photoId>.effects.<effect>.<param>")`);
       return photoEffectAccessor(fx, effect, axis ? `${param}.${axis}` : param);
     }
+    case "motion": {
+      // 3D photos: the auto move's progress 0..1 (./build/photo.ts).
+      const state = obj.userData.a3dPhotoMotion as Record<string, unknown> | undefined;
+      if (!state) return bad(`"${id}" has no photo motion (motion.progress animates a photo)`);
+      if (sub !== "progress") return bad(`Photo motion track "${path}" must be "motion.progress"`);
+      return { get: () => (typeof state.progress === "number" ? state.progress : 0), set: (v) => typeof v === "number" && (state.progress = v) };
+    }
     case "animation": {
       const clips = host.clips?.(id);
       const prop = rest[rest.length - 1];
