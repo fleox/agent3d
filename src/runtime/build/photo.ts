@@ -29,6 +29,9 @@
 // scroll and the `auto` drift ("sway" / "orbit" / "zoom"), which fades out
 // while the pointer / gyro drives the view. Reduced motion: no auto drift,
 // half pointer amount.
+//
+// Effects (def.effects: fog / light / reveal, ./photoFx.ts) run in every mode
+// on the sampled texel; their uniforms are shared by all the photo's materials.
 
 import * as THREE from "three";
 import type { PhotoObjectDef } from "../../core/types";
@@ -36,6 +39,7 @@ import { loadTexture } from "../assets";
 import { DEG, clamp, num } from "../util";
 import type { RuntimeContext } from "./context";
 import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, photoSize } from "./photoCore";
+import { createPhotoFx, type FxValue, type PhotoFx } from "./photoFx";
 
 // The three-free core (sizing, motion, parallax math, GLSL) lives in
 // ./photoCore.ts — shared with the photo-only lite runtime (src/runtime/lite/).
@@ -113,12 +117,14 @@ void main() {
 `;
 
 // Parallax (relief mapping, ./photoCore.ts PARALLAX_GLSL) on a quad.
-const PARALLAX_FRAG = /* glsl */ `
+const parallaxFrag = (fx: PhotoFx) => /* glsl */ `
 ${COMMON_FRAG}
 ${PARALLAX_GLSL}
+${fx.glsl}
 varying vec2 vUv;
 void main() {
   vec4 c = parallaxTexel(vUv);
+  ${fx.call("pxUv", "textureLod(uDepth, pxUv, 0.0).r")}
   if (c.a * uOpacity < 0.004) discard;
   gl_FragColor = shade(c, 1.0);
   #include <tonemapping_fragment>
@@ -173,9 +179,10 @@ void main() {
 }
 `;
 
-const MESH_FRAG = /* glsl */ `
+const meshFrag = (fx: PhotoFx) => /* glsl */ `
 ${COMMON_FRAG}
 uniform sampler2D uDepth;
+${fx.glsl}
 varying vec2 vUv;
 varying float vDepth;
 varying float vCut;
@@ -186,6 +193,7 @@ void main() {
     if (abs(d - vDepth) * vMotion > 0.004) discard;
   }
   vec4 c = texture2D(uMap, vUv);
+  ${fx.call("vUv", "textureLod(uDepth, vUv, 0.0).r")}
   if (c.a * uOpacity < 0.004) discard;
   gl_FragColor = shade(c, 1.0);
   #include <tonemapping_fragment>
@@ -230,9 +238,10 @@ void main() {
 }
 `;
 
-const BACKING_FRAG = /* glsl */ `
+const backingFrag = (fx: PhotoFx) => /* glsl */ `
 ${COMMON_FRAG}
 uniform sampler2D uDepth;
+${fx.glsl}
 varying vec2 vUv;
 varying float vDepth;
 void main() {
@@ -252,6 +261,7 @@ void main() {
     uv += away * texel * 2.0;
   }
   vec4 c = texture2D(uMap, uv);
+  ${fx.call("uv", "textureLod(uDepth, uv, 0.0).r")}
   if (c.a * uOpacity < 0.004) discard;
   gl_FragColor = shade(c, 1.0);
   #include <tonemapping_fragment>
@@ -264,9 +274,10 @@ void main() {
 // its band), the layer continues its own surface: the colour comes from the
 // first texel of the band found by walking along the view shift — exactly
 // the strip a nearer layer uncovers when it slides — so no ghost copies.
-const LAYER_FRAG = /* glsl */ `
+const layerFrag = (fx: PhotoFx) => /* glsl */ `
 ${COMMON_FRAG}
 uniform sampler2D uDepth;
+${fx.glsl}
 uniform vec2 uView;
 uniform float uZoom;
 uniform vec2 uMaxOffset;
@@ -319,8 +330,24 @@ void main() {
     if (!found && uBackground < 0.5) discard;
   }
   vec4 c = textureGrad(uMap, cuv, dFdx(base), dFdy(base));
+  ${fx.call("cuv", "textureLod(uDepth, cuv, 0.0).r")}
   gl_FragColor = shade(c, a);
   if (gl_FragColor.a < 0.004) discard;
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}
+`;
+
+// Flat photo with effects (light only: the others need depth).
+const flatFrag = (fx: PhotoFx) => /* glsl */ `
+${COMMON_FRAG}
+${fx.glsl}
+varying vec2 vUv;
+void main() {
+  vec4 c = texture2D(uMap, vUv);
+  ${fx.call("vUv", "0.5")}
+  if (c.a * uOpacity < 0.004) discard;
+  gl_FragColor = shade(c, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
@@ -335,9 +362,16 @@ export interface PhotoFrameInput {
   reduced: boolean;
 }
 
+// Live effect params ("<id>.effects.<effect>.<param>" timeline tracks).
+export interface PhotoEffectsControl {
+  get(effect: string, param: string): FxValue | undefined;
+  set(effect: string, param: string, value: number | number[]): void;
+}
+
 export interface BuiltPhoto {
   object: THREE.Object3D;
   update(t: number, dt: number, input: PhotoFrameInput): void;
+  effects: PhotoEffectsControl;
   dispose(): void;
 }
 
@@ -430,6 +464,25 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
   const transparent = opacity < 1 || /\.(png|webp)$/i.test(def.src);
   const motion = motionSettings(def.motion);
   const mode = depth ? def.mode ?? "parallax" : "flat";
+  const fx = createPhotoFx(def.effects, {
+    depth: !!depth,
+    color: (c) => ctx.color(c).toArray() as [number, number, number],
+    aspect: width / height,
+    live: !ctx.deterministic,
+    smoothing: motion.smoothing,
+    speed: motion.speed,
+  });
+  // Effect uniforms: one object per name, shared by every material of the photo.
+  const fxUniforms: Record<string, THREE.IUniform> = {};
+  const pushFx = () => {
+    for (const [k, v] of Object.entries(fx.uniforms())) {
+      const u = (fxUniforms[k] ??= { value: v.length === 1 ? 0 : v.length === 2 ? new THREE.Vector2() : v.length === 3 ? new THREE.Vector3() : new THREE.Vector4() });
+      if (v.length === 1) u.value = v[0];
+      else (u.value as THREE.Vector4).fromArray(v);
+    }
+  };
+  pushFx();
+  const blended = transparent || fx.alpha;
 
   const root = new THREE.Group();
   const holder = new THREE.Group(); // mesh mode tilts this (the root keeps the scene transform)
@@ -446,7 +499,11 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     return g;
   };
 
-  if (mode === "flat") {
+  if (mode === "flat" && fx.glsl) {
+    const mat = shaderMaterial(QUAD_VERT, flatFrag(fx), { ...baseUniforms(map, def, ctx), ...fxUniforms }, blended);
+    materials.push(mat);
+    holder.add(new THREE.Mesh(quad(), mat));
+  } else if (mode === "flat") {
     const m = def.material ?? {};
     const mat = new THREE.MeshBasicMaterial({ map, transparent, opacity, toneMapped: false, fog: false });
     if (m.color) mat.color.copy(ctx.color(m.color));
@@ -466,8 +523,9 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       uFocus: { value: focus },
       // depth change per texel above which a hit is a depth-edge wall
       uWallSlope: { value: PARALLAX_WALL_SLOPE },
+      ...fxUniforms,
     };
-    const mat = shaderMaterial(QUAD_VERT, PARALLAX_FRAG.replace("__STEPS__", String(parallaxSteps(ctx.quality, strength))), uniforms, transparent);
+    const mat = shaderMaterial(QUAD_VERT, parallaxFrag(fx).replace("__STEPS__", String(parallaxSteps(ctx.quality, strength))), uniforms, blended);
     materials.push(mat);
     views.push(mat);
     holder.add(new THREE.Mesh(quad(), mat));
@@ -487,9 +545,10 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       uEdgeCut: { value: clamp(num(def.edgeCut, PHOTO_DEFAULTS.edgeCut), 0, 1) },
       uCam: { value: new THREE.Vector3(0, 0, 1e6) },
       uPerspective: { value: 0 },
+      ...fxUniforms,
     };
     meshUniforms = uniforms;
-    const mat = shaderMaterial(MESH_VERT, MESH_FRAG, uniforms, opacity < 1);
+    const mat = shaderMaterial(MESH_VERT, meshFrag(fx), uniforms, opacity < 1 || fx.alpha);
     mat.side = THREE.DoubleSide;
     materials.push(mat);
     const main = new THREE.Mesh(geo, mat);
@@ -502,7 +561,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       bgeo.boundingSphere = geo.boundingSphere.clone();
       geometries.push(bgeo);
       const reach = new THREE.Vector2(6 / sx, 6 / sy);
-      const bmat = shaderMaterial(BACKING_VERT, BACKING_FRAG, { ...uniforms, uReach: { value: reach } }, opacity < 1);
+      const bmat = shaderMaterial(BACKING_VERT, backingFrag(fx), { ...uniforms, uReach: { value: reach } }, opacity < 1 || fx.alpha);
       bmat.side = THREE.DoubleSide;
       materials.push(bmat);
       const back = new THREE.Mesh(bgeo, bmat);
@@ -530,8 +589,9 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
         // edgeCut 0 = hard slice edges; otherwise soft edges (at most the default feather).
         uFeather: { value: edgeCut > 0 ? Math.min(band.feather, edgeCut) : 0.002 },
         uBackground: { value: band.background ? 1 : 0 },
+        ...fxUniforms,
       };
-      const mat = shaderMaterial(QUAD_VERT, LAYER_FRAG, uniforms, band.background ? transparent : true);
+      const mat = shaderMaterial(QUAD_VERT, layerFrag(fx), uniforms, band.background ? blended : true);
       materials.push(mat);
       views.push(mat);
       const mesh = new THREE.Mesh(geo, mat);
@@ -550,6 +610,10 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
   const maxTilt = strength * 8 * DEG;
 
   const update = (t: number, dt: number, input: PhotoFrameInput) => {
+    if (fx.glsl) {
+      fx.frame(t, dt, input);
+      pushFx();
+    }
     if (mode === "flat") return;
     const off = photoMotion.offset(t, dt, input);
     for (const v of views) {
@@ -592,6 +656,12 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
   return {
     object: root,
     update,
+    effects: {
+      get: (effect, param) => fx.get(effect, param),
+      set(effect, param, value) {
+        if (fx.set(effect, param, value)) pushFx();
+      },
+    },
     dispose() {
       photoMotion.dispose();
       for (const m of materials) m.dispose();

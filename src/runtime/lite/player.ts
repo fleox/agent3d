@@ -7,7 +7,8 @@
 // (../build/photoCore.ts PARALLAX_GLSL) with the same uniforms, march steps,
 // texture setup (sRGB map with mipmaps + 4× anisotropy, linear depth, mirrored
 // wrap) and output (sRGB, no tone mapping, normal blending over the
-// background colour). Same player rules as ../player.ts: lazy start, pause
+// background colour), and the same depth-driven effects (../build/photoFx.ts:
+// fog, light, reveal). Same player rules as ../player.ts: lazy start, pause
 // off-screen / hidden tab, reduced motion, DPR cap per quality tier (and the
 // "auto" DPR step-down), deterministic seek, simulated pointer / scroll input.
 
@@ -17,6 +18,7 @@ import type { FrameStats, InspectResult, MountOptions, Player, RuntimeIssue } fr
 import { createResolver } from "../assetResolver";
 import { designAspectOf, fitScale, fittedFov, nudgeOffPlanes } from "../build/cameraFit";
 import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, photoSize, type PhotoMotion } from "../build/photoCore";
+import { createPhotoFx, type PhotoFx } from "../build/photoFx";
 import { DEG, clamp, num } from "../num";
 
 const VERT = /* glsl */ `#version 300 es
@@ -41,7 +43,7 @@ vec4 photoTexel(vec2 uv) { return parallaxTexel(uv); }
 // clip). Coverage of the photo edge is analytic (the full runtime gets MSAA).
 // Output = three.js NormalBlending of the sRGB-encoded photo over uBg
 // (premultiplied: opaque colour, or 0 on a transparent canvas).
-const FRAG_MAIN = /* glsl */ `
+const fragMain = (fx: string) => /* glsl */ `
 uniform vec3 uO;
 uniform vec3 uF;
 uniform vec3 uR;
@@ -61,6 +63,7 @@ void main() {
   // derivatives / texture fetches stay in uniform control flow
   vec2 fw = max(fwidth(uv), vec2(1e-7));
   vec4 c = photoTexel(uv);
+  ${fx}
   vec2 e = min(uv, 1.0 - uv) / fw;
   float cover = uO.z > 0.0 && t >= uClip.x && t <= uClip.y ? clamp(min(e.x, e.y) + 0.5, 0.0, 1.0) : 0.0;
   vec4 s = shade(c, 1.0);
@@ -70,8 +73,12 @@ void main() {
 }
 `;
 
-export const photoFragment = (flat: boolean, steps: number): string =>
-  FRAG_HEAD + PHOTO_COMMON_GLSL + (flat ? FLAT_TEXEL : PARALLAX_GLSL.replace("__STEPS__", String(steps)) + PARALLAX_TEXEL) + FRAG_MAIN;
+export const photoFragment = (flat: boolean, steps: number, fx?: PhotoFx): string =>
+  FRAG_HEAD +
+  PHOTO_COMMON_GLSL +
+  (flat ? FLAT_TEXEL : PARALLAX_GLSL.replace("__STEPS__", String(steps)) + PARALLAX_TEXEL) +
+  (fx?.glsl ?? "") +
+  fragMain(fx?.call(flat ? "uv" : "pxUv", "textureLod(uDepth, pxUv, 0.0).r") ?? "");
 
 const UNIFORMS = ["uMap", "uDepth", "uTint", "uOpacity", "uIntensity", "uView", "uZoom", "uMaxOffset", "uInset", "uFocus", "uWallSlope", "uO", "uF", "uR", "uU", "uClip", "uBg", "uBlend"] as const;
 
@@ -151,6 +158,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
   let textures: WebGLTexture[] = [];
   let images: Images | null = null;
   let motion: PhotoMotion | null = null;
+  let fx: PhotoFx | null = null;
   let size: [number, number] = [1, 1];
   let tier: QualityTier = "high";
   let qualityAuto = false;
@@ -208,6 +216,13 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
       return;
     }
     gl.useProgram(prog);
+    for (const [k, v] of Object.entries(fx?.uniforms() ?? {})) {
+      const u = gl.getUniformLocation(prog, k);
+      if (v.length === 1) gl.uniform1f(u, v[0]);
+      else if (v.length === 2) gl.uniform2fv(u, v);
+      else if (v.length === 3) gl.uniform3fv(u, v);
+      else gl.uniform4fv(u, v);
+    }
     if (off) {
       gl.uniform2f(L.uView!, off.x, off.y);
       gl.uniform1f(L.uZoom!, off.zoom);
@@ -230,6 +245,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
   };
 
   const frame = (dt: number) => {
+    fx?.frame(t, dt, { pointer, reduced: staticMotion });
     if (gl && motion) draw(motion.offset(t, dt, { pointer, scroll: scrollValue(), reduced: staticMotion }));
   };
 
@@ -337,6 +353,9 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     motion = createPhotoMotion(motionSettings(def.motion), { live: !deterministic, flat });
     if (!map) return; // the object failed to load: background only (like the full runtime)
     const strength = clamp(num(def.strength, PHOTO_DEFAULTS.strength), 0, 1);
+    const ps = photoSize(def, map.naturalWidth || map.width || 1, map.naturalHeight || map.height || 1);
+    const mset = motionSettings(def.motion);
+    fx = createPhotoFx(def.effects, { depth: !flat, color: (c) => hexColor(c, [1, 1, 1]).map(toLinear) as Vec3, aspect: ps.width / ps.height, live: !deterministic, smoothing: mset.smoothing, speed: mset.speed });
     const program = g.createProgram()!;
     const attach = (type: number, src: string) => {
       const sh = g.createShader(type)!;
@@ -346,7 +365,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
       g.attachShader(program, sh);
     };
     attach(g.VERTEX_SHADER, VERT);
-    attach(g.FRAGMENT_SHADER, photoFragment(flat, parallaxSteps(tier, strength)));
+    attach(g.FRAGMENT_SHADER, photoFragment(flat, parallaxSteps(tier, strength), fx));
     g.bindAttribLocation(program, 0, "aPos");
     g.linkProgram(program);
     if (!g.getProgramParameter(program, g.LINK_STATUS) && !g.isContextLost()) throw new Error(`photo shader: ${g.getProgramInfoLog(program)}`);
@@ -388,8 +407,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     const opacity = clamp(num(m.opacity, 1), 0, 1);
     g.uniform1f(L.uOpacity!, opacity);
     g.uniform1f(L.uIntensity!, Math.max(0, num(m.emissiveIntensity, 1)));
-    g.uniform1f(L.uBlend!, opacity < 1 || /\.(png|webp)$/i.test(def.src) ? 1 : 0);
-    const ps = photoSize(def, map.naturalWidth || map.width || 1, map.naturalHeight || map.height || 1);
+    g.uniform1f(L.uBlend!, opacity < 1 || fx.alpha || /\.(png|webp)$/i.test(def.src) ? 1 : 0);
     const pp = parallaxParams(strength, ps.width, ps.height);
     g.uniform2f(L.uMaxOffset!, ...pp.maxOffset);
     g.uniform2f(L.uInset!, ...pp.inset);

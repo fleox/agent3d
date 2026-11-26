@@ -1,6 +1,7 @@
 // 3D photo (kind "photo"): image + depth map pickers, mode-dependent fields,
-// motion, tint / opacity, and "Generate depth map" (the image_depth tool,
-// available when the host has a depth estimator: `agent3d studio`).
+// motion, effects (./PhotoEffectsSection.tsx), tint / opacity, and "Generate
+// depth map" (the image_depth tool, available when the host has a depth
+// estimator: `agent3d studio`).
 
 import { Loader2, Wand2 } from "lucide-react";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import { objPath } from "../lib/patches";
 import { canEstimateDepth, DEPTH_TOOL, depthResultPath, depthToolInput, photoSpecs } from "../lib/photo";
 import { useEditor } from "../state/context";
 import { ParamForm, ParamRow, useBinder } from "./fields";
+import { PhotoEffectsSection } from "./PhotoEffectsSection";
 import { PHOTO_MATERIAL_SPECS, PHOTO_MODE_SPEC, PHOTO_MOTION_SPECS } from "./specs";
 
 export function PhotoSection({ object: o }: { object: PhotoObjectDef }) {
@@ -62,6 +64,7 @@ export function PhotoSection({ object: o }: { object: PhotoObjectDef }) {
       <Section title={t("photo.motion")} id="photo-motion">
         <ParamForm specs={PHOTO_MOTION_SPECS} base={objPath(o.id, "motion")} values={o.motion as Record<string, unknown> | undefined} />
       </Section>
+      <PhotoEffectsSection object={o} />
       <Section title={t("inspector.material")} id="photo-material" defaultOpen={!!o.material}>
         <ParamForm specs={PHOTO_MATERIAL_SPECS} base={objPath(o.id, "material")} values={o.material as Record<string, unknown> | undefined} />
       </Section>

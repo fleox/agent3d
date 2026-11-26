@@ -76,6 +76,11 @@ export function liteRuntimeEligibility(scene: SceneDoc): LiteEligibility {
     no(sc !== undefined && (typeof sc === "number" ? !(sc > 0) : !Array.isArray(sc) || !(sc[0] > 0 && sc[1] > 0)), "photo scale is not positive");
     no(p.material?.color !== undefined && !(typeof p.material.color === "string" && HEX.test(p.material.color)), "photo material.color is not a #hex colour");
     no(typeof p.src !== "string" || !p.src, "photo has no src");
+    // Effects (fog / light / reveal) run in the lite player too; their colours must be hex.
+    for (const [id, fx] of Object.entries(p.effects ?? {})) {
+      const c = (fx as { color?: unknown } | undefined)?.color;
+      no(c !== undefined && !(typeof c === "string" && HEX.test(c)), `photo effects.${id}.color is not a #hex colour`);
+    }
   }
   return reasons.length ? { ok: false, reasons } : { ok: true };
 }

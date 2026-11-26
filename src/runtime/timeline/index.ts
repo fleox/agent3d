@@ -19,6 +19,12 @@ export interface ClipControl {
   time(clip: string, t: number): void;
 }
 
+// Effect params of a 3D photo (colours as linear RGB, position as [x, y]).
+export interface PhotoEffectsHost {
+  get(effect: string, param: string): number | string | number[] | undefined;
+  set(effect: string, param: string, value: number | number[]): void;
+}
+
 export interface TimelineHost {
   object(id: string): THREE.Object3D | null;
   // Ids matching a multi-target selector ("tag:x", "children:id", "a,b,c"), in order.
@@ -30,6 +36,8 @@ export interface TimelineHost {
   // Post effect params: postfx.<type>.<param>.
   postfx?: { set(type: string, param: string, value: unknown): void; base(type: string, param: string): number | string | undefined };
   clips?(id: string): ClipControl | undefined;
+  // 3D photo effect params: "<id>.effects.<effect>.<param>" (build/photo.ts).
+  photoEffects?(id: string): PhotoEffectsHost | undefined;
   issue(code: string, message: string, path?: string): void;
   seed?: number;
 }
@@ -185,6 +193,21 @@ function morphAccessor(obj: THREE.Object3D, name: string): Accessor {
   };
 }
 
+function photoEffectAccessor(fx: PhotoEffectsHost, effect: string, param: string): Accessor {
+  return {
+    get() {
+      const v = fx.get(effect, param);
+      if (Array.isArray(v)) return v.length === 3 ? new THREE.Color(v[0], v[1], v[2]) : [v[0], v[1], 0];
+      return typeof v === "number" ? v : undefined;
+    },
+    set(v) {
+      if (v instanceof THREE.Color) fx.set(effect, param, [v.r, v.g, v.b]);
+      else if (Array.isArray(v)) fx.set(effect, param, [v[0], v[1]]);
+      else if (typeof v === "number") fx.set(effect, param, v);
+    },
+  };
+}
+
 const NONE: Accessor = { get: () => undefined, set: () => undefined };
 
 // Accessor of one property of one target id (no selectors).
@@ -254,6 +277,12 @@ export function bindProperty(id: string, path: string, host: TimelineHost, where
       return materialAccessor(obj, sub);
     case "morph":
       return morphAccessor(obj, sub);
+    case "effects": {
+      const fx = host.photoEffects?.(id);
+      const [effect, param, axis] = rest;
+      if (!fx || !effect || !param) return bad(`"${id}.${path}": effect tracks need a 3D photo with that effect ("<photoId>.effects.<effect>.<param>")`);
+      return photoEffectAccessor(fx, effect, axis ? `${param}.${axis}` : param);
+    }
     case "animation": {
       const clips = host.clips?.(id);
       const prop = rest[rest.length - 1];

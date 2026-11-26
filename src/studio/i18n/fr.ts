@@ -3,6 +3,17 @@ import type { Messages } from "./en";
 export const fr: Messages = {
   // Inspector field labels (ParamSpec names; unknown names fall back to a prettified id).
   fields: {
+    // photo effects (PhotoEffectsSection)
+    ambient: "Ambiance",
+    amount: "Quantité",
+    drift: "Dérive",
+    end: "Fin",
+    follow: "Suivre",
+    from: "Depuis",
+    progress: "Progression",
+    relief: "Relief",
+    specular: "Spéculaire",
+    start: "Début",
     accent: "Accent",
     action: "Action",
     align: "Alignement",
@@ -328,6 +339,16 @@ export const fr: Messages = {
     depthFailed: "Échec de l'estimation de profondeur",
     depthNoPath: "L'outil n'a pas renvoyé de chemin de carte de profondeur.",
     motion: "Mouvement",
+    effects: "Effets",
+    effectNeedsDepth: "Cet effet a besoin d'une carte de profondeur : il est ignoré tant que la photo est plate.",
+    effect: {
+      fog: "Brume",
+      fogHint: "Brume atmosphérique qui s'accumule au loin (selon la profondeur)",
+      light: "Lumière",
+      lightHint: "Une lumière qui balaie le relief de la photo (suit le pointeur)",
+      reveal: "Apparition",
+      revealHint: "La photo apparaît tranche de profondeur par tranche (du fond ou de l'avant)",
+    },
   },
   when: { always: "toujours", hover: "au survol", click: "au clic", visible: "quand visible", scroll: "au défilement", manual: "manuel (interactions)" },
   scene: {

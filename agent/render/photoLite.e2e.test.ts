@@ -82,6 +82,8 @@ describe.skipIf(!browser || !runtimeOk)("photo-only lite runtime vs full runtime
     const variants: { id: string; ops: PatchOp[] }[] = [
       { id: "fill", ops: [] },
       { id: "framed", ops: [{ op: "set", path: "camera.position", value: [0.6, -0.3, 16] }, { op: "set", path: "camera.target", value: [0.2, 0, 0] }] },
+      // depth-driven effects (build/photoFx.ts, shared GLSL): fog wisps, auto light path, partial reveal
+      { id: "effects", ops: [{ op: "set", path: "objects#photo.effects", value: { fog: { color: "#c9d6ea", amount: 0.5 }, light: { follow: "auto", ambient: 0.6, color: "#ffe2b0" }, reveal: { progress: 0.85 } } }] },
     ];
     const exports: { id: string; lite: string; full: string; liteResult: ExportResult; fullResult: ExportResult }[] = [];
     for (const v of variants) {

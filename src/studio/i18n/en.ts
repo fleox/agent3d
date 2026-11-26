@@ -2,6 +2,17 @@
 export const en = {
   // Inspector field labels (ParamSpec names; unknown names fall back to a prettified id).
   fields: {
+    // photo effects (PhotoEffectsSection)
+    ambient: "Ambient",
+    amount: "Amount",
+    drift: "Drift",
+    end: "End",
+    follow: "Follow",
+    from: "From",
+    progress: "Progress",
+    relief: "Relief",
+    specular: "Specular",
+    start: "Start",
     accent: "Accent",
     action: "Action",
     align: "Align",
@@ -327,6 +338,16 @@ export const en = {
     depthFailed: "Depth estimation failed",
     depthNoPath: "The tool did not return a depth map path.",
     motion: "Motion",
+    effects: "Effects",
+    effectNeedsDepth: "This effect needs a depth map: it is ignored while the photo is flat.",
+    effect: {
+      fog: "Fog",
+      fogHint: "Atmospheric haze accumulating in the distance (from the depth map)",
+      light: "Light",
+      lightHint: "A light raking over the photo's relief (follows the pointer)",
+      reveal: "Reveal",
+      revealHint: "The photo appears depth slice by depth slice (far or near first)",
+    },
   },
   when: { always: "always", hover: "on hover", click: "on click", visible: "when visible", scroll: "on scroll", manual: "manual (interactions)" },
   scene: {

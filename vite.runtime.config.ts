@@ -56,7 +56,7 @@ export default defineConfig(({ mode }) => {
   const photo = mode === "photo";
   return {
     publicDir: false,
-    plugins: [stripCatalogProse(), ...(photo ? [minifyGlsl(/src[\\/]runtime[\\/](build[\\/]photoCore|lite[\\/]player)\.ts$/)] : [])],
+    plugins: [stripCatalogProse(), ...(photo ? [minifyGlsl(/src[\\/]runtime[\\/](build[\\/](?:photoCore|photoFx)|lite[\\/]player)\.ts$/)] : [])],
     define: {
       "process.env.NODE_ENV": JSON.stringify("production"),
     },

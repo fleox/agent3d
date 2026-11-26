@@ -53,4 +53,10 @@ describe("liteRuntimeEligibility", () => {
     expect(reasons((s) => Object.assign(s.objects[0], { rotation: [0, 0, 5], behaviours: [{ type: "float" }], href: "/x", attach: "camera", visible: false }))).toEqual(["photo is hidden", "photo behaviours", "photo link (href)", "photo attached to the camera", "photo is rotated"]);
     expect(reasons((s) => Object.assign(s.objects[0], { children: [{ id: "c", kind: "group" }], scale: [1, 0, 1], material: { color: "red" } }))).toEqual(["photo has children", "photo scale is not positive", "photo material.color is not a #hex colour"]);
   });
+
+  it("keeps photos with effects in the lite runtime (hex colours only)", () => {
+    const fx = (effects: unknown) => reasons((s) => Object.assign(s.objects[0], { effects }));
+    expect(fx({ fog: { color: "#dfe8f2" }, light: { follow: "pointer" }, reveal: { duration: 2 } })).toEqual([]);
+    expect(fx({ fog: { color: "white" } })).toEqual(["photo effects.fog.color is not a #hex colour"]);
+  });
 });

@@ -63,3 +63,47 @@ describe("photo objects", () => {
     expect(validateScene(withMesh).some((i) => i.code === "no-lights")).toBe(true);
   });
 });
+
+describe("photo effects", () => {
+  const ok = { src: "assets/a.jpg", depth: "assets/d.png" };
+  it("accepts fog, light and reveal with every param", () => {
+    const effects = {
+      fog: { color: "#dfe8f2", amount: 0.5, start: 0.6, end: 0.1, drift: 0.4 },
+      light: { color: "#ffe2b0", intensity: 1.2, ambient: 0.6, position: [-0.5, 0.3], height: 0.5, radius: 0.9, relief: 1.5, specular: 0.4, follow: "auto" },
+      reveal: { progress: 0.4, from: "near", softness: 0.2, delay: 0.5 },
+    };
+    expect(issues({ ...ok, effects }).filter((i) => i.severity !== "info")).toEqual([]);
+    expect(issues({ ...ok, effects: { fog: {}, light: {}, reveal: {} } })).toEqual([]);
+  });
+
+  it("reports unknown effects / params with did-you-mean, types and ranges", () => {
+    const all = issues({ ...ok, effects: { fogg: {}, light: { intensty: 1, follow: "mouse", position: [2, 0], ambient: 1.5 }, reveal: { from: "middle", progress: "half" }, fog: 3 } });
+    const at = (p: string) => all.find((i) => i.path === `objects#p.effects${p}`);
+    expect(at(".fogg")).toMatchObject({ severity: "warning" });
+    expect(at(".fogg")!.hint).toContain('"fog"');
+    expect(at(".light.intensty")!.hint).toContain('"intensity"');
+    for (const p of [".light.follow", ".light.position", ".light.ambient", ".reveal.from", ".reveal.progress", ".fog"]) expect(at(p)?.severity, p).toBe("error");
+    expect(errorPaths({ ...ok, effects: [] })).toContain("objects#p.effects");
+  });
+
+  it("notes effects that need a depth map on a flat photo, and progress ignored with duration", () => {
+    const flat = issues({ src: "assets/a.jpg", effects: { fog: {}, light: {}, reveal: { duration: 2, progress: 0.5 } } });
+    const info = flat.filter((i) => i.severity === "info").map((i) => i.path);
+    expect(info).toEqual(expect.arrayContaining(["objects#p.effects.fog", "objects#p.effects.reveal", "objects#p.effects.reveal.progress"]));
+    expect(info).not.toContain("objects#p.effects.light"); // light works on a flat photo (flat normals)
+  });
+
+  it("validates effect timeline tracks", () => {
+    const s = scene([{ id: "p", kind: "photo", ...ok, effects: { light: {}, reveal: {} } }, { id: "m", kind: "mesh", geometry: { type: "box" } }]);
+    const track = (target: string, keys: unknown[]) => validateScene({ ...s, timeline: { duration: 4, tracks: [{ target, keys }] } } as SceneDoc).filter((i) => i.path.startsWith("timeline") && i.severity === "error");
+    expect(track("p.effects.light.position", [[0, [-0.8, 0.5]], [4, [0.8, 0.5]]])).toEqual([]);
+    expect(track("p.effects.light.position.x", [[0, -1], [4, 1]])).toEqual([]);
+    expect(track("p.effects.light.color", [[0, "#ffffff"], [4, "#ff8800"]])).toEqual([]);
+    expect(track("p.effects.reveal.progress", [[0, 0], [2, 1]])).toEqual([]);
+    expect(track("p.effects.light.position", [[0, [1, 2, 3]]])[0].code).toBe("track-value");
+    expect(track("p.effects.fog.amount", [[0, 0]])[0].message).toContain("no fog effect");
+    expect(track("p.effects.light.follow", [[0, 1]])[0].message).toContain("not animatable");
+    expect(track("p.effects.ligth.intensity", [[0, 1]])[0].hint).toContain('"light"');
+    expect(track("m.effects.light.intensity", [[0, 1]])[0].message).toContain("not a 3D photo");
+  });
+});

@@ -7,6 +7,7 @@ import { CATALOG } from "./catalog";
 import { isValidColor } from "./color";
 import { EASE_EXAMPLES, EASE_NAMES, parseEase } from "./ease";
 import { closest, didYouMean, listOptions } from "./suggest";
+import { PHOTO_EFFECTS, PHOTO_EFFECT_IDS, type PhotoEffectId } from "./photoEffects";
 import { expandPostFx } from "./postfx";
 import type { Issue, PostFxDef } from "./types";
 
@@ -82,7 +83,7 @@ const ENV_TRACK_PROPS: Record<string, "number" | "color"> = {
   background: "color",
 };
 
-type ValueKind = "vec3" | "number" | "color" | "boolean" | "number|vec3";
+type ValueKind = "vec3" | "vec2" | "number" | "color" | "boolean" | "number|vec3";
 
 // What the timeline validator needs to know about the scene.
 export interface MotionIds {
@@ -94,6 +95,7 @@ export interface MotionIds {
   postfx?: Set<string>; // post effect types present in scene.postfx
   letters?: Set<string>; // text ids split into letters ("<id>/<n>" targets)
   letterCounts?: Map<string, number>; // letters of those texts (non-space characters; absent when the text has {data.*} placeholders)
+  photoEffects?: Map<string, Set<string>>; // 3D photo ids → the effects they declare ("<id>.effects.<effect>.<param>" targets)
 }
 
 const REL = /^\s*[+\-*]=\s*-?\d*\.?\d+(?:e[+-]?\d+)?\s*$/i;
@@ -182,7 +184,27 @@ function singleKind(head: string, prop: string, ids: MotionIds, target: string):
     if (parts[0] === "animation" && parts.length >= 3 && ["weight", "speed", "time"].includes(parts[parts.length - 1])) return { kind: "number" };
     return { error: { message: `Invalid model track "${prop}".`, hint: 'Use "morph.<name>" (0..1) or "animation.<clip>.weight" | ".speed" | ".time".' } };
   }
+  if (parts[0] === "effects") return photoEffectKind(base, parts.slice(1), ids);
   return objectKind(prop, false);
+}
+
+// "<photoId>.effects.<effect>.<param>[.x|.y]" (src/core/photoEffects.ts).
+function photoEffectKind(id: string, parts: string[], ids: MotionIds): { kind?: ValueKind; error?: { message: string; hint: string } } {
+  const declared = ids.photoEffects?.get(id);
+  if (ids.photoEffects && !declared) return { error: { message: `"${id}" is not a 3D photo: effects.* tracks animate photo effects.`, hint: 'Use "<photoId>.effects.<effect>.<param>" on a kind "photo" object.' } };
+  const [effect, param, axis, ...more] = parts;
+  const spec = PHOTO_EFFECTS[effect as PhotoEffectId];
+  if (!spec) return { error: { message: `Unknown photo effect "${effect ?? ""}".`, hint: `${didYouMean(effect ?? "", PHOTO_EFFECT_IDS)}Effects: ${listOptions(PHOTO_EFFECT_IDS)}.` } };
+  if (declared && !declared.has(effect)) return { error: { message: `"${id}" has no ${effect} effect, so this track animates nothing.`, hint: `Add "effects": { "${effect}": {} } to the photo "${id}" first.` } };
+  const params = spec.params as Record<string, { type: string; animatable?: boolean }>;
+  const animatable = Object.keys(params).filter((k) => params[k].animatable !== false);
+  const p = param ? params[param] : undefined;
+  if (!p || p.animatable === false || more.length) return { error: { message: `Photo effect property "${effect}.${param ?? ""}" is not animatable.`, hint: `${didYouMean(param ?? "", animatable)}Animatable ${effect} params: ${listOptions(animatable)}.` } };
+  if (axis !== undefined) {
+    if (p.type === "vec2" && (axis === "x" || axis === "y")) return { kind: "number" };
+    return { error: { message: `"${effect}.${param}.${axis}" is not animatable.`, hint: p.type === "vec2" ? 'Use ".x" or ".y".' : `Animate "${effect}.${param}" itself.` } };
+  }
+  return { kind: p.type === "vec2" ? "vec2" : p.type === "color" ? "color" : "number" };
 }
 
 function objectKind(prop: string, multi: boolean): { kind?: ValueKind; error?: { message: string; hint: string } } {
@@ -207,6 +229,8 @@ function keyValueOk(kind: ValueKind, value: unknown): boolean {
   switch (kind) {
     case "vec3":
       return vec(value) || isRel(value);
+    case "vec2":
+      return Array.isArray(value) && value.length === 2 && value.every(num);
     case "number":
       return num(value);
     case "color":
@@ -218,7 +242,7 @@ function keyValueOk(kind: ValueKind, value: unknown): boolean {
   }
 }
 
-const KIND_EXAMPLE: Record<ValueKind, string> = { vec3: '[0, 1, 0] or ["+=0", "+=1", "+=0"]', number: '1.5 or "+=1"', color: '"#ff8800"', boolean: "true", "number|vec3": "1.2, [1, 2, 1] or \"*=1.2\"" };
+const KIND_EXAMPLE: Record<ValueKind, string> = { vec3: '[0, 1, 0] or ["+=0", "+=1", "+=0"]', vec2: "[0.4, -0.2]", number: '1.5 or "+=1"', color: '"#ff8800"', boolean: "true", "number|vec3": "1.2, [1, 2, 1] or \"*=1.2\"" };
 
 // ─── Collector ──────────────────────────────────────────────────────────
 
@@ -268,12 +292,14 @@ class C {
 
 function collect(scene: Obj, ids: MotionIds): MotionIds {
   const tags = new Set<string>(), models = new Set<string>(), parents = new Set<string>();
+  const photoEffects = new Map<string, Set<string>>();
   const walk = (list: unknown) => {
     if (!Array.isArray(list)) return;
     for (const o of list) {
       if (!isObj(o) || typeof o.id !== "string") continue;
       if (Array.isArray(o.tags)) for (const t of o.tags) if (typeof t === "string") tags.add(t);
       if (o.kind === "model") models.add(o.id);
+      if (o.kind === "photo") photoEffects.set(o.id, new Set(isObj(o.effects) ? Object.keys(o.effects) : []));
       if ((Array.isArray(o.children) && o.children.length) || (o.kind === "text" && (o.splitLetters === true || isObj(o.reveal)))) parents.add(o.id);
       walk(o.children);
     }
@@ -282,7 +308,7 @@ function collect(scene: Obj, ids: MotionIds): MotionIds {
   const postfx = new Set<string>();
   // Look presets expanded: { type: "look", preset: "product" } brings bloom, ao, grading… (tracks may animate them).
   if (Array.isArray(scene.postfx)) for (const f of expandPostFx(scene.postfx.filter((x): x is PostFxDef => isObj(x) && typeof x.type === "string"))) postfx.add(f.type);
-  return { ...ids, tags, models, parents, postfx };
+  return { ...ids, tags, models, parents, postfx, photoEffects };
 }
 
 // ─── Timeline ───────────────────────────────────────────────────────────

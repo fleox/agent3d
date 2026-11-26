@@ -218,6 +218,7 @@ vec4 shade(vec4 c, float a) {
 // first texel (from near to far) whose depth reaches the ray. `__STEPS__` is
 // replaced by parallaxSteps(). parallaxTexel(vUv) returns the photo texel (not
 // shaded); callers discard when c.a * uOpacity < 0.004, then shade(c, 1.0).
+// The sampled UV is left in `pxUv` (depth-driven effects, ./photoFx.ts).
 export const PARALLAX_GLSL = /* glsl */ `
 uniform sampler2D uDepth;
 uniform vec2 uView;
@@ -227,6 +228,7 @@ uniform vec2 uInset;
 uniform float uFocus;
 uniform float uWallSlope;
 const int STEPS = __STEPS__;
+vec2 pxUv;
 vec4 parallaxTexel(vec2 vUv) {
   // the zoom drift also pushes in slightly (stays inside the inset margin)
   vec2 base = 0.5 + (vUv - 0.5) * uInset * (1.0 - 0.06 * uZoom);
@@ -275,6 +277,7 @@ vec4 parallaxTexel(vec2 vUv) {
       uv = probe + away * texel * 2.0;
     }
   }
+  pxUv = uv;
   return textureGrad(uMap, uv, dFdx(base), dFdy(base));
 }
 `;

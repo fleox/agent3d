@@ -293,7 +293,7 @@ Common fields (every kind):
 | `text` | `text`, `font`, `size`, `depth`, `bevel`, `align`, `letterSpacing`, `lineHeight`, `kerning`, `maxWidth`, `curveSegments`, `outline`, `splitLetters`, `reveal`, `material` | [Text and logos](#text-and-logos) |
 | `svg` | `src`, `size`, `fit`, `depth`, `bevel`, `keepColors`, `strokes`, `curveSegments`, `layerGap`, `material` | [Text and logos](#svg-logos-and-icons) |
 | `model` | `src`, `fit`, `center`, `animation`, `morph`, `material` | [Models](#models) |
-| `photo` | `src`, `depth`, `mode`, `width`, `height`, `strength`, `focus`, `segments`, `layers`, `edgeCut`, `motion`, `material` | [Photo (3D photo)](#photo-3d-photo) |
+| `photo` | `src`, `depth`, `mode`, `width`, `height`, `strength`, `focus`, `segments`, `layers`, `edgeCut`, `motion`, `material`, `effects` | [Photo (3D photo)](#photo-3d-photo) |
 | `group` | only `children` | |
 | `generator` | `generator`, `params`, `seed`, `material` | [Generators](#generators-and-particles) |
 | `particles` | `preset` + overrides | [Particles](#particles) |
@@ -444,6 +444,47 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 | `edgeCut` | 0.08 | `mesh` / `layers`: hide stretched edges where the depth jumps more than this (0..1; 0 = off) |
 | `motion` | | What moves the view (combined): `pointer` (0..1, default 1), `scroll` (0..1, default 0), `gyro` (phones, default true when `pointer` > 0), `auto` (`sway` default, `orbit`, `zoom`, `none`: a looping drift used in headless renders, videos and on touch screens), `speed` (cycles per 10 s), `smoothing` (0..1) |
 | `material` | | Only `opacity`, `color` (tint) and `emissiveIntensity` (photos are unlit); other material fields are ignored with a warning |
+| `effects` | | Depth-driven effects: `fog`, `light`, `reveal` ([below](#photo-effects)) |
+
+### Photo effects
+
+`effects` adds depth-driven effects to the photo, applied to the texel the parallax finds (every mode: `parallax`, `mesh`, `layers`; the photo-only lite runtime too). Each effect is an object; `{}` takes the defaults. They are deterministic (time = the player clock), so renders and videos are reproducible.
+
+```json
+"effects": {
+  "fog":    { "color": "#dfe8f2", "amount": 0.6, "start": 0.7, "end": 0, "drift": 0.3 },
+  "light":  { "color": "#ffe2b0", "intensity": 1, "ambient": 0.75, "position": [0.4, 0.4], "height": 0.6, "radius": 0.8, "relief": 1, "specular": 0.25, "follow": "pointer" },
+  "reveal": { "progress": 1, "from": "far", "softness": 0.15, "duration": 2, "delay": 0.3 }
+}
+```
+
+| Effect | Param | Default | Meaning |
+|---|---|---|---|
+| `fog` | `color` | `#ffffff` | Haze colour (match the sky: a cool grey-blue at dusk, warm at sunset) |
+| | `amount` | 0.6 | Maximum fog opacity, 0..1 |
+| | `start` | 0.7 | Depth (0 far … 1 near) where the fog starts: everything farther fades into it |
+| | `end` | 0 | Depth fully fogged (`start` > `end`: distance haze) |
+| | `drift` | 0.3 | Speed of the drifting wisps (0 = static) |
+| `light` | `color` | `#ffffff` | Light colour |
+| | `intensity` | 1 | Light strength |
+| | `ambient` | 0.75 | Share of the original photo left unlit (lower = darker surroundings, a stronger flashlight) |
+| | `position` | [0.4, 0.4] | Light position over the photo, `[x, y]` in -1..1 (right / top = 1): the fixed position (`follow: "none"`) and the start of the auto path |
+| | `height` | 0.6 | Height above the photo: lower rakes the relief more |
+| | `radius` | 0.8 | Size of the light pool |
+| | `relief` | 1 | Strength of the normals derived from the depth map |
+| | `specular` | 0.25 | Glints on the relief, 0..1 |
+| | `follow` | `pointer` | `pointer`: the light follows the pointer, and a slow deterministic path (around `position`) when there is none (headless renders, touch screens); `auto`: that path only; `none`: fixed at `position` |
+| `reveal` | `progress` | 1 | 0 = hidden … 1 = fully shown |
+| | `from` | `far` | Which depth appears first (`far`: the background, then nearer slices) |
+| | `softness` | 0.15 | Width of the slice edge (depth units) |
+| | `duration` | | Seconds: when set, `progress` animates 0 → 1 by itself from `delay` (`progress` is then ignored) |
+| | `delay` | 0 | Seconds before the reveal starts |
+
+- `fog` and `reveal` need a depth map (ignored on a flat photo, `validate` says so); `light` also works on a flat photo (flat surface, a pool of light).
+- The light keeps the photo's colours (it scales them) and never clips highlights to white. Reduced motion: the light stays at `position` and a timed `reveal` is shown finished.
+- A timed `reveal` hides the photo at t = 0: set `target.posterTime` after `delay + duration` so posters show the photo.
+- Two photos stacked (same size and position, the top one with `reveal`) make a photo-to-photo transition, slice by slice.
+- **Timeline**: `<photoId>.effects.<effect>.<param>` animates numbers, colours and the light `position` (`[x, y]` keys, or `.x` / `.y`), e.g. rack the light across with `{ "target": "hero.effects.light.position", "keys": [[0, [-0.9, 0.5]], [4, [0.9, 0.5]]] }` (with `follow: "none"`), or drive `effects.reveal.progress` / `effects.fog.amount`. The effect must be declared on the photo (`{}` is enough). `from` and `follow` are not animatable.
 
 **Depth-map convention.** A grayscale image, **white = near, black = far**, the same aspect ratio as the photo. Its alpha channel, when present, marks depth discontinuities: **alpha 0 = cut edge** (the runtime hides the stretched triangles there in `mesh` / `layers`). Keep it a **PNG**: lossy JPEG / WebP compression adds steps to the relief and drops the alpha mask (`check` reports a JPEG depth map; `assets optimize` only resizes PNG depth maps, losslessly, ~512–1024 px — they are smooth data — and never converts them to a lossy format).
 
@@ -544,7 +585,7 @@ Procedural animation and interaction on objects and lights: `type` (catalog id),
 `{ "target": "<selector>.<property>", "keys": [...], "ease"?, "stagger"?, "staggerFrom"?, "colorSpace"? }`
 
 - **Selector**: an object / light id, `camera`, `environment`, `postfx`, a comma list `a,b,c`, `tag:<tag>` (objects with that tag, scene order), `children:<id>` (direct children — text letters with `splitLetters` too), or a letter `<textId>/<n>`.
-- **Object properties**: `position`, `rotation` (degrees), `scale` (number = uniform) and their `.x` / `.y` / `.z`, `visible`, `material.<prop>` (`opacity`, `color`, `emissive`, `emissiveIntensity`, `metalness`, `roughness`, `transmission`, `iridescence`, `clearcoat`, `sheen`, …), `material.uniforms.<name>`; models: `morph.<name>`, `animation.<clip>.weight | speed | time` (blend clips, scrub a clip by scroll).
+- **Object properties**: `position`, `rotation` (degrees), `scale` (number = uniform) and their `.x` / `.y` / `.z`, `visible`, `material.<prop>` (`opacity`, `color`, `emissive`, `emissiveIntensity`, `metalness`, `roughness`, `transmission`, `iridescence`, `clearcoat`, `sheen`, …), `material.uniforms.<name>`; models: `morph.<name>`, `animation.<clip>.weight | speed | time` (blend clips, scrub a clip by scroll); 3D photos: `effects.<effect>.<param>` ([Photo effects](#photo-effects)).
 - **Lights**: `intensity`, `color`, `position`, `target`, `angle` (degrees), `penumbra`, `distance`, `decay`. **Camera**: `position`, `target`, `fov`, `zoom` (orthographic), `focus` (depth-of-field distance → postfx `dof`). **Environment**: `fog.color | near | far | density`, `lightingIntensity`, `exposure`, `background` (solid colours). **Post effects**: `postfx.<type>.<param>` (numeric / colour params of an effect present in `postfx`).
 - **Keys**: `[time, value]` or `[time, value, ease]`, sorted by time — a key's ease shapes the segment that *ends* at it (overriding the track ease). Values: numbers, `[x, y, z]`, colours, booleans, or relative strings `"+=1"`, `"-=0.5"`, `"*=1.2"` (from the property's rest value; vec3 keys may mix numbers and relative strings).
 - **Stagger**: `stagger` (s) offsets each target of a multi-target selector; `staggerFrom`: `start` (default), `end`, `center`, `edges`, `random` (seeded).

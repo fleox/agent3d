@@ -13,6 +13,7 @@ import { isValidColor } from "./color";
 import { EASE_EXAMPLES, parseEase } from "./ease";
 import { ID_RE, isValidId } from "./ids";
 import { isLibraryRef, libraryId } from "./library";
+import { PHOTO_EFFECTS, PHOTO_EFFECT_IDS, type PhotoFxParam } from "./photoEffects";
 import { closest, didYouMean, listOptions } from "./suggest";
 import { EASE_NAMES } from "./ease";
 import { TIMELINE_TRIGGERS_ALL, validateMotion } from "./validateMotion";
@@ -80,7 +81,7 @@ const OBJECT_KEYS: Record<(typeof OBJECT_KINDS)[number], string[]> = {
   particles: ["preset", ...PARTICLE_PARAMS.map((x) => x.name)],
   instances: ["geometry", "material", "layout", "colors"],
   svg: ["src", "size", "fit", "depth", "bevel", "keepColors", "strokes", "curveSegments", "layerGap", "material"],
-  photo: ["src", "depth", "mode", "width", "height", "strength", "focus", "segments", "layers", "edgeCut", "motion", "material"],
+  photo: ["src", "depth", "mode", "width", "height", "strength", "focus", "segments", "layers", "edgeCut", "motion", "material", "effects"],
 };
 const SCENE_KEYS = ["version", "id", "title", "description", "target", "camera", "environment", "lights", "objects", "timeline", "interactions", "postfx", "physics", "scripts", "ui", "audio", "data", "ariaLabel", "seed"];
 const TARGET_KEYS = ["kind", "aspect", "budgetKb", "height", "transparent", "lazy", "pauseOffscreen", "maxDpr", "reducedMotion", "posterTime", "antialias", "shadows", "toneMapping", "exposure", "quality"];
@@ -998,6 +999,7 @@ function photo(v: V, o: Obj, p: string) {
       v.number(m.smoothing, `${p}.motion.smoothing`, { min: 0, max: 1 });
     }
   }
+  if (o.effects !== undefined) photoEffects(v, o.effects, `${p}.effects`, o.depth !== undefined);
   if (o.material !== undefined) {
     const m = o.material;
     if (!isObj(m)) v.error("type", `${p}.material`, "material must be an object.", 'A photo material only takes { "opacity", "color", "emissiveIntensity" }, e.g. { "opacity": 0.9 }.');
@@ -1012,6 +1014,41 @@ function photo(v: V, o: Obj, p: string) {
       v.number(m.emissiveIntensity, `${p}.material.emissiveIntensity`, { min: 0 });
     }
   }
+}
+
+// Depth-driven photo effects (src/core/photoEffects.ts).
+const EFFECT_EXAMPLE = '{ "fog": { "color": "#dfe8f2", "amount": 0.6 }, "light": { "follow": "pointer" }, "reveal": { "duration": 2 } }';
+function photoEffects(v: V, fx: unknown, p: string, hasDepth: boolean) {
+  if (!isObj(fx)) return v.error("type", p, "effects must be an object.", `Example: ${EFFECT_EXAMPLE}.`);
+  v.unknownKeys(fx, PHOTO_EFFECT_IDS, p, "photo effects");
+  for (const id of PHOTO_EFFECT_IDS) {
+    const e = fx[id];
+    if (e === undefined) continue;
+    const ep = `${p}.${id}`;
+    if (!isObj(e)) {
+      v.error("type", ep, `effects.${id} must be an object (use {} for the defaults).`, `Example: ${EFFECT_EXAMPLE}.`);
+      continue;
+    }
+    const spec = PHOTO_EFFECTS[id];
+    const params = spec.params as Record<string, PhotoFxParam>;
+    v.unknownKeys(e, Object.keys(params), ep, `the ${id} effect`);
+    for (const [k, ps] of Object.entries(params)) {
+      const val = e[k];
+      if (val === undefined) continue;
+      const at = `${ep}.${k}`;
+      const sp = ps;
+      if (sp.type === "number") v.number(val, at, { min: sp.min, max: sp.max });
+      else if (sp.type === "color") v.color(val, at);
+      else if (sp.type === "enum") v.enumOf(val, sp.options ?? [], at);
+      else if (sp.type === "vec2" && v.vec(val, 2, at)) {
+        const a = val as number[];
+        if (a.some((x) => x < (sp.min ?? -Infinity) || x > (sp.max ?? Infinity))) v.error("range", at, `${JSON.stringify(val)} is out of range (each coordinate in ${sp.min}..${sp.max}, photo space: -1 left / bottom, 1 right / top).`);
+      }
+    }
+    if (spec.needsDepth && !hasDepth) v.info("ignored", ep, `The ${id} effect needs a depth map: this photo has none, so it is ignored.`, `Set the photo's depth (agent3d assets depth <image>), or remove effects.${id}.`);
+  }
+  const r = fx.reveal;
+  if (isObj(r) && r.duration !== undefined && r.progress !== undefined) v.info("ignored", `${p}.reveal.progress`, "reveal.progress is ignored when reveal.duration is set (progress animates 0 → 1 from delay).", "Remove duration to drive progress yourself (e.g. a timeline track on effects.reveal.progress).");
 }
 
 function catalogRef(v: V, section: Exclude<CatalogSection, "materialPresets">, id: unknown, path: string): CatalogEntry | undefined {

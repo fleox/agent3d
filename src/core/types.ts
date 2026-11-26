@@ -450,6 +450,47 @@ export interface PhotoObjectDef extends BaseObjectDef {
   // ("sway" default, "orbit", "zoom", "none") at `speed` cycles per 10 s.
   motion?: { pointer?: number; scroll?: number; gyro?: boolean; auto?: "none" | "sway" | "orbit" | "zoom"; speed?: number; smoothing?: number };
   material?: Pick<MaterialDef, "opacity" | "color" | "emissiveIntensity">; // tint / opacity / self-lit amount (photos are unlit by default)
+  // Depth-driven effects, applied to the photo texel after the parallax (every
+  // mode). Parameters: src/core/photoEffects.ts. Animatable from the timeline:
+  // "<id>.effects.<effect>.<param>" (numbers, colours, light position [x, y]).
+  effects?: PhotoEffectsDef;
+}
+
+export interface PhotoEffectsDef {
+  fog?: PhotoFogDef;
+  light?: PhotoLightDef;
+  reveal?: PhotoRevealDef;
+}
+
+// Atmospheric haze: depths farther than `start` fade into `color`, fully at `end`.
+export interface PhotoFogDef {
+  color?: Color; // default "#ffffff"
+  amount?: number; // 0..1, max fog opacity (default 0.6)
+  start?: number; // depth (0 far .. 1 near) where the fog starts (default 0.7)
+  end?: number; // depth fully fogged (default 0)
+  drift?: number; // speed of the animated wisps (default 0.3, 0 = static)
+}
+
+// Relighting: a light over the photo, normals from the depth-map gradient.
+export interface PhotoLightDef {
+  color?: Color; // default "#ffffff"
+  intensity?: number; // default 1
+  ambient?: number; // 0..1, share of the original photo left unlit (default 0.75)
+  position?: [number, number]; // -1..1 photo space (default [0.4, 0.4])
+  height?: number; // above the photo (default 0.6; lower = more raking)
+  radius?: number; // light pool size (default 0.8)
+  relief?: number; // normal strength from the depth gradient (default 1)
+  specular?: number; // 0..1 (default 0.25)
+  follow?: "pointer" | "auto" | "none"; // default "pointer" (auto path without a pointer)
+}
+
+// Depth-sliced appearance (alpha).
+export interface PhotoRevealDef {
+  progress?: number; // 0..1 (default 1 = fully shown)
+  from?: "near" | "far"; // which depth appears first (default "far")
+  softness?: number; // slice edge width in depth units (default 0.15)
+  duration?: number; // seconds: progress animates 0 → 1 from t = delay
+  delay?: number; // seconds (default 0)
 }
 
 export type ObjectKind = ObjectDef["kind"];

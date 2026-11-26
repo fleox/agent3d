@@ -3,6 +3,7 @@
 
 import type { ParamSpec } from "../../core/catalog";
 import { FONTS, PARTICLE_PRESETS } from "../../core/catalog";
+import { PHOTO_EFFECT_IDS, PHOTO_EFFECTS, type PhotoEffectId, type PhotoFxParam } from "../../core/photoEffects";
 import { QUALITY_TIERS } from "../../core/postfx";
 import { BODY_SHAPES, BODY_TYPES, COLLIDER_SHAPES, JOINT_TYPES, MATERIAL_TYPES, PHOTO_AUTO_MOTIONS, PHOTO_MODES, SKY_PRESETS, TONE_MAPPINGS } from "../../core/validate";
 
@@ -87,7 +88,36 @@ export const PHOTO_MOTION_SPECS: ParamSpec[] = [
   n("speed", 1, 0, undefined, "Auto drift cycles per 10 s."),
   n("smoothing", undefined, 0, 1, "Easing of the view towards the pointer."),
 ];
-export const PHOTO_MATERIAL_SPECS: ParamSpec[] = [c("color", "#ffffff", "Tint."), n("opacity", 1, 0, 1), n("emissiveIntensity", undefined, 0, undefined, "Self-lit amount (photos are unlit by default).")];
+// Photo effects (src/core/photoEffects.ts): one form per effect, params and
+// ranges from the core table, descriptions here.
+const PHOTO_EFFECT_TEXT: Record<string, string> = {
+  "fog.color": "Haze colour.",
+  "fog.amount": "Maximum fog opacity.",
+  "fog.start": "Depth where the fog starts (0 far, 1 near): everything farther fades in.",
+  "fog.end": "Depth fully fogged.",
+  "fog.drift": "Speed of the drifting wisps (0 = static).",
+  "light.color": "Light colour.",
+  "light.intensity": "Light strength.",
+  "light.ambient": "Share of the original photo left unlit.",
+  "light.position": "Light position over the photo (-1..1; used when follow is none, start of the auto path).",
+  "light.height": "Height above the photo (lower = more raking).",
+  "light.radius": "Size of the light pool.",
+  "light.relief": "Normal strength from the depth map.",
+  "light.specular": "Glints on the relief.",
+  "light.follow": "pointer: follows the pointer (auto path without one). auto: a looping path. none: fixed at position.",
+  "reveal.progress": "0 hidden .. 1 fully shown (ignored with duration).",
+  "reveal.from": "Which depth appears first.",
+  "reveal.softness": "Width of the slice edge.",
+  "reveal.duration": "Seconds: progress animates 0 → 1 from delay.",
+  "reveal.delay": "Seconds before the reveal starts.",
+};
+export const PHOTO_EFFECT_SPECS: Record<PhotoEffectId, ParamSpec[]> = Object.fromEntries(
+  PHOTO_EFFECT_IDS.map((id) => [
+    id,
+    Object.entries(PHOTO_EFFECTS[id].params as Record<string, PhotoFxParam>).map(([name, p]): ParamSpec => ({ name, type: p.type, description: PHOTO_EFFECT_TEXT[`${id}.${name}`] ?? "", default: p.default, min: p.min, max: p.max, options: p.options })),
+  ]),
+) as Record<PhotoEffectId, ParamSpec[]>;
+export const PHOTO_MATERIAL_SPECS: ParamSpec[] =[c("color", "#ffffff", "Tint."), n("opacity", 1, 0, 1), n("emissiveIntensity", undefined, 0, undefined, "Self-lit amount (photos are unlit by default).")];
 
 export const MATERIAL_MAIN: ParamSpec[] = [
   c("color", "#ffffff"),
