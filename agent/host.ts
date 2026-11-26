@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import type { LibraryAsset, LibraryIndex, LibraryProvider } from "../src/core/library";
 import { CliError } from "./output";
-import { libraryDir, RUNTIME_SINGLE, runtimeBuilt, runtimeDir, templatesDir } from "./paths";
+import { libraryDir, RUNTIME_PHOTO, RUNTIME_SINGLE, runtimeBuilt, runtimeDir, templatesDir } from "./paths";
 import { parseTemplateInfo, type TemplateInfo } from "../src/ops/templates";
 
 // What the Node front doors (CLI, MCP, serve/studio API) provide to the
@@ -38,7 +38,8 @@ export function readRuntimeFiles(format: "embed" | "single-html" | "zip" = "embe
   const files: Record<string, Uint8Array> = {};
   for (const f of walkFiles(root)) {
     if (f.endsWith(".map")) continue;
-    const keep = format === "single-html" ? f === RUNTIME_SINGLE : f !== RUNTIME_SINGLE && f !== "version.json";
+    // The photo-only lite runtime goes with both (export picks it for eligible scenes).
+    const keep = format === "single-html" ? f === RUNTIME_SINGLE || f === RUNTIME_PHOTO : f !== RUNTIME_SINGLE && f !== "version.json";
     if (keep) files[f] = new Uint8Array(readFileSync(join(root, f)));
   }
   if (format === "single-html" && !files[RUNTIME_SINGLE])

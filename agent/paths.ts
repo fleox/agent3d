@@ -39,6 +39,8 @@ export const templatesDir = (): string => (process.env.AGENT3D_TEMPLATES ? resol
 
 export const RUNTIME_ENTRY = "agent3d-runtime.js";
 export const RUNTIME_SINGLE = "agent3d-runtime.single.js";
+// Photo-only lite runtime (src/runtime/lite/, src/ops/liteRuntime.ts).
+export const RUNTIME_PHOTO = "agent3d-photo.js";
 
 export function runtimeBuilt(): boolean {
   return existsSync(join(runtimeDir(), RUNTIME_ENTRY));

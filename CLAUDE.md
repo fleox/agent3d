@@ -47,7 +47,7 @@ AGENTS.md      what must stay in sync (catalog, tools, skills, versions, Hermes,
 
 ### Builds
 
-- `vite.runtime.config.ts` → `dist/runtime/agent3d-runtime.js` (+ lazy `chunks/` for postfx, generators, physics (cannon-es) / game, loaders (incl. meshopt decoder), fonts) and, with `--mode single`, `dist/runtime/agent3d-runtime.single.js` (one file, dynamic imports inlined — for single-html exports).
+- `vite.runtime.config.ts` → `dist/runtime/agent3d-runtime.js` (+ lazy `chunks/` for postfx, generators, physics (cannon-es) / game, loaders (incl. meshopt decoder), fonts) and, with `--mode single`, `dist/runtime/agent3d-runtime.single.js` (one file, dynamic imports inlined — for single-html exports); with `--mode photo`, `dist/runtime/agent3d-photo.js`: the photo-only lite runtime (`src/runtime/lite/`, one file, no three.js, ~14 KB gzipped — same `<agent3d-scene>` via `src/runtime/elementBase.ts`, same parallax shader / motion via `src/runtime/build/photoCore.ts`) that exports ship for single-3D-photo scenes (`src/ops/liteRuntime.ts` `liteRuntimeEligibility`; `export --runtime auto|full`).
 - `vite.config.ts` → `dist/studio/` (the Studio SPA; `agent3d studio` / `serve` serve it).
 - `vite.agent.config.ts` → `dist/agent/agent3d.mjs`, every dependency inlined (no runtime dependency). The CLI finds the runtime, studio, library and templates relative to its own file (`agent/paths.ts`, overridable with `AGENT3D_DIST`).
 
@@ -139,7 +139,9 @@ renderCatalogMarkdown(): string               // docs/catalog.md (src/ops/docs.t
 ```
 Snippet: `<link rel="modulepreload" href="./agent3d-runtime/chunks/three.module-….js" integrity="sha384-…"><script type="module" src="./agent3d-runtime/agent3d-runtime.js" integrity="sha384-…"></script><agent3d-scene src="./<name>/scene.json" aspect="4:1" role="img" aria-label="…"><img slot="poster" src="./<name>/poster.webp" alt="…" width="1200" height="300" …></agent3d-scene>` — relative paths (or `--base-url`) ; paths in the scene resolve against the scene.json URL; library assets are copied into `<name>/assets/library/`. `zip` = the same folder as one .zip.
 
-`single-html` — one `<name>.html` with the single-file runtime, the scene inline (`<script type="application/json">`) and assets as data: URIs (budget warning above 5 MB).
+Single-3D-photo scenes (`liteRuntimeEligibility`) load `agent3d-runtime/agent3d-photo.js` instead (no modulepreload; `ExportResult.runtime: "photo-lite" | "full"` + `runtimeReasons`).
+
+`single-html` — one `<name>.html` with the single-file runtime (or the lite one), the scene inline (`<script type="application/json">`) and assets as data: URIs (budget warning above 5 MB).
 
 Also: `agent3d export --format poster|video|gif` and `agent3d render --video x.mp4|x.webm / --gif / --webp` (frame-exact: seek + WebCodecs H.264 / VP9 muxed in agent/render/mp4.ts / webm.ts, pure-TS GIF encoder gif.ts, animated WebP webpAnim.ts; `--quality high|ultra` supersampling, `--transparent`, `--scroll`).
 

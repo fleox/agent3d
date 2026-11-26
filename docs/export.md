@@ -22,6 +22,7 @@ Embed / zip options:
 | `--no-integrity` | No Subresource Integrity. By default the runtime `<script>` and its preloads carry `integrity="sha384-…"`. |
 | `--no-poster` | No poster / social image (no Chrome needed). The element then shows nothing before the first frame and has no fallback without WebGL. |
 | `--no-og` | No `og-image.png`. |
+| `--runtime auto\|full` | Also for `single-html`. `auto` (default) ships the [photo-only lite runtime](#photo-only-lite-runtime) when the scene is a single 3D photo; `full` always ships `agent3d-runtime.js`. |
 | `--no-extras` | No `EMBED.md` and no `frameworks/`. |
 | `--optimize` | Optimised asset copies (see `docs/assets.md`). |
 
@@ -31,6 +32,7 @@ Embed / zip options:
 dist/embed/
   agent3d-runtime/agent3d-runtime.js   the runtime entry (ES module) …
   agent3d-runtime/chunks/*.js          … three.js and lazily loaded chunks (loaders, generators, post effects, game host)
+  agent3d-runtime/agent3d-photo.js     photo-only lite runtime (one file, no three.js) — what single-3D-photo scenes load
   <name>/scene.json
   <name>/assets/…                      project assets + library assets used (assets/library/…)
   <name>/scripts/…                     game scripts
@@ -65,11 +67,25 @@ Snippet:
 - Browsers block module scripts on `file://`: opened by double-click, `index.html` shows the poster and a note to serve the folder (`npx serve`, any static server). The `single-html` file works from `file://`.
 - **Page weight**: `pageKb` is what a visitor downloads for this scene — the runtime entry, its static imports and only the lazy chunks this scene loads (decided from its features: post effects, generators, text, models, SVG, sky, HDRI, game / physics / audio…; a chunk of unknown feature counts as loaded) + `scene.json` + assets + scripts + poster. `pageKbGzip` is the same compressed with gzip (what a server sending `Content-Encoding: gzip` transfers). `og-image.png`, `EMBED.md`, `frameworks/`, `index.html` and unused chunks are not part of it. `folderKb` (= `totalKb`) is every file written. `page` lists the runtime files loaded (`runtimeFiles`), the chunks this scene never loads (`skippedChunks`) and `unknownChunks`.
 - `--prune-runtime` copies only the chunks this scene loads (smaller folder). Use it only when the runtime folder serves this scene alone: another scene of the site sharing `agent3d-runtime/` may need the left-out chunks, and so may this scene after an edit that adds a feature (re-export then). When a chunk's feature is unknown, every chunk is kept (info `prune-runtime`).
+- The result's `runtime` is `"photo-lite"` or `"full"` (with `runtimeReasons`: why not the lite runtime).
 - The result's `sizes` separate the runtime from the scene's own weight (`sceneKb`, `assetsKb`, `scriptsKb`, `posterKb`); the target's `budgetKb` applies to the latter. `head` lists every preload, `integrity` the entry's hash, `runtimeDir` the runtime folder.
+
+## Photo-only lite runtime
+
+A scene that is just a 3D photo — the common "3D photo hero" — does not need three.js. `dist/runtime/agent3d-photo.js` (built from `src/runtime/lite/` by `vite build --config vite.runtime.config.ts --mode photo`, part of `npm run build:runtime`) is one ES module of about 14 KB gzipped (12.5 KB brotli) instead of about 210 KB for `agent3d-runtime.js` + three.js. `export` (embed, zip, single-html) ships it instead of the full runtime when the scene is eligible (`liteRuntimeEligibility` in `src/ops/liteRuntime.ts`) and `--runtime` is `auto` (default):
+
+- exactly one object, a `photo` in `parallax` mode (or without `depth`: a flat photo), visible, not rotated, positive scale, no children, behaviours, `href`, `body` or `attach`, `material.color` (if any) a `#hex` colour;
+- a `perspective` camera without `controls` (or `"none"`), `autoRotate`, `shots`, `shake`, `lookAt`, `follow`;
+- `environment.background` a `#hex` colour or `"transparent"`; no `ground`, `contactShadows`, `rig`; no `rect` lights or volumetric spots (other lights are allowed: the photo is unlit);
+- no `timeline`, `interactions`, `postfx`, `physics`, `scripts`, `ui` elements, `audio`; no `{data.*}` placeholder; not a `game`.
+
+The snippet then loads `agent3d-runtime/agent3d-photo.js` (with its integrity hash, no `modulepreload`); `pageKb` / `pageKbGzip` / `page.runtimeKb` count that file only. Anything else (or `--runtime full`) uses the full runtime, and the result lists the reasons in `runtimeReasons`. The embed folder still contains the full runtime (the folder is shared by every scene of the site) unless `--prune-runtime` is given.
+
+What the lite runtime does: it defines the same `<agent3d-scene>` element (the shared implementation in `src/runtime/elementBase.ts`: `src`, inline scene, `<img slot="poster">` faded out after the first frame, `aspect`, `alt`, `role` / `aria-label`, `paused` / `autoplay`, `quality`, `library-base`, `play()` / `pause()` / `seek()` / `reload()` / `ready`, `agent3d:ready` / `agent3d:error` / `agent3d:progress`, `status`, `::part()`s, print, context-loss recovery) and renders the photo with raw WebGL2: one full-canvas triangle whose fragments cast the scene camera's rays onto the photo plane and run the same relief-mapping shader as the full runtime (`src/runtime/build/photoCore.ts`), with the same motion (pointer, gyro, scroll, auto drift, smoothing, reduced motion), quality tier, pixel-ratio cap, lazy start and off-screen pause. Pixels match the full runtime (mean difference below 0.1 / 255 in `agent/render/photoLite.e2e.test.ts`). Without WebGL2 the poster stays (`status="unsupported"`). If a page loads only the lite runtime and also shows a scene it cannot render, that element imports `agent3d-runtime.js` from the same folder and renders through it — so a site may mix both runtimes on one page. Not in the lite runtime: `Player.inspect()` returns no objects, `pick()` is null, there is no off-screen WebGL context release (one context per lite scene).
 
 ## `single-html`
 
-One `<name>.html`: the single-file runtime as an inline module, the scene in `<script type="application/json">`, assets as data: URIs in `<script type="application/json" data-assets>`, scripts as `<script type="text/agent3d-script" data-path="…">`. About 1.8 MB before assets (the runtime is not split); a warning is raised above 5 MB. Use it to send a file, host a standalone page, or embed in an `<iframe>` (Squarespace, Wix, Framer, Google Sites embed boxes).
+One `<name>.html`: the single-file runtime (or the photo-only lite runtime for an eligible scene) as an inline module, the scene in `<script type="application/json">`, assets as data: URIs in `<script type="application/json" data-assets>`, scripts as `<script type="text/agent3d-script" data-path="…">`. About 1.8 MB before assets (the runtime is not split); a warning is raised above 5 MB. Use it to send a file, host a standalone page, or embed in an `<iframe>` (Squarespace, Wix, Framer, Google Sites embed boxes).
 
 ## The `<agent3d-scene>` element
 
@@ -178,4 +194,4 @@ agent3d render --scroll 0.5                               # a scroll-driven scen
 
 ## Runtime size
 
-`dist/runtime` is built by `vite.runtime.config.ts` with full minification and the catalog's prose stripped (validation and docs keep it). What a page downloads before the first frame is the entry plus its static imports (three.js, catalog, materials, utilities): about 220 KB gzipped; everything else (loaders, post effects, generators, physics / HUD / audio, shader materials) is a lazy chunk loaded only by scenes that use it.
+`dist/runtime` is built by `vite.runtime.config.ts` with full minification and the catalog's prose stripped (validation and docs keep it). What a page downloads before the first frame is the entry plus its static imports (three.js, catalog, materials, utilities): about 220 KB gzipped (about 14 KB for a single-3D-photo scene, which gets the [photo-only lite runtime](#photo-only-lite-runtime)); everything else (loaders, post effects, generators, physics / HUD / audio, shader materials) is a lazy chunk loaded only by scenes that use it.

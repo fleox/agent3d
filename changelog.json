@@ -1,6 +1,16 @@
 {
   "versions": [
     {
+      "version": "0.4.0",
+      "date": "2026-11-26",
+      "breaking": false,
+      "changes": [
+        "Photo-only exports load a 14 KB player instead of three.js: when the scene is a single 3D photo in parallax mode (no text, effects, timeline…), `export` ships `agent3d-photo.js` (raw WebGL2, the same `<agent3d-scene>` element, same pixels) — the landscape demo's runtime JavaScript went from ~242 KB to ~14 KB gzip. `export --runtime full` (and the `export` tool's `runtime`) keeps the full runtime; the result reports `runtime: \"photo-lite\" | \"full\"` and, when full, why.",
+        "A page that also shows a scene the photo player cannot render loads the full runtime for that element automatically."
+      ],
+      "actions": []
+    },
+    {
       "version": "0.3.1",
       "date": "2026-11-26",
       "breaking": false,

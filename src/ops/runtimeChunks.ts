@@ -139,7 +139,8 @@ export function pageRuntime(files: Record<string, Uint8Array>, entry: string, sc
       }
     }
   }
-  const js = Object.keys(files).filter((f) => f.endsWith(".js") && !f.endsWith(".single.js"));
+  // Not chunks: the single-file runtime and the photo-only lite runtime (src/ops/liteRuntime.ts).
+  const js = Object.keys(files).filter((f) => f.endsWith(".js") && !f.endsWith(".single.js") && f !== "agent3d-photo.js");
   return { loaded: [...loaded], skipped: js.filter((f) => !loaded.has(f)), unknown: [...unknown], features };
 }
 

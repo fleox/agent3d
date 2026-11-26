@@ -26,7 +26,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.agent.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build:runtime": "vite build --config vite.runtime.config.ts && vite build --config vite.runtime.config.ts --mode single",
+    "build:runtime": "vite build --config vite.runtime.config.ts && vite build --config vite.runtime.config.ts --mode single && vite build --config vite.runtime.config.ts --mode photo",
     "build:studio": "vite build",
     "build:agent": "vite build --config vite.agent.config.ts",
     "build": "npm run build:runtime && npm run build:studio && npm run build:agent && node scripts/write-version.mjs",

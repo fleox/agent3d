@@ -17,6 +17,12 @@
 // EMBED.md (how to publish it), frameworks/ (React / Vue / Svelte wrappers +
 // .d.ts), Subresource Integrity on the runtime script, modulepreload hints,
 // --base-url (absolute / sub-path URLs) and --cache-bust (versioned runtime folder).
+//
+// Runtime choice (`runtimeChoice`, default "auto"): a scene that is a single
+// 3D photo (src/ops/liteRuntime.ts) ships the photo-only lite runtime
+// (agent3d-photo.js, ~14 KB gzipped, no Three.js) instead of
+// agent3d-runtime.js + three.js (~210 KB gzipped) when the runtime files hold
+// it; "full" always uses the full runtime. ExportResult.runtime says which.
 
 import { substituteData } from "../core/data";
 import type { ProjectFs } from "../core/fs";
@@ -33,13 +39,15 @@ import { MANIFEST_FILE, readSceneFile } from "./project";
 import { gltfDependencies, mimeFromPath, visitAssetRefs } from "./refs";
 import { readAssetManifest } from "./assets";
 import { crc32 } from "./zip";
+import { LITE_RUNTIME_FILE, liteRuntimeEligibility } from "./liteRuntime";
 import { gzipSize, pageRuntime } from "./runtimeChunks";
 import { ELEMENT_DTS, embedGuide, reactWrapper, svelteWrapper, vueWrapper, type EmbedDocInput } from "./exportFrameworks";
 
 export type ExportFormat = "embed" | "single-html" | "zip";
 
 // dist/runtime content: for embed the main file "agent3d-runtime.js" + "chunks/…";
-// for single-html the single file "agent3d-runtime.single.js".
+// for single-html the single file "agent3d-runtime.single.js". Both may also
+// hold the photo-only lite runtime "agent3d-photo.js" (used when the scene is eligible).
 export interface RuntimeFiles {
   files: Record<string, Uint8Array>;
 }
@@ -74,7 +82,12 @@ export interface ExportOptions {
   // runtime folder is shared by every scene of a site). Falls back to every chunk
   // when one has no known feature.
   pruneRuntime?: boolean;
+  // "auto" (default): the photo-only lite runtime for eligible scenes (when the
+  // runtime files include agent3d-photo.js); "full": always agent3d-runtime.js.
+  runtimeChoice?: "auto" | "full";
 }
+
+export type ExportRuntimeKind = "photo-lite" | "full";
 
 export interface ExportCredit {
   path: string;
@@ -106,6 +119,10 @@ export interface ExportResult {
   page: { runtimeKb: number; runtimeFiles: string[]; skippedChunks: string[]; unknownChunks: string[]; pruned: boolean };
   credits: ExportCredit[];
   issues: Issue[];
+  // The runtime the page loads: "photo-lite" (agent3d-photo.js) or "full"
+  // (agent3d-runtime.js); runtimeReasons: why not the lite runtime (when full).
+  runtime: ExportRuntimeKind;
+  runtimeReasons?: string[];
   // embed / zip: the folder holding the runtime ("agent3d-runtime" or "agent3d-runtime-<hash>"),
   // the SRI hash of the runtime entry and the <head> hints (modulepreload).
   runtimeDir?: string;
@@ -290,7 +307,14 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
   if (hasErrors(issues)) throw validationError("Cannot export an invalid scene:", issues, "Run check / scene_validate and fix the errors first.");
   const projectManifest = await readJsonOr<{ name?: string } | null>(fs, MANIFEST_FILE, null);
   const name = slugify(opts.name ?? projectManifest?.name ?? source.id ?? "scene", "scene");
-  const runtimeEntry = pickRuntime(opts.runtime, format === "single-html" ? "single-html" : "embed");
+  // Runtime: the photo-only lite runtime when the scene allows it (src/ops/liteRuntime.ts).
+  const choice = opts.runtimeChoice ?? "auto";
+  if (choice !== "auto" && choice !== "full") throw new OpsError("invalid", `Unknown runtime "${String(choice)}".`, 'Use "auto" (the photo-only lite runtime when the scene is a single 3D photo) or "full".');
+  const eligibility = liteRuntimeEligibility(source);
+  const hasLite = !!opts.runtime?.files?.[LITE_RUNTIME_FILE];
+  const runtimeReasons = choice === "full" ? ["runtime: full was requested"] : !eligibility.ok ? eligibility.reasons : !hasLite ? [`the runtime files have no ${LITE_RUNTIME_FILE} (rebuild the runtime: npm run build:runtime)`] : undefined;
+  const lite = !runtimeReasons;
+  const runtimeEntry = lite ? LITE_RUNTIME_FILE : pickRuntime(opts.runtime, format === "single-html" ? "single-html" : "embed");
   const manifest = await readAssetManifest(fs);
   const entries = new Map<string, AssetEntry>(manifest.assets.map((a) => [a.path, a]));
 
@@ -380,7 +404,8 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
   let head: string | undefined;
   if (format === "embed" || format === "zip") {
     const allRuntime = Object.entries(opts.runtime.files).filter(([k]) => !k.endsWith(".single.js"));
-    pageRt = pageRuntime(Object.fromEntries(allRuntime), runtimeEntry, scene);
+    // The lite runtime is one file with no imports; the full one an entry + lazy chunks.
+    pageRt = lite ? { loaded: [LITE_RUNTIME_FILE], skipped: [], unknown: [], features: {} } : pageRuntime(Object.fromEntries(allRuntime.filter(([k]) => k !== LITE_RUNTIME_FILE)), runtimeEntry, scene);
     pruned = !!opts.pruneRuntime && !pageRt.unknown.length;
     if (opts.pruneRuntime && pageRt.unknown.length) outIssues.push({ severity: "info", code: "prune-runtime", path: "runtime", message: `Kept every runtime chunk: ${pageRt.unknown.join(", ")} ${pageRt.unknown.length > 1 ? "have" : "has"} no known feature.`, hint: "Nothing to do — the export works; report it so the chunk gets mapped (src/ops/runtimeChunks.ts)." });
     const keep = new Set(pageRt.loaded);
@@ -521,6 +546,8 @@ export async function buildExport(fs: ProjectFs, opts: ExportOptions): Promise<E
     sizes: { runtimeKb: KB(runtimeBytes), sceneKb: KB(byteLen(sceneJson)), assetsKb: KB(assetsBytes), scriptsKb: KB(scriptsBytes), posterKb: KB(posterBytes) },
     credits,
     issues: outIssues,
+    runtime: lite ? "photo-lite" : "full",
+    ...(runtimeReasons ? { runtimeReasons } : {}),
     ...(runtimeDirName ? { runtimeDir: runtimeDirName } : {}),
     ...(integrity ? { integrity } : {}),
     ...(head ? { head } : {}),

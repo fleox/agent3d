@@ -159,7 +159,7 @@ function dirNonEmpty(dir: string): string[] {
 
 export const exportCommand: Command = {
   name: "export",
-  usage: "export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--prune-runtime] [--yes] [--project <dir>]",
+  usage: "export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--prune-runtime] [--runtime auto|full] [--yes] [--project <dir>]",
   summary:
     "Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Reports pageKb / pageKbGzip (what a visitor downloads for this scene: runtime entry + the chunks it loads + scene, assets, scripts, poster) and folderKb (every file written). Overwriting a non-empty --out needs --yes.",
   writes: true,
@@ -174,6 +174,7 @@ export const exportCommand: Command = {
     { name: "no-extras", type: "boolean", description: "embed / zip: skip EMBED.md and frameworks/ (React / Vue / Svelte wrappers)." },
     { name: "no-poster", type: "boolean", description: "embed / zip / single-html: don't render a poster nor og-image (no Chrome needed)." },
     { name: "prune-runtime", type: "boolean", description: "embed / zip: copy only the runtime chunks this scene loads (smaller folder). Only for a runtime folder used by this scene alone — other scenes sharing it may need the left-out chunks; kept whole when a chunk's feature is unknown." },
+    { name: "runtime", type: "string", description: "embed / zip / single-html: auto (default) ships the photo-only lite runtime (agent3d-photo.js, ~14 KB gzipped, no three.js) when the scene is a single 3D photo with a fixed camera and a plain background; full always ships agent3d-runtime.js. The result's runtime / runtimeReasons say which and why." },
     { name: "no-og", type: "boolean", description: "embed / zip: don't render the 1200×630 og-image.png social preview." },
     { name: "optimize", type: "boolean", description: "embed / zip / single-html: export optimised copies of the assets (project and library) — textures at the size the scene needs (format kept), .glb geometry meshopt-compressed with WebP textures. The project is not modified. Textures need Chrome." },
     { name: "image", type: "string", description: "poster: webp (default), png or jpeg." },
@@ -227,6 +228,8 @@ export const exportCommand: Command = {
         warnings.push(`No poster: ${err.message}${err.hint ? ` (${err.hint})` : ""} — the export works without it (no image before load / without WebGL).`);
       }
     }
+    const runtimeChoice = strOpt(options, "runtime") ?? "auto";
+    if (runtimeChoice !== "auto" && runtimeChoice !== "full") usage(`Unknown --runtime "${runtimeChoice}".`, "Use auto (default: the photo-only lite runtime for single-3D-photo scenes) or full.");
     const runtime = { files: readRuntimeFiles(format as "embed" | "single-html" | "zip") };
     const { buildExport } = await import("../../src/ops/export");
     const { version } = (await import("../../package.json")).default;
@@ -261,6 +264,7 @@ export const exportCommand: Command = {
       integrity: !boolOpt(options, "no-integrity"),
       extras: !boolOpt(options, "no-extras"),
       pruneRuntime: boolOpt(options, "prune-runtime"),
+      runtimeChoice: runtimeChoice as "auto" | "full",
       version,
     }).finally(() => closeCodec?.());
     const optimized = optimizeReport?.();
@@ -274,11 +278,13 @@ export const exportCommand: Command = {
     const entry = resolve(out, r.entry);
     printResult(
       io,
-      { format, out, entry, snippet: r.snippet, ...(r.head ? { head: r.head } : {}), ...(r.integrity ? { integrity: r.integrity } : {}), ...(r.runtimeDir ? { runtimeDir: r.runtimeDir } : {}), pageKb: r.pageKb, ...(r.pageKbGzip !== undefined ? { pageKbGzip: r.pageKbGzip } : {}), folderKb: r.folderKb, totalKb: r.totalKb, sizes: r.sizes, page: r.page, ...(optimized ? { optimized } : {}), credits: r.credits, issues: r.issues, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) },
+      { format, out, entry, snippet: r.snippet, ...(r.head ? { head: r.head } : {}), ...(r.integrity ? { integrity: r.integrity } : {}), ...(r.runtimeDir ? { runtimeDir: r.runtimeDir } : {}), pageKb: r.pageKb, ...(r.pageKbGzip !== undefined ? { pageKbGzip: r.pageKbGzip } : {}), folderKb: r.folderKb, totalKb: r.totalKb, sizes: r.sizes, page: r.page, runtime: r.runtime, ...(r.runtimeReasons ? { runtimeReasons: r.runtimeReasons } : {}), ...(optimized ? { optimized } : {}), credits: r.credits, issues: r.issues, files: written.map((f) => relative(out, f)), ...(warnings.length ? { warnings } : {}) },
       () =>
         [
           `Exported ${format} → ${out} (folder ${r.folderKb} KB, ${written.length} files)`,
-          `Page weight: ${r.pageKb} KB${r.pageKbGzip !== undefined ? ` (${r.pageKbGzip} KB gzipped)` : ""} — runtime ${r.page.runtimeKb} KB (${r.page.runtimeFiles.length} files; ${r.page.skippedChunks.length} lazy chunks this scene never loads${r.page.pruned ? ", left out" : ""}) + scene, assets, scripts, poster.`,
+          r.runtime === "photo-lite"
+            ? `Page weight: ${r.pageKb} KB${r.pageKbGzip !== undefined ? ` (${r.pageKbGzip} KB gzipped)` : ""} — photo-only lite runtime ${r.page.runtimeKb} KB (agent3d-photo.js, no three.js) + scene, assets, poster.`
+            : `Page weight: ${r.pageKb} KB${r.pageKbGzip !== undefined ? ` (${r.pageKbGzip} KB gzipped)` : ""} — runtime ${r.page.runtimeKb} KB (${r.page.runtimeFiles.length} files; ${r.page.skippedChunks.length} lazy chunks this scene never loads${r.page.pruned ? ", left out" : ""}) + scene, assets, scripts, poster.`,
           `Open: ${entry}`,
           ...(optimized ? [`Optimised asset copies: ${optimized.beforeKb} → ${optimized.afterKb} KB (saved ${optimized.savedKb} KB; the project is unchanged).`] : []),
           ...(format === "zip" ? [] : ["", "Paste in your page:", r.snippet]),

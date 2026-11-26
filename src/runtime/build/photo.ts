@@ -35,123 +35,27 @@ import type { PhotoObjectDef } from "../../core/types";
 import { loadTexture } from "../assets";
 import { DEG, clamp, num } from "../util";
 import type { RuntimeContext } from "./context";
+import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, photoSize } from "./photoCore";
+
+// The three-free core (sizing, motion, parallax math, GLSL) lives in
+// ./photoCore.ts — shared with the photo-only lite runtime (src/runtime/lite/).
+export {
+  PHOTO_DEFAULTS,
+  autoDrift,
+  motionSettings,
+  parallaxParams,
+  parallaxSteps,
+  photoSize,
+  smoothToward,
+  tiltToOffset,
+  viewOffset,
+  type MotionFrame,
+  type MotionSettings,
+  type PhotoAuto,
+  type ViewOffset,
+} from "./photoCore";
 
 // ─── Pure helpers (unit-tested) ─────────────────────────────────────────
-
-export const PHOTO_DEFAULTS = { width: 4, strength: 0.5, focus: 0.5, segments: 256, layers: 6, edgeCut: 0.08, speed: 1, smoothing: 0.9 } as const;
-
-// World size of the photo: width (default 4) and the image aspect; an explicit
-// height wins over the aspect (alone: width follows the aspect).
-export function photoSize(def: Pick<PhotoObjectDef, "width" | "height">, imgW: number, imgH: number): { width: number; height: number } {
-  const aspect = imgW > 0 && imgH > 0 ? imgW / imgH : 1;
-  const w = typeof def.width === "number" && def.width > 0 ? def.width : undefined;
-  const h = typeof def.height === "number" && def.height > 0 ? def.height : undefined;
-  if (w !== undefined && h !== undefined) return { width: w, height: h };
-  if (h !== undefined) return { width: h * aspect, height: h };
-  const width = w ?? PHOTO_DEFAULTS.width;
-  return { width, height: width / aspect };
-}
-
-export type PhotoAuto = NonNullable<NonNullable<PhotoObjectDef["motion"]>["auto"]>;
-
-export interface ViewOffset {
-  x: number; // -1..1 (right = view moves right: near things slide left)
-  y: number; // -1..1 (up)
-  zoom: number; // 0..1 (dolly in)
-}
-
-// Looping drift as a pure function of time. `speed` = cycles per 10 s.
-// Every drift is neutral at t = 0 (poster frames show the photo as is).
-export function autoDrift(auto: PhotoAuto | undefined, speed: number, t: number): ViewOffset {
-  const w = (2 * Math.PI * Math.max(0, speed)) / 10;
-  const a = w * t;
-  switch (auto ?? "sway") {
-    case "sway": // horizontal figure-eight (lissajous 1:2)
-      return { x: 0.9 * Math.sin(a), y: 0.35 * Math.sin(2 * a), zoom: 0 };
-    case "orbit": {
-      // circle; the radius eases in over the first half cycle (neutral at t = 0)
-      const k = Math.min(1, a / Math.PI);
-      const r = 0.8 * k * k * (3 - 2 * k);
-      return { x: r * Math.sin(a), y: r * Math.cos(a), zoom: 0 };
-    }
-    case "zoom":
-      return { x: 0, y: 0, zoom: 0.5 - 0.5 * Math.cos(a) };
-    default:
-      return { x: 0, y: 0, zoom: 0 };
-  }
-}
-
-export interface MotionSettings {
-  pointer: number;
-  scroll: number;
-  gyro: boolean;
-  auto: PhotoAuto;
-  speed: number;
-  smoothing: number;
-}
-
-export function motionSettings(m: PhotoObjectDef["motion"]): MotionSettings {
-  const pointer = clamp(num(m?.pointer, 1), 0, 1);
-  return {
-    pointer,
-    scroll: clamp(num(m?.scroll, 0), 0, 1),
-    gyro: typeof m?.gyro === "boolean" ? m.gyro : pointer > 0,
-    auto: m?.auto ?? "sway",
-    speed: Math.max(0, num(m?.speed, PHOTO_DEFAULTS.speed)),
-    smoothing: clamp(num(m?.smoothing, PHOTO_DEFAULTS.smoothing), 0, 0.99),
-  };
-}
-
-export interface MotionFrame {
-  t: number;
-  // Smoothed pointer (normalised -1..1, y up) and how much it drives the view (0..1).
-  pointer: { x: number; y: number; weight: number };
-  gyro: { x: number; y: number } | null; // -1..1, live only
-  scroll: number; // 0..1
-  reduced: boolean;
-}
-
-// The view offset for a frame (pure).
-export function viewOffset(s: MotionSettings, f: MotionFrame): ViewOffset {
-  const drift = f.reduced ? { x: 0, y: 0, zoom: 0 } : autoDrift(s.auto, s.speed, f.t);
-  const amount = s.pointer * (f.reduced ? 0.5 : 1);
-  let ix = 0, iy = 0, w = 0;
-  if (f.gyro && s.gyro && f.pointer.weight < 0.5) {
-    ix = f.gyro.x;
-    iy = f.gyro.y;
-    w = amount > 0 ? 1 : 0;
-  } else if (amount > 0) {
-    ix = f.pointer.x;
-    iy = f.pointer.y;
-    w = clamp(f.pointer.weight, 0, 1);
-  }
-  const x = drift.x * (1 - w) + ix * amount * w;
-  let y = drift.y * (1 - w) + iy * amount * w;
-  if (s.scroll > 0) y += (clamp(f.scroll, 0, 1) * 2 - 1) * s.scroll;
-  return { x: clamp(x, -1, 1), y: clamp(y, -1, 1), zoom: drift.zoom * (1 - w) };
-}
-
-// Frame-rate independent exponential smoothing (same convention as the
-// timeline scroll smoothing: `smoothing` = share kept per 1/60 s).
-export function smoothToward(current: number, target: number, dt: number, smoothing: number): number {
-  if (smoothing <= 0 || dt <= 0) return dt <= 0 && smoothing > 0 ? current : target;
-  const k = 1 - Math.pow(clamp(smoothing, 0, 0.99), dt * 60);
-  const v = current + (target - current) * k;
-  return Math.abs(target - v) < 1e-4 ? target : v;
-}
-
-// Parallax: max UV shift per axis for one unit of (depth - focus) at full
-// view offset (≈ strength * 6 % of the short side), and the UV scale that
-// keeps the shifted image inside the picture (edges never show).
-export function parallaxParams(strength: number, width: number, height: number): { maxOffset: [number, number]; inset: [number, number] } {
-  const s = clamp(strength, 0, 1);
-  const short = Math.min(width, height);
-  const ax = short / width, ay = short / height;
-  return {
-    maxOffset: [s * 0.06 * ax, s * 0.06 * ay],
-    inset: [1 / (1 + s * 0.1 * ax), 1 / (1 + s * 0.1 * ay)],
-  };
-}
 
 // Mesh: grid cells per axis (`segments` on the long side).
 export function meshSegments(segments: number, width: number, height: number): [number, number] {
@@ -196,27 +100,9 @@ export function layerBands(n: number, focus: number, strength: number, width: nu
   return out;
 }
 
-// Gyro: device tilt (degrees) relative to the first reading → -1..1 (±20°).
-export function tiltToOffset(beta: number, gamma: number, base: { beta: number; gamma: number }, angle: number): { x: number; y: number } {
-  let dx = gamma - base.gamma, dy = beta - base.beta;
-  const a = ((Math.round(angle / 90) % 4) + 4) % 4;
-  if (a === 1) [dx, dy] = [dy, -dx];
-  else if (a === 2) [dx, dy] = [-dx, -dy];
-  else if (a === 3) [dx, dy] = [-dy, dx];
-  return { x: clamp(dx / 20, -1, 1), y: clamp(-dy / 20, -1, 1) };
-}
-
 // ─── Shaders ────────────────────────────────────────────────────────────
 
-const COMMON_FRAG = /* glsl */ `
-uniform sampler2D uMap;
-uniform vec3 uTint;
-uniform float uOpacity;
-uniform float uIntensity;
-vec4 shade(vec4 c, float a) {
-  return vec4(c.rgb * uTint * uIntensity, c.a * a * uOpacity);
-}
-`;
+const COMMON_FRAG = PHOTO_COMMON_GLSL;
 
 const QUAD_VERT = /* glsl */ `
 varying vec2 vUv;
@@ -226,68 +112,13 @@ void main() {
 }
 `;
 
-// Parallax: find, along the view ray through the depth "height field", the
-// first texel (from near to far) whose depth reaches the ray.
+// Parallax (relief mapping, ./photoCore.ts PARALLAX_GLSL) on a quad.
 const PARALLAX_FRAG = /* glsl */ `
 ${COMMON_FRAG}
-uniform sampler2D uDepth;
-uniform vec2 uView;
-uniform float uZoom;
-uniform vec2 uMaxOffset;
-uniform vec2 uInset;
-uniform float uFocus;
-uniform float uWallSlope;
+${PARALLAX_GLSL}
 varying vec2 vUv;
-const int STEPS = __STEPS__;
 void main() {
-  // the zoom drift also pushes in slightly (stays inside the inset margin)
-  vec2 base = 0.5 + (vUv - 0.5) * uInset * (1.0 - 0.06 * uZoom);
-  vec2 v = uView - (vUv - 0.5) * 2.0 * uZoom;
-  vec2 dir = v * uMaxOffset;
-  vec2 uv = base;
-  if (dot(dir, dir) > 1e-10) {
-    float stepH = 1.0 / float(STEPS);
-    float h = 1.0;
-    float prevH = 1.0 + stepH;
-    bool hit = false;
-    for (int i = 0; i <= STEPS; i++) {
-      h = 1.0 - float(i) * stepH;
-      float d = textureLod(uDepth, base + (h - uFocus) * dir, 0.0).r;
-      if (d >= h) { hit = true; break; }
-      prevH = h;
-    }
-    float lo = h, hi = min(prevH, 1.0);
-    if (hit) {
-      for (int j = 0; j < 6; j++) {
-        float mid = 0.5 * (lo + hi);
-        float d = textureLod(uDepth, base + (mid - uFocus) * dir, 0.0).r;
-        if (d >= mid) lo = mid; else hi = mid;
-      }
-    }
-    uv = base + (lo - uFocus) * dir;
-    // Disocclusion: the ray hit the steep "wall" of a depth edge. Stretching
-    // the foreground edge colour reads as a smear: take the colour from just
-    // past the edge on the far side instead (the background continues).
-    vec2 texel = 1.0 / vec2(textureSize(uDepth, 0));
-    vec4 dh = textureLod(uDepth, uv, 0.0);
-    vec2 grad = vec2(
-      textureLod(uDepth, uv + vec2(texel.x * 1.5, 0.0), 0.0).r - textureLod(uDepth, uv - vec2(texel.x * 1.5, 0.0), 0.0).r,
-      textureLod(uDepth, uv + vec2(0.0, texel.y * 1.5), 0.0).r - textureLod(uDepth, uv - vec2(0.0, texel.y * 1.5), 0.0).r) / 3.0;
-    float g = length(grad);
-    vec2 toNear = grad / max(g, 1e-6);
-    float dNear = textureLod(uDepth, uv + toNear * texel * 3.0, 0.0).r;
-    if (hit && (g > uWallSlope || dh.a < 0.5) && dNear > lo + 0.04) {
-      vec2 away = -toNear;
-      vec2 probe = uv;
-      for (int k = 1; k <= 6; k++) {
-        vec2 q = uv + away * texel * float(k * 2);
-        probe = q;
-        if (textureLod(uDepth, q, 0.0).r < lo - 0.05) break;
-      }
-      uv = probe + away * texel * 2.0;
-    }
-  }
-  vec4 c = textureGrad(uMap, uv, dFdx(base), dFdy(base));
+  vec4 c = parallaxTexel(vUv);
   if (c.a * uOpacity < 0.004) discard;
   gl_FragColor = shade(c, 1.0);
   #include <tonemapping_fragment>
@@ -568,15 +399,6 @@ export function buildMeshGeometry(width: number, height: number, sx: number, sy:
   return g;
 }
 
-// Relief-mapping march steps: the per-pixel cost of parallax mode. Weak
-// devices (lower quality tiers) and gentle depth (low strength: smaller
-// offsets, fewer layers to cross) get fewer steps; the binary refine after the
-// march keeps edges clean either way.
-export function parallaxSteps(quality: "low" | "medium" | "high" | "ultra" | undefined, strength: number): number {
-  const base = quality === "low" ? 12 : quality === "medium" ? 20 : quality === "ultra" ? 48 : 32;
-  return Math.max(8, Math.round(base * (0.5 + 0.5 * Math.min(1, Math.max(0, strength) / 0.6))));
-}
-
 export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Promise<BuiltPhoto> {
   const [map, depth] = await Promise.all([
     loadTexture(ctx.resolveAsset(def.src)),
@@ -643,7 +465,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
       uInset: { value: new THREE.Vector2(...pp.inset) },
       uFocus: { value: focus },
       // depth change per texel above which a hit is a depth-edge wall
-      uWallSlope: { value: 0.02 },
+      uWallSlope: { value: PARALLAX_WALL_SLOPE },
     };
     const mat = shaderMaterial(QUAD_VERT, PARALLAX_FRAG.replace("__STEPS__", String(parallaxSteps(ctx.quality, strength))), uniforms, transparent);
     materials.push(mat);
@@ -721,44 +543,15 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     });
   }
 
-  // ── Motion state ──
-  const live = !ctx.deterministic;
-  const smoothed = { x: 0, y: 0, weight: 0, init: false };
-  let gyro: { x: number; y: number } | null = null;
-  let gyroBase: { beta: number; gamma: number } | null = null;
-  let removeGyro: (() => void) | null = null;
-  if (live && motion.gyro && motion.pointer > 0 && mode !== "flat" && typeof window !== "undefined" && typeof window.addEventListener === "function") {
-    const onTilt = (e: DeviceOrientationEvent) => {
-      if (e.beta === null || e.gamma === null) return;
-      gyroBase ??= { beta: e.beta, gamma: e.gamma };
-      const angle = (typeof screen !== "undefined" && screen.orientation?.angle) || 0;
-      gyro = tiltToOffset(e.beta, e.gamma, gyroBase, angle);
-    };
-    window.addEventListener("deviceorientation", onTilt);
-    removeGyro = () => window.removeEventListener("deviceorientation", onTilt);
-  }
+  // ── Motion state (live smoothing + gyro: ./photoCore.ts) ──
+  const photoMotion = createPhotoMotion(motion, { live: !ctx.deterministic, flat: mode === "flat" });
   const camLocal = new THREE.Vector3();
   let camCaptured = false;
   const maxTilt = strength * 8 * DEG;
 
   const update = (t: number, dt: number, input: PhotoFrameInput) => {
     if (mode === "flat") return;
-    const p = input.pointer;
-    const tx = p.inside ? clamp(p.x, -1, 1) : 0;
-    const ty = p.inside ? clamp(p.y, -1, 1) : 0;
-    const tw = p.inside ? 1 : 0;
-    if (!live || !smoothed.init) {
-      // Deterministic renders: no frame-history state (seek-safe).
-      smoothed.x = tx;
-      smoothed.y = ty;
-      smoothed.weight = tw;
-      smoothed.init = live;
-    } else {
-      smoothed.x = smoothToward(smoothed.x, tx, dt, motion.smoothing);
-      smoothed.y = smoothToward(smoothed.y, ty, dt, motion.smoothing);
-      smoothed.weight = smoothToward(smoothed.weight, tw, dt, motion.smoothing);
-    }
-    const off = viewOffset(motion, { t, pointer: smoothed, gyro: live ? gyro : null, scroll: input.scroll, reduced: input.reduced });
+    const off = photoMotion.offset(t, dt, input);
     for (const v of views) {
       (v.uniforms.uView.value as THREE.Vector2).set(off.x, off.y);
       v.uniforms.uZoom.value = off.zoom;
@@ -800,8 +593,7 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     object: root,
     update,
     dispose() {
-      removeGyro?.();
-      removeGyro = null;
+      photoMotion.dispose();
       for (const m of materials) m.dispose();
       for (const g of geometries) g.dispose();
       map.dispose();

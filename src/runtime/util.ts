@@ -4,19 +4,9 @@ import * as THREE from "three";
 import type { CatalogEntry } from "../core/catalog";
 import type { Color, Vec3 } from "../core/types";
 
-export const DEG = Math.PI / 180;
+import { clamp } from "./num";
 
-export function clamp(v: number, min: number, max: number): number {
-  return v < min ? min : v > max ? max : v;
-}
-
-export function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
-export function num(v: unknown, def: number): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : def;
-}
+export { DEG, clamp, lerp, num } from "./num";
 
 export function bool(v: unknown, def: boolean): boolean {
   return typeof v === "boolean" ? v : def;

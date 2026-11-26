@@ -6,6 +6,9 @@ import * as THREE from "three";
 import type { CameraDef } from "../../core/types";
 import { noise2D } from "../random";
 import { DEG, clamp, num, smoothFactor } from "../util";
+import { fitScale, fittedFov, nudgeOffPlanes } from "./cameraFit";
+
+export { CAMERA_PLANE_NUDGE, fitScale, fittedFov, nudgeOffPlanes } from "./cameraFit";
 
 export function createCamera(def: CameraDef, aspect: number): THREE.PerspectiveCamera | THREE.OrthographicCamera {
   const near = num(def.near, 0.1);
@@ -20,20 +23,6 @@ export function createCamera(def: CameraDef, aspect: number): THREE.PerspectiveC
   nudgeOffPlanes(cam.position, new THREE.Vector3(t[0], t[1], t[2]));
   cam.lookAt(t[0], t[1], t[2]);
   return cam;
-}
-
-// Responsive framing: when the canvas is narrower than the scene's design
-// aspect (target.aspect — e.g. a 4:1 banner given a taller box on a phone),
-// widen the view so the authored horizontal framing stays visible instead of
-// cropping the sides. Capped so a perspective camera never exceeds ~100°.
-export function fitScale(aspect: number, designAspect?: number): number {
-  if (!designAspect || !(aspect > 0) || aspect >= designAspect) return 1;
-  return Math.min(designAspect / aspect, 3);
-}
-
-export function fittedFov(fov: number, scale: number): number {
-  if (scale <= 1) return fov;
-  return Math.min(100, (2 * Math.atan(Math.tan((fov * DEG) / 2) * scale)) / DEG);
 }
 
 export function setCameraAspect(cam: THREE.Camera, def: CameraDef, aspect: number, designAspect?: number): void {
@@ -62,22 +51,6 @@ export interface CameraRig {
   shake: THREE.Vector3;
   orbit: { enabled: boolean; dispose(): void; update(): void } | null;
   dispose(): void;
-}
-
-// A vertex lying exactly in the plane through the camera perpendicular to its
-// view axis gets clip w = 0; some rasterizers (SwiftShader — headless renders —
-// and a few mobile GPUs) then draw its triangles as screen-filling garbage
-// (a box floor whose front face is at the camera's z: wrong material, objects
-// cut as if inside a volume). Authored scenes hit it with round numbers (camera
-// z = 10, floor edge z = 10), so the camera is moved 1e-4 units back along its
-// view axis — invisible, and never an exact authored value.
-export const CAMERA_PLANE_NUDGE = 1e-4;
-export function nudgeOffPlanes(pos: THREE.Vector3, target: THREE.Vector3): void {
-  const dx = target.x - pos.x, dy = target.y - pos.y, dz = target.z - pos.z;
-  const len = Math.hypot(dx, dy, dz);
-  if (len < 1e-9) return;
-  const k = -CAMERA_PLANE_NUDGE / len;
-  pos.set(pos.x + dx * k, pos.y + dy * k, pos.z + dz * k);
 }
 
 export async function createRig(def: CameraDef, cam: THREE.PerspectiveCamera | THREE.OrthographicCamera, dom: HTMLElement | null, deterministic: boolean): Promise<CameraRig> {

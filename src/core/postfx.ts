@@ -4,11 +4,11 @@
 // POSTFX_LOOKS, GRADING_LOOKS); no DOM, no Three.js here.
 
 import { catalogEntry, GRADING_LOOKS, POSTFX_LOOKS } from "./catalog";
-import type { PostFxDef, TargetDef } from "./types";
+import { QUALITY_TIERS, TIER_DPR_CAP, type QualityTier } from "./qualityTier";
+import type { PostFxDef } from "./types";
 
-export type QualityTier = "low" | "medium" | "high" | "ultra";
+export { QUALITY_TIERS, resolveQualityTier, type DeviceHints, type QualityTier } from "./qualityTier";
 export type GpuCost = "low" | "medium" | "high";
-export const QUALITY_TIERS: readonly QualityTier[] = ["low", "medium", "high", "ultra"];
 
 // ─── Look presets ──────────────────────────────────────────────────────
 
@@ -103,33 +103,14 @@ const COST_RANK: Record<GpuCost, number> = { low: 0, medium: 1, high: 2 };
 export function qualitySettings(tier: QualityTier): QualitySettings {
   switch (tier) {
     case "low":
-      return { tier, dprCap: 1, msaa: 0, effectScale: 0.5, maxCost: "medium", aoSamples: 8, dofSamples: 16, rays: 24, maxStillSamples: 4 };
+      return { tier, dprCap: TIER_DPR_CAP.low, msaa: 0, effectScale: 0.5, maxCost: "medium", aoSamples: 8, dofSamples: 16, rays: 24, maxStillSamples: 4 };
     case "medium":
-      return { tier, dprCap: 1.5, msaa: 4, effectScale: 0.5, maxCost: "high", aoSamples: 12, dofSamples: 24, rays: 32, maxStillSamples: 8 };
+      return { tier, dprCap: TIER_DPR_CAP.medium, msaa: 4, effectScale: 0.5, maxCost: "high", aoSamples: 12, dofSamples: 24, rays: 32, maxStillSamples: 8 };
     case "ultra":
-      return { tier, dprCap: 3, msaa: 8, effectScale: 1, maxCost: "high", aoSamples: 24, dofSamples: 64, rays: 64, maxStillSamples: 64 };
+      return { tier, dprCap: TIER_DPR_CAP.ultra, msaa: 8, effectScale: 1, maxCost: "high", aoSamples: 24, dofSamples: 64, rays: 64, maxStillSamples: 64 };
     default:
-      return { tier: "high", dprCap: 2, msaa: 4, effectScale: 0.5, maxCost: "high", aoSamples: 16, dofSamples: 40, rays: 48, maxStillSamples: 32 };
+      return { tier: "high", dprCap: TIER_DPR_CAP.high, msaa: 4, effectScale: 0.5, maxCost: "high", aoSamples: 16, dofSamples: 40, rays: 48, maxStillSamples: 32 };
   }
-}
-
-export interface DeviceHints {
-  deterministic?: boolean;
-  mobile?: boolean;
-  cores?: number;
-  memoryGb?: number;
-  gpu?: string; // unmasked renderer string when available
-}
-
-/** The tier a player starts with. "auto" never picks "ultra"; deterministic renders use "high". */
-export function resolveQualityTier(requested: TargetDef["quality"], hints: DeviceHints = {}): QualityTier {
-  if (requested && requested !== "auto") return requested;
-  if (hints.deterministic) return "high";
-  if (hints.gpu && /swiftshader|llvmpipe|softpipe|software|microsoft basic render/i.test(hints.gpu)) return "low";
-  if (hints.mobile) return (hints.memoryGb ?? 4) <= 2 || (hints.cores ?? 8) <= 4 ? "low" : "medium";
-  if ((hints.cores !== undefined && hints.cores <= 2) || (hints.memoryGb !== undefined && hints.memoryGb <= 2)) return "low";
-  if ((hints.cores !== undefined && hints.cores <= 4) || (hints.memoryGb !== undefined && hints.memoryGb <= 4) || (hints.gpu && /intel|mali|adreno|powervr/i.test(hints.gpu))) return "medium";
-  return "high";
 }
 
 export function lowerTier(tier: QualityTier): QualityTier | null {

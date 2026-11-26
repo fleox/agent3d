@@ -276,3 +276,73 @@ describe("posterMarkup", () => {
     expect(posterMarkup({ src: "p.webp", alt: "A" })).not.toContain("fetchpriority");
   });
 });
+
+describe("photo-only lite runtime (runtimeChoice)", () => {
+  const liteRt = { files: { ...runtime.files, "agent3d-photo.js": enc.encode("customElements.get('agent3d-scene');") } };
+  async function photoProject(extra: Record<string, unknown> = {}) {
+    const fs = new MemoryFs();
+    await createProject(fs, { name: "Lake", target: { kind: "hero", aspect: "16:9" } });
+    await addAsset(fs, { path: "assets/textures/lake.jpg", bytes: new Uint8Array([0xff, 0xd8, 1, 2]), source: "local", license: "CC0-1.0" });
+    await addAsset(fs, { path: "assets/depth/lake-depth.png", bytes: new Uint8Array([0x89, 0x50, 1, 2]), source: "local", license: "CC0-1.0" });
+    const scene = JSON.parse(await fs.readText("scene.json"));
+    const next = {
+      version: scene.version,
+      id: "lake",
+      title: "Lake",
+      target: { kind: "hero", aspect: "16:9" },
+      camera: { type: "perspective", fov: 35, position: [0, 0, 3.5], target: [0, 0, 0] },
+      environment: { background: "#000000" },
+      lights: [],
+      objects: [{ id: "photo", kind: "photo", src: "assets/textures/lake.jpg", depth: "assets/depth/lake-depth.png", strength: 0.8 }],
+      ...extra,
+    };
+    await fs.writeText("scene.json", JSON.stringify(next));
+    return fs;
+  }
+
+  it("ships agent3d-photo.js alone for an eligible scene (no three.js, no modulepreload)", async () => {
+    const fs = await photoProject();
+    const r = await buildExport(fs, { format: "embed", runtime: liteRt, library, extras: false });
+    expect(r.runtime).toBe("photo-lite");
+    expect(r.runtimeReasons).toBeUndefined();
+    expect(r.snippet).toContain('src="./agent3d-runtime/agent3d-photo.js" integrity="sha384-');
+    expect(r.snippet).not.toContain("modulepreload");
+    expect(r.head).toBeUndefined();
+    expect(r.page).toMatchObject({ runtimeFiles: ["agent3d-photo.js"], skippedChunks: [], unknownChunks: [] });
+    // The shared runtime folder keeps the full runtime (other scenes of the site)…
+    expect(Object.keys(r.files)).toEqual(expect.arrayContaining(["agent3d-runtime/agent3d-photo.js", "agent3d-runtime/agent3d-runtime.js"]));
+    // …pruned: only the lite file.
+    const p = await buildExport(fs, { format: "embed", runtime: liteRt, library, extras: false, pruneRuntime: true });
+    expect(Object.keys(p.files).filter((k) => k.startsWith("agent3d-runtime/"))).toEqual(["agent3d-runtime/agent3d-photo.js"]);
+    expect(p.page.runtimeKb).toBeLessThan(1);
+  });
+
+  it("inlines the lite runtime in single-html exports", async () => {
+    const fs = await photoProject();
+    const r = await buildExport(fs, { format: "single-html", runtime: liteRt, library });
+    expect(r.runtime).toBe("photo-lite");
+    const html = r.files[r.entry] as string;
+    expect(html).toContain("customElements.get('agent3d-scene')");
+    expect(html).not.toContain("globalThis.Agent3D");
+  });
+
+  it("uses the full runtime when asked, when the scene is not eligible, or without the lite file", async () => {
+    const fs = await photoProject();
+    const full = await buildExport(fs, { format: "embed", runtime: liteRt, library, extras: false, runtimeChoice: "full" });
+    expect(full.runtime).toBe("full");
+    expect(full.runtimeReasons).toEqual(["runtime: full was requested"]);
+    expect(full.snippet).toContain("agent3d-runtime.js");
+    // The lite file is no lazy chunk of the full runtime.
+    expect(full.page.skippedChunks).not.toContain("agent3d-photo.js");
+    const pruned = await buildExport(fs, { format: "embed", runtime: liteRt, library, extras: false, runtimeChoice: "full", pruneRuntime: true });
+    expect(Object.keys(pruned.files)).not.toContain("agent3d-runtime/agent3d-photo.js");
+    const noLite = await buildExport(fs, { format: "embed", runtime, library, extras: false });
+    expect(noLite.runtime).toBe("full");
+    expect(noLite.runtimeReasons?.[0]).toContain("agent3d-photo.js");
+    const timeline = await photoProject({ postfx: [{ type: "vignette" }] });
+    const t = await buildExport(timeline, { format: "embed", runtime: liteRt, library, extras: false });
+    expect(t.runtime).toBe("full");
+    expect(t.runtimeReasons).toEqual(["post effects (postfx)"]);
+    await expect(buildExport(fs, { format: "embed", runtime: liteRt, library, runtimeChoice: "lite" as "full" })).rejects.toThrow(/Unknown runtime/);
+  });
+});

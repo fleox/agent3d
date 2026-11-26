@@ -16,6 +16,7 @@ import { PropertyOverrides } from "../timeline/overrides";
 import { evaluateShots, sortShots } from "../timeline/shots";
 import { DEG, disposeObject, toColor, withDefaults } from "../util";
 import { createCamera, createRig, setCameraAspect, type CameraRig } from "./camera";
+import { designAspectOf } from "./cameraFit";
 import type { RuntimeContext } from "./context";
 import { buildEnvironment, type BuiltEnvironment } from "./environment";
 import { buildGeometry } from "./geometry";
@@ -529,9 +530,7 @@ export class World {
 
   setViewport(width: number, height: number, pixelRatio: number): void {
     this.viewportH = height * pixelRatio;
-    const m = /^\s*([\d.]+)\s*[:/x]\s*([\d.]+)\s*$/.exec(this.def.target?.aspect ?? "");
-    const design = m ? Number(m[1]) / Number(m[2]) : undefined;
-    setCameraAspect(this.camera, this.def.camera, width / Math.max(height, 1), design && Number.isFinite(design) && design > 0 ? design : undefined);
+    setCameraAspect(this.camera, this.def.camera, width / Math.max(height, 1), designAspectOf(this.def.target?.aspect));
     for (const e of this.entries.values()) e.particles?.setViewport(this.viewportH);
   }
 

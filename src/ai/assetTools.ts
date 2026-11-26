@@ -165,7 +165,7 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "export",
     description:
-      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page), snippet.html (paste into the page), EMBED.md and frameworks/ (React / Vue / Svelte wrappers). "zip": the same folder as one <name>-embed.zip. "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Options: `baseUrl` (where the folder is served, so the snippet works from any page), `cacheBust` (versioned runtime folder + ?v= hash for long-term caching), `integrity` (SRI hash on the runtime script, default true), `optimize` (export lighter copies of the assets — the project is not modified), `og` (render a 1200×630 og-image.png social preview). Run check first; returns the snippet, sizes and budget warnings. When the host can render (CLI / MCP / Studio with Chrome): "poster" writes a still image (dist/poster.webp; `time`, `image`), "video" an MP4 / WebM (dist/video.webm; `codec`, `duration`, `fps`, `size`), "gif" / "animated-webp" an animated image (dist/animation.gif / .webp), returning { path } — `quality` supersamples, `transparent` keeps the alpha (poster, gif, animated-webp).',
+      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page), snippet.html (paste into the page), EMBED.md and frameworks/ (React / Vue / Svelte wrappers). "zip": the same folder as one <name>-embed.zip. "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Options: `baseUrl` (where the folder is served, so the snippet works from any page), `cacheBust` (versioned runtime folder + ?v= hash for long-term caching), `integrity` (SRI hash on the runtime script, default true), `optimize` (export lighter copies of the assets — the project is not modified), `og` (render a 1200×630 og-image.png social preview), `runtime` ("auto" default: a scene that is a single 3D photo ships the photo-only lite runtime agent3d-photo.js, ~14 KB gzipped instead of ~210 KB; "full" forces agent3d-runtime.js — the result says which in `runtime`, with `runtimeReasons` when full). Run check first; returns the snippet, sizes and budget warnings. When the host can render (CLI / MCP / Studio with Chrome): "poster" writes a still image (dist/poster.webp; `time`, `image`), "video" an MP4 / WebM (dist/video.webm; `codec`, `duration`, `fps`, `size`), "gif" / "animated-webp" an animated image (dist/animation.gif / .webp), returning { path } — `quality` supersamples, `transparent` keeps the alpha (poster, gif, animated-webp).',
     inputSchema: {
       type: "object",
       properties: {
@@ -179,6 +179,7 @@ export const ASSET_TOOLS: AiTool[] = [
         extras: { type: "boolean", description: "embed / zip: EMBED.md and framework wrappers (default true)." },
         optimize: { type: "boolean", description: "embed / zip / single-html: export optimised copies of the assets — textures at the size the scene needs, .glb geometry meshopt-compressed (textures need a host with headless Chrome). The project is not modified (default false)." },
         og: { type: "boolean", description: "embed / zip: render a 1200×630 og-image.png social preview (needs a host that can render; default false)." },
+        runtime: { type: "string", enum: ["auto", "full"], description: 'embed / zip / single-html: "auto" (default) ships the photo-only lite runtime (agent3d-photo.js, no three.js) when the scene is a single 3D photo, "full" always the full runtime.' },
         out: { type: "string", description: 'poster / video / gif / animated-webp: project-relative output file under dist/ or renders/ (default "dist/poster.webp", "dist/video.webm" (.mp4 with codec mp4), "dist/animation.gif", "dist/animation.webp").' },
         time: { type: "number", minimum: 0, description: "poster: time in seconds (default target.posterTime)." },
         image: { type: "string", enum: ["webp", "png"], description: "poster: image format (default webp)." },
@@ -203,6 +204,8 @@ export const ASSET_TOOLS: AiTool[] = [
       if (!outDir.startsWith("dist/") && outDir !== "dist") throw new OpsError("invalid", `outDir must be under dist/ (got "${outDir}").`, 'Use e.g. "dist/embed".');
       const wantsOg = input.og === true && format !== "single-html";
       if (wantsOg && !ctx.host.media) throw new OpsError("invalid", "This host cannot render the og image.", "Export without og, or with the CLI: agent3d export (renders the poster and og-image.png with Chrome).");
+      const runtimeChoice = optStr(input, "runtime") ?? "auto";
+      if (runtimeChoice !== "auto" && runtimeChoice !== "full") throw new OpsError("invalid", `Unknown runtime "${runtimeChoice}".`, 'Use "auto" (default: the photo-only lite runtime for single-3D-photo scenes) or "full".');
       const runtime = { files: await ctx.host.runtimeFiles(format) };
       let library = ctx.host.library ?? { index: { assets: [] }, read: async (id: string) => Promise.reject(new OpsError("notFound", `Library asset ${id} unavailable`)) };
       const posterPath = optStr(input, "poster");
@@ -220,6 +223,7 @@ export const ASSET_TOOLS: AiTool[] = [
           cacheBust: input.cacheBust === true,
           integrity: input.integrity !== false,
           extras: input.extras !== false,
+          runtimeChoice,
         });
       let optimized: unknown;
       let r: Awaited<ReturnType<typeof buildExport>>;
@@ -248,6 +252,8 @@ export const ASSET_TOOLS: AiTool[] = [
         totalKb: r.totalKb,
         sizes: r.sizes,
         page: { runtimeKb: r.page.runtimeKb, skippedChunks: r.page.skippedChunks.length, ...(r.page.pruned ? { pruned: true } : {}) },
+        runtime: r.runtime,
+        ...(r.runtimeReasons ? { runtimeReasons: r.runtimeReasons } : {}),
         snippet: format === "single-html" ? `(single file) ${outDir}/${r.entry}` : r.snippet,
         ...(r.head ? { head: r.head } : {}),
         ...(r.runtimeDir ? { runtimeDir: r.runtimeDir } : {}),

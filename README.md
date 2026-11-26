@@ -171,7 +171,7 @@ Step by step: [docs/getting-started.md](https://github.com/fleox/agent3d/blob/ma
 - 22 procedural **generators**: terrain (mountains, basins, valleys, islands), trees, rocks, grass, flowers, water with mirror reflections, clouds, birds, cities, roads, floating islands, globes, galaxies, crystals, 3D bar charts, mazes… deterministic from a seed
 - A procedural **character** generator (humanoid, astronaut, robot, blob, cat, fox, bird, ghost) with animations such as wave, run, jump, dance and celebrate
 - A built-in **library** of 179 assets usable offline (`library:<id>`): 128 models (rigged characters with clips, products, props), PBR textures and HDRIs; optional search and download from free CC0 sources (Poly Haven, ambientCG, Khronos samples) and Kenney / Quaternius pack import, with licences recorded
-- **3D photos**: any photo plus a depth map estimated on your machine (`assets depth`: Depth Anything V2 Small, a 27 MB model downloaded once, then offline) moves in depth with the pointer, the phone's gyroscope, the scroll or a gentle automatic drift — shader parallax, a displaced mesh or pop-up layers
+- **3D photos**: any photo plus a depth map estimated on your machine (`assets depth`: Depth Anything V2 Small, a 27 MB model downloaded once, then offline) moves in depth with the pointer, the phone's gyroscope, the scroll or a gentle automatic drift — shader parallax, a displaced mesh or pop-up layers; a photo-only hero exports with a 14 KB player instead of three.js
 - 3D text in 13 kerned **fonts** with wrapping, outlines and letter-by-letter reveals; extruded **SVG logos** that keep their colours; 17 particle presets; 12 synth sounds
 
 **Games**
