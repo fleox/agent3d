@@ -6,7 +6,7 @@ How it works: the photo has `"occlude": true`. Each photo pixel writes its true 
 
 ## Where to put things
 
-`agent3d scene summary --json` gives the photo a `depthRange: [zFar, zNear]`: the world z of its farthest (depth 0) and nearest (depth 1) pixels. Here the focus depth (0.45, the plane that stays still) is at z = 0, the sky at about z = -1.2 and the nearest facade at about z = 1.15. A depth-map value d sits at local z ≈ (d - focus) × strength × width × 0.25 (exactly: see `docs/scene-format.md`, "3D inside the photo"). The title is at z = 0.12, depth ≈ 0.5: the right facade (depth 0.5 to 0.85) covers it, the sky and the far houses (depth 0 to 0.45) stay behind it. Move it to z = 0.4 and less of it hides; to z = -0.2 and the buildings on both sides cut into it.
+`agent3d scene summary --json` gives the photo a `depthRange: [zFar, zNear]`: the world z of its farthest (depth 0) and nearest (depth 1) pixels. Here the focus depth (0.45, the plane that stays still) is at z = 0, the sky at about z = -1.2 and the nearest facade at about z = 1.15. A depth-map value d sits at local z ≈ (d - focus) × strength × width × 0.25 (exactly: see `docs/scene-format.md`, "3D inside the photo"). The title is at z = -0.15, depth ≈ 0.4: the nearest bay windows on the left and the right facade cover the ends of its first and last letters, the sky and the far houses stay behind it. Move it to z = 0.2 and less of it hides; to z = -0.45 and the buildings on both sides cut deep into it.
 
 ## What to tweak
 

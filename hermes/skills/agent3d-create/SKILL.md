@@ -182,7 +182,7 @@ When the user wants the 3D content *inside* the picture (a title passing behind 
 
 1. Turn it on: `[{ "op": "set", "path": "objects#photo.occlude", "value": true }]`.
 2. Read where the photo's depths are: `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py scene summary --project my-hero --json` → the photo's `depthRange: [zFar, zNear]` (world z of its depth-0 and depth-1 pixels; the `focus` depth is at the photo's own z). A depth-map value d sits at about `z = (d - focus) × strength × width × 0.25` (exact formula in `docs/scene-format.md`, "3D inside the photo").
-3. Place the title: z a little smaller (farther) than the depth of the subject that should cover it, larger than what should stay behind it; x / y so the subject overlaps part of the letters. E.g. a street at `strength` 0.8, `focus` 0.45, `width` 11.9: the sky is at z ≈ -1.2, the nearest facade at z ≈ 1.15, a title at z ≈ 0.12 (depth ≈ 0.5) is covered where the facade is nearer.
+3. Place the title: z a little smaller (farther) than the depth of the subject that should cover it, larger than what should stay behind it; x / y so the subject overlaps part of the letters. E.g. a street at `strength` 0.8, `focus` 0.45, `width` 11.9: the sky is at z ≈ -1.2, the nearest facade at z ≈ 1.15, a title at z ≈ -0.15 (depth ≈ 0.4) is covered at both ends by the nearest buildings; a subtitle at z ≈ 0.35 stays in front.
 4. Particles: give them an `area` whose z spans the whole range (e.g. `"area": [12, 8, 4]` centred at z ≈ 0.4) so they fall in front of and behind the subject.
 5. Render with the pointer at the corners and look: the subject must cover the letters at the same place in every frame (no sliding of the title over the facade):
    ```bash

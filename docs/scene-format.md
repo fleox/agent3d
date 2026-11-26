@@ -529,7 +529,7 @@ With `"occlude": true` a depth photo is a real 3D backdrop: text, meshes, models
 ```json
 { "id": "photo", "kind": "photo", "src": "assets/textures/street.webp", "depth": "assets/depth/street-depth.png",
   "width": 11.9, "strength": 0.8, "focus": 0.45, "occlude": true },
-{ "id": "title", "kind": "text", "text": "OLD TOWN", "size": 0.92, "position": [-0.2, 1.55, 0.12] }
+{ "id": "title", "kind": "text", "text": "OLD TOWN", "size": 0.85, "position": [-0.25, 1.45, -0.15] }
 ```
 
 **Where the photo's pixels are.** A pixel of depth-map value `d` (0 far … 1 near) sits at the photo's local z:
