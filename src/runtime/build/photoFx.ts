@@ -66,9 +66,16 @@ uniform vec3 uLightColor;
 uniform vec3 uLightPos;
 uniform vec4 uLight;
 `;
-// photo-space height of the surface (near = 0, far = -relief / 2)
+// photo-space height of the surface (near = 0, far = -relief / 2) at a depth
+// mip level (the light needs the depth map's mipmaps: lightNeedsDepthMips)
 const LIGHT_DEPTH_FN = /* glsl */ `
-float fxZ(vec2 p) { return (textureLod(uDepth, p, 0.0).r - 1.0) * 0.5 * uLight.z; }
+float fxZ(vec2 p, float lod) { return (textureLod(uDepth, p, lod).r - 1.0) * 0.5 * uLight.z; }
+// normal samples: a nearer object next to this point is an occluder, not a
+// slope of this surface (no halo on a wall around the subjects)
+float fxN(vec2 p, float lod, float zc) {
+  float z = fxZ(p, lod);
+  return mix(z, zc, smoothstep(0.01, 0.04, (z - zc) / max(uLight.z, 1e-3)));
+}
 `;
 // uLightColor = colour × intensity; uLightPos = x, y (photo space), height;
 // uLight = ambient, radius, relief, specular. Lambert + Blinn specular from
@@ -93,16 +100,28 @@ const lightBlock = (depth: boolean) => /* glsl */ `
   }
 `;
 const FX_LIGHT_RELIEF = /* glsl */ `
-    vec2 e = 2.5 / vec2(textureSize(uDepth, 0));
-    S.z = fxZ(uv);
-    // normals exaggerated 3× over the true slope: depth maps are smooth
-    n = normalize(vec3(3.0 * (fxZ(uv - vec2(e.x, 0.0)) - fxZ(uv + vec2(e.x, 0.0))) / (4.0 * e.x * uFxAspect), 3.0 * (fxZ(uv - vec2(0.0, e.y)) - fxZ(uv + vec2(0.0, e.y))) / (4.0 * e.y), 1.0));
+    // Normals from a smoothed depth: a Sobel gradient on the mip level whose
+    // texels are ~1/160 of the image (estimated depth maps carry fine noise
+    // that would light up as ripples on flat walls), below a noise floor the
+    // surface stays flat; real curvature (round bodies, silhouettes) remains.
+    vec2 ts = vec2(textureSize(uDepth, 0));
+    float lod = max(log2(max(ts.x, ts.y) / 160.0), 0.0);
+    vec2 e = exp2(lod) * 1.5 / ts;
+    S.z = fxZ(uv, lod);
+    float z0 = fxN(uv + vec2(-e.x, e.y), lod, S.z), z1 = fxN(uv + vec2(0.0, e.y), lod, S.z), z2 = fxN(uv + e, lod, S.z);
+    float z3 = fxN(uv - vec2(e.x, 0.0), lod, S.z), z5 = fxN(uv + vec2(e.x, 0.0), lod, S.z);
+    float z6 = fxN(uv - e, lod, S.z), z7 = fxN(uv - vec2(0.0, e.y), lod, S.z), z8 = fxN(uv + vec2(e.x, -e.y), lod, S.z);
+    vec2 sl = vec2(z2 + 2.0 * z5 + z8 - z0 - 2.0 * z3 - z6, z0 + 2.0 * z1 + z2 - z6 - 2.0 * z7 - z8) / (16.0 * e * vec2(uFxAspect, 1.0));
+    sl *= smoothstep(0.015, 0.05, length(sl));
+    // exaggerated 3× over the true slope: depth maps are smooth
+    n = normalize(vec3(-3.0 * sl, 1.0));
     vec3 sd = normalize(L - S);
     for (int i = 1; i <= 8; i++) {
       vec3 P = S + sd * (float(i) * 0.035);
-      // local relief only: a big depth jump (a facade against the sky) casts no shadow
-      float dz = fxZ(P.xy / vec2(uFxAspect, 1.0) * 0.5 + 0.5) - P.z;
-      sh = max(sh, clamp(dz * 24.0, 0.0, 1.0) * (1.0 - smoothstep(0.03, 0.08, dz / max(uLight.z, 1e-3))));
+      // local relief only: an occluder well above this surface is another
+      // object (a doll before the wall, a facade before the sky), no shadow
+      float zo = fxZ(P.xy / vec2(uFxAspect, 1.0) * 0.5 + 0.5, lod);
+      sh = max(sh, clamp((zo - P.z) * 24.0, 0.0, 1.0) * (1.0 - smoothstep(0.01, 0.03, (zo - S.z) / max(uLight.z, 1e-3))));
     }
 `;
 
@@ -173,6 +192,7 @@ export interface PhotoFx {
   state: PhotoFxState;
   glsl: string; // "" without effects
   alpha: boolean; // changes the alpha (draw blended)
+  depthMips: boolean; // samples lower depth mip levels (the depth texture needs mipmaps)
   // GLSL statement applying the effects to `c` ("" without effects).
   call(uv: string, depth: string): string;
   frame(t: number, dt: number, input: PhotoFxInput): void;
@@ -255,6 +275,7 @@ export function createPhotoFx(def: PhotoEffectsDef | undefined, opts: PhotoFxOpt
     state,
     glsl: photoFxGlsl(state, opts.depth),
     alpha: !!state.reveal,
+    depthMips: !!state.light && opts.depth,
     call: (uv, depth) => (on ? `c = photoFx(c, ${uv}, ${opts.depth ? depth : "0.5"});` : ""),
     frame,
     uniforms,

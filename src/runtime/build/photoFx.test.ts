@@ -37,6 +37,13 @@ describe("photo effects (photoFx)", () => {
     expect(createPhotoFx({ light: {} }, opts({ depth: false })).call("uv", "d")).toBe("c = photoFx(c, uv, 0.5);");
     expect(createPhotoFx({ reveal: {} }, opts()).call("pxUv", "textureLod(uDepth, pxUv, 0.0).r")).toBe("c = photoFx(c, pxUv, textureLod(uDepth, pxUv, 0.0).r);");
     expect(createPhotoFx({ reveal: {} }, opts()).alpha).toBe(true);
+    // the light's normals read a smoothed depth (lower mips, noise floor): the depth texture needs mipmaps
+    const lit = createPhotoFx({ light: {} }, opts());
+    expect(lit.depthMips).toBe(true);
+    expect(lit.glsl).toMatch(/textureLod\(uDepth, p, lod\)/);
+    expect(lit.glsl).toContain("smoothstep(0.015, 0.05, length(sl))");
+    expect(createPhotoFx({ fog: {} }, opts()).depthMips).toBe(false);
+    expect(createPhotoFx({ light: {} }, opts({ depth: false })).depthMips).toBe(false);
   });
 
   it("reveal: threshold from progress, auto progress from duration / delay", () => {

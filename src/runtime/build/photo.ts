@@ -657,6 +657,13 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     }
   };
   pushFx();
+  if (depth && fx.depthMips) {
+    // The light's normals read a smoothed (lower mip) depth; every other
+    // fetch is textureLod(…, 0.0), unchanged by the mipmaps.
+    depth.generateMipmaps = true;
+    depth.minFilter = THREE.LinearMipmapLinearFilter;
+    depth.needsUpdate = true;
+  }
   const blended = transparent || fx.alpha;
 
   const root = new THREE.Group();
