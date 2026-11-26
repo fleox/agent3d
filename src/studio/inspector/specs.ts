@@ -111,6 +111,18 @@ const PHOTO_EFFECT_TEXT: Record<string, string> = {
   "reveal.softness": "Width of the slice edge.",
   "reveal.duration": "Seconds: progress animates 0 → 1 from delay.",
   "reveal.delay": "Seconds before the reveal starts.",
+  "blur.focus": "Depth in focus (0 far, 1 near; default: the photo's focus).",
+  "blur.amount": "Maximum blur radius, % of the photo width.",
+  "blur.range": "Depth band around the focus kept sharp.",
+  "blur.to": "Rack target depth (with duration): the focus goes focus → to → focus in a loop.",
+  "blur.duration": "Seconds per rack leg (with to).",
+  "blur.delay": "Seconds before racking starts.",
+  "frame.inset": "Frame inset per side (fraction of the photo width / height).",
+  "frame.threshold": "Depth from which the subject steps out of the frame (0 far, 1 near).",
+  "frame.softness": "Softness of the popped subject's edge (depth units).",
+  "frame.border": "Border width (fraction of the photo width; 0 = none).",
+  "frame.color": "Border colour.",
+  "frame.shadow": "Drop shadow of the frame and the popped subject on the page.",
 };
 export const PHOTO_EFFECT_SPECS: Record<PhotoEffectId, ParamSpec[]> = Object.fromEntries(
   PHOTO_EFFECT_IDS.map((id) => [

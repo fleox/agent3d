@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import { bindTrack } from "../timeline/index";
-import { autoLightPath, createPhotoFx, photoFxGlsl, resolvePhotoEffects, revealThreshold, type PhotoFxOptions } from "./photoFx";
+import { autoLightPath, blurFocus, blurTaps, createPhotoFx, photoFxGlsl, resolvePhotoEffects, revealThreshold, type PhotoFxOptions } from "./photoFx";
 
 const rgb = (c: string) => new THREE.Color(c).toArray() as [number, number, number];
 const opts = (o: Partial<PhotoFxOptions> = {}): PhotoFxOptions => ({ depth: true, color: rgb, aspect: 16 / 9, ...o });
@@ -34,8 +34,8 @@ describe("photo effects (photoFx)", () => {
     expect(g).not.toContain("uReveal");
     expect(createPhotoFx({ light: {} }, opts()).glsl).toContain("uDepth");
     expect(createPhotoFx({ light: {} }, opts({ depth: false })).glsl).not.toContain("uDepth");
-    expect(createPhotoFx({ light: {} }, opts({ depth: false })).call("uv", "d")).toBe("c = photoFx(c, uv, 0.5);");
-    expect(createPhotoFx({ reveal: {} }, opts()).call("pxUv", "textureLod(uDepth, pxUv, 0.0).r")).toBe("c = photoFx(c, pxUv, textureLod(uDepth, pxUv, 0.0).r);");
+    expect(createPhotoFx({ light: {} }, opts({ depth: false })).call("uv", "d")).toBe("c = photoFx(c, uv, 0.5, uv);");
+    expect(createPhotoFx({ reveal: {} }, opts()).call("pxUv", "textureLod(uDepth, pxUv, 0.0).r", "vUv")).toBe("c = photoFx(c, pxUv, textureLod(uDepth, pxUv, 0.0).r, vUv);");
     expect(createPhotoFx({ reveal: {} }, opts()).alpha).toBe(true);
   });
 
@@ -92,6 +92,73 @@ describe("photo effects (photoFx)", () => {
     fx.frame(0, 0, still);
     expect(fx.uniforms().uFogColor).toEqual([1, 0, 0]);
     expect(fx.uniforms().uFog[0]).toBe(0.2);
+  });
+
+  it("blur: defaults (focus from the photo), taps per quality tier, depth-aware only with a depth map", () => {
+    const s = resolvePhotoEffects({ blur: {} }, { ...opts(), focus: 0.7 });
+    expect(s.blur).toMatchObject({ focus: 0.7, amount: 0.6, range: 0.1, delay: 0 });
+    expect(s.blur!.to).toBeUndefined();
+    expect(resolvePhotoEffects({ blur: {} }, opts()).blur!.focus).toBe(0.5);
+    expect(resolvePhotoEffects({ blur: {} }, opts({ depth: false })).blur).toBeDefined(); // works flat (even blur)
+    expect([blurTaps("low"), blurTaps("medium"), blurTaps("high"), blurTaps("ultra"), blurTaps(undefined)]).toEqual([8, 12, 16, 16, 16]);
+    const g = createPhotoFx({ blur: {} }, opts({ quality: "low" })).glsl;
+    expect(g).toContain("uniform vec4 uBlur;");
+    expect(g).toContain("i < 8;");
+    expect(g).toContain("textureLod(uDepth, p, 0.0)");
+    expect(createPhotoFx({ blur: {} }, opts()).glsl).toContain("i < 16;");
+    expect(createPhotoFx({ blur: {} }, opts({ depth: false })).glsl).not.toContain("uDepth");
+    // parallax mode: taps centred off the disocclusion jump (PARALLAX_GLSL uniforms), not elsewhere
+    expect(createPhotoFx({ blur: {} }, opts({ parallax: true })).glsl).toContain("uMaxOffset");
+    expect(createPhotoFx({ blur: {} }, opts()).glsl).not.toContain("uMaxOffset");
+    expect(createPhotoFx({ blur: {} }, opts({ parallax: true, depth: false })).glsl).not.toContain("uMaxOffset");
+    // blur runs first (it replaces the colour the other effects shade)
+    const all = createPhotoFx({ fog: {}, blur: {} }, opts()).glsl;
+    expect(all.indexOf("fxCoc(d)")).toBeLessThan(all.indexOf("uFog.y - d"));
+    expect(createPhotoFx({ blur: {} }, opts()).alpha).toBe(false);
+    const u = createPhotoFx({ blur: { amount: 1.5, range: 0.2, focus: 0.3 } }, opts());
+    u.frame(0, 0, still);
+    expect(u.uniforms().uBlur.slice(0, 3)).toEqual([0.3, 0.2, 0.015]);
+  });
+
+  it("blur rack: smooth ping-pong focus → to → focus from delay, still with reduced motion", () => {
+    expect(blurFocus(0.9, 0.1, 2, 1, 0)).toBe(0.9); // before the delay
+    expect(blurFocus(0.9, 0.1, 2, 1, 2)).toBeCloseTo(0.5); // half a leg
+    expect(blurFocus(0.9, 0.1, 2, 1, 3)).toBeCloseTo(0.1); // reached `to`
+    expect(blurFocus(0.9, 0.1, 2, 1, 5)).toBeCloseTo(0.9); // and back
+    expect(blurFocus(0.9, 0.1, 2, 1, 3, true)).toBe(0.9);
+    expect(blurFocus(0.9, undefined, 2, 0, 3)).toBe(0.9); // no rack without `to`
+    expect(blurFocus(0.9, 0.1, undefined, 0, 3)).toBe(0.9);
+    const fx = createPhotoFx({ blur: { focus: 0.9, to: 0.1, duration: 2 } }, opts());
+    fx.frame(2, 0, still);
+    expect(fx.uniforms().uBlur[0]).toBeCloseTo(0.1);
+    // a timeline track on focus moves the rack's start
+    fx.set("blur", "focus", 0.5);
+    fx.frame(0, 0, still);
+    expect(fx.uniforms().uBlur[0]).toBe(0.5);
+  });
+
+  it("frame: alpha, scalar inset, uniforms in photo space, subject shadow only with depth", () => {
+    const fx = createPhotoFx({ frame: { inset: 0.25, border: 0.05, color: "#000000", shadow: 0.5, threshold: 0.7 } }, opts({ aspect: 2 }));
+    expect(fx.alpha).toBe(true);
+    expect(fx.state.frame).toMatchObject({ inset: [0.25, 0.25], softness: 0.04 });
+    fx.frame(0, 0, still);
+    const u = fx.uniforms();
+    expect(u.uFrame[0]).toBeCloseTo(1); // (1 - 2 × 0.25) × aspect
+    expect(u.uFrame[1]).toBeCloseTo(0.5);
+    expect(u.uFrame[2]).toBeCloseTo(0.2); // border × 2 × aspect
+    expect(u.uFrameB).toEqual([0.7, 0.5, 1, 1]); // + parallax UV inset (none here)
+    expect(createPhotoFx({ frame: {} }, opts({ inset: [0.9, 0.8] })).uniforms().uFrameB.slice(2)).toEqual([0.9, 0.8]);
+    expect(u.uFrameColor).toEqual([0, 0, 0]);
+    expect(resolvePhotoEffects({ frame: {} }, opts()).frame).toMatchObject({ inset: [0.12, 0.12], threshold: 0.6, border: 0.015, shadow: 0.35, color: [1, 1, 1] });
+    expect(fx.glsl).toContain("vec4 photoFx(vec4 c, vec2 uv, float d, vec2 s)");
+    expect(fx.glsl).toContain("uFrameB.zw, 0.0).r"); // subject shadow taps (depth at the rest position)
+    expect(fx.glsl).toContain("dp = min(dp"); // eroded pop-out mask
+    expect(createPhotoFx({ frame: {} }, opts({ depth: false })).glsl).not.toContain("uDepth");
+    // inset animates as a vec2 (or one number for both sides)
+    fx.set("frame", "inset", 0.1);
+    expect(fx.get("frame", "inset")).toEqual([0.1, 0.1]);
+    fx.set("frame", "inset.y", 0.3);
+    expect(fx.get("frame", "inset")).toEqual([0.1, 0.3]);
   });
 
   it("timeline tracks reach the photo effects through the host", () => {

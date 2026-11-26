@@ -455,7 +455,9 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 "effects": {
   "fog":    { "color": "#dfe8f2", "amount": 0.6, "start": 0.7, "end": 0, "drift": 0.3 },
   "light":  { "color": "#ffe2b0", "intensity": 1, "ambient": 0.75, "position": [0.4, 0.4], "height": 0.6, "radius": 0.8, "relief": 1, "specular": 0.25, "follow": "pointer" },
-  "reveal": { "progress": 1, "from": "far", "softness": 0.15, "duration": 2, "delay": 0.3 }
+  "reveal": { "progress": 1, "from": "far", "softness": 0.15, "duration": 2, "delay": 0.3 },
+  "blur":   { "focus": 0.7, "amount": 0.6, "range": 0.1, "to": 0.05, "duration": 3, "delay": 0.5 },
+  "frame":  { "inset": [0.12, 0.12], "threshold": 0.6, "softness": 0.04, "border": 0.015, "color": "#ffffff", "shadow": 0.35 }
 }
 ```
 
@@ -480,12 +482,26 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 | | `softness` | 0.15 | Width of the slice edge (depth units) |
 | | `duration` | | Seconds: when set, `progress` animates 0 → 1 by itself from `delay` (`progress` is then ignored) |
 | | `delay` | 0 | Seconds before the reveal starts |
+| `blur` | `focus` | the photo's `focus` | Depth in focus (0 far … 1 near) |
+| | `amount` | 0.6 | Maximum blur radius, in % of the photo width (0..5) |
+| | `range` | 0.1 | Depth band around `focus` kept sharp; the blur is full 0.3 beyond it |
+| | `to` | | Rack target depth: with `duration`, the focus goes `focus` → `to` → `focus` in a smooth ping-pong loop |
+| | `duration` | | Seconds per rack leg (with `to`) |
+| | `delay` | 0 | Seconds before racking starts |
+| `frame` | `inset` | 0.12 | Frame inset per side: a number, or `[x, y]` (fractions of the photo width / height, 0..0.45) |
+| | `threshold` | 0.6 | Depth from which the subject is drawn outside the frame (0 far … 1 near) |
+| | `softness` | 0.04 | Softness of the popped subject's edge (depth units) |
+| | `border` | 0.015 | Border width, fraction of the photo width (0 = none) |
+| | `color` | `#ffffff` | Border colour |
+| | `shadow` | 0.35 | Drop shadow of the frame and of the popped subject on the page, 0..1 |
 
-- `fog` and `reveal` need a depth map (ignored on a flat photo, `validate` says so); `light` also works on a flat photo (flat surface, a pool of light).
+- `fog` and `reveal` need a depth map (ignored on a flat photo, `validate` says so); `light` also works on a flat photo (flat surface, a pool of light), `blur` too (an even blur of the whole image, e.g. a focus-in intro) and `frame` (a plain framed photo: nothing pops out).
+- **Rack focus** (`blur`): a lens-like blur (16 taps on a golden-angle disc from the photo's mipmaps, highlights weigh more; 12 taps on the `medium` quality tier, 8 on `low`) that grows with each pixel's depth distance to `focus`. A blurred background never haloes over a sharp subject; a blurred foreground does bleed over a sharp background, like a real lens. Recipe: look at the depth map, pick the subject's depth for `focus` and the far distance for `to` — `{ "focus": 0.7, "to": 0.05, "duration": 3, "delay": 0.5 }` racks from the foreground to the mountains and back. For a one-shot rack on your own timing, leave `to` out and animate `effects.blur.focus` from the timeline. Reduced motion: the focus stays on `focus`.
+- **Out of frame** (`frame`): the photo is shown inside a smaller frame (the border is drawn on the photo's surface, so it stays put while the parallax moves), the near subject (depth ≥ `threshold`) is drawn outside it as if stepping out of the picture, and the rest outside the frame is transparent: the scene background (the page) shows. Recipe: a photo whose near subject crosses the frame edge (a head above the top edge, an object beside it), `threshold` between the subject's depth and the background's, `focus` below the subject's depth (e.g. 0.3) so the subject slides over the border as the view moves, and a background colour matching the photo's ground when the ground is near (it pops out too). Popped content fades out near the photo's own edges. Reads best in `parallax` mode (in `mesh` / `layers` the frame follows the relief / each slice).
 - The light keeps the photo's colours (it scales them) and never clips highlights to white. Reduced motion: the light stays at `position` and a timed `reveal` is shown finished.
 - A timed `reveal` hides the photo at t = 0: set `target.posterTime` after `delay + duration` so posters show the photo.
 - Two photos stacked (same size and position, the top one with `reveal`) make a photo-to-photo transition, slice by slice.
-- **Timeline**: `<photoId>.effects.<effect>.<param>` animates numbers, colours and the light `position` (`[x, y]` keys, or `.x` / `.y`), e.g. rack the light across with `{ "target": "hero.effects.light.position", "keys": [[0, [-0.9, 0.5]], [4, [0.9, 0.5]]] }` (with `follow: "none"`), or drive `effects.reveal.progress` / `effects.fog.amount`. The effect must be declared on the photo (`{}` is enough). `from` and `follow` are not animatable.
+- **Timeline**: `<photoId>.effects.<effect>.<param>` animates numbers, colours and the light `position` (`[x, y]` keys, or `.x` / `.y`), e.g. rack the light across with `{ "target": "hero.effects.light.position", "keys": [[0, [-0.9, 0.5]], [4, [0.9, 0.5]]] }` (with `follow: "none"`), or drive `effects.reveal.progress` / `effects.fog.amount` / `effects.blur.focus` / `effects.frame.inset` (`[x, y]` keys, or `.x` / `.y`). The effect must be declared on the photo (`{}` is enough). `from` and `follow` are not animatable.
 
 **Depth-map convention.** A grayscale image, **white = near, black = far**, the same aspect ratio as the photo. Its alpha channel, when present, marks depth discontinuities: **alpha 0 = cut edge** (the runtime hides the stretched triangles there in `mesh` / `layers`). Keep it a **PNG**: lossy JPEG / WebP compression adds steps to the relief and drops the alpha mask (`check` reports a JPEG depth map; `assets optimize` only resizes PNG depth maps, losslessly, ~512–1024 px — they are smooth data — and never converts them to a lossy format).
 

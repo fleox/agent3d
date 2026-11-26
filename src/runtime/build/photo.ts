@@ -30,7 +30,7 @@
 // while the pointer / gyro drives the view. Reduced motion: no auto drift,
 // half pointer amount.
 //
-// Effects (def.effects: fog / light / reveal, ./photoFx.ts) run in every mode
+// Effects (def.effects: fog / light / reveal / blur / frame, ./photoFx.ts) run in every mode
 // on the sampled texel; their uniforms are shared by all the photo's materials.
 //
 // 3D inside the photo (`occlude: true`, opt-in): the photo writes the true
@@ -213,7 +213,7 @@ ${OCCLUDE_FRAG}
 varying vec2 vUv;
 void main() {
   vec4 c = parallaxTexel(vUv);
-  ${fx.call("pxUv", "textureLod(uDepth, pxUv, 0.0).r")}
+  ${fx.call("pxUv", "textureLod(uDepth, pxUv, 0.0).r", "vUv")}
   if (c.a * uOpacity < 0.004) discard;
   #ifdef PHOTO_OCCLUDE
   if (c.a < 0.5) discard;
@@ -354,7 +354,7 @@ void main() {
     uv += away * texel * 2.0;
   }
   vec4 c = texture2D(uMap, uv);
-  ${fx.call("uv", "textureLod(uDepth, uv, 0.0).r")}
+  ${fx.call("uv", "textureLod(uDepth, uv, 0.0).r", "vUv")}
   if (c.a * uOpacity < 0.004) discard;
   gl_FragColor = shade(c, 1.0);
   #include <tonemapping_fragment>
@@ -424,7 +424,7 @@ void main() {
     if (!found && uBackground < 0.5) discard;
   }
   vec4 c = textureGrad(uMap, cuv, dFdx(base), dFdy(base));
-  ${fx.call("cuv", "textureLod(uDepth, cuv, 0.0).r")}
+  ${fx.call("cuv", "textureLod(uDepth, cuv, 0.0).r", "vUv")}
   gl_FragColor = shade(c, a);
   if (gl_FragColor.a < 0.004) discard;
   #ifdef PHOTO_OCCLUDE
@@ -577,6 +577,10 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     live: !ctx.deterministic,
     smoothing: motion.smoothing,
     speed: motion.speed,
+    focus,
+    quality: ctx.quality,
+    parallax: mode === "parallax",
+    inset: mode === "parallax" || mode === "layers" ? parallaxParams(strength, width, height).inset : undefined,
   });
   // Effect uniforms: one object per name, shared by every material of the photo.
   const fxUniforms: Record<string, THREE.IUniform> = {};

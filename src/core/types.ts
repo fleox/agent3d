@@ -469,6 +469,8 @@ export interface PhotoEffectsDef {
   fog?: PhotoFogDef;
   light?: PhotoLightDef;
   reveal?: PhotoRevealDef;
+  blur?: PhotoBlurDef;
+  frame?: PhotoFrameDef;
 }
 
 // Atmospheric haze: depths farther than `start` fade into `color`, fully at `end`.
@@ -500,6 +502,32 @@ export interface PhotoRevealDef {
   softness?: number; // slice edge width in depth units (default 0.15)
   duration?: number; // seconds: progress animates 0 → 1 from t = delay
   delay?: number; // seconds (default 0)
+}
+
+// Rack focus / depth of field: a lens-like blur growing with the distance of
+// each depth to `focus` (beyond `range`). Flat photo: the whole image blurs
+// evenly (depth 0.5). Racking: with `to` + `duration`, the focus moves
+// focus → to → focus in a smooth ping-pong loop (`duration` s per leg) from
+// t = delay; reduced motion stays on `focus`. Or animate effects.blur.focus.
+export interface PhotoBlurDef {
+  focus?: number; // depth in focus, 0 far .. 1 near (default: the photo's focus)
+  amount?: number; // max blur radius in % of the photo width (default 0.6)
+  range?: number; // depth band around focus kept sharp (default 0.1)
+  to?: number; // rack target depth (with duration)
+  duration?: number; // seconds per rack leg
+  delay?: number; // seconds before racking starts (default 0)
+}
+
+// "Out of frame" pop-out: the photo inside an inset frame, the near subject
+// (depth >= threshold) drawn outside it as if stepping out of the picture;
+// the rest outside the frame is transparent (the page shows).
+export interface PhotoFrameDef {
+  inset?: number | [number, number]; // frame inset per side, fraction of the photo width / height (default 0.12)
+  threshold?: number; // depth from which the subject pops out (default 0.6)
+  softness?: number; // pop-out edge softness in depth units (default 0.04)
+  border?: number; // border width, fraction of the photo width (default 0.015; 0 = none)
+  color?: Color; // border colour (default "#ffffff")
+  shadow?: number; // 0..1 drop shadow of the frame and the popped subject (default 0.35)
 }
 
 export type ObjectKind = ObjectDef["kind"];

@@ -1042,15 +1042,21 @@ function photoEffects(v: V, fx: unknown, p: string, hasDepth: boolean) {
       if (sp.type === "number") v.number(val, at, { min: sp.min, max: sp.max });
       else if (sp.type === "color") v.color(val, at);
       else if (sp.type === "enum") v.enumOf(val, sp.options ?? [], at);
+      else if (sp.type === "vec2" && sp.scalar && typeof val === "number") v.number(val, at, { min: sp.min, max: sp.max });
       else if (sp.type === "vec2" && v.vec(val, 2, at)) {
         const a = val as number[];
-        if (a.some((x) => x < (sp.min ?? -Infinity) || x > (sp.max ?? Infinity))) v.error("range", at, `${JSON.stringify(val)} is out of range (each coordinate in ${sp.min}..${sp.max}, photo space: -1 left / bottom, 1 right / top).`);
+        if (a.some((x) => x < (sp.min ?? -Infinity) || x > (sp.max ?? Infinity))) v.error("range", at, `${JSON.stringify(val)} is out of range (each coordinate in ${sp.min}..${sp.max}${sp.min === -1 ? ", photo space: -1 left / bottom, 1 right / top" : ""}).`);
       }
     }
     if (spec.needsDepth && !hasDepth) v.info("ignored", ep, `The ${id} effect needs a depth map: this photo has none, so it is ignored.`, `Set the photo's depth (agent3d assets depth <image>), or remove effects.${id}.`);
   }
   const r = fx.reveal;
   if (isObj(r) && r.duration !== undefined && r.progress !== undefined) v.info("ignored", `${p}.reveal.progress`, "reveal.progress is ignored when reveal.duration is set (progress animates 0 → 1 from delay).", "Remove duration to drive progress yourself (e.g. a timeline track on effects.reveal.progress).");
+  const b = fx.blur;
+  if (isObj(b) && (b.to === undefined) !== (b.duration === undefined)) v.info("ignored", `${p}.blur.${b.to === undefined ? "duration" : "to"}`, "The blur racks focus only with both `to` and `duration`: this one is ignored.", 'Set both (e.g. { "focus": 0.9, "to": 0.1, "duration": 3 }) or drive effects.blur.focus from a timeline track.');
+  if (isObj(b) && !hasDepth) v.info("flat", `${p}.blur`, "On a photo without a depth map the blur is even over the whole image (its depth is 0.5).", "Set the photo's depth (agent3d assets depth <image>) for a depth-of-field blur.");
+  const f = fx.frame;
+  if (isObj(f) && !hasDepth) v.info("flat", `${p}.frame`, "On a photo without a depth map nothing pops out of the frame (its depth is 0.5): the photo is just framed.", "Set the photo's depth (agent3d assets depth <image>) for the out-of-frame pop-out.");
 }
 
 function catalogRef(v: V, section: Exclude<CatalogSection, "materialPresets">, id: unknown, path: string): CatalogEntry | undefined {
