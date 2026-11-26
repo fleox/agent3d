@@ -442,8 +442,31 @@ A 2D image given depth by a **depth map**: the picture moves in 3D with the poin
 | `segments` | 256 | `mesh` only: grid cells on the long side, 8..1024 (integer) |
 | `layers` | 6 | `layers` only: number of slices, 2..16 (integer) |
 | `edgeCut` | 0.08 | `mesh` / `layers`: hide stretched edges where the depth jumps more than this (0..1; 0 = off) |
-| `motion` | | What moves the view (combined): `pointer` (0..1, default 1), `scroll` (0..1, default 0), `gyro` (phones, default true when `pointer` > 0), `auto` (`sway` default, `orbit`, `zoom`, `none`: a looping drift used in headless renders, videos and on touch screens), `speed` (cycles per 10 s), `smoothing` (0..1) |
+| `motion` | | What moves the view (combined): `pointer` (0..1, default 1), `scroll` (0..1, default 0), `gyro` (phones, default true when `pointer` > 0), `auto` (`sway` default, `orbit`, `zoom`, `none`, or a cinematic move `dolly` / `pan` / `rise` / `vertigo` — below: plays in headless renders, videos and on touch screens), `speed` (cycles per 10 s), `smoothing` (0..1), `loop` (default true), `duration` (seconds, one-way moves), `progress` (0..1, below) |
 | `material` | | Only `opacity`, `color` (tint) and `emissiveIntensity` (photos are unlit); other material fields are ignored with a warning |
+
+**Photo motion: cinematic moves.** `motion.auto` is a camera move computed from the single photo and its depth, a pure function of time (seek-safe, reproducible renders), faded out while the pointer / gyro drives the view and off under reduced motion:
+
+| `auto` | Move |
+|---|---|
+| `sway` (default) | horizontal figure-eight drift |
+| `orbit` | circle around the focus (its radius eases in over the first cycle) |
+| `zoom` | gentle push in and out |
+| `dolly` | slow push in toward the `focus` plane, near things growing faster than far ones (a Ken Burns with depth) |
+| `pan` | lateral truck, left → right |
+| `rise` | crane up, pushing in a little |
+| `vertigo` | dolly zoom: the `focus` plane keeps its size while the background swells and the foreground recedes (`mesh` mode: a real camera move away from the photo + narrower field of view) |
+| `none` | still (pointer / gyro / scroll only) |
+
+- `loop` (default `true`): a seamless loop of 10 / `speed` seconds — `dolly`, `zoom`, `vertigo` go there and back (photo as is at t = 0), `pan` / `rise` swing from the centre to both ends, `sway` / `orbit` run one cycle. Videos of one loop (`render --video … --preset vertical`) loop without a jump.
+- `loop: false`: one move (eased in and out) over `duration` seconds (default 10 / `speed`), then held on its last pose; `pan` goes left → right, `rise` low → high.
+- `progress` (0..1): the move's position instead of time. A timeline track `"<id>.motion.progress"` drives it — with `timeline.trigger: "scroll"` the page scroll dives into the photo (template `photo-scroll-story`); `"<id>.material.opacity"` tracks crossfade stacked photos. While driven, the push / zoom stays when the pointer looks around.
+- Defaults stay inside the photo at any `strength` (the push magnifies, never shows the image edges).
+
+```json
+{ "id": "street", "kind": "photo", "src": "assets/textures/street.webp", "depth": "assets/depth/street-depth.png", "strength": 0.8, "focus": 0.45,
+  "motion": { "auto": "dolly", "speed": 1 } }
+```
 
 **Depth-map convention.** A grayscale image, **white = near, black = far**, the same aspect ratio as the photo. Its alpha channel, when present, marks depth discontinuities: **alpha 0 = cut edge** (the runtime hides the stretched triangles there in `mesh` / `layers`). Keep it a **PNG**: lossy JPEG / WebP compression adds steps to the relief and drops the alpha mask (`check` reports a JPEG depth map; `assets optimize` only resizes PNG depth maps, losslessly, ~512–1024 px — they are smooth data — and never converts them to a lossy format).
 

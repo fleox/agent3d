@@ -112,13 +112,30 @@ When the user gives a photo or an image and wants it in 3D, with parallax, "movi
    [{ "op": "updateObject", "id": "photo", "set": { "src": "assets/textures/photo.jpg", "depth": "assets/depth/photo-depth.png", "strength": 0.5, "focus": 0.5 } }]
    ```
    Cover the frame: with the camera at fov 35 and distance 10, a 16:9 frame is about 11.2 × 6.3 units, so a 3:2 photo needs `width` ≈ 11.9 (a 4:3 photo ≈ 11.2; a portrait photo needs `height` ≈ 6.6 and leaves side bars, so prefer a portrait `target.aspect` or a card). Keep the camera still: the photo's shader moves the view.
-4. **Choose the mode**: `parallax` (default, 2 triangles) for hero banners and small motions; `mesh` (a displaced grid) when the view moves more, e.g. `motion.auto: "orbit"`; `layers` (depth slices) for a pop-up-book look. `motion`: `pointer` (0..1), `gyro` (phones), `auto` (`sway` default, `orbit`, `zoom`, `none`: plays in renders, videos and on touch screens), `speed`, `scroll`.
+4. **Choose the mode**: `parallax` (default, 2 triangles) for hero banners and small motions; `mesh` (a displaced grid) when the view moves more, e.g. `motion.auto: "orbit"`; `layers` (depth slices) for a pop-up-book look. `motion`: `pointer` (0..1), `gyro` (phones), `auto` (`sway` default, `orbit`, `zoom`, `none`, or a cinematic move below: plays in renders, videos and on touch screens), `speed` (cycles per 10 s), `scroll`.
 5. **Render and look**, then move the pointer to see the depth:
    ```bash
    npx -y @fleox/agent3d@0.4.0 render --project my-hero --count 4 --sheet --json
    npx -y @fleox/agent3d@0.4.0 render --project my-hero --frames 0.5,1,1.5,2 --sheet --input '[{"t": 0.1, "pointer": [-1, 0]}, {"t": 0.9, "pointer": [1, 0]}, {"t": 1.4, "pointer": [0, 1]}, {"t": 1.9, "pointer": [0, -1]}]' --json
    ```
    Near things should slide against far things between frames, without smeared or doubled edges around the subject.
+
+**Cinematic moves** (a camera move from a single photo — set `motion.auto`, look at a sheet over one loop `--frames 0,2.5,5,7.5`):
+
+| `auto` | Move | Good for |
+|---|---|---|
+| `dolly` | slow push in toward the `focus` plane (a Ken Burns with depth) | streets, interiors, products, portraits |
+| `pan` | lateral truck left → right | landscapes, skylines, wide shots |
+| `rise` | crane up, pushing in a little | buildings, mountains, reveals |
+| `vertigo` | dolly zoom: the `focus` plane keeps its size while the background swells | dramatic subjects with a deep background (set `focus` to the subject's depth) |
+
+They loop seamlessly every 10 / `speed` s (ping-pong, safe for video loops); `"loop": false` plays one move over `motion.duration` seconds and holds; `"progress": 0..1` freezes the move, and a timeline track `"<id>.motion.progress"` drives it (scroll story: `timeline.trigger: "scroll"`, see the `photo-scroll-story` template; crossfade photos with `"<id>.material.opacity"` tracks). Defaults are artefact-free at any `strength`; reduced motion keeps the photo still.
+
+**Social video** in one line (1080×1920, 30 fps, one seamless loop of the move, MP4 H.264 ~10 Mbit/s, the photo covers the vertical frame — no edges; `notes` say what was cropped):
+```bash
+npx -y @fleox/agent3d@0.4.0 render --project my-hero --video renders/reel.mp4 --preset vertical --json   # or square / landscape / story
+```
+Check the framing first with PNGs: `render --preset vertical --count 4 --sheet`. Text placed for 16:9 gets cropped in 9:16: make the headline narrower or drop it for the video.
 
 Tips:
 

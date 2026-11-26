@@ -47,7 +47,7 @@
 <tr>
 <td width="33%" valign="top">
 <h3>🎬 Stunning by default</h3>
-<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 32 templates and validated recipes, with art direction built into the skills.</p>
+<p>One-line light rigs, physical skies, contact shadows, physically based materials (car paint, ceramic, glass, diamond…) and cinematic <b>looks</b> (bloom, ambient occlusion, depth of field, grading). Agents start from 33 templates and validated recipes, with art direction built into the skills.</p>
 </td>
 <td width="33%" valign="top">
 <h3>🤖 Agent-native</h3>
@@ -242,12 +242,12 @@ Move / rotate / scale gizmos, an editor camera and the scene camera with framing
   <img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/templates-grid.jpg" width="900" alt="A grid of the 31 Agent3D templates: banners, heroes, landscapes, product cards, dioramas and games">
 </p>
 
-32 starter projects, each a complete scene that passes `check --render`: 8 banners, 13 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
+33 starter projects, each a complete scene that passes `check --render`: 8 banners, 14 heroes and landscapes, 2 product cards, 2 square dioramas and 7 playable games. Start from one with `agent3d new my-scene --template <id>`; `agent3d templates list` lists them and `templates show <id>` describes one.
 
 To see them all live in a browser, build the gallery from a clone (`npm install --legacy-peer-deps && npm run build:runtime && npm run build:agent`, then `node scripts/build-examples.mjs`) and serve `examples/site/` with any static server (for example `python3 -m http.server -d examples/site`): each card plays the real embed, with the brief the agent that built the template received.
 
 <details>
-<summary><b>All 32 templates</b></summary>
+<summary><b>All 33 templates</b></summary>
 
 | Preview | Template | Kind | What it is |
 |---|---|---|---|
@@ -272,6 +272,7 @@ To see them all live in a browser, build the gallery from a clone (`npm install 
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/landscape-island/preview.png" width="160" alt="Tropical low-poly island"> | [**Tropical low-poly island**](https://github.com/fleox/agent3d/tree/main/templates/landscape-island)<br>`landscape-island` | hero · 16:9 | Sunny 16:9 procedural diorama: a tropical low-poly island (palm-lined beaches, round-canopy forest, rocky summit) in turquoise lagoon water with animated shore foam, puffy clouds and seabirds circling, cinematic grade, slow orbit + drag. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/landscape-night-galaxy/preview.png" width="160" alt="Night galaxy landscape"> | [**Night galaxy landscape**](https://github.com/fleox/agent3d/tree/main/templates/landscape-night-galaxy)<br>`landscape-night-galaxy` | hero · 16:9 | Calm 16:9 night hero: glowing crystal clusters (purple, cyan, pink) on dark low-poly hills under a vast rotating spiral galaxy, northern-lights aurora curtains, twinkling stars and drifting fireflies, bloom and a cool grade, slow 20 s camera drift + pointer parallax. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/landscape-valley-sunset/preview.png" width="160" alt="Mountain valley at sunset"> | [**Mountain valley at sunset**](https://github.com/fleox/agent3d/tree/main/templates/landscape-valley-sunset)<br>`landscape-valley-sunset` | hero · 21:9 | Atmospheric 21:9 landscape: a low-poly mountain valley closed by a snowy range, a pine forest and an animated lake under a physical golden-hour sky, the sun low at the edge of the frame with soft god rays, valley height fog, pink clouds and fireflies — cinematic grade, slow camera drift + pointer parallax. |
+| <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/photo-scroll-story/preview.png" width="160" alt="Photo scroll story"> | [**Photo scroll story**](https://github.com/fleox/agent3d/tree/main/templates/photo-scroll-story)<br>`photo-scroll-story` | hero · 16:9 | A scroll-driven hero made of two 3D photos (CC0): scrolling dives down a blue-hour street (dolly), dissolves into a mountain lake and ends on a dolly zoom, with headlines fading between the chapters (data-bound). |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/card-hover-3d/preview.png" width="160" alt="3D product card"> | [**3D product card**](https://github.com/fleox/agent3d/tree/main/templates/card-hover-3d)<br>`card-hover-3d` | card · 4:5 | Clean product card (4:5): a PBR water bottle turning over a glossy sage disc with a soft contact shadow, softbox lighting and product look; it lifts, tilts toward the pointer and grows on hover, with a data-bound name, price and link — drop it into any product grid. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/card-product-tilt/preview.png" width="160" alt="Product tilt card"> | [**Product tilt card**](https://github.com/fleox/agent3d/tree/main/templates/card-product-tilt)<br>`card-product-tilt` | card · 4:5 | Collectible-style product card (4:5): a glossy PBR rubber duck pops out of a holographic-foil card with a sun disc, tilting toward the pointer with a shifting rainbow glare; data-bound name, price, badge and link — drop it in any product grid. |
 | <img src="https://raw.githubusercontent.com/fleox/agent3d/main/templates/diorama-city/preview.png" width="160" alt="Isometric city diorama"> | [**Isometric city diorama**](https://github.com/fleox/agent3d/tree/main/templates/diorama-city)<br>`diorama-city` | square · 1:1 | A Townscaper-like isometric city block (1:1): pastel procedural buildings with lit windows, a park and street trees on a floating clay slab, library cars, a taxi and a police car driving the streets, low warm sun with long soft shadows, tilt-shift miniature blur and a cinematic grade, slow orbit. |

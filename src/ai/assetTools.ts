@@ -8,6 +8,7 @@ import { optimizeAssets, optimizedExportSources, type ImageCodec, type TextureFo
 import { OpsError } from "../ops/context";
 import { buildExport, prefixFiles, type ExportFormat } from "../ops/export";
 import { SOURCE_IDS, type SourceId } from "../ops/sources";
+import { SOCIAL_PRESET_IDS, parseSocialPreset, type SocialPresetId } from "../ops/social";
 import { compactIssues, num, optStr, str } from "./shared";
 import { lastRender } from "./sceneTools";
 import type { AiTool } from "./types";
@@ -165,7 +166,7 @@ export const ASSET_TOOLS: AiTool[] = [
   {
     name: "export",
     description:
-      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page), snippet.html (paste into the page), EMBED.md and frameworks/ (React / Vue / Svelte wrappers). "zip": the same folder as one <name>-embed.zip. "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Options: `baseUrl` (where the folder is served, so the snippet works from any page), `cacheBust` (versioned runtime folder + ?v= hash for long-term caching), `integrity` (SRI hash on the runtime script, default true), `optimize` (export lighter copies of the assets — the project is not modified), `og` (render a 1200×630 og-image.png social preview), `runtime` ("auto" default: a scene that is a single 3D photo ships the photo-only lite runtime agent3d-photo.js, ~14 KB gzipped instead of ~210 KB; "full" forces agent3d-runtime.js — the result says which in `runtime`, with `runtimeReasons` when full). Run check first; returns the snippet, sizes and budget warnings. When the host can render (CLI / MCP / Studio with Chrome): "poster" writes a still image (dist/poster.webp; `time`, `image`), "video" an MP4 / WebM (dist/video.webm; `codec`, `duration`, `fps`, `size`), "gif" / "animated-webp" an animated image (dist/animation.gif / .webp), returning { path } — `quality` supersamples, `transparent` keeps the alpha (poster, gif, animated-webp).',
+      'Build the self-contained embed and write it into the project (default dist/<format>/). "embed": a folder for any static site — agent3d-runtime/ (shared), <name>/scene.json + assets + scripts, index.html (demo page), snippet.html (paste into the page), EMBED.md and frameworks/ (React / Vue / Svelte wrappers). "zip": the same folder as one <name>-embed.zip. "single-html": one <name>.html with everything inline. Library assets are copied; nothing is hotlinked. Options: `baseUrl` (where the folder is served, so the snippet works from any page), `cacheBust` (versioned runtime folder + ?v= hash for long-term caching), `integrity` (SRI hash on the runtime script, default true), `optimize` (export lighter copies of the assets — the project is not modified), `og` (render a 1200×630 og-image.png social preview), `runtime` ("auto" default: a scene that is a single 3D photo ships the photo-only lite runtime agent3d-photo.js, ~14 KB gzipped instead of ~210 KB; "full" forces agent3d-runtime.js — the result says which in `runtime`, with `runtimeReasons` when full). Run check first; returns the snippet, sizes and budget warnings. When the host can render (CLI / MCP / Studio with Chrome): "poster" writes a still image (dist/poster.webp; `time`, `image`), "video" an MP4 / WebM (dist/video.webm; `codec`, `duration`, `fps`, `size`; `preset` vertical / square / landscape / story = a social-network MP4: 1080×1920 / 1080×1080 / 1920×1080, 30 fps, one seamless loop of the 3D photo motion, a cover fit so the photo fills the frame — dist/video-<preset>.mp4), "gif" / "animated-webp" an animated image (dist/animation.gif / .webp), returning { path } — `quality` supersamples, `transparent` keeps the alpha (poster, gif, animated-webp).',
     inputSchema: {
       type: "object",
       properties: {
@@ -184,7 +185,8 @@ export const ASSET_TOOLS: AiTool[] = [
         time: { type: "number", minimum: 0, description: "poster: time in seconds (default target.posterTime)." },
         image: { type: "string", enum: ["webp", "png"], description: "poster: image format (default webp)." },
         codec: { type: "string", enum: ["webm", "mp4"], description: "video: WebM VP9 (default) or MP4 H.264 (needs Google Chrome); an .mp4 `out` implies mp4." },
-        duration: { type: "number", minimum: 0.1, maximum: 120, description: "video / gif / animated-webp: seconds (default the timeline duration, else 5)." },
+        duration: { type: "number", minimum: 0.1, maximum: 120, description: "video / gif / animated-webp: seconds (default the timeline duration, else 5; with a preset one seamless loop of the 3D photo motion)." },
+        preset: { type: "string", enum: [...SOCIAL_PRESET_IDS], description: "video / gif / animated-webp: social preset — vertical (1080×1920, Reels / TikTok / LinkedIn), square (1080×1080), landscape (1920×1080), story (1080×1920, max 15 s). Sets size, 30 fps, duration (one seamless loop), bitrate and a cover fit (the 3D photo fills the frame). Video default codec: mp4." },
         fps: { type: "integer", minimum: 1, maximum: 60, description: "video / gif / animated-webp: frames per second (default 30 / 15 / 20)." },
         size: { type: "string", description: 'poster / video / gif / animated-webp: pixel size "WxH" (default from the target aspect).' },
         quality: { type: "string", enum: ["draft", "standard", "high", "ultra"], description: "poster / video / gif / animated-webp: supersampling — draft / standard (1×, default), high (2×), ultra (3×)." },
@@ -276,9 +278,16 @@ async function mediaExport(ctx: Parameters<AiTool["handler"]>[0], requested: (ty
   if (quality !== undefined && !QUALITIES.includes(quality)) throw new OpsError("invalid", `Unknown quality "${quality}".`, `Use ${QUALITIES.join(", ")}.`);
   const outIn = optStr(input, "out")?.replace(/^\.?\//, "");
   const image = (optStr(input, "image") ?? (outIn?.endsWith(".png") ? "png" : "webp")) as "webp" | "png";
-  const codec = (optStr(input, "codec") ?? (outIn?.toLowerCase().endsWith(".mp4") ? "mp4" : "webm")) as "webm" | "mp4";
+  const presetIn = optStr(input, "preset");
+  if (presetIn !== undefined && !(SOCIAL_PRESET_IDS as readonly string[]).includes(presetIn)) {
+    const p = parseSocialPreset(presetIn);
+    throw new OpsError("invalid", "error" in p ? p.error : `Unknown preset "${presetIn}".`, "error" in p ? p.hint : undefined);
+  }
+  const preset = requested === "poster" ? undefined : (presetIn as SocialPresetId | undefined);
+  const codec = (optStr(input, "codec") ?? (outIn?.toLowerCase().endsWith(".mp4") || (preset && !outIn) ? "mp4" : "webm")) as "webm" | "mp4";
   if (codec !== "webm" && codec !== "mp4") throw new OpsError("invalid", `Unknown codec "${codec}".`, "Use webm or mp4.");
-  const def = requested === "poster" ? `dist/poster.${image}` : requested === "video" ? `dist/video.${codec}` : requested === "gif" ? "dist/animation.gif" : "dist/animation.webp";
+  const suffix = preset ? `-${preset}` : "";
+  const def = requested === "poster" ? `dist/poster.${image}` : requested === "video" ? `dist/video${suffix}.${codec}` : requested === "gif" ? `dist/animation${suffix}.gif` : `dist/animation${suffix}.webp`;
   const out = outIn ?? def;
   if (!out.startsWith("dist/") && !out.startsWith("renders/")) throw new OpsError("invalid", `out must be under dist/ or renders/ (got "${out}").`, `Use e.g. "${def}".`);
   const ext = out.split(".").pop()?.toLowerCase();
@@ -292,11 +301,12 @@ async function mediaExport(ctx: Parameters<AiTool["handler"]>[0], requested: (ty
     fps: num(input, "fps"),
     size: optStr(input, "size"),
     ...(requested === "video" ? { video: codec } : {}),
+    ...(preset ? { preset } : {}),
     ...(quality ? { quality: quality as "draft" } : {}),
     ...(input.transparent === true ? { transparent: true } : {}),
   });
   await ctx.fs.writeBytes(out, r.bytes);
-  return { format: requested, path: out, kb: Math.round(r.bytes.byteLength / 102.4) / 10, size: r.size, ...(r.codec ? { codec: r.codec } : {}), ...(r.t !== undefined ? { t: r.t } : {}), ...(r.frames !== undefined ? { frames: r.frames, fps: r.fps, duration: r.duration } : {}) };
+  return { format: requested, path: out, kb: Math.round(r.bytes.byteLength / 102.4) / 10, size: r.size, ...(r.codec ? { codec: r.codec } : {}), ...(r.t !== undefined ? { t: r.t } : {}), ...(r.frames !== undefined ? { frames: r.frames, fps: r.fps, duration: r.duration } : {}), ...(preset ? { preset } : {}), ...(r.notes?.length ? { notes: r.notes } : {}) };
 }
 
 export const RENDER_TOOL: AiTool = {

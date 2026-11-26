@@ -35,13 +35,16 @@ import type { PhotoObjectDef } from "../../core/types";
 import { loadTexture } from "../assets";
 import { DEG, clamp, num } from "../util";
 import type { RuntimeContext } from "./context";
-import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, photoSize } from "./photoCore";
+import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, parallaxView, photoSize } from "./photoCore";
 
 // The three-free core (sizing, motion, parallax math, GLSL) lives in
 // ./photoCore.ts — shared with the photo-only lite runtime (src/runtime/lite/).
 export {
   PHOTO_DEFAULTS,
   autoDrift,
+  motionPeriod,
+  movePose,
+  parallaxView,
   motionSettings,
   parallaxParams,
   parallaxSteps,
@@ -364,6 +367,8 @@ function baseUniforms(map: THREE.Texture, def: PhotoObjectDef, ctx: RuntimeConte
 function shaderMaterial(vertex: string, fragment: string, uniforms: Record<string, THREE.IUniform>, transparent: boolean): THREE.ShaderMaterial {
   const mat = new THREE.ShaderMaterial({ vertexShader: vertex, fragmentShader: fragment, uniforms, transparent, toneMapped: false, fog: false, side: THREE.FrontSide });
   mat.depthWrite = !transparent;
+  // material.opacity mirrors uOpacity (timeline tracks "<id>.material.opacity" crossfade photos)
+  if (typeof uniforms.uOpacity?.value === "number") mat.opacity = uniforms.uOpacity.value;
   return mat;
 }
 
@@ -549,12 +554,23 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
   let camCaptured = false;
   const maxTilt = strength * 8 * DEG;
 
+  // Timeline tracks "<id>.motion.progress" write here (../timeline/index.ts).
+  const motionState: { progress: number | null } = { progress: motion.progress };
+  root.userData.a3dPhotoMotion = motionState;
+  const restInset = parallaxParams(strength, width, height).inset;
+
   const update = (t: number, dt: number, input: PhotoFrameInput) => {
+    for (const m of materials) {
+      const u = (m as THREE.ShaderMaterial).uniforms?.uOpacity;
+      if (u) u.value = m.opacity;
+    }
     if (mode === "flat") return;
-    const off = photoMotion.offset(t, dt, input);
+    const off = photoMotion.offset(t, dt, { ...input, progress: typeof motionState.progress === "number" ? clamp(motionState.progress, 0, 1) : null });
+    const pv = parallaxView(off, restInset);
     for (const v of views) {
       (v.uniforms.uView.value as THREE.Vector2).set(off.x, off.y);
-      v.uniforms.uZoom.value = off.zoom;
+      v.uniforms.uZoom.value = pv.zoom;
+      (v.uniforms.uInset.value as THREE.Vector2).set(pv.inset[0], pv.inset[1]);
     }
     // Camera rest position in the object's space, captured on the first frame
     // (both modes line up with the source photo from there).
@@ -568,9 +584,17 @@ export async function buildPhoto(def: PhotoObjectDef, ctx: RuntimeContext): Prom
     }
     if (mode === "mesh") {
       holder.rotation.set(off.y * maxTilt, -off.x * maxTilt, 0);
-      holder.position.z = off.zoom * meshRange(strength, width) * 0.5;
+      // Vertigo = a real dolly zoom: the grid moves away from the camera and
+      // grows by the same ratio around the view axis, so the focus plane keeps
+      // its size on screen while the relief's perspective flattens (the
+      // background grows, the foreground recedes). Push = plain magnification.
+      const D = persp && camCaptured ? camLocal.z : 0;
+      const dz = D > 0 ? (off.vertigo ?? 0) * 0.6 * D : 0;
+      const s = (1 + (off.push ?? 0)) * (D > 0 ? (D + dz) / D : 1);
+      holder.scale.set(s, s, 1);
+      holder.position.set(camLocal.x * (1 - s), camLocal.y * (1 - s), off.zoom * meshRange(strength, width) * 0.5 - dz);
       if (meshUniforms) {
-        (meshUniforms.uCam.value as THREE.Vector3).copy(camLocal);
+        (meshUniforms.uCam.value as THREE.Vector3).set(camLocal.x, camLocal.y, camLocal.z + dz);
         meshUniforms.uPerspective.value = persp && camLocal.z > 0 ? 1 : 0;
       }
     } else if (mode === "layers" && camCaptured) {

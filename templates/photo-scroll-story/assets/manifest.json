@@ -1,0 +1,46 @@
+{
+  "assets": [
+    {
+      "path": "assets/depth/lake-depth.png",
+      "kind": "texture",
+      "bytes": 70333,
+      "source": "depth-anything-v2-small",
+      "sourceUrl": "https://huggingface.co/onnx-community/depth-anything-v2-small",
+      "license": "CC0-1.0",
+      "author": "DimiTalen (Wikimedia Commons user)",
+      "attribution": "Depth map of assets/textures/lake.webp estimated with Depth Anything V2 Small (Apache-2.0). Image: \"Kawaguchiko rowing center jetties on Lake Kawaguchi, with Mount Setto in the background\" by DimiTalen (https://commons.wikimedia.org/wiki/File:Kawaguchiko_rowing_center_jetties_on_Lake_Kawaguchi,_with_Mount_Setto_in_the_background,_Fujikawaguchiko,_2016.jpg), licensed under CC0-1.0.",
+      "addedAt": "2026-11-26T00:00:00.000Z"
+    },
+    {
+      "path": "assets/depth/street-depth.png",
+      "kind": "texture",
+      "bytes": 80233,
+      "source": "depth-anything-v2-small",
+      "sourceUrl": "https://huggingface.co/onnx-community/depth-anything-v2-small",
+      "license": "CC0-1.0",
+      "author": "Wilfredo Rafael Rodriguez Hernandez (Wilfredor)",
+      "attribution": "Depth map of assets/textures/street.jpg estimated with Depth Anything V2 Small (Apache-2.0). Image: \"street.jpg\" by Wilfredo Rafael Rodriguez Hernandez (Wilfredor) (https://commons.wikimedia.org/wiki/File:Herzog-Friedrich-Stra%C3%9Fe_in_Innsbruck%27s_Historic_Old_Town,_Austria.jpg), licensed under CC0-1.0.",
+      "addedAt": "2026-11-26T00:00:00.000Z"
+    },
+    {
+      "path": "assets/textures/lake.webp",
+      "kind": "texture",
+      "bytes": 174222,
+      "source": "local",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kawaguchiko_rowing_center_jetties_on_Lake_Kawaguchi,_with_Mount_Setto_in_the_background,_Fujikawaguchiko,_2016.jpg",
+      "license": "CC0-1.0",
+      "author": "DimiTalen (Wikimedia Commons user)",
+      "addedAt": "2026-11-26T00:00:00.000Z"
+    },
+    {
+      "path": "assets/textures/street.webp",
+      "kind": "texture",
+      "bytes": 329510,
+      "source": "local",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Herzog-Friedrich-Stra%C3%9Fe_in_Innsbruck%27s_Historic_Old_Town,_Austria.jpg",
+      "license": "CC0-1.0",
+      "author": "Wilfredo Rafael Rodriguez Hernandez (Wilfredor)",
+      "addedAt": "2026-11-26T00:00:00.000Z"
+    }
+  ]
+}

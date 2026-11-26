@@ -65,8 +65,8 @@ const AUDIO_EXT = [".mp3", ".ogg", ".wav", ".m4a", ".aac", ".opus", ".webm"];
 const SVG_EXT = [".svg"];
 const PHOTO_EXT = [".jpg", ".jpeg", ".png", ".webp"];
 export const PHOTO_MODES = ["parallax", "mesh", "layers"] as const;
-export const PHOTO_AUTO_MOTIONS = ["none", "sway", "orbit", "zoom"] as const;
-const PHOTO_MOTION_KEYS = ["pointer", "scroll", "gyro", "auto", "speed", "smoothing"];
+export const PHOTO_AUTO_MOTIONS = ["none", "sway", "orbit", "zoom", "dolly", "pan", "rise", "vertigo"] as const;
+const PHOTO_MOTION_KEYS = ["pointer", "scroll", "gyro", "auto", "speed", "smoothing", "loop", "duration", "progress"];
 const PHOTO_MATERIAL_KEYS = ["opacity", "color", "emissiveIntensity"];
 
 // Allowed keys per section (unknown keys → warnings with suggestions).
@@ -996,6 +996,11 @@ function photo(v: V, o: Obj, p: string) {
       v.enumOf(m.auto, PHOTO_AUTO_MOTIONS, `${p}.motion.auto`);
       v.number(m.speed, `${p}.motion.speed`, { min: 0 });
       v.number(m.smoothing, `${p}.motion.smoothing`, { min: 0, max: 1 });
+      v.boolean(m.loop, `${p}.motion.loop`);
+      v.number(m.duration, `${p}.motion.duration`, { min: 0.1, max: 600 });
+      v.number(m.progress, `${p}.motion.progress`, { min: 0, max: 1 });
+      if (m.duration !== undefined && m.loop !== false) v.info("ignored", `${p}.motion.duration`, "motion.duration only applies to one-way moves (loop: false); a loop lasts 10 / speed seconds.", 'Set "loop": false for a one-way move, or change speed (cycles per 10 s).');
+      if (m.auto === "none" && (m.loop !== undefined || m.duration !== undefined || m.progress !== undefined)) v.info("ignored", `${p}.motion`, 'loop / duration / progress shape the auto move, but this photo has auto "none".', 'Set "auto" to a move: "dolly", "pan", "rise", "vertigo", "zoom", "sway" or "orbit".');
     }
   }
   if (o.material !== undefined) {

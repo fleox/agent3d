@@ -45,7 +45,7 @@ No errors, no warnings (or warnings the user accepted). Keep the `licences` list
 | `zip` | `export --format zip --project my-banner` | the embed folder as one `dist/zip/<name>-embed.zip` | Handing the export to someone, uploading through a file manager |
 | `single-html` | `export --format single-html --project my-banner` | one `dist/single-html/<name>.html` with the runtime, the scene and the assets inline (data: URIs) — about 2 MB minimum (the runtime is not split) | Sending a file, a standalone page, an `<iframe>` in Squarespace / Wix / Framer |
 | `poster` | `export --format poster --project my-banner` | `dist/poster.webp` at `target.posterTime` (`--time 2`), 2× pixel ratio (`--scale`); `--image png\|jpeg`, `--quality high\|ultra`, `--transparent` (png / webp) | Social images, email, a fallback |
-| `video` | `export --format video --project my-banner` | `dist/video.webm` (VP9), or MP4 (H.264) when `--out` ends in `.mp4`; `--duration`, `--fps`, `--size`, `--quality` | Social posts, presentations, places that can't run WebGL |
+| `video` | `export --format video --project my-banner` | `dist/video.webm` (VP9), or MP4 (H.264) when `--out` ends in `.mp4`; `--duration`, `--fps`, `--size`, `--quality`; `--preset vertical\|square\|landscape\|story` = a ready-to-post MP4 (below) | Social posts, presentations, places that can't run WebGL |
 | `gif` | `export --format gif --project my-banner` | `dist/animation.gif` (looping, 640 px wide, 15 fps by default) | Email, chat, READMEs |
 
 Every asset the scene uses is copied into the export (never hotlinked): a 3D photo ships its photo and its depth PNG (`<name>/assets/textures/…`, `<name>/assets/depth/…`), never the depth model. `CREDITS.txt` lists the depth map with the photo's licence and author.
@@ -63,6 +63,13 @@ python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py export --format poster --time 2 -
 python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py export --format video --out dist/promo.mp4 --duration 8 --fps 30 --size 1920x1080 --project my-banner --json
 python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py export --format gif --duration 4 --project my-banner --json
 ```
+
+**Social video** (LinkedIn, Instagram, TikTok, YouTube): `--preset vertical` (1080×1920), `square` (1080×1080), `landscape` (1920×1080) or `story` (1080×1920, max 15 s) gives an H.264 MP4 at 30 fps and ~10 Mbit/s whose length is **one seamless loop** of the 3D photo's `motion.auto` move (set `dolly`, `pan`, `rise` or `vertigo` for a cinematic camera move — skill `agent3d-create`), with a **cover fit**: the photo fills the frame whatever the scene's aspect, its edges never show. Read `notes` in the result (what was cropped, how much the camera was tightened), and look at three frames before posting — text laid out for 16:9 gets cut in 9:16:
+```bash
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py render --preset vertical --count 4 --sheet --project my-hero --json      # check the framing
+python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py export --format video --preset vertical --project my-hero --json        # dist/video-vertical.mp4
+```
+The `export` AI tool takes the same `preset` (format `video`).
 
 Embed / zip options:
 

@@ -82,6 +82,8 @@ describe.skipIf(!browser || !runtimeOk)("photo-only lite runtime vs full runtime
     const variants: { id: string; ops: PatchOp[] }[] = [
       { id: "fill", ops: [] },
       { id: "framed", ops: [{ op: "set", path: "camera.position", value: [0.6, -0.3, 16] }, { op: "set", path: "camera.target", value: [0.2, 0, 0] }] },
+      // A cinematic move (push + dolly zoom through the UV inset: photoCore parallaxView).
+      { id: "vertigo", ops: [{ op: "set", path: "objects#photo.motion.auto", value: "vertigo" }] },
     ];
     const exports: { id: string; lite: string; full: string; liteResult: ExportResult; fullResult: ExportResult }[] = [];
     for (const v of variants) {

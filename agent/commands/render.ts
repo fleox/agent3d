@@ -2,6 +2,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { libraryProvider, readRuntimeFiles } from "../host";
 import { CliError, printResult } from "../output";
+import { parseSocialPreset, type SocialPresetId } from "../../src/ops/social";
 import type { Command } from "./types";
 import { boolOpt, confirmOrPlan, jsonOpt, numOpt, PROJECT_OPTION, projectFs, strOpt, usage, writeOutFile, YES_OPTION } from "./util";
 
@@ -17,8 +18,8 @@ const log = (m: string) => void process.stderr.write(`${m}\n`);
 
 export const renderCommand: Command = {
   name: "render",
-  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--reduced-motion] [--segment <name>] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] | --video out.mp4|out.webm [--fps 30] [--duration 6] | --gif out.gif | --webp out.webp [--project <dir>]",
-  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes / HUD button clicks / emitted events and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size (with --input, --segment, --scroll and --reduced-motion applied too) and return { path, format, codec, frames, fps, duration, size, bytes }. Scenes whose timeline waits for a click / interaction: --segment <name> plays that segment from the start.",
+  usage: "render [--frames 0,1.5,3 | --count 4] [--size 1200x300] [--scale 2] [--quality draft|standard|high|ultra] [--transparent] [--scroll 0.5] [--reduced-motion] [--segment <name>] [--sheet] [--input <json|@file>] [--isolate <objectId>] [--bg checker|<colour>|none] [--out renders/] | --video out.mp4|out.webm [--preset vertical|square|landscape|story] [--fit cover|contain] [--fps 30] [--duration 6] | --gif out.gif | --webp out.webp [--project <dir>]",
+  summary: "Render the scene headless (installed Chrome, deterministic time) to PNGs — LOOK at them to check framing, colours, motion. Returns { dir, frames: [{ t, path }], sheet?, state, stats, inspect, issues, consoleErrors } (paths relative to the project folder `dir`). Games: --input plays a script of simulated keys / clicks / drags / swipes / HUD button clicks / emitted events and `state` shows the result (e.g. the score). Media: --video (MP4 H.264 / WebM VP9), --gif or --webp (animated) render every frame exactly at any --fps / --duration / --size (with --input, --segment, --scroll and --reduced-motion applied too) and return { path, format, codec, frames, fps, duration, size, bytes }. Social video: --video out.mp4 --preset vertical (1080x1920) | square (1080x1080) | landscape (1920x1080) | story (1080x1920, max 15 s) — 30 fps, one seamless loop of the photo motion, a bitrate social networks keep sharp and a cover fit (3D photos fill the frame, no edges; `notes` say what was cropped / tightened). Scenes whose timeline waits for a click / interaction: --segment <name> plays that segment from the start.",
   writes: true,
   options: [
     PROJECT_OPTION,
@@ -45,7 +46,9 @@ export const renderCommand: Command = {
     { name: "fps", type: "string", description: "Video / GIF / WebP frames per second (default 30 / 15 / 20, max 60)." },
     { name: "duration", type: "string", description: "Video / GIF / WebP length in seconds (default the timeline duration, else 5)." },
     { name: "start", type: "string", description: "Video / GIF / WebP start time in seconds (default 0)." },
-    { name: "bitrate", type: "string", description: "Video bitrate in Mbit/s (default from size, fps and --quality)." },
+    { name: "bitrate", type: "string", description: "Video bitrate in Mbit/s (default from size, fps and --quality; 10 with a 1080p --preset)." },
+    { name: "preset", type: "string", description: "Social video preset: vertical (1080x1920, 9:16), square (1080x1080), landscape (1920x1080) or story (1080x1920, at most 15 s). Sets --size, fps 30, the duration (one seamless loop of the 3D photo motion, else the timeline, unless --duration), the bitrate and a cover fit. Without --video / --gif / --webp: PNG frames of that framing spread over the loop." },
+    { name: "fit", type: "string", description: "cover (default with --preset when the scene has a 3D photo: render at the frame's aspect and tighten the camera until the photos fill it, no edges) or contain (the runtime's own fit: a narrower frame widens the view and may show the background around a photo)." },
     TIMEOUT_OPTION,
     { ...YES_OPTION, description: "--video / --gif / --webp: overwrite an existing file." },
   ],
@@ -59,6 +62,8 @@ export const renderCommand: Command = {
     const input = rawInput === undefined ? undefined : parseInputScript(rawInput);
     const segment = strOpt(options, "segment");
     const reducedMotion = boolOpt(options, "reduced-motion");
+    const preset = presetOpt(strOpt(options, "preset"));
+    const fit = parseFit(strOpt(options, "fit"));
     const mediaOpts = (["video", "gif", "webp"] as const).filter((k) => strOpt(options, k) !== undefined);
     if (mediaOpts.length > 1) usage("Use only one of --video, --gif, --webp per render.");
     if (mediaOpts.length) {
@@ -87,22 +92,28 @@ export const renderCommand: Command = {
         segment,
         reducedMotion,
         scroll,
+        preset,
+        fit,
         timeoutMs: timeoutMs(options),
         log,
       });
       const { data: _data, ...result } = r;
-      return printResult(io, { ...result, path: out }, () => `${r.format.toUpperCase()} ${r.duration}s @ ${r.fps} fps (${r.frames} frames, ${r.size.width}x${r.size.height}, ${r.codec}${r.supersampling > 1 ? `, ${r.supersampling}× supersampled` : ""}, ${Math.round(r.bytes / 1024)} KB, ${Math.round(r.ms / 1000)} s) → ${out}`);
+      return printResult(io, { ...result, path: out }, () => [`${r.format.toUpperCase()} ${r.duration}s @ ${r.fps} fps (${r.frames} frames, ${r.size.width}x${r.size.height}, ${r.codec}${r.supersampling > 1 ? `, ${r.supersampling}× supersampled` : ""}, ${Math.round(r.bytes / 1024)} KB, ${Math.round(r.ms / 1000)} s) → ${out}`, ...(r.notes ?? []).map((n) => `  ${n}`)].join("\n"));
     }
     const capture = strOpt(options, "capture");
     if (capture && !["auto", "canvas", "page"].includes(capture)) usage(`--capture must be auto, canvas or page, got "${capture}".`);
-    const { renderProject } = await import("../render/render");
+    const { renderProject, socialPlan } = await import("../render/render");
     // A scroll position is one state: one frame unless --frames / --count ask for more.
-    const frames = renderFrames(strOpt(options, "frames"), numOpt(options, "count"), scroll);
+    let frames = renderFrames(strOpt(options, "frames"), numOpt(options, "count"), scroll);
+    // --preset / --fit without media: PNG frames of that framing (spread over one loop).
+    const social = preset || fit ? socialPlan({ preset, fit, size: strOpt(options, "size"), width: numOpt(options, "width"), projectDir: fs.root, duration: numOpt(options, "duration") }) : undefined;
+    if (social?.duration && !frames) frames = loopFrames(social.start, social.duration, numOpt(options, "count"));
     const r = await renderProject({
       projectDir: fs.root,
+      ...(social ? { scene: social.scene } : {}),
       frames,
       count: numOpt(options, "count"),
-      size: strOpt(options, "size"),
+      size: social?.size ?? strOpt(options, "size"),
       width: numOpt(options, "width"),
       scale: numOpt(options, "scale"),
       sheet: boolOpt(options, "sheet"),
@@ -128,7 +139,8 @@ export const renderCommand: Command = {
       ...(r.consoleErrors.length ? [`${r.consoleErrors.length} console error(s): see consoleErrors.`] : []),
       ...(r.inputWarnings ?? []),
     ];
-    printResult(io, { ...r, ...(hints.length ? { hints } : {}) }, () =>
+    if (social?.notes.length) hints.push(...social.notes);
+    printResult(io, { ...r, ...(social?.preset ? { preset: social.preset } : {}), ...(hints.length ? { hints } : {}) }, () =>
       [
         ...r.frames.map((f) => `${f.scroll !== undefined ? `scroll=${f.scroll} ` : ""}t=${f.t}s  ${resolve(r.dir, f.path)}`),
         ...(r.sheet ? [`sheet   ${resolve(r.dir, r.sheet)}`] : []),
@@ -140,6 +152,27 @@ export const renderCommand: Command = {
     );
   },
 };
+
+/** --preset: a social video preset id (usage error with did-you-mean otherwise). */
+export function presetOpt(v: string | undefined): SocialPresetId | undefined {
+  if (v === undefined) return undefined;
+  const p = parseSocialPreset(v);
+  if ("error" in p) usage(p.error, p.hint);
+  return (p as { id: SocialPresetId }).id;
+}
+
+/** --fit: cover | contain. */
+export function parseFit(v: string | undefined): "cover" | "contain" | undefined {
+  if (v === undefined) return undefined;
+  if (v !== "cover" && v !== "contain") usage(`--fit must be cover or contain, got "${v}".`, "cover fills the frame with the 3D photo (cropping the scene); contain keeps the scene's design width visible.");
+  return v;
+}
+
+/** `count` frame times (default 4) spread over one loop [start, start + duration). */
+export function loopFrames(start: number, duration: number, count: number | undefined): string {
+  const n = Math.max(1, Math.min(64, Math.round(count ?? 4)));
+  return Array.from({ length: n }, (_, i) => Math.round((start + (i * duration) / n) * 1000) / 1000).join(",");
+}
 
 /** --frames to render: a --scroll position alone is one frame (t = 0). */
 export function renderFrames(frames: string | undefined, count: number | undefined, scroll: number | undefined): string | undefined {
@@ -159,7 +192,7 @@ function dirNonEmpty(dir: string): string[] {
 
 export const exportCommand: Command = {
   name: "export",
-  usage: "export [--format embed|zip|single-html|poster|video|gif] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--prune-runtime] [--runtime auto|full] [--yes] [--project <dir>]",
+  usage: "export [--format embed|zip|single-html|poster|video|gif] [--preset vertical|square|landscape|story] [--out <path>] [--name <slug>] [--base-url <url>] [--cache-bust] [--no-integrity] [--no-poster] [--no-og] [--prune-runtime] [--runtime auto|full] [--yes] [--project <dir>]",
   summary:
     "Export for a website: embed (Web Component + static files + EMBED.md + React/Vue/Svelte wrappers, default), zip (the embed folder as one .zip), single-html (one file), poster (still image), video (MP4 H.264 / WebM VP9) or gif. Reports pageKb / pageKbGzip (what a visitor downloads for this scene: runtime entry + the chunks it loads + scene, assets, scripts, poster) and folderKb (every file written). Overwriting a non-empty --out needs --yes.",
   writes: true,
@@ -179,7 +212,8 @@ export const exportCommand: Command = {
     { name: "optimize", type: "boolean", description: "embed / zip / single-html: export optimised copies of the assets (project and library) — textures at the size the scene needs (format kept), .glb geometry meshopt-compressed with WebP textures. The project is not modified. Textures need Chrome." },
     { name: "image", type: "string", description: "poster: webp (default), png or jpeg." },
     { name: "time", type: "string", description: "poster: time in seconds (default target.posterTime)." },
-    { name: "duration", type: "string", description: "video / gif: seconds (default the timeline duration, else 5)." },
+    { name: "duration", type: "string", description: "video / gif: seconds (default the timeline duration, else 5; with --preset one seamless loop of the 3D photo motion)." },
+    { name: "preset", type: "string", description: "video / gif: social preset — vertical (1080x1920), square (1080x1080), landscape (1920x1080) or story (1080x1920, max 15 s): size, 30 fps, one seamless loop, bitrate and a cover fit (the 3D photo fills the frame). The default --out becomes dist/video-<preset>.mp4." },
     { name: "fps", type: "string", description: "video / gif: frames per second (default 30 / 15)." },
     { name: "quality", type: "string", description: "poster / video / gif: draft, standard (default), high (2× supersampling) or ultra (3×)." },
     { name: "transparent", type: "boolean", description: "poster (png / webp) / gif: transparent background." },
@@ -201,7 +235,8 @@ export const exportCommand: Command = {
       const quality = parseQuality(strOpt(options, "quality"));
       const image = (strOpt(options, "image") ?? (outOpt?.endsWith(".png") ? "png" : /\.jpe?g$/i.test(outOpt ?? "") ? "jpeg" : "webp")) as "webp" | "png" | "jpeg";
       if (!["webp", "png", "jpeg"].includes(image)) usage("--image must be webp, png or jpeg.");
-      const out = projectPath(fs.root, outOpt ?? join(fs.root, "dist", format === "poster" ? `poster.${image === "jpeg" ? "jpg" : image}` : format === "gif" ? "animation.gif" : "video.webm"));
+      const preset = format === "poster" ? undefined : presetOpt(strOpt(options, "preset"));
+      const out = projectPath(fs.root, outOpt ?? join(fs.root, "dist", format === "poster" ? `poster.${image === "jpeg" ? "jpg" : image}` : format === "gif" ? (preset ? `animation-${preset}.gif` : "animation.gif") : preset ? `video-${preset}.mp4` : "video.webm"));
       if (existsSync(out) && !confirmOrPlan(io, options, { overwrite: [out] }, () => `Overwrite ${out}`)) return;
       const r = await render();
       if (format === "poster") {
@@ -210,8 +245,8 @@ export const exportCommand: Command = {
         return printResult(io, { format, path: out, t: p.t, size: p.size, bytes: p.bytes.byteLength, ...(p.supersampling > 1 ? { supersampling: p.supersampling } : {}) }, () => `Poster (t=${p.t}s) → ${out}`);
       }
       const media = format === "gif" ? "gif" : mediaFormatFromPath(out) === "mp4" ? "mp4" : "webm";
-      const m = await r.renderMedia({ projectDir: fs.root, out, format: media, size: strOpt(options, "size"), width: format === "video" && !strOpt(options, "size") ? 960 : undefined, duration: numOpt(options, "duration"), fps: numOpt(options, "fps"), quality, transparent: boolOpt(options, "transparent"), timeoutMs: timeoutMs(options), log });
-      return printResult(io, { format, path: out, codec: m.codec, frames: m.frames, fps: m.fps, duration: m.duration, size: m.size, bytes: m.bytes, ms: m.ms }, () => `${media.toUpperCase()} ${m.duration}s @ ${m.fps} fps (${m.frames} frames, ${m.codec}, ${Math.round(m.bytes / 1024)} KB) → ${out}`);
+      const m = await r.renderMedia({ projectDir: fs.root, out, format: media, size: strOpt(options, "size"), width: format === "video" && !strOpt(options, "size") ? 960 : undefined, duration: numOpt(options, "duration"), fps: numOpt(options, "fps"), quality, transparent: boolOpt(options, "transparent"), preset, timeoutMs: timeoutMs(options), log });
+      return printResult(io, { format, path: out, codec: m.codec, frames: m.frames, fps: m.fps, duration: m.duration, size: m.size, bytes: m.bytes, ms: m.ms, ...(m.preset ? { preset: m.preset } : {}), ...(m.notes ? { notes: m.notes } : {}) }, () => [`${media.toUpperCase()} ${m.duration}s @ ${m.fps} fps (${m.frames} frames, ${m.size.width}x${m.size.height}, ${m.codec}, ${Math.round(m.bytes / 1024)} KB) → ${out}`, ...(m.notes ?? []).map((n) => `  ${n}`)].join("\n"));
     }
 
     const out = projectPath(fs.root, outOpt ?? join(fs.root, "dist", format));

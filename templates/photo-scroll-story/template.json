@@ -1,0 +1,8 @@
+{
+  "id": "photo-scroll-story",
+  "title": "Photo scroll story",
+  "description": "A scroll-driven hero made of two 3D photos (CC0, with estimated depth maps): scrolling the page dives down a blue-hour old-town street (a dolly move driven by the timeline), dissolves into a mountain lake, and ends on a dolly zoom where the mountains swell behind the jetties, with headlines that fade between the chapters (data-bound). Swap the photos and run `assets depth` to tell your own story.",
+  "kind": "hero",
+  "tags": ["hero", "scroll", "scrollytelling", "story", "photo", "3d-photo", "depth-map", "parallax", "dolly", "vertigo", "cinematic", "crossfade", "travel", "timeline", "data-bindings"],
+  "aspect": "16:9"
+}

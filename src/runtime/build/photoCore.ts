@@ -27,28 +27,76 @@ export type PhotoAuto = NonNullable<NonNullable<PhotoObjectDef["motion"]>["auto"
 export interface ViewOffset {
   x: number; // -1..1 (right = view moves right: near things slide left)
   y: number; // -1..1 (up)
-  zoom: number; // 0..1 (dolly in)
+  zoom: number; // 0..~1 (dolly in: near content grows, far content shrinks)
+  // Cinematic moves only (absent = 0):
+  push?: number; // extra image magnification (0.1 = 10 % larger): a camera push / zoom-in
+  vertigo?: number; // 0..1 dolly zoom: the `focus` plane keeps its size, the background stretches, the foreground recedes
 }
 
-// Looping drift as a pure function of time. `speed` = cycles per 10 s.
-// Every drift is neutral at t = 0 (poster frames show the photo as is).
-export function autoDrift(auto: PhotoAuto | undefined, speed: number, t: number): ViewOffset {
-  const w = (2 * Math.PI * Math.max(0, speed)) / 10;
-  const a = w * t;
+// Moves played forth and back between their start (u = 0) and end (u = 1)
+// poses when looping; sway / orbit are periodic paths.
+const ONE_WAY_MOVES: readonly PhotoAuto[] = ["zoom", "dolly", "pan", "rise", "vertigo"];
+// Moves that start mid-path when looping (neutral at t = 0, then to one end).
+const CENTRED_MOVES: readonly PhotoAuto[] = ["pan", "rise"];
+
+// Pose of a move at progress u (0..1, eased by the caller). Bounded so the
+// parallax never shows the image edges at any strength.
+export function movePose(auto: PhotoAuto | undefined, u: number): ViewOffset {
+  const p = clamp(u, 0, 1);
+  const a = 2 * Math.PI * p;
   switch (auto ?? "sway") {
-    case "sway": // horizontal figure-eight (lissajous 1:2)
+    case "sway":
       return { x: 0.9 * Math.sin(a), y: 0.35 * Math.sin(2 * a), zoom: 0 };
-    case "orbit": {
-      // circle; the radius eases in over the first half cycle (neutral at t = 0)
-      const k = Math.min(1, a / Math.PI);
-      const r = 0.8 * k * k * (3 - 2 * k);
-      return { x: r * Math.sin(a), y: r * Math.cos(a), zoom: 0 };
-    }
+    case "orbit":
+      return { x: 0.8 * Math.sin(a), y: 0.8 * Math.cos(a), zoom: 0 };
     case "zoom":
-      return { x: 0, y: 0, zoom: 0.5 - 0.5 * Math.cos(a) };
+      return { x: 0, y: 0, zoom: p };
+    case "dolly": // push in toward the focus plane: a Ken Burns with depth
+      return { x: 0, y: 0.12 * p, zoom: 1.1 * p, push: 0.12 * p };
+    case "pan": // lateral truck, left → right
+      return { x: 0.85 * (2 * p - 1), y: 0, zoom: 0.15, push: 0.03 };
+    case "rise": // crane up, pushing in a little
+      return { x: 0, y: 0.8 * (2 * p - 1), zoom: 0.2 + 0.25 * p, push: 0.03 + 0.03 * p };
+    case "vertigo":
+      return { x: 0, y: 0, zoom: 0, push: 0.03 * p, vertigo: p };
     default:
       return { x: 0, y: 0, zoom: 0 };
   }
+}
+
+// Looping drift as a pure function of time. `speed` = cycles per 10 s.
+// loop (default): seamless — ping-pong for the one-way moves, a full cycle
+// for sway / orbit; neutral at t = 0 (pan / rise start mid-path, the photo
+// barely pushed in). loop false: one move over `duration` seconds (default
+// 10 / speed), eased in and out, then held at its end pose.
+export function autoDrift(auto: PhotoAuto | undefined, speed: number, t: number, opts: { loop?: boolean; duration?: number } = {}): ViewOffset {
+  const move = auto ?? "sway";
+  if (move === "none") return { x: 0, y: 0, zoom: 0 };
+  const sp = Math.max(0, speed);
+  if (opts.loop === false) {
+    const d = opts.duration && opts.duration > 0 ? opts.duration : sp > 0 ? 10 / sp : 0;
+    const k = d > 0 ? clamp(t / d, 0, 1) : 0;
+    return movePose(move, 0.5 - 0.5 * Math.cos(Math.PI * k));
+  }
+  const a = ((2 * Math.PI * sp) / 10) * t;
+  if (move === "orbit") {
+    // circle; the radius eases in over the first half cycle (neutral at t = 0)
+    const k = Math.min(1, a / Math.PI);
+    const r = 0.8 * k * k * (3 - 2 * k);
+    return { x: r * Math.sin(a), y: r * Math.cos(a), zoom: 0 };
+  }
+  if (!ONE_WAY_MOVES.includes(move)) return movePose(move, (a / (2 * Math.PI)) % 1);
+  return movePose(move, CENTRED_MOVES.includes(move) ? 0.5 + 0.5 * Math.sin(a) : 0.5 - 0.5 * Math.cos(a));
+}
+
+// Seconds of one seamless loop of the auto move (videos: one full loop), or
+// of the one-way move; 0 when the photo has no auto motion. Orbit eases its
+// radius in over its first cycle: its seamless loop starts one period in.
+export function motionPeriod(s: Pick<MotionSettings, "auto" | "speed" | "loop" | "duration">): { duration: number; start: number } {
+  if (s.auto === "none") return { duration: 0, start: 0 };
+  const p = s.speed > 0 ? 10 / s.speed : 0;
+  if (!s.loop) return { duration: s.duration > 0 ? s.duration : p, start: 0 };
+  return { duration: p, start: s.auto === "orbit" ? p : 0 };
 }
 
 export interface MotionSettings {
@@ -58,6 +106,9 @@ export interface MotionSettings {
   auto: PhotoAuto;
   speed: number;
   smoothing: number;
+  loop: boolean;
+  duration: number; // one-way moves (loop false): seconds; 0 = 10 / speed
+  progress: number | null; // fixed move progress 0..1 (a timeline track "<id>.motion.progress" drives it live)
 }
 
 export function motionSettings(m: PhotoObjectDef["motion"]): MotionSettings {
@@ -69,6 +120,9 @@ export function motionSettings(m: PhotoObjectDef["motion"]): MotionSettings {
     auto: m?.auto ?? "sway",
     speed: Math.max(0, num(m?.speed, PHOTO_DEFAULTS.speed)),
     smoothing: clamp(num(m?.smoothing, PHOTO_DEFAULTS.smoothing), 0, 0.99),
+    loop: m?.loop !== false,
+    duration: Math.max(0, num(m?.duration, 0)),
+    progress: typeof m?.progress === "number" && Number.isFinite(m.progress) ? clamp(m.progress, 0, 1) : null,
   };
 }
 
@@ -79,11 +133,15 @@ export interface MotionFrame {
   gyro: { x: number; y: number } | null; // -1..1, live only
   scroll: number; // 0..1
   reduced: boolean;
+  // Move progress 0..1 driven by a timeline track (null / absent: settings, then time).
+  progress?: number | null;
 }
 
 // The view offset for a frame (pure).
 export function viewOffset(s: MotionSettings, f: MotionFrame): ViewOffset {
-  const drift = f.reduced ? { x: 0, y: 0, zoom: 0 } : autoDrift(s.auto, s.speed, f.t);
+  const progress = f.progress ?? s.progress;
+  const driven = progress !== null;
+  const drift: ViewOffset = f.reduced ? { x: 0, y: 0, zoom: 0 } : driven ? movePose(s.auto, progress) : autoDrift(s.auto, s.speed, f.t, s);
   const amount = s.pointer * (f.reduced ? 0.5 : 1);
   let ix = 0, iy = 0, w = 0;
   if (f.gyro && s.gyro && f.pointer.weight < 0.5) {
@@ -98,7 +156,23 @@ export function viewOffset(s: MotionSettings, f: MotionFrame): ViewOffset {
   const x = drift.x * (1 - w) + ix * amount * w;
   let y = drift.y * (1 - w) + iy * amount * w;
   if (s.scroll > 0) y += (clamp(f.scroll, 0, 1) * 2 - 1) * s.scroll;
-  return { x: clamp(x, -1, 1), y: clamp(y, -1, 1), zoom: drift.zoom * (1 - w) };
+  // A driven move (scroll story) keeps its push / dolly while the pointer looks around.
+  const keep = driven ? 1 : 1 - w;
+  const out: ViewOffset = { x: clamp(x, -1, 1), y: clamp(y, -1, 1), zoom: drift.zoom * keep };
+  if (drift.push) out.push = drift.push * keep;
+  if (drift.vertigo) out.vertigo = drift.vertigo * keep;
+  return out;
+}
+
+// Parallax / layers shader inputs of a view offset: the push and the dolly
+// zoom compensation go through the UV inset (no shader change). The vertigo
+// is a negative radial zoom (background grows, foreground shrinks) whose
+// built-in 6 % push-out is cancelled, so the `focus` plane keeps its size.
+export const VERTIGO_ZOOM = 1.5;
+export function parallaxView(off: ViewOffset, inset: readonly [number, number]): { zoom: number; inset: [number, number] } {
+  const zoom = off.zoom - VERTIGO_ZOOM * (off.vertigo ?? 0);
+  const k = (1 - 0.06 * off.zoom) / ((1 + (off.push ?? 0)) * (1 - 0.06 * zoom));
+  return { zoom, inset: [inset[0] * k, inset[1] * k] };
 }
 
 // Frame-rate independent exponential smoothing (same convention as the
@@ -152,7 +226,7 @@ export interface PhotoPointer {
 
 export interface PhotoMotion {
   // View offset of the frame at time t (dt since the previous frame).
-  offset(t: number, dt: number, input: { pointer: PhotoPointer; scroll: number; reduced: boolean }): ViewOffset;
+  offset(t: number, dt: number, input: { pointer: PhotoPointer; scroll: number; reduced: boolean; progress?: number | null }): ViewOffset;
   dispose(): void;
 }
 
@@ -192,7 +266,7 @@ export function createPhotoMotion(motion: MotionSettings, opts: { live: boolean;
         smoothed.y = smoothToward(smoothed.y, ty, dt, motion.smoothing);
         smoothed.weight = smoothToward(smoothed.weight, tw, dt, motion.smoothing);
       }
-      return viewOffset(motion, { t, pointer: smoothed, gyro: live ? gyro : null, scroll: input.scroll, reduced: input.reduced });
+      return viewOffset(motion, { t, pointer: smoothed, gyro: live ? gyro : null, scroll: input.scroll, reduced: input.reduced, progress: input.progress });
     },
     dispose() {
       removeGyro?.();

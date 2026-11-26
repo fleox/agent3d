@@ -16,7 +16,7 @@ import type { PhotoObjectDef, SceneDoc } from "../../core/types";
 import type { FrameStats, InspectResult, MountOptions, Player, RuntimeIssue } from "../api";
 import { createResolver } from "../assetResolver";
 import { designAspectOf, fitScale, fittedFov, nudgeOffPlanes } from "../build/cameraFit";
-import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, photoSize, type PhotoMotion } from "../build/photoCore";
+import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, parallaxView, photoSize, type PhotoMotion } from "../build/photoCore";
 import { DEG, clamp, num } from "../num";
 
 const VERT = /* glsl */ `#version 300 es
@@ -152,6 +152,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
   let images: Images | null = null;
   let motion: PhotoMotion | null = null;
   let size: [number, number] = [1, 1];
+  let inset: [number, number] = [1, 1];
   let tier: QualityTier = "high";
   let qualityAuto = false;
   let dpr = 1;
@@ -209,8 +210,10 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     }
     gl.useProgram(prog);
     if (off) {
+      const pv = parallaxView(off, inset);
       gl.uniform2f(L.uView!, off.x, off.y);
-      gl.uniform1f(L.uZoom!, off.zoom);
+      gl.uniform1f(L.uZoom!, pv.zoom);
+      gl.uniform2f(L.uInset!, ...pv.inset);
     }
     const def = photo();
     const aspect = width / Math.max(height, 1);
@@ -393,6 +396,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
     const pp = parallaxParams(strength, ps.width, ps.height);
     g.uniform2f(L.uMaxOffset!, ...pp.maxOffset);
     g.uniform2f(L.uInset!, ...pp.inset);
+    inset = pp.inset;
     g.uniform1f(L.uFocus!, clamp(num(def.focus, PHOTO_DEFAULTS.focus), 0, 1));
     g.uniform1f(L.uWallSlope!, PARALLAX_WALL_SLOPE);
     size = [ps.width, ps.height];
