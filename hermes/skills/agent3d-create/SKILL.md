@@ -1,7 +1,7 @@
 ---
 name: agent3d-create
 description: "Build a 3D element for a web page from a brief with Agent3D - an animated banner, a hero, a mascot or character, a low-poly landscape, a product showcase, a logo in 3D, a 3D photo (a user's photo given depth that moves with the pointer), a mini game - by writing a JSON scene, rendering it headless and LOOKING at the screenshots until it looks professional, then exporting a self-contained embed (Web Component + static files, or one HTML file). Use when the user asks for something 3D, animated or interactive for their website (\"an animated banner for my bakery\", \"a low-poly island hero\", \"a 3D version of my logo\", \"make this photo 3D / bring this picture to life\", \"a mini game where...\")."
-version: 0.4.0
+version: 0.5.0
 author: Agent3D
 license: PolyForm-Noncommercial-1.0.0
 platforms: [macos, linux, windows]
@@ -198,7 +198,7 @@ Everything above also works without the shell:
 
 - **MCP server** — `agent3d mcp` serves one project folder over stdio: the same tools as `tools list` (scene_patch, check, export…) plus `render_preview`, whose contact sheet comes back as an image the client can look at. Claude Code: `claude mcp add agent3d -- python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py mcp --project /path/to/my-banner` (add `--scope project` to write `.mcp.json` for the repository). Claude Desktop / Cursor: in `claude_desktop_config.json` / `.cursor/mcp.json`:
   ```json
-  { "mcpServers": { "agent3d": { "command": "npx", "args": ["-y", "@fleox/agent3d@0.4.0", "mcp", "--project", "/Users/me/agent3d/my-banner"] } } }
+  { "mcpServers": { "agent3d": { "command": "npx", "args": ["-y", "@fleox/agent3d@0.5.0", "mcp", "--project", "/Users/me/agent3d/my-banner"] } } }
   ```
   `--read-only` exposes only the tools that don't write. Desktop apps may not see the shell's `PATH`: use the absolute path of `npx` as `command` if the server doesn't start.
 - **Studio** — `python3 ${HERMES_SKILL_DIR}/scripts/agent3d.py studio --project bakery-banner` opens a visual editor on the same folder (viewport with move / rotate / scale gizmos, outliner, inspector, timeline, catalog and library, templates, check, render and export dialogs; English or French). It prints its local URL and runs until stopped. Edits go through the same validated tools, and changes you make from the CLI appear live in it, so the user can watch and tweak your work. The viewport starts in edit mode (scripts don't run, the timeline is paused and scrubbed); interact mode (`I`) runs the scene as the website does: scripts, hover / click / scroll triggers.

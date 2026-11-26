@@ -4,7 +4,7 @@ description: Find and add 3D assets to an Agent3D project - the built-in CC0 lib
 license: PolyForm-Noncommercial-1.0.0
 compatibility: Requires Node.js 22+ and Google Chrome (or Chromium/Edge) for renders.
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
   repository: "https://github.com/fleox/agent3d"
 allowed-tools: Bash Read Write
 ---
@@ -13,7 +13,7 @@ allowed-tools: Bash Read Write
 
 **Language:** talk to the user in their language; keep commands, ids and files in English.
 
-Every command is `npx -y @fleox/agent3d@0.4.0 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
+Every command is `npx -y @fleox/agent3d@0.5.0 <command> --json` with `--project <dir>`. Read `error.hint` when `ok` is false.
 
 ## Pick the cheapest thing that looks right
 
@@ -25,16 +25,16 @@ Every command is `npx -y @fleox/agent3d@0.4.0 <command> --json` with `--project 
 ## The built-in library
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets library --query tree --json
-npx -y @fleox/agent3d@0.4.0 assets library --kind hdri --json
-npx -y @fleox/agent3d@0.4.0 assets library --query character --kind model --json
+npx -y @fleox/agent3d@0.5.0 assets library --query tree --json
+npx -y @fleox/agent3d@0.5.0 assets library --kind hdri --json
+npx -y @fleox/agent3d@0.5.0 assets library --query character --kind model --json
 ```
 
 The answer lists the matches in `data.assets[]` (with `data.total` and `data.more`; `assets search` below names its list `data.hits[]` instead). Each entry has `ref` (use it as is in the scene), `description` (with the bounding box), `tags`, `license`, `kb`, and for models `triangles`, `size` (bounding box w × h × d in model units, Y-up) and `animations` (the clip names of animated models). Listings show 50 results per page: narrow with `--query` and `--kind`; when `more` is true, page with `--offset 50` (or `--limit 100`, `--all`).
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets library --kind model --offset 50 --json
-npx -y @fleox/agent3d@0.4.0 assets library --kind model --all --json
+npx -y @fleox/agent3d@0.5.0 assets library --kind model --offset 50 --json
+npx -y @fleox/agent3d@0.5.0 assets library --kind model --all --json
 ```
 
 ```json
@@ -51,9 +51,9 @@ npx -y @fleox/agent3d@0.4.0 assets library --kind model --all --json
 ## Searching free sources (network)
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets search "wood planks" --kind texture --project my-scene --json
-npx -y @fleox/agent3d@0.4.0 assets search sunset --kind hdri --source polyhaven --project my-scene --json
-npx -y @fleox/agent3d@0.4.0 assets search fox --source khronos --project my-scene --json
+npx -y @fleox/agent3d@0.5.0 assets search "wood planks" --kind texture --project my-scene --json
+npx -y @fleox/agent3d@0.5.0 assets search sunset --kind hdri --source polyhaven --project my-scene --json
+npx -y @fleox/agent3d@0.5.0 assets search fox --source khronos --project my-scene --json
 ```
 
 The answer lists the matches in `data.hits[]`; each hit has `source`, `id`, `title`, `kind`, `license`, `author`, `attribution` (when the licence needs one), `previewUrl` (show it to the user or open it), `pageUrl`, `downloads` (resolutions / formats). Per-source failures come in `data.errors` without failing the search. Search terms match titles and tags: try synonyms ("planks", "wood floor") when a search is poor.
@@ -61,13 +61,13 @@ The answer lists the matches in `data.hits[]`; each hit has `source`, `id`, `tit
 Download one hit into the project (licence recorded in `assets/manifest.json`):
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets add --hit @hit.json --resolution 1k --project my-scene --json
+npx -y @fleox/agent3d@0.5.0 assets add --hit @hit.json --resolution 1k --project my-scene --json
 ```
 
 `@hit.json` is a file holding one hit object from the search (or pass the JSON inline). Models come back with `data.asset.bounds`: `size` (w × h × d in model units, node transforms applied), `center`, `min` / `max` and `upAxis` (`"y"`, or `"z?"` when the model is much deeper than tall — it may lie on its back; check it with `render --isolate <objectId>`, which renders that object alone from the front (+Z) on a neutral background). Local `.glb` / `.gltf` files added with `assets add <file>` return the same `bounds`. Textures from ambientCG / Poly Haven download the whole set (colour, normal, roughness, AO) and return `data.asset.suggestion.material`, a ready material to `set` on an object. Poly Haven models download as `.gltf` + `.bin` + textures in a folder: use the returned `path` as the model `src`. Keep `--resolution 1k` for the web (2k only for a hero close-up). Sources start at 1k: `--resolution 512` (or `256`) downloads 1k and downscales every texture to that size with headless Chrome (`data.asset.optimized`); `--max-size <px>` does the same for any resolution.
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets add --hit @hit.json --resolution 512 --project my-banner --json
+npx -y @fleox/agent3d@0.5.0 assets add --hit @hit.json --resolution 512 --project my-banner --json
 ```
 
 ## Kenney and Quaternius packs (manual zip)
@@ -75,7 +75,7 @@ npx -y @fleox/agent3d@0.4.0 assets add --hit @hit.json --resolution 512 --projec
 Their hits are `manual: true`: there is no direct download (the hit's `note` says so). Ask the user to download the pack zip from `pageUrl` (free, no account), then import it with `assets add <file.zip>` (the zip importer extracts only `.glb` / `.gltf` + textures; `--filter` keeps the models whose path contains the word, repeat it for several words; `--name` sets the folder under `assets/models/`):
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets add ~/Downloads/kenney_platformer-kit.zip --source kenney --license CC0-1.0 --filter coin --filter flag --name platformer --project my-game --json
+npx -y @fleox/agent3d@0.5.0 assets add ~/Downloads/kenney_platformer-kit.zip --source kenney --license CC0-1.0 --filter coin --filter flag --name platformer --project my-game --json
 ```
 
 The answer lists the imported model paths (`models`) to use as `src`, plus `totalKb`. Importing a whole pack can add megabytes: always filter to what the scene uses. (MCP clients: the `assets_add` tool takes `{ "file", "source", "license", "filter": [...] }`.)
@@ -83,9 +83,9 @@ The answer lists the imported model paths (`models`) to use as `src`, plus `tota
 ## The user's own files
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets add ./logo.svg --license proprietary --project my-banner --json
-npx -y @fleox/agent3d@0.4.0 assets add ./bottle.glb --license proprietary --author "Acme" --project my-banner --json
-npx -y @fleox/agent3d@0.4.0 assets add ./jingle.mp3 --kind audio --license CC-BY-4.0 --author "Jane Doe" --source-url https://example.com/jingle --project my-game --json
+npx -y @fleox/agent3d@0.5.0 assets add ./logo.svg --license proprietary --project my-banner --json
+npx -y @fleox/agent3d@0.5.0 assets add ./bottle.glb --license proprietary --author "Acme" --project my-banner --json
+npx -y @fleox/agent3d@0.5.0 assets add ./jingle.mp3 --kind audio --license CC-BY-4.0 --author "Jane Doe" --source-url https://example.com/jingle --project my-game --json
 ```
 
 `--license` is required (an SPDX id such as `CC0-1.0`, `CC-BY-4.0`, or `proprietary` for the user's own work). Files go to `assets/models/`, `assets/textures/`, `assets/hdri/`, `assets/audio/`, `assets/fonts/`, `assets/svg/` or `assets/other/` by kind, unless `--path` says otherwise. SVG logos become 3D with an `svg` object; product models with a `model` object and `fit`; audio with `audio.sounds` / `audio.music` (`{ "src": "assets/audio/jingle.mp3" }`).
@@ -103,8 +103,8 @@ Each path keeps its SVG colour (`keepColors`: default `true` without a `material
 When the user gives a photo and wants it to move in 3D (a "3D photo", parallax photo, "bring this picture to life"), the photo needs a **depth map**: a grey PNG, white = near, black = far, the same aspect as the photo. Estimate it locally:
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets add ./street.jpg --license CC0-1.0 --author "Jane Doe" --project my-hero --json
-npx -y @fleox/agent3d@0.4.0 assets depth assets/textures/street.jpg --project my-hero --json
+npx -y @fleox/agent3d@0.5.0 assets add ./street.jpg --license CC0-1.0 --author "Jane Doe" --project my-hero --json
+npx -y @fleox/agent3d@0.5.0 assets depth assets/textures/street.jpg --project my-hero --json
 ```
 
 - **Output.** `data.path` = `assets/depth/<photo name>-depth.png` (`--out` to change), at the photo size capped at 1024 px (`--max-size`; the model works at 518 px, so a bigger map only adds bytes), transparent on depth jumps (the runtime hides stretched edges there). `data.suggestion` is a ready `{ "kind": "photo", "src", "depth" }` object; `data.ms` the time taken (about 1-1.5 s per photo plus ~2 s to start Chrome). `--size` is the model input long side (default 518; up to 1036 for finer edges, about 4× slower).
@@ -118,8 +118,8 @@ npx -y @fleox/agent3d@0.4.0 assets depth assets/textures/street.jpg --project my
 When the photo will move a lot (`strength` 0.7-1, `mode: "mesh"`, people, poles or signs in front of the background), also build its **background plate**: the photo with the foreground removed next to its depth edges and filled with the background from the far side, plus the plate depth. The runtime shows it where moving foreground uncovers the background, so silhouettes stop smearing, doubling or dragging halos.
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets plate assets/textures/street.jpg --project my-hero --json
-npx -y @fleox/agent3d@0.4.0 assets depth assets/textures/street.jpg --plate --project my-hero --json
+npx -y @fleox/agent3d@0.5.0 assets plate assets/textures/street.jpg --project my-hero --json
+npx -y @fleox/agent3d@0.5.0 assets depth assets/textures/street.jpg --plate --project my-hero --json
 ```
 
 - The first command reuses the existing depth map (`--depth`, else the photo object's `depth`, else `assets/depth/<name>-depth.png`); the second estimates the depth map and builds the plate in one go.
@@ -131,9 +131,9 @@ npx -y @fleox/agent3d@0.4.0 assets depth assets/textures/street.jpg --plate --pr
 ## Listing and removing
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets list --project my-scene --json
-npx -y @fleox/agent3d@0.4.0 assets remove assets/textures/old.jpg --project my-scene --json
-npx -y @fleox/agent3d@0.4.0 assets remove assets/textures/old.jpg --yes --project my-scene --json
+npx -y @fleox/agent3d@0.5.0 assets list --project my-scene --json
+npx -y @fleox/agent3d@0.5.0 assets remove assets/textures/old.jpg --project my-scene --json
+npx -y @fleox/agent3d@0.5.0 assets remove assets/textures/old.jpg --yes --project my-scene --json
 ```
 
 `assets list` shows each file's size on disk, licence, whether it exists and which objects use it (`usedBy`); it is read-only: entries whose recorded size differs from the file on disk are listed in `stale` (`assets optimize` / `assets add` rewrite the manifest). `remove` prints a plan (with `usedBy`) unless `--yes`: fix the references first.
@@ -143,11 +143,11 @@ npx -y @fleox/agent3d@0.4.0 assets remove assets/textures/old.jpg --yes --projec
 When `check` reports `budget` or `optimizable`, or before exporting a scene with project textures / `.glb` models, run `assets optimize`. Without `--yes` it prints the plan (no Chrome needed): for every file the size it will get and **why** (target kind, the object's size on screen, the camera distance, the texture role). Show the plan to the user, then apply:
 
 ```bash
-npx -y @fleox/agent3d@0.4.0 assets optimize --all --project my-hero --json
-npx -y @fleox/agent3d@0.4.0 assets optimize --all --dry-run --project my-hero --json
-npx -y @fleox/agent3d@0.4.0 assets optimize --all --yes --project my-hero --json
-npx -y @fleox/agent3d@0.4.0 assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
-npx -y @fleox/agent3d@0.4.0 assets optimize assets/textures/wood_planks --max-size 512 --format jpeg --yes --project my-banner --json
+npx -y @fleox/agent3d@0.5.0 assets optimize --all --project my-hero --json
+npx -y @fleox/agent3d@0.5.0 assets optimize --all --dry-run --project my-hero --json
+npx -y @fleox/agent3d@0.5.0 assets optimize --all --yes --project my-hero --json
+npx -y @fleox/agent3d@0.5.0 assets optimize assets/models/robot.glb --simplify 0.5 --yes --project my-game --json
+npx -y @fleox/agent3d@0.5.0 assets optimize assets/textures/wood_planks --max-size 512 --format jpeg --yes --project my-banner --json
 ```
 
 - **Smart size (default).** Each texture gets the smallest tier (256 / 512 / 1024 / 2048; up to 4096 for an equirect background) that still gives about one texel per screen pixel where the scene shows it: canvas size from the target (a hero ≈ 2880×1620 device px), object size (`fit`, geometry, scale) and closest camera distance (orbit zoom, scroll paths and timeline camera keys count), divided by `repeat`. Normal maps get ~0.75× and roughness ~0.5× of the colour size; a model's atlas ~1.5× its on-screen size. Heroes never go below 512 for colour maps; games and cards are capped at 1024. Textures not placed in `scene.json` (scripts, unused) get 1024. `--max-size <px>` forces one size for everything. Never upscales.
