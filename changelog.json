@@ -1,6 +1,14 @@
 {
   "versions": [
     {
+      "version": "0.5.1",
+      "date": "2026-11-26",
+      "breaking": false,
+      "changes": [
+        "README: 12 example clips of what one photo can do beyond parallax (3D inside the photo, fog, pointer light, reveal, timeline effects, rack focus, out of frame, background plate, dolly, vertigo, scroll story, vertical social video), each with the request to give your agent."
+      ]
+    },
+    {
       "version": "0.5.0",
       "date": "2026-11-26",
       "breaking": false,

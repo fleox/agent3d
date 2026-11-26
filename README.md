@@ -157,6 +157,35 @@ Step by step: [docs/getting-started.md](https://github.com/fleox/agent3d/blob/ma
   <br><sub><b>3D photo</b>: one CC0 photo plus a depth map estimated locally in about a second (<code>agent3d assets depth</code>), moving in depth as the pointer sweeps across it. The <a href="https://github.com/fleox/agent3d/tree/main/templates/hero-photo-3d"><code>hero-photo-3d</code></a> template, rendered with <code>agent3d render --input</code>.</sub>
 </p>
 
+**Beyond parallax: what else an agent can do with one photo.** Every clip is a headless render (`agent3d render --video`, then converted to WebP for this page) of a demo scene; the line in quotes is what to ask your agent to get the same result on your own photo. CC0 photos, depth maps estimated locally.
+
+<table>
+<tr>
+<td width="50%" valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-inside.webp" width="100%" alt="A 3D OLD TOWN title placed inside a street photo: its letters pass behind the foreground houses as the view moves, with snow falling in front of and behind them"><br><b>3D inside the photo</b> (<code>occlude</code>)<br><i>"Put the OLD TOWN title inside the photo, behind the foreground buildings, with snow falling in front and behind."</i></td>
+<td width="50%" valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-fog.webp" width="100%" alt="A bluish mist gathering at the far end of a street photo while the near facades stay clear"><br><b>Depth fog</b> (<code>effects.fog</code>)<br><i>"Add a bluish mist in the background of the photo."</i></td>
+</tr>
+<tr>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-light.webp" width="100%" alt="A warm light following the pointer over a photo of nesting dolls, shading their rounded shapes"><br><b>A light that follows the pointer</b> (<code>effects.light</code>, normals from the depth map)<br><i>"Light the photo with a warm lamp that follows the mouse."</i></td>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-reveal.webp" width="100%" alt="A street photo appearing plane by plane, from the far background to the nearest facades"><br><b>Depth-by-depth reveal</b> (<code>effects.reveal</code>)<br><i>"Make the photo appear from the background to the front in 3 seconds."</i></td>
+</tr>
+<tr>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-rack.webp" width="100%" alt="A grazing light sweeping down a street photo while a mist rises and falls, driven by the timeline"><br><b>Effects on the timeline</b><br><i>"Sweep a light across the street while the mist rises."</i></td>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-blur.webp" width="100%" alt="A lake photo whose focus moves from the foreground reeds to the far mountains and back"><br><b>Rack focus</b> (<code>effects.blur</code>, depth-aware lens blur)<br><i>"Add a focus pull from the foreground to the background."</i></td>
+</tr>
+<tr>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-frame.webp" width="100%" alt="A photo inside an inset frame whose nearest subject steps out over the frame edge with a drop shadow"><br><b>Out of frame</b> (<code>effects.frame</code>)<br><i>"Put the photo in a frame and make the subject step out of it."</i></td>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-plateab.webp" width="100%" alt="The same wide camera move on a street photo twice: on the left smears around people and roofs, on the right a clean rebuilt background"><br><b>Background plate</b> for bigger moves (<code>assets plate</code>): left without, right with<br><i>"Prepare the photo for bigger camera moves."</i></td>
+</tr>
+<tr>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-dolly.webp" width="100%" alt="A camera pushing into a street photo and pulling back, in a seamless loop"><br><b>Dolly</b> (<code>motion.auto</code>: dolly, pan, rise, vertigo)<br><i>"Do a dolly-in on the photo."</i></td>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-vertigo.webp" width="100%" alt="A dolly zoom on a street photo: the subject keeps its size while the background stretches"><br><b>Vertigo</b> (dolly zoom)<br><i>"Do a vertigo effect on the photo."</i></td>
+</tr>
+<tr>
+<td valign="top"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-story.webp" width="100%" alt="A scroll story: the camera walks down a street photo, which dissolves into a lake photo with a THEN, THE LAKE title, then a vertigo on the lake"><br><b>Scroll story</b> (the <code>photo-scroll-story</code> template, filmed with simulated scrolling)<br><i>"Make a scroll story: we walk down the street, then arrive at the lake."</i></td>
+<td valign="top" align="center"><img src="https://raw.githubusercontent.com/fleox/agent3d/main/.github/assets/photo3d-social.webp" width="200" alt="A vertical 9:16 video of a vertigo effect on a street photo"><br><b>Social video</b> (<code>render --video reel.mp4 --preset vertical</code>: 1080×1920, one seamless loop)<br><i>"Make me a vertical Instagram video with a vertigo effect on this photo."</i></td>
+</tr>
+</table>
+
 **Look**
 - **Lighting and lookdev**: 10 one-line light rigs (softbox, studio three-point, golden hour, neon, moonlight…), physical skies with a matching sun, 20 built-in HDRIs, height fog, contact shadows, rect panel lights and volumetric spots, mesh-gradient backgrounds
 - **Materials**: 38 presets from chrome, glass and car paint to velvet, diamond and soap bubble; physical parameters (clearcoat, sheen, iridescence, transmission, anisotropy, dispersion), 12 procedural textures (marble, wood, terrazzo, carbon…) at zero bytes, 17 shaders (aurora, liquid chrome, nebula, caustics…), cel shading that keeps brand colours true
