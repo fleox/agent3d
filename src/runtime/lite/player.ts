@@ -20,6 +20,7 @@ import { designAspectOf, fitScale, fittedFov, nudgeOffPlanes } from "../build/ca
 import { PARALLAX_GLSL, PARALLAX_WALL_SLOPE, PHOTO_COMMON_GLSL, PHOTO_DEFAULTS, createPhotoMotion, motionSettings, parallaxParams, parallaxSteps, parallaxView, photoSize, type PhotoMotion } from "../build/photoCore";
 import { createPhotoFx, type PhotoFx } from "../build/photoFx";
 import { DEG, clamp, num } from "../num";
+import { scrollRect } from "../scrollTarget";
 
 const VERT = /* glsl */ `#version 300 es
 in vec2 aPos;
@@ -200,7 +201,7 @@ export function mountPhotoScene(container: HTMLElement, initial: SceneDoc, optio
   const scrollValue = () => {
     if (scrollOverride !== null) return scrollOverride;
     if (deterministic || staticMotion) return clamp(t / 4, 0, 1);
-    const r = container.getBoundingClientRect();
+    const r = scrollRect(container);
     const vh = win.innerHeight || 1;
     return clamp((vh - r.top) / (vh + r.height), 0, 1);
   };

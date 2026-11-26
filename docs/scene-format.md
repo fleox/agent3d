@@ -625,7 +625,7 @@ Procedural animation and interaction on objects and lights: `type` (catalog id),
 | `autoplay` | true | `false` waits for an interaction; a segment name makes the trigger play only that segment (an intro that stops before the hover states) |
 | `markers` | | `{ name: seconds }` — crossing one emits an event with its name (payload `{ marker, time }`): scripts `api.on(name)`, interactions `{ "on": "event" }`, `player.on(name, fn)`, the element's `agent3d:event` |
 | `segments` | | `{ name: { from, to, loop?, speed? } \| [from, to] }` — `from` / `to` in seconds or marker names; `to < from` plays backwards. `"timeline"` names the whole timeline |
-| `scroll` | | With `trigger: "scroll"`: `{ start, end, smoothing }` — ScrollTrigger-like `"<element edge> <viewport edge>"` with edges `top`, `center`, `bottom`, `N%`, `Npx`; default `"top bottom"` → `"bottom top"`; `smoothing` 0..0.99 (default 0.8). In deterministic renders the progress is `t / duration` (`agent3d render --count 8` shows the scroll states; `--scroll 0.5` one position) |
+| `scroll` | | With `trigger: "scroll"`: `{ start, end, smoothing }` — ScrollTrigger-like `"<element edge> <viewport edge>"` with edges `top`, `center`, `bottom`, `N%`, `Npx`; default `"top bottom"` → `"bottom top"`; `smoothing` 0..0.99 (default 0.8). A pinned scene (the element or an ancestor is `position: sticky`) measures the scroll on the sticky box's parent (the tall section) minus the pinned height, so `"top top"` → `"bottom top"` runs exactly while it is pinned. In deterministic renders the progress is `t / duration` (`agent3d render --count 8` shows the scroll states; `--scroll 0.5` one position) |
 | `tracks` | (required) | Keyframe tracks (below) |
 
 ### Tracks

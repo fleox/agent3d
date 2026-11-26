@@ -10,7 +10,7 @@ A 16:9 scroll-driven story. The timeline uses `trigger: "scroll"`: its time foll
 
 ## Page setup
 
-To let the visitor scroll through the whole story while the scene stays on screen, put the embed in a tall wrapper with a sticky child, e.g. `<section style="height:300vh"><div style="position:sticky;top:0"><agent3d-scene …></agent3d-scene></div></section>`. Without a wrapper, the story plays while the hero scrolls past.
+To let the visitor scroll through the whole story while the scene stays on screen, put the embed in a tall wrapper with a sticky child, e.g. `<section style="height:300vh"><div style="position:sticky;top:0"><agent3d-scene …></agent3d-scene></div></section>`. Without a wrapper, the story plays while the hero scrolls past. The scene detects the pin: it measures the scroll on the sticky box's parent (the tall section) minus the pinned height, so `"top top"` → `"bottom top"` runs exactly while it is pinned.
 
 ## What to tweak
 

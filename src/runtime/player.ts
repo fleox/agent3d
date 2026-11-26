@@ -21,6 +21,7 @@ import { InteractionRunner, safeUrl } from "./timeline/interactions";
 import { scrollProgressFor } from "./timeline/scroll";
 import { toColor } from "./util";
 import { cameraInside, refineInView } from "./inspectView";
+import { scrollRect } from "./scrollTarget";
 
 const TONE_MAPPING: Record<string, THREE.ToneMapping> = {
   none: THREE.NoToneMapping,
@@ -637,7 +638,7 @@ class PlayerImpl implements Player {
     if (this.scrollOverride !== null) return this.scrollOverride;
     if (this.deterministic || this.staticMotion) return this.scrollValue();
     const win = this.container.ownerDocument.defaultView;
-    const r = this.container.getBoundingClientRect();
+    const r = scrollRect(this.container);
     const raw = scrollProgressFor(r.top, r.height, win?.innerHeight || 1, tl.scroll?.start, tl.scroll?.end);
     const smoothing = Math.min(Math.max(tl.scroll?.smoothing ?? 0.8, 0), 0.99);
     if (this.tlScroll === null || smoothing <= 0) this.tlScroll = raw;

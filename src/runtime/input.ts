@@ -3,6 +3,8 @@
 // the container is focused or hovered, or after a first pointer interaction
 // with it; page scroll keys are only prevented for `target.kind: "game"`.
 
+import { scrollRect } from "./scrollTarget";
+
 export interface InputState {
   pointer: { x: number; y: number; inside: boolean; down: boolean; justPressed: boolean };
   keys: Set<string>;
@@ -128,7 +130,7 @@ export function bindInput(container: HTMLElement, s: InputState, opts: { game: b
 export function scrollProgress(el: HTMLElement): number {
   const win = el.ownerDocument.defaultView;
   if (!win) return 0;
-  const r = el.getBoundingClientRect();
+  const r = scrollRect(el);
   const vh = win.innerHeight || 1;
   const p = (vh - r.top) / (vh + r.height);
   return p < 0 ? 0 : p > 1 ? 1 : p;
