@@ -16,6 +16,7 @@
   <a href="https://www.npmjs.com/package/@fleox/agent3d"><img src="https://img.shields.io/node/v/@fleox/agent3d?color=339933" alt="Node.js version"></a>
   <a href="#claude-code"><img src="https://img.shields.io/badge/Claude%20Code-plugin-d97757" alt="Claude Code plugin"></a>
   <a href="#mcp-server"><img src="https://img.shields.io/badge/MCP-server-0ea5e9" alt="MCP server"></a>
+  <a href="https://m8ven.ai/mcp/fleox/agent3d?s=readme"><img src="https://m8ven.ai/badge/mcp/fleox/agent3d" alt="M8ven Score"></a>
   <a href="https://github.com/fleox/agent3d/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-6b7280" alt="License"></a>
 </p>
 
